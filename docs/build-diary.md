@@ -10,14 +10,14 @@ The base is the working foundation described in section 8 of `PROJECT_BRIEF.md`.
 |---|---|---|
 | 1 | Project skeleton: folders, README, rules for agents, example secrets file, these notes | Merged into `main` on 10 Nov (pull request #2) |
 | 2 | Automatic tests: one example test, and GitHub runs the tests on every pull request | Merged into `main` on 10 Nov (pull request #3) |
-| 3 | A small server on Render that shows a "hello" page at a public link | Online since 10 Nov at https://novasbe-kart.onrender.com. Still to see: a merge into `main` putting the new version online by itself |
+| 3 | A small server on Render that shows a "hello" page at a public link | Done. Online since 10 Nov at https://novasbe-kart.onrender.com, and a merge into `main` puts the new version online by itself (seen with pull request #5) |
 | 4 | Database: the server writes and reads one row in Neon | Not started |
 | 5 | Driving rules, first version: one kart speeds up, brakes, steers and slides (tests only, no screen) | Merged into `main` on 10 Nov (pull request #4) |
 | 6 | Test track, walls and laps: a simple oval with walls to bounce off, and laps that only count if no checkpoint is skipped (tests only) | Merged into `main` on 10 Nov (pull request #4) |
 | 7 | Drive in the browser: arrow keys, lap counter, finish time | Merged into `main` on 10 Nov (pull request #4) |
-| 7b | Camera views: from above following the kart, tilted from behind the kart, and a small map. Not in the original plan | Built. On GitHub in the branch `online-play`, together with step 8. No pull request yet |
-| 8 | First online connection: two browsers see each other's kart | Built, and it works between two browser tabs on one laptop. On GitHub in the branch `online-play`. Not tried between two laptops yet |
-| 9 | Two-laptop checklist, run on two different networks | The checklist is written (`docs/two-laptop-checklist.md`). It can be run once the `online-play` pull request is merged and the online page is at the public link |
+| 7b | Camera views: from above following the kart, tilted from behind the kart, and a small map. Not in the original plan | Merged into `main` on 10 Nov (pull request #5) and online |
+| 8 | First online connection: two browsers see each other's kart | Merged into `main` on 10 Nov (pull request #5) and online. Two connections from one laptop to the live server saw each other. A fix found there is in the branch `online-fix`. Not tried between two laptops yet |
+| 9 | Two-laptop checklist, run on two different networks | The checklist is written (`docs/two-laptop-checklist.md`) and can be run now. Not run yet |
 
 Steps 3 and 4, step 5 and step 6 touch different files, so three people can build them at the same time once step 2 is merged.
 
@@ -38,6 +38,78 @@ Steps 3 and 4, step 5 and step 6 touch different files, so three people can buil
 | Agent | The AI coding assistant (Claude Code or Codex) that writes most of the code |
 
 ## Entries
+
+### 10 November 2026: First look at the live server, and a fix it led to
+
+Done on Catarina's laptop with Claude Code. The branch is `online-fix`, started from the up-to-date `main`.
+
+**Where things stood**
+
+Pull request #5 (camera views, online play, the public link) was approved and merged into `main`.
+
+**The automatic update works**
+
+A few minutes after the merge, the public link showed the new version without anyone touching Render: https://novasbe-kart.onrender.com/online.html exists, and the game starts in the view from behind the kart. This was the last unchecked part of step 3.
+
+**Online play on the live server**
+
+The agent connected two pretend browsers from this laptop to the live server, over the real internet, with a small script that is not part of the project.
+
+| What | Result |
+|---|---|
+| Connecting | Both were welcomed, as players in places 0 and 1, in about a quarter of a second each |
+| Updates | 40 in two seconds, so 20 a second, as designed. The gap between two updates was 49 thousandths of a second in the middle, 22 at the shortest and 88 at the longest |
+| One presses the gas | The other was told that kart had moved 85 thousandths of a second later, and its own kart had not moved |
+
+This is one laptop and one internet connection talking to Frankfurt, not two laptops on two connections. The two-laptop checklist is still to do.
+
+**A problem that only the live server showed**
+
+The same script sent a made-up message ("teleport"), which the server must answer by disconnecting the sender.
+
+- On this laptop, in the tests: the sender was disconnected at once and its kart left the track.
+- On the live server: the sender stopped receiving updates at once, but its connection stayed open and **its kart stayed on the track** for as long as the script watched, about six seconds.
+
+Why: closing a live connection politely is a small conversation. The server says goodbye, and the connection only really ends when the other side answers. Our code took the kart off the track when the connection ended, so it was waiting for that answer. On this laptop the answer comes back instantly. Through Render's network it did not come back in the time the script watched. The agent does not know exactly why. A program that wants to misbehave could also simply never answer.
+
+The effect was limited: a sender that broke the rules could not drive any more, but could leave a still kart on the track and keep one of the eight places for up to half a minute.
+
+**The fix**
+
+The server no longer depends on the answer.
+
+- The moment a browser breaks a rule, its kart is taken off the track and anything more it sends is ignored.
+- The server still says goodbye with the reason, and two seconds later cuts the connection itself if it is still open.
+- The same two-second cut applies to a player turned away because the room is full.
+
+| File | What changed |
+|---|---|
+| `server/online.js` | The fix above. New parts: `sendAway`, `leave` and `kick` |
+| `tests/online.test.js` | Three new tests with a "deaf" browser: one that can send but never reacts to anything the server says. Written before the fix, and all three failed, in the same way the live server did. They pass with the fix |
+| `WALKTHROUGH.md`, `docs/two-laptop-checklist.md`, `server/README.md` | Updated |
+
+**What this teaches about our tests**
+
+The tests said "a browser that breaks the rules is disconnected", and that was true on one computer. They used a well-behaved pretend browser, which always answers a goodbye. A test can only catch what it imagines. The live server is not one computer, and the first hour on it found something. This is the reason the walkthrough notes list "what the tests miss".
+
+**What was checked, and what was not**
+
+- Checked: `npm test`. 277 of 277 tests pass (274 from before, 3 new).
+- Checked: the three new tests fail without the fix and pass with it.
+- **Not checked yet: the fix on the live server.** It only gets there when this branch is merged. The agent will run the same script again then.
+- **Not checked:** two laptops on two connections.
+
+**Git steps the agent ran, and what each one means**
+
+| Command | In plain words |
+|---|---|
+| `git fetch origin main:main` | Bring the laptop's copy of `main` up to date with GitHub's, which now includes pull request #5 |
+| `git switch -c online-fix main` | Make a new branch called `online-fix`, starting from that `main` |
+| `git add`, `git commit`, `git push` | Save the snapshot and send the branch to GitHub |
+
+**What comes next**
+
+A pull request for this fix. Then the two-laptop checklist, and the database.
 
 ### 10 November 2026: The server is on the internet
 

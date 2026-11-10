@@ -42,12 +42,22 @@ const TRY_AGAIN_LATER = 1013;
 const CHECK_STILL_THERE_MS = 15000;
 
 /**
+ * When we send a browser away we tell it why, and then give it this long to
+ * close the connection from its side before we cut it ourselves.
+ */
+export const GOODBYE_WAIT_MS = 2000;
+
+/**
  * Adds online play to our web server.
  *   httpServer  the server made by createApp() in app.js
  *   track, character, maxPlayers  what the room uses
+ *   goodbyeWaitMs  how long to wait before cutting a connection we sent away
  * Gives back { room, close }. close() ends online play, for the tests.
  */
-export function attachOnlinePlay(httpServer, { track, character, maxPlayers }) {
+export function attachOnlinePlay(
+  httpServer,
+  { track, character, maxPlayers, goodbyeWaitMs = GOODBYE_WAIT_MS },
+) {
   const room = createRoom(track, character, maxPlayers);
   const connections = new Set();
   // "noServer" means: do not open a second server, share the web server we already have.
@@ -65,19 +75,53 @@ export function attachOnlinePlay(httpServer, { track, character, maxPlayers }) {
   }
   httpServer.on("upgrade", onUpgrade);
 
+  /**
+   * Sends a browser away, with a reason.
+   *
+   * Closing a live connection politely is a small conversation: we say
+   * goodbye, and the connection only really ends when the browser answers.
+   * A broken or hostile program may never answer, and on the internet a
+   * goodbye can fail to arrive. So we do not depend on the answer: we say
+   * goodbye, and a short while later we cut the connection ourselves.
+   */
+  function sendAway(connection, code, reason) {
+    connection.close(code, reason);
+    const cut = setTimeout(() => connection.terminate(), goodbyeWaitMs);
+    cut.unref(); // this timer alone must not keep the program running
+    connection.once("close", () => clearTimeout(cut));
+  }
+
   /** Runs once for every browser that connects. */
   function welcome(connection) {
     const player = room.addPlayer();
     if (player === null) {
       connection.send(JSON.stringify({ type: "full" }));
-      connection.close(TRY_AGAIN_LATER, "The room is full");
+      sendAway(connection, TRY_AGAIN_LATER, "The room is full");
       return;
     }
 
     connections.add(connection);
     connection.stillThere = true;
+    let gone = false; // true once this player's kart has been taken off the track
     let secondStarted = Date.now();
     let messagesThisSecond = 0;
+
+    /** Takes this player's kart off the track. Safe to call more than once. */
+    function leave() {
+      if (gone) {
+        return;
+      }
+      gone = true;
+      connections.delete(connection);
+      room.removePlayer(player.id);
+      stopTheClockIfEmpty();
+    }
+
+    /** Removes a player who broke the rules: the kart goes at once, then the connection. */
+    function kick(reason) {
+      leave();
+      sendAway(connection, BROKE_THE_RULES, reason);
+    }
 
     connection.send(
       JSON.stringify({ type: "welcome", id: player.id, place: player.place, track: track.name }),
@@ -85,6 +129,10 @@ export function attachOnlinePlay(httpServer, { track, character, maxPlayers }) {
     startTheClockIfNeeded();
 
     connection.on("message", (data, isBinary) => {
+      if (gone) {
+        return; // already sent away: nothing it says counts any more
+      }
+
       // Too many messages in one second?
       const now = Date.now();
       if (now - secondStarted >= 1000) {
@@ -93,14 +141,14 @@ export function attachOnlinePlay(httpServer, { track, character, maxPlayers }) {
       }
       messagesThisSecond++;
       if (messagesThisSecond > MAX_MESSAGES_PER_SECOND) {
-        connection.close(BROKE_THE_RULES, "Too many messages");
+        kick("Too many messages");
         return;
       }
 
       // Is it one of the two things a browser may say?
       const message = isBinary ? null : readClientMessage(data.toString());
       if (message === null) {
-        connection.close(BROKE_THE_RULES, "Message not understood");
+        kick("Message not understood");
         return;
       }
 
@@ -117,11 +165,7 @@ export function attachOnlinePlay(httpServer, { track, character, maxPlayers }) {
       connection.stillThere = true;
     });
 
-    connection.on("close", () => {
-      connections.delete(connection);
-      room.removePlayer(player.id);
-      stopTheClockIfEmpty();
-    });
+    connection.on("close", leave);
 
     connection.on("error", () => {
       connection.terminate(); // a "close" follows, which tidies up
@@ -199,7 +243,8 @@ export function attachOnlinePlay(httpServer, { track, character, maxPlayers }) {
         clock = null;
       }
       httpServer.off("upgrade", onUpgrade);
-      for (const connection of connections) {
+      // Every connection that is still open, including any we already sent away.
+      for (const connection of sockets.clients) {
         connection.terminate();
       }
       sockets.close();
