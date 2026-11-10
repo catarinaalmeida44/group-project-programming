@@ -61,7 +61,7 @@ What this means for you: prefer finished, reliable features over many half-finis
 - Keep an `AGENTS.md` rules file in the repository so every member's agent follows the same rules. Claude Code reads `CLAUDE.md`, which can simply say "Follow AGENTS.md". Change these files only through pull requests.
 - For each task: new branch from an up-to-date `main`, agent makes the change, run the tests and the app, read every changed line, commit, open a pull request, a teammate reviews, then merge. Nobody merges their own pull request without a review.
 - One owner per shared structure (database tables, the main server file, `AGENTS.md`).
-- **[OPEN]** Whether the agent may run git commands itself, or the team does all git operations in GitHub Desktop (the course default is GitHub Desktop).
+- **[DECIDED 10 Nov 2026 by Catarina; teammates confirm by approving the skeleton pull request]** The agent may run git commands itself (create a branch, commit, push) when the member working with it asks. It must explain every step and record it in `docs/build-diary.md`. It never merges into `main`: a teammate reviews and merges. Members who prefer GitHub Desktop keep using it.
 
 ## 4. The game
 
@@ -315,6 +315,8 @@ Keep a `WALKTHROUGH.md` file up to date as you build, in plain language. It shou
 - Why did we build it this way (our own server, our own physics, the server deciding results)?
 - What are the known limits, and what would we change next?
 
+[DECIDED 10 Nov 2026] Also keep `docs/build-diary.md` up to date: a dated diary, in plain language, of what was done, why, and how to check it, so any member can ask questions about it later.
+
 ## 10. Roadmap after the base [PROPOSED; owners OPEN]
 
 | Owner | Area |
@@ -352,7 +354,7 @@ Before the demo:
 
 | Name | Student number | GitHub username | Owns |
 |---|---|---|---|
-| Catarina | | catarinaalmeida44 | [OPEN] |
-| | | | |
-| | | | |
-| | | | |
+| Catarina Almeida | 70573 | catarinaalmeida44 | [OPEN] |
+| Fran | | FranFon15 | [OPEN] |
+| Pedro | | pedrocollarespereira | [OPEN] |
+| Rodrigo | | rodrigosversos | [OPEN] |
