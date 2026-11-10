@@ -7,6 +7,7 @@ These files are used by both the browser and the server, so both follow exactly 
 | File | What it does |
 |---|---|
 | `race.js` | Puts the other files together. `stepRacer` moves one racer forward by one step: look at the ground, move the kart, bounce off walls, update the laps. The browser and the server both call this |
+| `countdown.js` | The 3, 2, 1, GO! before a race. `countdownAt` says what to show after a number of steps and whether the race has begun. `stepCountdownRace` leaves the racer alone until GO and then calls `stepRacer`. Used by the practice race for now |
 | `track.js` | Reads a track drawn with letters, says what the ground is at any spot, and makes karts bounce off walls |
 | `laps.js` | Counts checkpoints, laps and race time |
 | `tracks/test-oval.js` | The test track: a simple loop drawn with letters |

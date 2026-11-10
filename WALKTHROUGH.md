@@ -21,6 +21,7 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 | Tracks, the ground and walls | `shared/track.js` | Yes |
 | Laps and race time | `shared/laps.js` | Yes |
 | All the rules put together for one racer | `shared/race.js` | Yes |
+| The 3, 2, 1, GO! before a race | `shared/countdown.js` | Yes, in the practice race. Online has no race start yet |
 | The test track | `shared/tracks/test-oval.js` | Yes. It is a simple loop, not a campus track |
 | The drivers and their scores | `shared/characters.js` | One placeholder driver |
 | The kinds of ground | `shared/surfaces.js` | Road and grass |
@@ -60,12 +61,12 @@ Our placeholder driver, with middle scores, reaches 80% of its top speed in abou
 `client/main.js` repeats three things for every picture the screen shows, usually 60 times a second:
 
 1. Ask `client/keyboard.js` which arrow keys are held.
-2. Ask the rules where the kart is now. This is one call to `stepRacer` in `shared/race.js` for each sixtieth of a second that has passed.
+2. Ask the rules where the kart is now. This is one call to `stepCountdownRace` in `shared/countdown.js` for each sixtieth of a second that has passed. During the countdown that call only counts. From GO on it passes the work to `stepRacer` in `shared/race.js`.
 3. Ask `client/camera.js` where the camera should be, then ask `client/draw.js` to draw the track and the kart from there, and fill in the lap counter and the clock.
 
 Screens do not all refresh at the same speed, but the rules must always move in steps of exactly one sixtieth of a second. So `main.js` measures how much real time has passed and runs as many whole steps as fit in it.
 
-The clock starts at the first key press. After the last lap, the keys are ignored, the kart rolls to a stop and the finish time is shown. R starts again.
+The first press of an arrow key starts a countdown: 3, 2, 1, GO!, one second each. During 3, 2 and 1 the keys do nothing, the kart stands still and the clock stays at zero. At GO the clock starts, whether a key is held or not. The countdown is counted in steps of the game, 60 for each number, like the race time, so the server can use the same rule for online races later. Holding the gas early gives no head start, and there is a test for that. After the last lap, the keys are ignored, the kart rolls to a stop and the finish time is shown. R starts again.
 
 The practice race runs entirely in the browser. Nothing is sent to the server and nothing is saved. That also means a practice time could be faked by a player, which is why practice times will never count for leaderboards. Online races will be run by the server.
 
@@ -142,7 +143,7 @@ In a Postgres database kept by a company called Neon, in Frankfurt, on its free 
 
 ## What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 311 tests today, plus 5 that only run against the real database.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 334 tests today, plus 5 that only run against the real database.
 
 **Covered today**
 
@@ -154,6 +155,7 @@ We run them with `npm test`. GitHub also runs them by itself on every pull reque
 - Tracks and walls in `shared/track.js`. Thirty-five tests: reading a track, twelve kinds of badly drawn track that must be refused, the ground at a spot, and bouncing off walls from every side and in a corner.
 - Laps in `shared/laps.js`. Twenty-seven tests. Fourteen of them are laps that must not count.
 - Whole races in `shared/race.js`. Thirteen tests. A small "robot driver" written in the test file steers a kart round the test track: three whole laps, the wrong way round, and flat out into a wall.
+- The countdown in `shared/countdown.js`. Twenty-three tests: what it says at each moment, when the race begins, and step counts that must be refused. Four are things that must not happen before GO: the kart moving or turning with keys held, the clock running, and a head start for holding the gas early. One test checks that a race after the countdown is exactly the race without one, three seconds later. We broke this rule on purpose in four ways, and each made tests fail.
 - The driving rules in `shared/physics.js`. Thirty-four tests: speeding up, top speed, coasting, braking, reversing, steering, grip, grass, and bad input that must be refused or ignored (keys that are not exactly "pressed", scores that are out of range, a driver with a missing score). They compare behaviours, such as "more acceleration reaches top speed sooner", instead of exact numbers, so we can tune the numbers without breaking the tests.
 - `clamp` in `shared/numbers.js`, which keeps a number between a lowest and a highest value. Ten tests: six for normal use and four for bad input that must be refused.
 - The server in `server/app.js`. Nineteen tests. Ten check what it must do: send the page, its style and code, the game rules and the health check. Nine check what it must refuse: missing pages, requests that change things, file kinds not on the list, files outside the `client/` and `shared/` folders (thirteen different ways of writing such an address), the server's own code and the tests, and two kinds of broken address.
@@ -224,6 +226,7 @@ These are the limits we expect from the free hosting plans:
 - The database holds nothing useful yet, only a count of server starts.
 - Online, your own kart reacts a moment late: your key press travels to the server and the result travels back, and then the picture is a tenth of a second behind. On one laptop this is small. Over the internet it will be bigger. The fix is "prediction": the browser moves your own kart at once with the shared rules and corrects it when the server answers. The rules were written to make that possible, but it is not built.
 - Online has one room for everyone, no race start, no finishing order and no bumping between karts. There are no accounts, so anyone with the link can join.
+- The countdown exists only in the practice race. Online, each player's clock still starts at their own first key press, because the server has no race start yet. There is no boost for pressing the gas at the right moment, and no sound.
 - A very short key tap, shorter than one picture on the screen, is not sent to the server.
 - The limit of 60 messages a second is per connection. Nothing yet limits how many connections one computer may open, beyond the room being full at eight.
 - The numbers in the driving rules are first guesses. No person has driven the kart for long yet, so they will change with playtesting.

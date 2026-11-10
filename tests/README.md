@@ -13,6 +13,7 @@ Each file here ends in `.test.js`.
 | `track.test.js` | `shared/track.js`: reading a track, refusing a badly drawn one, the ground at a spot, and bouncing off walls |
 | `laps.test.js` | `shared/laps.js`: laps that count, laps that must not count (skipped checkpoint, wrong order, wrong way round, back and forth over the finish line), and race time |
 | `race.test.js` | `shared/race.js`: everything together on the test oval. A small "robot driver" drives three whole laps, drives the wrong way round, and drives flat out into a wall |
+| `countdown.test.js` | `shared/countdown.js`: what the countdown says at each moment, that the kart cannot move and the clock cannot run before GO whatever keys are held, that the race after GO is the normal race, and refusing bad step counts |
 | `small-track.js` | Not a test. A tiny track that the track and lap tests share |
 | `room.test.js` | `server/room.js` and `server/messages.js`, without any network: joining and leaving, a full room, only your own kart moves, and every kind of message a browser might send that must be refused |
 | `online.test.js` | `server/online.js`, with real live connections to a real copy of the server: two browsers see each other's kart move, and the server disconnects or turns away what it should |
