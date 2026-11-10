@@ -2,7 +2,7 @@
 
 Plain-language answers to the questions the teaching staff may ask when they open this repository. Any member can be asked about any part, so everyone should be able to give these answers.
 
-**State on 10 November 2026:** one kart can be driven round a test track in the browser, with a lap counter, a finish time and three camera views. On the "Online test" page, up to eight browsers connected to our server see each other's karts. The server is not on the internet yet, and there is no database or accounts yet, so several answers below describe the plan. Each answer is rewritten as the real thing gets built.
+**State on 10 November 2026:** one kart can be driven round a test track in the browser, with a lap counter, a finish time and three camera views. On the "Online test" page, up to eight browsers connected to our server see each other's karts. The server is on the internet at https://novasbe-kart.onrender.com. There is no database or accounts yet, so several answers below describe the plan. Each answer is rewritten as the real thing gets built.
 
 ## Where does each part live?
 
@@ -26,7 +26,7 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 | The kinds of ground | `shared/surfaces.js` | Road and grass |
 | The automatic tests | `tests/` | Yes, for the driving rules, the server and a number helper |
 | The instructions that make GitHub run the tests | `.github/workflows/tests.yml` | Yes |
-| The instructions that tell Render how to run the server | `render.yaml` and `.node-version` | Written, not used yet |
+| The instructions that tell Render how to run the server | `render.yaml` and `.node-version` | Yes, in use since 10 November |
 | The database connection | `server/` (exact file to be added) | No |
 
 ## How does a page reach the browser?
@@ -160,14 +160,14 @@ To check that the tests really guard the rules, we broke the code on purpose in 
 - How the driving feels. No test can say whether a kart is fun to drive. That needs a person at the keyboard.
 - The drawing (`client/draw.js`) and the loop that runs the race (`client/main.js`). They need a real page. They were checked in a browser: by looking at the page, and by a script that pressed the keys and drove a whole three-lap race while we watched the lap counter, the clock and the finish message.
 - How smooth the race looks at full speed on a normal screen. The browser used for that check was running in the background, where browsers redraw only about once a second.
-- The server running on Render. It is not online yet.
+- The server on Render, beyond a first look: it answers its health check and sends the game page. Nothing tests the live server automatically. Whether a merge into `main` really puts the new version online by itself has not been seen yet.
 - Everything that is not built yet.
 
 The tests use a library called Vitest. It is only used while developing. It is not part of what runs on Render or what players get. The online tests also use `ws` to play the part of a browser.
 
 ## What happens if the server restarts, the database pauses, or the email service is down?
 
-Nothing is deployed yet. What the code does today:
+The server runs on Render's free plan. Render takes the code from the `main` branch on GitHub and follows the settings in `render.yaml`. What the code does today:
 
 - **The server restarts or stops.** Everyone on the online page is disconnected and the room is gone, because the room lives only in the server's memory. Each browser shows "The connection to the server was lost. Reload the page to join again." After a reload they are in a new, empty room. Practice keeps working in a page that is already open, because it runs in the browser.
 - **The server cannot be reached at all.** The online page shows "Could not connect to the server. It may be waking up: wait a minute and reload the page."

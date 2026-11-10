@@ -10,14 +10,14 @@ The base is the working foundation described in section 8 of `PROJECT_BRIEF.md`.
 |---|---|---|
 | 1 | Project skeleton: folders, README, rules for agents, example secrets file, these notes | Merged into `main` on 10 Nov (pull request #2) |
 | 2 | Automatic tests: one example test, and GitHub runs the tests on every pull request | Merged into `main` on 10 Nov (pull request #3) |
-| 3 | A small server on Render that shows a "hello" page at a public link | The server is merged into `main` (pull request #4). Not online yet: that needs a Render account |
+| 3 | A small server on Render that shows a "hello" page at a public link | Online since 10 Nov at https://novasbe-kart.onrender.com. Still to see: a merge into `main` putting the new version online by itself |
 | 4 | Database: the server writes and reads one row in Neon | Not started |
 | 5 | Driving rules, first version: one kart speeds up, brakes, steers and slides (tests only, no screen) | Merged into `main` on 10 Nov (pull request #4) |
 | 6 | Test track, walls and laps: a simple oval with walls to bounce off, and laps that only count if no checkpoint is skipped (tests only) | Merged into `main` on 10 Nov (pull request #4) |
 | 7 | Drive in the browser: arrow keys, lap counter, finish time | Merged into `main` on 10 Nov (pull request #4) |
 | 7b | Camera views: from above following the kart, tilted from behind the kart, and a small map. Not in the original plan | Built. On GitHub in the branch `online-play`, together with step 8. No pull request yet |
 | 8 | First online connection: two browsers see each other's kart | Built, and it works between two browser tabs on one laptop. On GitHub in the branch `online-play`. Not tried between two laptops yet |
-| 9 | Two-laptop checklist, run on two different networks | The checklist is written (`docs/two-laptop-checklist.md`). It cannot be run until the server is online |
+| 9 | Two-laptop checklist, run on two different networks | The checklist is written (`docs/two-laptop-checklist.md`). It can be run once the `online-play` pull request is merged and the online page is at the public link |
 
 Steps 3 and 4, step 5 and step 6 touch different files, so three people can build them at the same time once step 2 is merged.
 
@@ -38,6 +38,52 @@ Steps 3 and 4, step 5 and step 6 touch different files, so three people can buil
 | Agent | The AI coding assistant (Claude Code or Codex) that writes most of the code |
 
 ## Entries
+
+### 10 November 2026: The server is on the internet
+
+Catarina did this herself on Render's website, with Claude Code telling her the steps. No code changed, only notes.
+
+**What was done**
+
+The game has a public link: https://novasbe-kart.onrender.com
+
+1. Catarina made a Render account by signing in with GitHub.
+2. She gave Render access to this repository. The advice was to choose "Only select repositories" and pick just this one. The agent cannot see which she chose.
+3. She created a "Blueprint" from the repository. A Blueprint means: Render reads the file `render.yaml` in our project and sets the server up from it. Nobody typed any settings into a form.
+4. Render built and started the server from the `main` branch.
+
+**What `render.yaml` told Render**
+
+- One web server called `novasbe-kart`, on the free plan, in Frankfurt.
+- To prepare it: `npm ci --omit=dev`, which downloads our libraries without the test tools.
+- To start it: `npm start`.
+- To check it is alive: visit `/health`.
+- To put a new version online after every change to `main`.
+
+**What is online right now**
+
+The version in `main`: the practice race with the whole track on screen. The camera views and online play are in the branch `online-play` and appear online once that pull request is merged.
+
+**A worry that came up**
+
+Render's review page did not show the word "Free", and Catarina asked whether she would be charged. Our file says `plan: free`, and Render can only charge a payment card that has been given to it. The page carried a standard notice that future changes to the file are applied automatically and may change costs. In this project that file only changes through a reviewed pull request.
+
+**What was checked, and what was not**
+
+- Checked from outside, by the agent: https://novasbe-kart.onrender.com/health answers `{"status":"ok"}`, and the main address sends our game page with the title "Nova SBE kart racer".
+- Checked on Render by Catarina: the Blueprint page shows the service as created, with a green tick.
+- **Not checked yet:** that the service page on Render says "Free". Catarina was asked to look.
+- **Not checked yet:** that merging into `main` puts the new version online by itself. That will be seen when the `online-play` pull request is merged.
+- **Not checked yet:** the two-laptop checklist.
+
+**Good to know**
+
+- The free server goes to sleep after 15 minutes without visitors and takes about a minute to wake up. Open the link a few minutes before showing it to anyone.
+- No secret was needed for this step. The project has none yet. The first one will be the database address, which goes into Render's "Environment" page and never into the repository or this chat.
+
+**What comes next**
+
+Merge the `online-play` pull request, check that the new version appears at the link, then run the two-laptop checklist.
 
 ### 10 November 2026: Step 8, first online connection
 

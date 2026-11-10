@@ -4,13 +4,13 @@ The automatic tests check online play with pretend browsers on one computer. The
 
 Run it after anything that touches online play, and before the demo.
 
-**Last run:** not run yet. It needs the server online on Render first.
+**Last run:** not run yet. The server is online, but the "Online test" page only appears there once the pull request with online play is merged into `main`.
 
 ## Before you start
 
 - Two laptops, each with a keyboard.
 - Two different internet connections. The easiest way: one laptop on Wi-Fi, the other on a phone's hotspot.
-- The public link of the game: _to be filled in when the server is online_
+- The public link of the game: https://novasbe-kart.onrender.com
 - If nobody has opened the link in the last 15 minutes, the server is asleep. Open it and wait about a minute before starting.
 
 ## The checks

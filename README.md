@@ -3,11 +3,13 @@
 A 2D online kart racing game set at the Nova SBE Carcavelos campus.
 Team project for Introduction to Programming (course 2477) at Nova SBE.
 
-**Status:** one kart can be driven round a test track in the browser, with a lap counter, a finish time and three camera views. On the "Online test" page, up to eight browsers connected to the same server see each other's karts. The server is not on the internet yet.
+**Status:** one kart can be driven round a test track in the browser, with a lap counter, a finish time and three camera views. On the "Online test" page, up to eight browsers connected to the same server see each other's karts. The server is on the internet at the link below.
 
 ## Play it
 
-Deployed URL: _not deployed yet (it will be added when the first server is online)_
+Deployed URL: https://novasbe-kart.onrender.com
+
+The server is on a free plan and goes to sleep after 15 minutes without visitors. If the page does not open at once, wait about a minute: it is waking up.
 
 ## Team
 
