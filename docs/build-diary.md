@@ -88,7 +88,13 @@ Open http://localhost:3000/online.html in two browser windows, drive one kart in
 
 **Where the first day ends**
 
-Built and online: driving, laps, three camera views, online play for up to eight, and a database. Still to close the base: Fran, Pedro and Rodrigo each merging a first small pull request, and a GitHub setting that refuses a merge when the tests fail.
+Built and online: driving, laps, three camera views, online play for up to eight, and a database. Still to close the base: Fran, Pedro and Rodrigo each merging a first pull request, and a GitHub setting that refuses a merge when the tests fail.
+
+**Later the same evening**
+
+- Pull request #8 (the standing karts) was approved and merged, and the live site has it.
+- Catarina asked for a prompt her teammates can paste into their own Claude Code. It is in `docs/team-guide.md`, section 4 (branch `team-prompt`). It tells the agent what to read, to check the laptop is ready, how the team works, and to keep its diary in that member's own file.
+- Decided by Catarina: adding names and student numbers to the README is not urgent and is not a task of its own. Each member's agent adds them the next time that member is preparing a pull request anyway. The guide said "your first pull request" before, and now says this instead.
 
 ### 10 November 2026: The database works, seen from a phone hotspot
 

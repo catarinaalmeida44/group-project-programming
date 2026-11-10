@@ -42,15 +42,40 @@ You do not need any password, key or secret to work on the game.
 4. Run `npm test`. The last lines should say that about 300 tests passed and 5 were skipped.
 5. Run `npm start` and open http://localhost:3000 in a browser. Drive with the arrow keys. Press Ctrl+C in the terminal to stop.
 
-**Your first pull request:** put your full name and student number in your row of the table in `README.md`. The course requires both, and it requires that every member has code in the repository from their own account. It is also a safe way to try the whole route once: branch, change, commit, push, pull request, a teammate approves, merge.
+**Your name in the README.** The course requires every member's full name and student number in the table in `README.md`. This is not urgent and does not need a pull request of its own. Add yours to your row the next time you are preparing a pull request anyway. The prompt in section 4 tells your agent to do exactly that.
+
+The course also requires that every member has code in the repository from their own GitHub account. Your first real piece of work takes care of that.
 
 ## 4. Starting your coding agent
 
 Our rules for agents are in `AGENTS.md`. Claude Code reads them by itself, through `CLAUDE.md`. Other agents usually read `AGENTS.md` directly.
 
-For your first session, paste this, with your own name:
+For your first session, open the project folder in your agent and paste the prompt below. Replace the four words in capitals first: NAME (your first name, in small letters where it is a file name), AREA, FULL NAME and NUMBER.
 
-> I am Fran, one of four students building this kart racing game. I am a programming beginner. Before doing anything, read AGENTS.md, PROJECT_BRIEF.md, docs/team-guide.md and WALKTHROUGH.md completely, and the three newest entries in docs/build-diary.md. Then tell me in plain language where the project stands and what you understand my part to be. Do not write any code yet.
+```
+I am NAME, one of four students building this kart racing game for a university course. I am a programming beginner, so explain things in plain language and tell me when there is something I have to do myself.
+
+Before anything else, read these completely:
+- AGENTS.md (our rules for coding agents)
+- PROJECT_BRIEF.md (what we are building and what is decided)
+- docs/team-guide.md (where the project stands and how the team works)
+- WALKTHROUGH.md (how each part works)
+- the three newest entries in docs/build-diary.md, and every file in docs/diary/
+
+Then, without writing any code yet:
+1. Check that my laptop is ready: Node.js 26 is installed, "npm install" works, "npm test" passes, and "npm start" shows the game at http://localhost:3000. If something is missing, tell me what it is and ask before installing anything.
+2. Tell me in a few plain sentences where the project stands.
+3. The four work areas are in section 7 of docs/team-guide.md. My area is AREA. (If I wrote "not decided", explain the four areas and help me choose.) Tell me what the first small piece of work in my area would be.
+
+How I want you to work with me:
+- Start every piece of work on a new branch made from an up-to-date main. Save each step as its own commit. I open the pull request on GitHub when the piece is complete, and a teammate approves it. You never merge.
+- Run "npm test" before you tell me something is finished, and say honestly what you checked and what you did not.
+- Never ask me for a password or a key, and never put one in a file. I need no secret to work on the game.
+- Ask me before adding any new library.
+- Keep memory of everything you do. After each piece of work, write a dated entry in my own diary file, docs/diary/NAME.md. Create it the first time. The shape of an entry is in docs/diary/README.md. Write only in my file, so that our four diaries never clash when we merge. Also keep WALKTHROUGH.md, README.md and PROJECT_BRIEF.md true for the parts you change.
+
+One small thing, not urgent: the course requires my full name and student number in the table in README.md. My full name is FULL NAME and my student number is NUMBER. Do not make a separate task of it. Add them to my row the next time we are preparing a pull request anyway.
+```
 
 Good to know about working with an agent, from the first day:
 
