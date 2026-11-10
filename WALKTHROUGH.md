@@ -27,7 +27,7 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 | The automatic tests | `tests/` | Yes, for the driving rules, the server and a number helper |
 | The instructions that make GitHub run the tests | `.github/workflows/tests.yml` | Yes |
 | The instructions that tell Render how to run the server | `render.yaml` and `.node-version` | Yes, in use since 10 November |
-| The database connection | `server/db.js` | Yes, a first version with one small table. Works from a laptop against the real database. Not yet seen working on the live server |
+| The database connection | `server/db.js` | Yes, a first version with one small table. Works on the live server and from a laptop |
 
 ## How does a page reach the browser?
 
@@ -142,7 +142,7 @@ In a Postgres database kept by a company called Neon, in Frankfurt, on its free 
 
 ## What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 305 tests today, plus 5 that only run against the real database.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 311 tests today, plus 5 that only run against the real database.
 
 **Covered today**
 
@@ -166,7 +166,8 @@ To check that the tests really guard the rules, we broke the code on purpose in 
 
 **Not covered today**
 
-- The database on the live server. On a laptop it works: with the laptop on a phone hotspot, the five tests against the real database passed, and the real server recorded a start, was stopped and started again, and then reported two starts. On the university's student Wi-Fi the same five tests fail, because that network does not let database traffic through. The live server has the database address but gets the database code only with the next merge, so `/database-check` on the public link has not been seen working yet.
+- How the standing-up karts look in a real race. Choosing which side of a kart to draw is tested. The pictures themselves were looked at once, in a made-up scene with seven karts, and not yet with real players.
+- The database on the live server, beyond one look: `/database-check` on the public link answered `"ok":true` with 3 starts on 10 November. On a laptop it works: with the laptop on a phone hotspot, the five tests against the real database passed, and the real server recorded a start, was stopped and started again, and then reported two starts. On the university's student Wi-Fi the same five tests fail, because that network does not let database traffic through. Nothing checks the live server's database automatically.
 - The five real-database tests are never run by GitHub, which does not have the database address. They only run when someone runs them by hand, on a network that allows it.
 - Online play between two real laptops on two different internet connections. The tests use pretend browsers on one computer, where messages arrive instantly. Delay, uneven arrival and lost connections are checked by hand with `docs/two-laptop-checklist.md`, which has not been run yet.
 - Anything that only happens on the real internet. We have one example already. On the first day online, a browser that broke a rule was not removed from the live server, although the test for exactly that passed on one computer: the server was waiting for the browser to answer its goodbye, and through Render's network the answer did not come. It is fixed, there is now a test with a browser that never answers, and the fix was checked on the live server. The lesson is that passing tests show the code does what the tests imagined, not that it works everywhere.
@@ -227,9 +228,10 @@ These are the limits we expect from the free hosting plans:
 - The limit of 60 messages a second is per connection. Nothing yet limits how many connections one computer may open, beyond the room being full at eight.
 - The numbers in the driving rules are first guesses. No person has driven the kart for long yet, so they will change with playtesting.
 - The driving rules have no drifting, bumping between karts, sand or sea yet.
-- In the tilted view everything is flat. Walls are painted on the ground with a striped edge and do not stand up, and there is no sky or scenery. Making things stand up would need more drawing code or a 3D library.
+- In the tilted view the track is flat. Walls are painted on the ground with a striped edge and do not stand up, and there is no sky or scenery. Only the karts stand up. Making walls and buildings stand up would need more drawing code or a 3D library.
 - The kart is drawn with a few coloured shapes, from above and from behind. Real artwork would need a picture of each character from several sides.
-- In the tilted view, other players' karts are painted flat on the road, like stickers. Drawing them standing up needs a picture of each kart from several sides, placed and sized by distance. The arithmetic for placing them exists (`chasePoint` in `client/camera.js`) but is not used yet.
+- In the tilted view, other players' karts stand up, with a driver, and are placed and sized by distance (`chasePoint` in `client/camera.js`). There are only four pictures of a kart: from behind, from the front, and from each side. A kart that is turning therefore snaps from one picture to the next instead of turning smoothly. More pictures in between would fix that.
+- Karts do not hide behind walls. A kart on the other side of the middle block is drawn as if the block were not there.
 - The tilted view redraws the whole screen row by row for every picture. That is fine on a laptop, but it is more work for the computer than the view from above.
 - The game needs a keyboard. There are no touch controls for phones.
 - The kart is drawn exactly where the last step of the rules put it. On screens faster than 60 pictures a second the movement can look slightly uneven. Drawing in-between positions would fix that.

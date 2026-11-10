@@ -11,13 +11,13 @@ The base is the working foundation described in section 8 of `PROJECT_BRIEF.md`.
 | 1 | Project skeleton: folders, README, rules for agents, example secrets file, these notes | Merged into `main` on 10 Nov (pull request #2) |
 | 2 | Automatic tests: one example test, and GitHub runs the tests on every pull request | Merged into `main` on 10 Nov (pull request #3) |
 | 3 | A small server on Render that shows a "hello" page at a public link | Done. Online since 10 Nov at https://novasbe-kart.onrender.com, and a merge into `main` puts the new version online by itself (seen with pull request #5) |
-| 4 | Database: the server writes and reads one row in Neon | Built, and it works from a laptop on a phone hotspot. The live server gets the code with the next merge and is still to be checked |
+| 4 | Database: the server writes and reads one row in Neon | Done. Merged on 10 Nov (pull request #7). It works on the live server and from a laptop on a phone hotspot |
 | 5 | Driving rules, first version: one kart speeds up, brakes, steers and slides (tests only, no screen) | Merged into `main` on 10 Nov (pull request #4) |
 | 6 | Test track, walls and laps: a simple oval with walls to bounce off, and laps that only count if no checkpoint is skipped (tests only) | Merged into `main` on 10 Nov (pull request #4) |
 | 7 | Drive in the browser: arrow keys, lap counter, finish time | Merged into `main` on 10 Nov (pull request #4) |
 | 7b | Camera views: from above following the kart, tilted from behind the kart, and a small map. Not in the original plan | Merged into `main` on 10 Nov (pull request #5) and online |
 | 8 | First online connection: two browsers see each other's kart | Merged into `main` on 10 Nov (pull requests #5 and #6) and online. Two connections from one laptop to the live server saw each other. Not tried between two laptops yet |
-| 9 | Two-laptop checklist, run on two different networks | Run on 10 Nov by Catarina with two other players. It worked. To fix: other karts look flat in the view from behind |
+| 9 | Two-laptop checklist, run on two different networks | Run on 10 Nov by Catarina with two other players. It worked. The flat karts she noticed were fixed the same day (branch `standing-karts`) |
 
 Steps 3 and 4, step 5 and step 6 touch different files, so three people can build them at the same time once step 2 is merged.
 
@@ -38,6 +38,57 @@ Steps 3 and 4, step 5 and step 6 touch different files, so three people can buil
 | Agent | The AI coding assistant (Claude Code or Codex) that writes most of the code |
 
 ## Entries
+
+### 10 November 2026: The database on the live server, and karts that stand up
+
+Done on Catarina's laptop with Claude Code. The branch is `standing-karts`, started from the up-to-date `main`. This is the last entry of the first day. From 11 November, entries go into `docs/diary/`.
+
+**The database works on the live server**
+
+Pull request #7 (the database, the team guide, the diaries) was approved and merged, and Render put it online. https://novasbe-kart.onrender.com/database-check answered:
+
+`{"ok":true,"starts":3,"latest":"2026-11-10T18:10:52.309Z"}`
+
+Three starts: the two from Catarina's laptop on the hotspot, and the live server's own. This closes step 4, and with it every item on the brief's list for the base is built.
+
+**A question Catarina asked: will the demo work at Nova, if the university Wi-Fi blocks the database?**
+
+Yes. During the demo, the laptops in the room only talk to our server, over the normal web channel, which the university Wi-Fi allows. The online test with three players already went through it. The database conversation happens between our server and the database, which are both in Frankfurt and not on the university's network. The only thing the Wi-Fi blocks is a laptop on campus talking to the database directly, which happens only when one of us runs the server on a laptop with the real database address.
+
+**Karts that stand up**
+
+In the view from behind, other players' karts were painted flat on the road. Now every kart stands up, with a driver.
+
+- A kart is drawn from one of four sides: from behind, from the front, or from its left or right side. Which one depends on how it is turned compared with you.
+- It is placed and sized by distance: further ahead means higher on the screen and smaller.
+- Karts are drawn from the furthest to the nearest, so a nearer kart covers a further one. A kart just behind you is drawn in front of yours.
+
+| File | What changed |
+|---|---|
+| `client/camera.js` | New function `sideSeen`: which side of another kart we are looking at |
+| `client/draw.js` | A third stage in the tilted view that draws every kart standing up. New pictures of a kart from the front and from the side, made of simple shapes like the one from behind |
+| `tests/camera.test.js` | Six new tests for `sideSeen` |
+| `WALKTHROUGH.md`, `client/README.md`, `docs/team-guide.md`, `docs/two-laptop-checklist.md` | Updated |
+
+**Decisions**
+
+Made by the agent, please confirm: four pictures of a kart and no more for now, and the look of the two new ones.
+
+**What was checked, and what was not**
+
+- Checked: the live server's database check, as shown above.
+- Checked: `npm test`. 311 tests pass and 5 are skipped (the ones that need the real database).
+- Checked by eye, once: a made-up scene with seven karts in the tilted view, one from each side, one far ahead and one just behind. All stood up, in the right places and sizes, with the right side showing.
+- **Not checked: a real online race with the new karts.** In particular, how it looks when a kart turns and snaps from one picture to the next.
+- **Not checked:** karts near walls. A kart behind the middle block is still drawn, as if the block were not there.
+
+**How to check this step yourself**
+
+Open http://localhost:3000/online.html in two browser windows, drive one kart in front of the other, and turn it round.
+
+**Where the first day ends**
+
+Built and online: driving, laps, three camera views, online play for up to eight, and a database. Still to close the base: Fran, Pedro and Rodrigo each merging a first small pull request, and a GitHub setting that refuses a merge when the tests fail.
 
 ### 10 November 2026: The database works, seen from a phone hotspot
 

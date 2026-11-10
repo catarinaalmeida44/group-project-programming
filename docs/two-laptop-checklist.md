@@ -4,7 +4,7 @@ The automatic tests check online play with pretend browsers on one computer. The
 
 Run it after anything that touches online play, and before the demo.
 
-**Last run:** 10 November 2026, by Catarina with two other players, so three laptops. Her report: it worked, and everyone saw the others drive. One thing she did not like: in the view from behind, the other players' karts look flat, with no driver. That is listed under "Known limits" below and is to be fixed. The result of each single check was not written down, and neither was the kind of internet connection each laptop used.
+**Last run:** 10 November 2026, by Catarina with two other players, so three laptops. Her report: it worked, and everyone saw the others drive. One thing she did not like: in the view from behind, the other players' karts look flat, with no driver. That was fixed the same day: karts now stand up, with a driver. It has not been looked at again with real players since. The result of each single check was not written down, and neither was the kind of internet connection each laptop used.
 
 On 10 November the agent connected two pretend browsers from one laptop to the live server. They saw each other, with 20 updates a second. That is not this checklist: it was one laptop and one internet connection.
 
@@ -55,4 +55,5 @@ This cannot be done at any moment. Do it the next time a pull request is merged 
 - Other karts are shown a tenth of a second in the past, so that they move smoothly.
 - Karts pass through each other. Bumping comes later.
 - There is no race start and no finishing order yet. Everyone just drives.
-- In the view from behind, other karts look flat, like stickers on the road.
+- In the view from behind, a kart that turns snaps between four pictures (back, front, left side, right side) instead of turning smoothly.
+- Karts are not hidden by walls: you can see a kart that is on the other side of the middle block.

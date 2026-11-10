@@ -5,7 +5,7 @@
 // what the rules in the "shared" folder have worked out, in one of the three
 // views described in camera.js.
 
-import { SCREEN, FOLLOW, CHASE, chaseRow } from "./camera.js";
+import { SCREEN, FOLLOW, CHASE, chaseRow, chasePoint, seenFromKart, sideSeen } from "./camera.js";
 
 // Each kind of ground has two shades that are almost the same. Tiles are
 // painted in a chequered pattern of the two. The pattern is faint, but it
@@ -286,13 +286,6 @@ function drawChaseView(context, chase, trackPicture, track, kart, steer, others)
   groundContext.scale(GROUND_SHARPNESS, GROUND_SHARPNESS);
   groundContext.translate(-kart.x, -kart.y);
   copyTrack(groundContext, trackPicture, track);
-  // The other players' karts are painted on the ground too, seen from above.
-  // Stage 2 then tilts them together with the ground, so they end up in the
-  // right place, at the right size and pointing the right way. They look
-  // flat, like stickers on the road. Standing-up karts need artwork.
-  for (const other of others) {
-    drawKartFromAbove(groundContext, other);
-  }
 
   // Stage 2: copy it to the screen, one row at a time.
   for (let y = 0; y < SCREEN.height; y++) {
@@ -308,29 +301,82 @@ function drawChaseView(context, chase, trackPicture, track, kart, steer, others)
     );
   }
 
-  drawKartFromBehind(context, SCREEN.width / 2, CHASE.kartScreenY, CHASE.kartScale, steer, coloursOf(kart));
+  // Stage 3: the karts, standing up on the tilted ground.
+  // Every kart is drawn as a small picture of a kart with its driver. Where
+  // it goes on the screen and how big it is come from camera.js: further
+  // ahead means higher up and smaller. Which picture is used depends on which
+  // side of that kart we are looking at.
+  const standing = [
+    // Our own kart: always in the same spot, always seen from behind.
+    {
+      ahead: 0,
+      x: SCREEN.width / 2,
+      y: CHASE.kartScreenY,
+      unit: CHASE.kartScale,
+      side: "back",
+      steer,
+      colours: coloursOf(kart),
+    },
+  ];
+  for (const other of others) {
+    const seen = seenFromKart(kart, other.x, other.y);
+    const spot = chasePoint(seen.ahead, seen.sideways);
+    const onScreen =
+      spot !== null && spot.y > -40 && spot.y < SCREEN.height + 120 && spot.x > -120 && spot.x < SCREEN.width + 120;
+    if (onScreen) {
+      standing.push({
+        ahead: seen.ahead,
+        x: spot.x,
+        y: spot.y,
+        unit: spot.scale,
+        side: sideSeen(kart.angle, other.angle),
+        steer: 0,
+        colours: coloursOf(other),
+      });
+    }
+  }
+  // Draw the furthest first, so that a nearer kart covers a further one.
+  standing.sort((a, b) => b.ahead - a.ahead);
+  for (const each of standing) {
+    drawKartStandingUp(context, each);
+  }
 }
 
-/**
- * Draws the kart seen from behind and a little above: a shadow, four
- * wheels, the body, the seat and the driver's helmet.
- *   x, y   where the middle of the back of the kart touches the ground
- *   unit   how many pixels one unit of track is, at the kart
- *   steer  -1, 0 or 1: the kart leans and its front wheels shift when steering
- *   colours  [body, lighter shade] of this kart
- */
-function drawKartFromBehind(context, x, y, unit, steer, colours) {
-  const [body, bodyLight] = colours;
+/** Draws one kart standing up, seen from the given side. */
+function drawKartStandingUp(context, { x, y, unit, side, steer, colours }) {
   context.save();
   context.translate(x, y);
   context.scale(unit, unit); // from here on, draw in units of track
-  context.rotate(steer * 0.05);
 
-  // Shadow on the ground.
+  // Shadow on the ground, the same for every side.
   context.fillStyle = "rgba(0, 0, 0, 0.3)";
   context.beginPath();
-  context.ellipse(0, 0.5, 8.5, 2.6, 0, 0, Math.PI * 2);
+  context.ellipse(0, 0.5, side === "back" || side === "front" ? 8.5 : 11.5, 2.6, 0, 0, Math.PI * 2);
   context.fill();
+
+  if (side === "back") {
+    paintKartFromBehind(context, steer, colours);
+  } else if (side === "front") {
+    paintKartFromFront(context, colours);
+  } else {
+    if (side === "left") {
+      context.scale(-1, 1); // the same picture, mirrored
+    }
+    paintKartFromTheSide(context, colours);
+  }
+  context.restore();
+}
+
+/**
+ * The kart seen from behind and a little above: four wheels, the body, the
+ * seat and the driver's helmet. Drawn around 0,0, which is where the middle
+ * of the kart touches the ground. One unit here is one unit of track.
+ *   steer    -1, 0 or 1: the kart leans and its front wheels shift when steering
+ *   colours  [body, lighter shade] of this kart
+ */
+function paintKartFromBehind(context, steer, colours) {
+  const [body, bodyLight] = colours;
+  context.rotate(steer * 0.05);
 
   // Front wheels: further away, so smaller and higher. They shift when steering.
   context.fillStyle = KART_DARK;
@@ -375,8 +421,96 @@ function drawKartFromBehind(context, x, y, unit, steer, colours) {
   context.fill();
   context.fillStyle = body;
   context.fillRect(-0.5, -14.5, 1, 5); // a stripe down the helmet, in the kart's colour
+}
 
-  context.restore();
+/** The kart coming towards us: big front wheels, the nose, and the driver's face behind a dark visor. */
+function paintKartFromFront(context, colours) {
+  const [body, bodyLight] = colours;
+
+  // Back wheels: further away, so smaller and higher.
+  context.fillStyle = KART_DARK;
+  context.fillRect(-7, -9.5, 2.4, 3.2);
+  context.fillRect(4.6, -9.5, 2.4, 3.2);
+
+  // The top of the body, running away from us towards the back.
+  context.fillStyle = bodyLight;
+  context.beginPath();
+  context.moveTo(-4.6, -6.5);
+  context.lineTo(4.6, -6.5);
+  context.lineTo(3.2, -10.8);
+  context.lineTo(-3.2, -10.8);
+  context.closePath();
+  context.fill();
+
+  // Front wheels.
+  context.fillStyle = KART_DARK;
+  context.fillRect(-8, -5.2, 3.2, 5.4);
+  context.fillRect(4.8, -5.2, 3.2, 5.4);
+
+  // The front of the body, with the white nose that every kart has.
+  context.fillStyle = body;
+  context.beginPath();
+  context.moveTo(-5.4, -0.8);
+  context.lineTo(5.4, -0.8);
+  context.lineTo(4.6, -6.5);
+  context.lineTo(-4.6, -6.5);
+  context.closePath();
+  context.fill();
+  context.fillStyle = KART_NOSE;
+  context.fillRect(-3, -5.4, 6, 3.4);
+
+  // The driver, facing us: shoulders, helmet and a dark visor.
+  context.fillStyle = "#2c3640";
+  context.fillRect(-2.8, -10.2, 5.6, 4);
+  context.fillStyle = HELMET;
+  context.beginPath();
+  context.arc(0, -12, 2.5, 0, Math.PI * 2);
+  context.fill();
+  context.fillStyle = KART_DARK;
+  context.fillRect(-1.9, -12.6, 3.8, 1.5);
+  context.fillStyle = body;
+  context.fillRect(-2.5, -14.4, 5, 0.8); // a band across the top of the helmet, in the kart's colour
+}
+
+/** The kart seen from its side, with the nose pointing right. The mirror image is used for the other side. */
+function paintKartFromTheSide(context, colours) {
+  const [body, bodyLight] = colours;
+
+  // The body: low and long.
+  context.fillStyle = body;
+  context.beginPath();
+  context.moveTo(-10, -1.4);
+  context.lineTo(10, -1.4);
+  context.lineTo(10, -3.6);
+  context.lineTo(3, -5.8);
+  context.lineTo(-10, -5.8);
+  context.closePath();
+  context.fill();
+  context.fillStyle = bodyLight;
+  context.fillRect(-10, -5.8, 13, 1.1); // the top edge catches the light
+  context.fillStyle = KART_NOSE;
+  context.fillRect(7.2, -3.6, 2.8, 2.2);
+
+  // Two wheels.
+  context.fillStyle = KART_DARK;
+  for (const wheelX of [-6.2, 6]) {
+    context.beginPath();
+    context.arc(wheelX, -2.3, 2.6, 0, Math.PI * 2);
+    context.fill();
+  }
+
+  // The seat back and the driver, looking the way the kart points.
+  context.fillStyle = "#2c3640";
+  context.fillRect(-5.2, -10.4, 1.6, 5);
+  context.fillRect(-3.8, -9.6, 3.6, 4);
+  context.fillStyle = HELMET;
+  context.beginPath();
+  context.arc(-1.8, -11.6, 2.5, 0, Math.PI * 2);
+  context.fill();
+  context.fillStyle = KART_DARK;
+  context.fillRect(-0.9, -12.4, 1.7, 1.5); // the visor, at the front of the helmet
+  context.fillStyle = body;
+  context.fillRect(-4.2, -12, 2.2, 0.8); // a stripe on the helmet, in the kart's colour
 }
 
 // ---- The small map in the corner ----
