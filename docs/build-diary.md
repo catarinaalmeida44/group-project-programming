@@ -59,8 +59,8 @@ Three camera views. The V key switches between them, and the page shows the name
 
 | View | What you see |
 |---|---|
+| Behind the kart | Tilted, from behind and above. The track turns around the kart, so the kart always drives up the screen, and the road narrows into the distance. The kart is drawn from behind, with the driver's helmet. This is the view Catarina asked for, and the one the game starts in |
 | From above | Zoomed in, from straight above, moving with the kart. North stays up. The camera looks a little ahead, glides, and stops at the edges of the track. This is the view the brief decided on |
-| Behind the kart | Tilted, from behind and above. The track turns around the kart, so the kart always drives up the screen, and the road narrows into the distance. The kart is drawn from behind, with the driver's helmet. This is the view Catarina asked for |
 | Whole track | The old view: everything at once |
 
 Three more things were added so the views read well:
@@ -76,7 +76,7 @@ Three more things were added so the views read well:
 | `client/main.js` | Keeps track of the current view and the camera position |
 | `client/keyboard.js` | Listens for V. The game now tells it what to do by name (`onRestart`, `onView`, `onDrive`) instead of by position, which is easier to read |
 | `client/index.html` | Shows the camera name and mentions V in the help text |
-| `tests/camera.test.js` | New. Thirty-four tests |
+| `tests/camera.test.js` | New. Thirty-five tests |
 | `tests/client.test.js` | Four more tests, for V |
 | `AGENTS.md`, `PROJECT_BRIEF.md` | The two decisions below |
 | `README.md`, `WALKTHROUGH.md`, `client/README.md`, `tests/README.md` | Updated |
@@ -94,7 +94,7 @@ For every picture, the track is first painted flat on a hidden canvas, turned so
 
 **Decisions**
 
-- **Open, for the team:** which view is the main one. The brief had decided "north is always up, the map never rotates". The tilted view does the opposite. Both are built so the team can compare them. Until the team decides, the game starts in the view from above, as decided, and the brief has a note on this.
+- **Decided by Catarina on 10 November, teammates confirm by approving the pull request:** the game starts in the tilted view from behind the kart. The brief had decided "north is always up, the map never rotates", and the tilted view does the opposite, so this changes a team decision. Both views are built and V switches between them, so the team can compare before confirming. Changing the starting view is one line: the order of the list `VIEWS` at the top of `client/camera.js`.
 - **Decided by Catarina on 10 November, teammates confirm by approving the pull request:** work in bigger pieces. Each step is still its own commit, but the steps of one piece of work share a branch and one pull request, opened when the piece is complete. The reason: work should not stop while a pull request waits for a teammate. `AGENTS.md` rule 5 was changed to say this.
 - Decisions made by the agent, please confirm: the names of the views, the starting numbers at the top of `camera.js` (zoom, tilt, how far ahead you see), and the road pattern and striped edges.
 
@@ -109,7 +109,8 @@ For every picture, the track is first painted flat on a hidden canvas, turned so
 
 **What was checked, and what was not**
 
-- Checked: `npm test`. 195 of 195 tests pass (157 from before, 38 new). None of the tests for the driving rules, the track or the laps had to change.
+- Checked: `npm test`. 196 of 196 tests pass (157 from before, 39 new). None of the tests for the driving rules, the track or the laps had to change.
+- Checked in the browser after Catarina's choice: the page opens in the view from behind the kart, and V goes on to the view from above and then the whole track.
 - Checked in a browser on this laptop: all three views show without errors, V goes round them, the small map shows the kart's dot, and a script drove the kart through corners in the view from above and in the tilted view.
 - **Not checked: how the views feel at full speed.** As before, the agent's browser redraws slowly. Catarina driving it is the real check, in particular whether the tilted view is comfortable in corners, and whether the numbers at the top of `camera.js` should change.
 - **Not checked:** how the tilted view runs on a slow laptop.

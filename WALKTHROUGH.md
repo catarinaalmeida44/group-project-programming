@@ -68,17 +68,17 @@ The practice race runs entirely in the browser. Nothing is sent to the server an
 
 ## How does the camera work?
 
-There are three views, and the V key switches between them. The camera only changes what is shown. The kart moves by the same rules in every view.
+There are three views. The game starts in the first one and the V key switches to the next. The camera only changes what is shown. The kart moves by the same rules in every view.
 
-- **From above.** The screen shows a zoomed-in part of the track from straight above. North stays up and the kart turns on the screen. The camera aims a little ahead of the kart, in the direction it is moving, glides instead of jumping, and stops at the edges of the track.
 - **Behind the kart.** The track is turned so that the kart always drives up the screen, and it is tilted: ground further ahead is drawn smaller and higher. The kart is drawn from behind.
+- **From above.** The screen shows a zoomed-in part of the track from straight above. North stays up and the kart turns on the screen. The camera aims a little ahead of the kart, in the direction it is moving, glides instead of jumping, and stops at the edges of the track.
 - **Whole track.** Everything at once, without moving.
 
 The first two have a small map in the corner with a dot for the kart.
 
 How the tilt is made: for every picture, the track is first painted flat on a hidden canvas, turned so the kart points up. Then it is copied to the screen one thin row at a time. A row near the top of the screen takes a wide slice from far ahead and squeezes it. A row near the bottom takes a narrow slice from close by and stretches it. The arithmetic for "which slice goes on which row" is in `client/camera.js` and has tests. No 3D library is used.
 
-The team's original decision was the view from above with north up. The tilted view was added on 10 November because the still map looked flat. Which of the two is the main view is an open decision.
+The team's original decision was the view from above with north up. The tilted view was added on 10 November because the still map looked flat, and Catarina chose it as the view the game starts in. The view from above is still there, one press of V away.
 
 ## How is a track described, and how do walls work?
 
@@ -108,7 +108,7 @@ Plan: a Postgres database hosted on Neon. The base will have one simple table th
 
 ## What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 195 tests today.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 196 tests today.
 
 **Covered today**
 
@@ -119,7 +119,7 @@ We run them with `npm test`. GitHub also runs them by itself on every pull reque
 - `clamp` in `shared/numbers.js`, which keeps a number between a lowest and a highest value. Ten tests: six for normal use and four for bad input that must be refused.
 - The server in `server/app.js`. Nineteen tests. Ten check what it must do: send the page, its style and code, the game rules and the health check. Nine check what it must refuse: missing pages, requests that change things, file kinds not on the list, files outside the `client/` and `shared/` folders (thirteen different ways of writing such an address), the server's own code and the tests, and two kinds of broken address.
 - The parts of the browser code that need no browser, in `client/format.js` and `client/keyboard.js`. Twenty-three tests: a race time as text, arrow keys into gas, brake, left and right, R to start again, V to change the camera, and letting go of every key when the player switches to another window.
-- The arithmetic of the camera in `client/camera.js`. Thirty-four tests: the view from above looks ahead, stops at every edge of the track and always keeps the kart on screen, the camera glides without overshooting, and in the tilted view ground further ahead lands higher on the screen and is drawn smaller.
+- The arithmetic of the camera in `client/camera.js`. Thirty-five tests: the view from above looks ahead, stops at every edge of the track and always keeps the kart on screen, the camera glides without overshooting, and in the tilted view ground further ahead lands higher on the screen and is drawn smaller.
 
 The server tests start a real copy of the server on the computer running the tests and send it real requests.
 

@@ -4,17 +4,18 @@
 // draw.js does the painting. Keeping the arithmetic apart lets us test it.
 //
 // There are three views. The V key switches between them.
-//   "follow"  From straight above, zoomed in, moving with the kart.
-//             North stays up and the kart turns on the screen.
 //   "chase"   From behind and above the kart, tilted: ground further ahead
 //             is drawn smaller and higher on the screen. The track turns
 //             around the kart, so the kart always drives "up" the screen.
+//   "follow"  From straight above, zoomed in, moving with the kart.
+//             North stays up and the kart turns on the screen.
 //   "map"     The whole track at once.
 //
 // The camera changes nothing about how a kart moves. That is decided by the
 // rules in the "shared" folder, which are the same in every view.
 
-export const VIEWS = ["follow", "chase", "map"];
+/** The views, in the order V goes through them. The game starts in the first one. */
+export const VIEWS = ["chase", "follow", "map"];
 
 /** The size of the picture, in pixels. */
 export const SCREEN = { width: 960, height: 576 };

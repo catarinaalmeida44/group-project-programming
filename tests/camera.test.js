@@ -42,6 +42,10 @@ describe("switching views", () => {
     expect(view).toBe(VIEWS[0]);
   });
 
+  it("starts in the view from behind the kart, then goes to the view from above, then the whole track", () => {
+    expect(VIEWS).toEqual(["chase", "follow", "map"]);
+  });
+
   it("offers the three views: follow, chase and map", () => {
     expect([...VIEWS].sort()).toEqual(["chase", "follow", "map"]);
   });

@@ -16,12 +16,12 @@ Everything the browser shows and does: the web page, the drawing of the track an
 
 ## The three camera views
 
-The V key switches between them.
+The game starts in the first one. The V key switches to the next.
 
 | View | What you see |
 |---|---|
-| From above | Zoomed in, from straight above, moving with the kart. North stays up and the kart turns on the screen. The camera looks a little ahead and stops at the edges of the track |
 | Behind the kart | Tilted, from behind and above. The track turns around the kart, so the kart always drives up the screen, and ground further ahead is drawn smaller |
+| From above | Zoomed in, from straight above, moving with the kart. North stays up and the kart turns on the screen. The camera looks a little ahead and stops at the edges of the track |
 | Whole track | The whole track at once, without moving |
 
 The first two show only part of the track, so they have a small map in the corner with a dot for the kart.
