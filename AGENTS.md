@@ -14,10 +14,13 @@ We are programming beginners. Every member must be able to explain every part of
 
 ## How to run the app and the tests
 
-Not available yet. Whoever adds these commands also writes them here and in `README.md`.
+Needs Node.js 26 or newer. Whoever adds or changes a command also updates it here and in `README.md`.
 
-- Run the app: _to be added_
-- Run the tests: _to be added_
+- Download the libraries (once, and again whenever `package-lock.json` changes): `npm install`
+- Run the tests: `npm test`
+- Run the app: _to be added with the first server_
+
+Test files live in `tests/` and end in `.test.js`. GitHub runs `npm test` on every pull request (`.github/workflows/tests.yml`).
 
 ## How to work with us
 

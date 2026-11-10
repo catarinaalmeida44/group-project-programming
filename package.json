@@ -1,0 +1,16 @@
+{
+  "name": "nova-sbe-kart-racer",
+  "version": "0.1.0",
+  "description": "2D online kart racing game set at the Nova SBE Carcavelos campus",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "5.1.0"
+  }
+}

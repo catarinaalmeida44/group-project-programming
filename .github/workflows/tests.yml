@@ -1,0 +1,33 @@
+# Tells GitHub to run our automatic tests by itself:
+#   - on every pull request, so we see whether a change breaks something before it is merged
+#   - on every change to main, so we know the official version still passes
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# This job only needs to read the project. It cannot change anything in it.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Run the tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get a copy of the project
+        uses: actions/checkout@v7
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+
+      - name: Install the libraries listed in package-lock.json
+        run: npm ci
+
+      - name: Run the tests
+        run: npm test

@@ -3,7 +3,7 @@
 A 2D online kart racing game set at the Nova SBE Carcavelos campus.
 Team project for Introduction to Programming (course 2477) at Nova SBE.
 
-**Status:** project skeleton only. There is no game to play yet.
+**Status:** project skeleton and automatic tests. There is no game to play yet.
 
 ## Play it
 
@@ -20,10 +20,21 @@ Deployed URL: _not deployed yet (it will be added when the first server is onlin
 
 ## Run it on your own laptop
 
-These commands do not exist yet. They will be written here as soon as they work.
+You need [Node.js](https://nodejs.org) version 26 or newer.
 
-- Run the app: _coming with the first server_
-- Run the tests: _coming with the automatic tests_
+Open a terminal in the project folder and run this once. It downloads the libraries the project uses:
+
+```
+npm install
+```
+
+Run the tests:
+
+```
+npm test
+```
+
+Run the app: _not available yet (coming with the first server)_
 
 ## Where things are
 
@@ -38,6 +49,9 @@ These commands do not exist yet. They will be written here as soon as they work.
 | `PROJECT_BRIEF.md` | What we are building and what has been decided |
 | `AGENTS.md` | The rules our coding agents must follow (`CLAUDE.md` points to it) |
 | `.env.example` | A list of the secret settings the app needs, with fake values |
+| `package.json` | The project's identity card: its name, its commands (such as `npm test`) and the libraries it uses |
+| `package-lock.json` | Written automatically. The exact version of every library, so all laptops and the server use the same ones. Never edited by hand |
+| `.github/workflows/tests.yml` | Tells GitHub to run the tests on every pull request |
 
 ## Credits
 

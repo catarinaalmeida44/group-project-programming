@@ -8,8 +8,8 @@ The base is the working foundation described in section 8 of `PROJECT_BRIEF.md`.
 
 | Step | What it adds | State |
 |---|---|---|
-| 1 | Project skeleton: folders, README, rules for agents, example secrets file, these notes | Waiting for review |
-| 2 | Automatic tests: one example test, and GitHub runs the tests on every pull request | Not started |
+| 1 | Project skeleton: folders, README, rules for agents, example secrets file, these notes | Merged into `main` on 10 Nov (pull request #2) |
+| 2 | Automatic tests: one example test, and GitHub runs the tests on every pull request | Waiting for review |
 | 3 | A small server on Render that shows a "hello" page at a public link | Not started |
 | 4 | Database: the server writes and reads one row in Neon | Not started |
 | 5 | Driving rules, first version: one kart speeds up, brakes, steers, bounces off walls (tests only, no screen) | Not started |
@@ -37,6 +37,79 @@ Steps 3 and 4, step 5 and step 6 touch different files, so three people can buil
 | Agent | The AI coding assistant (Claude Code or Codex) that writes most of the code |
 
 ## Entries
+
+### 10 November 2026: Step 2, automatic tests
+
+Done on Catarina's laptop with Claude Code.
+
+**What was done**
+
+The project can now check itself. One command, `npm test`, runs a set of small checks and says whether they pass. GitHub will run the same checks by itself on every pull request.
+
+First, with Catarina's OK, Node.js version 26.13.0 was installed on her laptop. It came from the official Node.js package, through `winget`, the installer tool that is part of Windows.
+
+| File | What it is for |
+|---|---|
+| `package.json` | The project's identity card: its name, the command `npm test`, and the libraries it uses with their exact versions |
+| `package-lock.json` | Written automatically by `npm`. It lists the exact version of every library, including the helpers our library needs. Never edited by hand |
+| `.npmrc` | One setting: when a library is added, write down its exact version number |
+| `shared/numbers.js` | The first real piece of the rules: `clamp`, which keeps a number between a lowest and a highest value. The driving rules will use it, for example so a kart's speed never goes above its top speed |
+| `tests/numbers.test.js` | Ten tests for `clamp`: six for normal use, four for bad input that must be refused |
+| `.github/workflows/tests.yml` | Instructions for GitHub: on every pull request, install the libraries and run `npm test` |
+| `README.md`, `AGENTS.md`, `WALKTHROUGH.md`, `tests/README.md`, `shared/README.md` | Updated with the new commands and files |
+
+**New library: Vitest 5.1.0**
+
+- What it does: finds the test files, runs them and reports which passed and which failed.
+- Why we need it: the brief proposes it (section 7), and it gives clear messages when a test fails.
+- The alternative: the test runner that is built into Node.js, which needs no library at all.
+- It is only used while developing. It is not part of the game that players get.
+- It brings 35 small packages with it (its own helpers). `npm audit`, the command that looks for known security problems, found 0 on 10 November 2026.
+
+**Why it was done this way**
+
+- A real helper (`clamp`) was tested instead of a pretend example such as "1 + 1 = 2", so the first test already protects something the game will use.
+- `clamp` stops with an error on bad input instead of quietly returning a wrong number. One wrong number in the driving rules would spread to the kart's position and be hard to find.
+- The GitHub instructions only have permission to read the project, not to change it.
+
+**Decisions**
+
+- Decision made by the agent, please confirm: using Vitest, as the brief proposes, instead of the test runner built into Node.js.
+- Decision made by the agent, please confirm: the project needs Node.js 26 or newer (the current long-term version).
+- Decision made by the agent, please confirm: libraries are added one at a time, when they are first needed. Earlier the agent had suggested adding three at once, but that was to help three people work at the same time, which is not what is happening now.
+
+**Git steps the agent ran, and what each one means**
+
+| Command | In plain words |
+|---|---|
+| `git fetch` | Ask GitHub what changed there, without changing any file on the laptop. This showed that `project-skeleton` had arrived on GitHub and was not merged yet |
+| `git switch -c automatic-tests` | Make a new branch called `automatic-tests`. It starts from `project-skeleton`, not from `main`, because step 1 is not merged yet and step 2 builds on it |
+| `git add` and `git commit` | Save the snapshot with a message |
+
+Sending the branch to GitHub is done by Catarina with "Publish branch" in GitHub Desktop, as in step 1.
+
+**What was checked, and what was not**
+
+- Checked: `npm test` on this laptop. 10 of 10 tests pass.
+- Checked: `npm ci`, the clean install that GitHub will do, works, and the tests pass after it.
+- Checked: `npm audit` reports 0 known vulnerabilities.
+- **Not checked yet:** that GitHub really runs the tests on a pull request. This can only be seen once the pull request for this branch is open. Look for a line called "Run the tests" with a green tick near the bottom of the pull request page.
+
+**How to check this step yourself**
+
+In a terminal in the project folder, run `npm install` once and then `npm test`. The last lines should say "Tests 10 passed (10)".
+
+**Step 1 was merged in the meantime**
+
+While this step was being built, the step 1 pull request (#2) was merged into `main`. So the pull request for this step shows only the step 2 files.
+
+**Still to do after this is merged**
+
+Protect `main` in the GitHub settings: changes only through a pull request, with one approval and passing tests. Only Catarina can do this, as the owner of the repository.
+
+**What comes next**
+
+Step 3, a small server that shows a "hello" page.
 
 ### 10 November 2026: Step 1, project skeleton
 

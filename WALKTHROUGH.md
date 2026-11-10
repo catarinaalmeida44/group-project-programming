@@ -2,7 +2,7 @@
 
 Plain-language answers to the questions the teaching staff may ask when they open this repository. Any member can be asked about any part, so everyone should be able to give these answers.
 
-**State on 10 November 2026:** only the project skeleton exists. Nothing is built yet, so most answers below describe the plan. Each answer is rewritten as the real thing gets built.
+**State on 10 November 2026:** the project skeleton and the automatic tests exist. There is no game yet, so most answers below describe the plan. Each answer is rewritten as the real thing gets built.
 
 ## Where does each part live?
 
@@ -10,8 +10,9 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 |---|---|---|
 | What the browser shows (page, drawing, keyboard) | `client/` | No |
 | The game server | `server/` | No |
-| The game rules (physics, laps) | `shared/` | No |
-| The automatic tests | `tests/` | No |
+| The game rules (physics, laps) | `shared/` | Only one small number helper |
+| The automatic tests | `tests/` | Yes, for that helper |
+| The instructions that make GitHub run the tests | `.github/workflows/tests.yml` | Yes |
 | The database connection | `server/` (exact file to be added) | No |
 
 ## Where is data stored, and what exactly is stored?
@@ -22,9 +23,15 @@ Plan: a Postgres database hosted on Neon. The base will have one simple table th
 
 ## What do the tests cover, and what do they miss?
 
-There are no tests yet.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`.
+
+**Covered today:** one helper, `clamp` in `shared/numbers.js`, which keeps a number between a lowest and a highest value. Ten tests: six for normal use and four for bad input that must be refused (limits the wrong way round, and values that are not numbers).
+
+**Not covered today:** everything else, because nothing else is built.
 
 Plan: automatic tests for every game rule, including rejected actions. Multiplayer timing will be tested by hand, following a written two-laptop checklist.
+
+The tests use a library called Vitest. It is only used while developing. It is not part of the game that players get.
 
 ## What happens if the server restarts, the database pauses, or the email service is down?
 
