@@ -10,6 +10,8 @@ import {
   kartsAtStep,
   createPlayback,
   readServerMessage,
+  statusLine,
+  QUIET_AFTER_MS,
 } from "../client/net.js";
 
 /** A kart as it appears in an update from the server. */
@@ -183,6 +185,51 @@ describe("playing back the updates as they arrive", () => {
     }
     // Long after the last one arrived, the picture holds at the newest update.
     expect(playback.advance(60000)[0].x).toBe(2997 * 5);
+  });
+});
+
+describe("the line under the track on the online page", () => {
+  const connectedAs = "Connected. You are the red kart.";
+  const base = { status: connectedAs, connected: true, playerCount: 2, sinceLastUpdateMs: 50 };
+
+  it("says how many players are there", () => {
+    expect(statusLine(base)).toBe("Connected. You are the red kart. 2 players here.");
+    expect(statusLine({ ...base, playerCount: 8 })).toBe("Connected. You are the red kart. 8 players here.");
+  });
+
+  it("says you are alone when yours is the only kart", () => {
+    expect(statusLine({ ...base, playerCount: 1 })).toBe("Connected. You are the red kart. You are alone here.");
+  });
+
+  it("warns when the server has sent nothing for a while, although the browser still thinks it is connected", () => {
+    const quiet = statusLine({ ...base, sinceLastUpdateMs: QUIET_AFTER_MS + 1 });
+    expect(quiet).toContain("The server has gone quiet");
+    expect(quiet).toContain("reload the page");
+    expect(quiet).not.toContain("Connected");
+  });
+
+  it("does not warn during the normal gap between two updates, or a short hiccup", () => {
+    for (const gap of [0, 50, 500, QUIET_AFTER_MS]) {
+      expect(statusLine({ ...base, sinceLastUpdateMs: gap })).not.toContain("gone quiet");
+    }
+  });
+
+  it("goes back to normal as soon as updates arrive again", () => {
+    expect(statusLine({ ...base, sinceLastUpdateMs: 5000 })).toContain("gone quiet");
+    expect(statusLine({ ...base, sinceLastUpdateMs: 20 })).toBe("Connected. You are the red kart. 2 players here.");
+  });
+
+  it("shows only the connection message when not connected, whatever else is true", () => {
+    const lost = "The connection to the server was lost. Reload the page to join again.";
+    expect(statusLine({ status: lost, connected: false, playerCount: 2, sinceLastUpdateMs: 9000 })).toBe(lost);
+    expect(statusLine({ status: "Connecting to the server...", connected: false, playerCount: 0, sinceLastUpdateMs: 0 })).toBe(
+      "Connecting to the server...",
+    );
+  });
+
+  it("does not invent a player count before the first update has shown any kart", () => {
+    expect(statusLine({ ...base, playerCount: 0 })).toBe(connectedAs);
+    expect(statusLine({ ...base, playerCount: undefined })).toBe(connectedAs);
   });
 });
 

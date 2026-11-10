@@ -16,7 +16,7 @@ The base is the working foundation described in section 8 of `PROJECT_BRIEF.md`.
 | 6 | Test track, walls and laps: a simple oval with walls to bounce off, and laps that only count if no checkpoint is skipped (tests only) | Merged into `main` on 10 Nov (pull request #4) |
 | 7 | Drive in the browser: arrow keys, lap counter, finish time | Merged into `main` on 10 Nov (pull request #4) |
 | 7b | Camera views: from above following the kart, tilted from behind the kart, and a small map. Not in the original plan | Merged into `main` on 10 Nov (pull request #5) and online |
-| 8 | First online connection: two browsers see each other's kart | Merged into `main` on 10 Nov (pull request #5) and online. Two connections from one laptop to the live server saw each other. A fix found there is in the branch `online-fix`. Not tried between two laptops yet |
+| 8 | First online connection: two browsers see each other's kart | Merged into `main` on 10 Nov (pull requests #5 and #6) and online. Two connections from one laptop to the live server saw each other. Not tried between two laptops yet |
 | 9 | Two-laptop checklist, run on two different networks | The checklist is written (`docs/two-laptop-checklist.md`) and can be run now. Not run yet |
 
 Steps 3 and 4, step 5 and step 6 touch different files, so three people can build them at the same time once step 2 is merged.
@@ -38,6 +38,54 @@ Steps 3 and 4, step 5 and step 6 touch different files, so three people can buil
 | Agent | The AI coding assistant (Claude Code or Codex) that writes most of the code |
 
 ## Entries
+
+### 10 November 2026: The fix checked on the live server, and a notice for a quiet server
+
+Done on Catarina's laptop with Claude Code. The branch is `finish-base`, started from the up-to-date `main`. It will collect the rest of the base before a pull request is opened.
+
+**Where things stood**
+
+Pull request #6 (remove rule-breakers at once) was approved and merged, and Render put it online by itself.
+
+**The fix works on the live server**
+
+The agent ran the same script as before against the live server. A pretend browser sent a made-up message. This time its kart was gone from the other browser's picture within a quarter of a second. Before the fix it stayed for as long as the script watched.
+
+**Something else the live server showed**
+
+After our server cuts a connection, the other side does not find out straight away. Measured on the live server:
+
+| The cut-off side... | ...noticed after |
+|---|---|
+| stayed silent | about 20 seconds |
+| tried to send something every 3 seconds | about 9 seconds |
+
+On one laptop it is instant. The difference is Render's network, which sits between our server and every browser and passes the news on late. The side that was cut off also never receives our reason for cutting it.
+
+For a rule-breaker this does not matter: its kart is gone and its place is free. For a normal player it would matter. If our server restarts, for example when a new version goes online, the karts would stand still while the page went on saying "Connected" for up to 20 seconds.
+
+**What was added**
+
+The online page no longer trusts "connected" alone. Updates normally arrive 20 times a second. If none has arrived for two seconds, the line under the track says: "The server has gone quiet. If the karts stay still, reload the page to join again." It goes back to normal as soon as updates arrive again.
+
+| File | What changed |
+|---|---|
+| `client/net.js` | New function `statusLine`, which decides what the line under the track says |
+| `client/online.js` | Remembers when the server last sent anything, and uses `statusLine` |
+| `tests/net.test.js` | Seven new tests for that line |
+| `WALKTHROUGH.md`, `docs/two-laptop-checklist.md` | Updated with what was measured |
+
+**What was checked, and what was not**
+
+- Checked on the live server: a rule-breaker's kart is removed within a quarter of a second.
+- Checked: `npm test`. 284 of 284 tests pass (277 from before, 7 new).
+- Checked in a browser on this laptop: the online page connects and its line reads "Connected. You are the red kart. You are alone here."
+- **Not checked: the "gone quiet" notice appearing for real.** On one laptop a cut connection is noticed at once, so the notice never has time to show. It will be seen on the live server the next time a new version goes online while someone has the online page open. The two-laptop checklist now asks for exactly that.
+- **Not known:** why Render's network passes a closed connection on so late. The code no longer depends on it.
+
+**What comes next**
+
+On this same branch: the database. And, by hand, the two-laptop checklist.
 
 ### 10 November 2026: First look at the live server, and a fix it led to
 

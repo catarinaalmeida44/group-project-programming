@@ -137,6 +137,39 @@ export function createPlayback() {
 }
 
 /**
+ * Updates normally arrive 20 times a second. If none has arrived for this
+ * long, something is wrong, and we say so.
+ */
+export const QUIET_AFTER_MS = 2000;
+
+/**
+ * The line under the track on the online page.
+ *   status             what we last learned about the connection ("Connected. You are the red kart.")
+ *   connected          does the browser believe the connection is open
+ *   playerCount        how many karts the last update showed
+ *   sinceLastUpdateMs  how long ago the last update arrived
+ *
+ * Why "the server has gone quiet" is needed: when our server stops or cuts
+ * a connection, the browser can go on believing it is connected for 10 to
+ * 20 seconds, because the news has to pass through the hosting company's
+ * network. During that time no updates arrive and the karts stand still.
+ * Without this line the page would say "Connected" over a frozen race.
+ */
+export function statusLine({ status, connected, playerCount, sinceLastUpdateMs }) {
+  if (!connected) {
+    return status;
+  }
+  if (sinceLastUpdateMs > QUIET_AFTER_MS) {
+    return "The server has gone quiet. If the karts stay still, reload the page to join again.";
+  }
+  if (!(playerCount >= 1)) {
+    return status; // connected, but no update has shown any kart yet
+  }
+  const players = playerCount === 1 ? "You are alone here" : `${playerCount} players here`;
+  return `${status} ${players}.`;
+}
+
+/**
  * Checks one message from the server. Gives the message if it is one this
  * page understands, or null. The page must not break on a strange message.
  */
