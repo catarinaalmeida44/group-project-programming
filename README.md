@@ -3,7 +3,7 @@
 A 2D online kart racing game set at the Nova SBE Carcavelos campus.
 Team project for Introduction to Programming (course 2477) at Nova SBE.
 
-**Status:** project skeleton and automatic tests. There is no game to play yet.
+**Status:** one kart can be driven round a test track in the browser, with a lap counter and a finish time. Not online yet, and no multiplayer yet.
 
 ## Play it
 
@@ -34,7 +34,13 @@ Run the tests:
 npm test
 ```
 
-Run the app: _not available yet (coming with the first server)_
+Run the app:
+
+```
+npm start
+```
+
+Then open http://localhost:3000 in a browser and drive with the arrow keys. To stop the app, press Ctrl+C in the terminal.
 
 ## Where things are
 
@@ -52,6 +58,8 @@ Run the app: _not available yet (coming with the first server)_
 | `package.json` | The project's identity card: its name, its commands (such as `npm test`) and the libraries it uses |
 | `package-lock.json` | Written automatically. The exact version of every library, so all laptops and the server use the same ones. Never edited by hand |
 | `.github/workflows/tests.yml` | Tells GitHub to run the tests on every pull request |
+| `render.yaml` | Tells Render, the company that keeps our server online, how to set the server up |
+| `.node-version` | The exact Node.js version used by Render and by the tests on GitHub |
 
 ## Credits
 

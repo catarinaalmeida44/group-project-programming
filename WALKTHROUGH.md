@@ -2,18 +2,88 @@
 
 Plain-language answers to the questions the teaching staff may ask when they open this repository. Any member can be asked about any part, so everyone should be able to give these answers.
 
-**State on 10 November 2026:** the project skeleton and the automatic tests exist. There is no game yet, so most answers below describe the plan. Each answer is rewritten as the real thing gets built.
+**State on 10 November 2026:** one kart can be driven round a test track in the browser, with a lap counter and a finish time. Nothing is online yet and there is no multiplayer, database or accounts yet, so several answers below describe the plan. Each answer is rewritten as the real thing gets built.
 
 ## Where does each part live?
 
 | Part | Where | Built yet? |
 |---|---|---|
-| What the browser shows (page, drawing, keyboard) | `client/` | No |
-| The game server | `server/` | No |
-| The game rules (physics, laps) | `shared/` | Only one small number helper |
-| The automatic tests | `tests/` | Yes, for that helper |
+| The page | `client/index.html` and `client/style.css` | Yes |
+| The practice race in the browser | `client/main.js` | Yes |
+| The keyboard controls | `client/keyboard.js` | Yes |
+| The drawing of the track and the kart | `client/draw.js` | Yes, simple shapes, no artwork yet |
+| The game server | `server/app.js` builds it, `server/start.js` starts it | Yes, a first version that only sends files. It does not run races yet |
+| The driving rules | `shared/physics.js` | Yes, a first version: speeding up, braking, steering, grip, grass |
+| Tracks, the ground and walls | `shared/track.js` | Yes |
+| Laps and race time | `shared/laps.js` | Yes |
+| All the rules put together for one racer | `shared/race.js` | Yes |
+| The test track | `shared/tracks/test-oval.js` | Yes. It is a simple loop, not a campus track |
+| The drivers and their scores | `shared/characters.js` | One placeholder driver |
+| The kinds of ground | `shared/surfaces.js` | Road and grass |
+| The automatic tests | `tests/` | Yes, for the driving rules, the server and a number helper |
 | The instructions that make GitHub run the tests | `.github/workflows/tests.yml` | Yes |
+| The instructions that tell Render how to run the server | `render.yaml` and `.node-version` | Written, not used yet |
 | The database connection | `server/` (exact file to be added) | No |
+
+## How does a page reach the browser?
+
+1. The browser asks our server for an address, for example `/`.
+2. `server/app.js` looks for the matching file in the `client/` folder (`/` means `index.html`). An address that starts with `/shared/` is looked up in the `shared/` folder instead, because the browser needs the game rules too.
+3. If the file exists and is a kind the server is allowed to send, the server sends it. Otherwise it answers "Page not found".
+
+The server refuses four things, and each has a test:
+
+- requests that try to change something (only reading is allowed for now)
+- files outside those two folders, for example an address such as `/../server/app.js`. The server's own code, the tests and the project settings can never be downloaded
+- kinds of file that are not on its list (web pages, styles, scripts, data files and two kinds of image)
+- addresses that are broken
+
+## How does a kart move?
+
+Time moves in small steps, 60 per second. For each step, the function `stepKart` in `shared/physics.js` takes the kart as it is now, the keys that are pressed, the driver's scores and the kind of ground, and gives back the kart one step later. It does four things in order:
+
+1. **Steering.** It turns the direction the kart points. There is no turning when standing still, and turning is a little slower at top speed.
+2. **Pedals.** Gas makes the speed climb toward the top speed, quickly at first and gently near the top. Brake stops the kart quickly and then reverses slowly. With no pedal, the kart slows down gradually.
+3. **Grip.** A kart can be moving in a slightly different direction from the one it points: that is a slide. The tyres remove part of the slide in every step. More grip removes it faster.
+4. **Moving.** It moves the kart by its speed for one sixtieth of a second.
+
+A driver's scores go from 1 to 5.75. They are not speeds. At the top of `physics.js` there is a short list that says what the lowest and the highest score mean in real motion, for example a top speed from 240 to 360 units per second. Those are the numbers we tune by playtesting.
+
+Our placeholder driver, with middle scores, reaches 80% of its top speed in about 1.2 seconds, stops in about half a second when braking, and keeps about 75% of its top speed on grass.
+
+## How does the practice race run in the browser?
+
+`client/main.js` repeats three things for every picture the screen shows, usually 60 times a second:
+
+1. Ask `client/keyboard.js` which arrow keys are held.
+2. Ask the rules where the kart is now. This is one call to `stepRacer` in `shared/race.js` for each sixtieth of a second that has passed.
+3. Ask `client/draw.js` to draw the track and the kart, and fill in the lap counter and the clock.
+
+Screens do not all refresh at the same speed, but the rules must always move in steps of exactly one sixtieth of a second. So `main.js` measures how much real time has passed and runs as many whole steps as fit in it.
+
+The clock starts at the first key press. After the last lap, the keys are ignored, the kart rolls to a stop and the finish time is shown. R starts again.
+
+The practice race runs entirely in the browser. Nothing is sent to the server and nothing is saved. That also means a practice time could be faked by a player, which is why practice times will never count for leaderboards. Online races will be run by the server.
+
+## How is a track described, and how do walls work?
+
+A track is drawn with letters in a file, one letter for each square of ground: `#` is wall, `.` is road and `,` is grass. Open `shared/tracks/test-oval.js` to see one. When the game starts, `shared/track.js` checks the drawing and stops with a clear error if it is wrong, for example if the start is inside a wall.
+
+For walls, a kart is treated as a circle. After every move, the game checks whether the circle overlaps a wall square. If it does, the kart is pushed back out and bounces: the part of its speed going into the wall is turned round and halved, and the part going along the wall is kept. A head-on hit sends the kart back at half speed. A scrape costs very little. Everything outside the drawing counts as wall, so a kart can never leave the track.
+
+## How are laps counted, and can a player cheat?
+
+A track has checkpoints: invisible rectangles across the road, in driving order. The first one is the finish line. The game keeps one count for each kart: checkpoints passed.
+
+- Driving into the next checkpoint adds one.
+- Driving back into the checkpoint before the last one takes one away.
+- Driving into any other checkpoint changes nothing.
+
+A lap is complete each time the count reaches a new full round. These cannot complete a lap, and each has a test: skipping a checkpoint, taking them in the wrong order, driving the wrong way round, going back and forth over the finish line, and reversing over the finish line to count the same lap twice.
+
+Race time is counted in steps of the game, 60 per second, not with a clock. A finish time is therefore exact and the same on every computer.
+
+Our first version of this rule had a mistake: a kart driving the wrong way round was given a lap after about three rounds. A test that drives a "robot" kart the wrong way round the test track found it, and the rule was rewritten as described above.
 
 ## Where is data stored, and what exactly is stored?
 
@@ -23,15 +93,33 @@ Plan: a Postgres database hosted on Neon. The base will have one simple table th
 
 ## What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 157 tests today.
 
-**Covered today:** one helper, `clamp` in `shared/numbers.js`, which keeps a number between a lowest and a highest value. Ten tests: six for normal use and four for bad input that must be refused (limits the wrong way round, and values that are not numbers).
+**Covered today**
 
-**Not covered today:** everything else, because nothing else is built.
+- Tracks and walls in `shared/track.js`. Thirty-five tests: reading a track, twelve kinds of badly drawn track that must be refused, the ground at a spot, and bouncing off walls from every side and in a corner.
+- Laps in `shared/laps.js`. Twenty-seven tests. Fourteen of them are laps that must not count.
+- Whole races in `shared/race.js`. Thirteen tests. A small "robot driver" written in the test file steers a kart round the test track: three whole laps, the wrong way round, and flat out into a wall.
+- The driving rules in `shared/physics.js`. Thirty-four tests: speeding up, top speed, coasting, braking, reversing, steering, grip, grass, and bad input that must be refused or ignored (keys that are not exactly "pressed", scores that are out of range, a driver with a missing score). They compare behaviours, such as "more acceleration reaches top speed sooner", instead of exact numbers, so we can tune the numbers without breaking the tests.
+- `clamp` in `shared/numbers.js`, which keeps a number between a lowest and a highest value. Ten tests: six for normal use and four for bad input that must be refused.
+- The server in `server/app.js`. Nineteen tests. Ten check what it must do: send the page, its style and code, the game rules and the health check. Nine check what it must refuse: missing pages, requests that change things, file kinds not on the list, files outside the `client/` and `shared/` folders (thirteen different ways of writing such an address), the server's own code and the tests, and two kinds of broken address.
+- The parts of the browser code that need no browser, in `client/format.js` and `client/keyboard.js`. Nineteen tests: a race time as text, arrow keys into gas, brake, left and right, R to start again, and letting go of every key when the player switches to another window.
+
+The server tests start a real copy of the server on the computer running the tests and send it real requests.
+
+To check that the tests really guard the rules, we broke the rules on purpose in 33 different ways, one at a time (for example "grass is as fast as road" and "driving backwards is not counted"). Every time, at least one test failed.
+
+**Not covered today**
+
+- How the driving feels. No test can say whether a kart is fun to drive. That needs a person at the keyboard.
+- The drawing (`client/draw.js`) and the loop that runs the race (`client/main.js`). They need a real page. They were checked in a browser: by looking at the page, and by a script that pressed the keys and drove a whole three-lap race while we watched the lap counter, the clock and the finish message.
+- How smooth the race looks at full speed on a normal screen. The browser used for that check was running in the background, where browsers redraw only about once a second.
+- The server running on Render. It is not online yet.
+- Everything that is not built yet.
 
 Plan: automatic tests for every game rule, including rejected actions. Multiplayer timing will be tested by hand, following a written two-laptop checklist.
 
-The tests use a library called Vitest. It is only used while developing. It is not part of the game that players get.
+The tests use a library called Vitest. It is only used while developing. It is not part of what runs on Render or what players get.
 
 ## What happens if the server restarts, the database pauses, or the email service is down?
 
@@ -39,15 +127,33 @@ Nothing is deployed yet. These are the limits we expect from the free hosting pl
 
 - Render's free server sleeps after 15 minutes without visitors and takes about a minute to wake up.
 - Render can restart a free server at any time. A race in progress would be lost, but anything saved in the database is safe.
+- Render's free plan gives 750 running hours a month, which is enough for one server that is always on.
 - Neon's free database pauses after 5 minutes without use and wakes on the next request.
 
 ## Why did we build it this way?
 
 - **Our own server runs every race.** The browser only sends which keys are pressed, so nobody can fake a result from their browser.
 - **Our own driving physics.** The server has to run the races, and the physics inside game libraries only runs in a browser.
+- **The driving rules never change the kart they are given.** They give back a new kart instead. A test can then compare "before" and "after", and later the browser can try a move without disturbing the real one.
+- **Time moves in fixed steps of one sixtieth of a second.** The same keys then always give exactly the same result, on any computer, fast or slow. The browser and the server must agree on where every kart is, so this matters.
+- **Only an exact "pressed" counts as a pressed key.** Anything else a browser might send counts as not pressed, so a strange message cannot produce a strange movement.
 - **One language, JavaScript, for the browser and the server.** This lets both use the very same rules file.
 - **Secrets stay out of the repository.** The repository is public, so passwords and keys live only in a local `.env` file and in the hosting settings.
+- **No outside library for the server.** It is built on `http`, the web server that comes with Node.js. Fewer libraries means fewer things that can have security problems, and the whole server is short enough to read in one sitting. The usual alternative is a library called Express.
+- **The server only sends file kinds on a short list, and only from two folders.** A file we forget somewhere cannot leak by accident.
+- **No drawing library for now.** The track and the kart are drawn with the canvas that is built into every browser. All the drawing is in one file, `client/draw.js`, so it can be replaced by a game library such as Phaser later without touching the rules. Whether to do that is still an open decision for the team.
+- **The browser code is split by job.** Keys, drawing, time as text and the race loop each have their own file, and none of them decides how a kart moves.
+- **The server's settings for Render are a file in the repository** (`render.yaml`), not something typed into a web form. Anyone can read how the live server is set up, and changes to it go through a pull request.
 
 ## What are the known limits, and what would we change next?
 
-To be filled in as we build.
+- The numbers in the driving rules are first guesses. No person has driven the kart for long yet, so they will change with playtesting.
+- The driving rules have no drifting, bumping between karts, sand or sea yet.
+- The whole test track is shown at once. There is no camera that follows the kart and no minimap yet. Both are needed for the larger campus tracks.
+- The game needs a keyboard. There are no touch controls for phones.
+- The kart is drawn exactly where the last step of the rules put it. On screens faster than 60 pictures a second the movement can look slightly uneven. Drawing in-between positions would fix that.
+- If the browser tab is in the background, the practice race runs in slow motion instead of jumping ahead.
+- A kart is a circle for walls, although it is drawn as a rectangle. Its corners can look as if they poke slightly into a wall.
+- Walls are whole squares. A track cannot have a diagonal or curved wall yet, only steps.
+- The server reads a file from disk for every request. That is fine for a few players. With many visitors we would keep the files in memory.
+- The rest is to be filled in as we build.

@@ -5,9 +5,10 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=26"
+    "node": "26.x"
   },
   "scripts": {
+    "start": "node server/start.js",
     "test": "vitest run"
   },
   "devDependencies": {

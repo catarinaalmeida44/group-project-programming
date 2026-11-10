@@ -1,0 +1,20 @@
+# Instructions for Render, the company that keeps our server online.
+# Render reads this file and sets the server up by itself, so nobody has to
+# type these settings into a form (and nobody can type them wrong).
+#
+# No secrets go in this file. Secrets are typed into Render's own
+# "Environment" page.
+
+services:
+  - type: web                  # a server that browsers can visit
+    name: novasbe-kart         # becomes part of the public link
+    runtime: node
+    plan: free
+    region: frankfurt          # the closest of Render's regions to Portugal
+    buildCommand: npm ci --omit=dev   # download our libraries, without the test tools
+    startCommand: npm start
+    healthCheckPath: /health   # Render visits this address to check the server is alive
+    autoDeployTrigger: commit  # put the new version online after every change to main
+    envVars:
+      - key: HOST
+        value: 0.0.0.0         # accept visitors from the internet (see server/start.js)
