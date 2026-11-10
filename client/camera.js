@@ -141,6 +141,29 @@ export function chasePoint(ahead, sideways, settings = CHASE, screen = SCREEN) {
   };
 }
 
+/**
+ * Which side of another kart we are looking at in the chase view.
+ *   myAngle     the direction our own kart points (the camera looks the same way)
+ *   theirAngle  the direction the other kart points
+ * Gives one of four words:
+ *   "back"   it points the way we do, so we see it from behind
+ *   "front"  it points towards us
+ *   "right"  it points to our right, so we see its side with the nose on the right
+ *   "left"   it points to our left
+ */
+export function sideSeen(myAngle, theirAngle) {
+  // How far the other kart is turned compared with us, from half a turn left to half a turn right.
+  const turned = Math.atan2(Math.sin(theirAngle - myAngle), Math.cos(theirAngle - myAngle));
+  const eighth = Math.PI / 4;
+  if (Math.abs(turned) <= eighth) {
+    return "back";
+  }
+  if (Math.abs(turned) >= 3 * eighth) {
+    return "front";
+  }
+  return turned > 0 ? "right" : "left";
+}
+
 /** Where a spot of the track is, seen from the kart: units ahead of it and units to its right. */
 export function seenFromKart(kart, x, y) {
   const dx = x - kart.x;

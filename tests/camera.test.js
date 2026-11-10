@@ -17,6 +17,7 @@ import {
   chaseRow,
   chasePoint,
   seenFromKart,
+  sideSeen,
 } from "../client/camera.js";
 import { createKart } from "../shared/physics.js";
 import { TEST_OVAL } from "../shared/tracks/test-oval.js";
@@ -231,6 +232,51 @@ describe("the chase view: where a spot on the ground lands on the screen", () =>
 
   it("gives nothing for a spot behind the camera", () => {
     expect(chasePoint(-100000, 0)).toBe(null);
+  });
+});
+
+describe("which side of another kart we see in the chase view", () => {
+  const quarter = Math.PI / 2;
+
+  it("sees a kart that points the same way as us from behind", () => {
+    expect(sideSeen(0, 0)).toBe("back");
+    expect(sideSeen(1.2, 1.2)).toBe("back");
+    expect(sideSeen(0, 0.5)).toBe("back"); // turned a little: still its back
+    expect(sideSeen(0, -0.5)).toBe("back");
+  });
+
+  it("sees a kart that points towards us from the front", () => {
+    expect(sideSeen(0, Math.PI)).toBe("front");
+    expect(sideSeen(0, -Math.PI)).toBe("front");
+    expect(sideSeen(quarter, -quarter)).toBe("front");
+  });
+
+  it("sees the side of a kart that crosses in front of us, with the nose the way it is going", () => {
+    // Angles grow clockwise on the screen, so a kart turned a quarter turn
+    // more than us points to our right.
+    expect(sideSeen(0, quarter)).toBe("right");
+    expect(sideSeen(0, -quarter)).toBe("left");
+  });
+
+  it("only cares about how the two karts are turned compared with each other", () => {
+    for (const mine of [0, 1, 2.5, -2, 7, -9]) {
+      expect(sideSeen(mine, mine)).toBe("back");
+      expect(sideSeen(mine, mine + quarter)).toBe("right");
+      expect(sideSeen(mine, mine - quarter)).toBe("left");
+      expect(sideSeen(mine, mine + Math.PI)).toBe("front");
+    }
+  });
+
+  it("copes with karts that have turned round many times", () => {
+    const manyTurns = 10 * Math.PI; // five full turns
+    expect(sideSeen(0, manyTurns)).toBe("back");
+    expect(sideSeen(manyTurns, quarter)).toBe("right");
+  });
+
+  it("always gives one of the four sides", () => {
+    for (let theirs = -7; theirs <= 7; theirs += 0.37) {
+      expect(["back", "front", "left", "right"]).toContain(sideSeen(0.3, theirs));
+    }
   });
 });
 

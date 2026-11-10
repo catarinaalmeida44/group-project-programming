@@ -113,7 +113,7 @@ Ask the owner before changing a file they look after. That is the main way we av
 - **Right after installing Node.js, `npm` may be "not found".** Close and reopen the app or terminal you are using.
 - **An agent's own browser can be slow.** The built-in browser of the Claude app redraws about once a second when it is not on screen, so the game looks jerky there. Judge how the game feels in a normal browser.
 - **Online, your own kart reacts a moment late.** That is known and written down. It is not a mistake in your code.
-- **In the view from behind, other karts look flat.** Known, and to be fixed.
+- **Karts are drawn with simple shapes, in four fixed pictures** (from behind, from the front, from each side). A turning kart snaps from one picture to the next. That is known. Real artwork would replace the shapes.
 
 ## 9. Where everything is
 

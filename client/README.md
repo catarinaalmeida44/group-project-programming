@@ -43,7 +43,7 @@ Nothing in this folder decides how a kart moves. That is the job of the rules in
 | Other players | None | Everyone who has the page open, up to eight, each in a different colour |
 | Works when the server is down | Yes, once the page is loaded | No |
 
-In the view from behind, the other players' karts are painted flat on the road, like stickers. Standing-up karts need artwork from several sides.
+In the view from behind, every kart stands up on the road with its driver. A kart is drawn from behind, from the front or from one side, depending on which way it points compared with you, and smaller the further ahead it is. The karts are drawn with simple coloured shapes in `draw.js`; real character artwork would replace those.
 
 Drawing uses the canvas that is built into every browser. No drawing library is used.
 
