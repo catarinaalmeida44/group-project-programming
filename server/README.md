@@ -8,9 +8,18 @@ Our game server: the program that runs on Render. It sends the game's files to t
 | `online.js` | Online play. Keeps a live connection open to every browser on the online page, passes the keys they hold to the room, and sends everyone the state of all karts 20 times a second |
 | `room.js` | The karts of everyone driving together. Moves them all with the shared rules, 60 steps a second. Knows nothing about the internet, which makes it easy to test |
 | `messages.js` | Checks every message a browser sends before the game looks at it |
+| `db.js` | The database. For now one table, `server_starts`, with one row for each time the server started. It proves the server can write to the database and read from it |
 | `start.js` | Starts the server. This is what `npm start` runs |
 
-The server uses one outside library: `ws`, for the live connections. Everything else is built on `http`, the web server that comes with Node.js.
+The server uses two outside libraries: `ws`, for the live connections, and `pg`, to talk to the database. Everything else is built on `http`, the web server that comes with Node.js.
+
+## The database
+
+- The server reaches it through a secret address, the setting `DATABASE_URL`. That address is in Render's Environment page and in a local `.env` file, and nowhere else.
+- Without the setting, the server runs without a database. That is the normal case on a teammate's laptop.
+- Each time the server starts, it writes one row. The table keeps only the newest 50.
+- `/database-check` shows what the server can read: how many starts are recorded and when the latest was. The answer is reused for ten seconds, so many visitors do not become many questions to the database.
+- If the database is asleep, slow or unreachable, the game keeps working. `/database-check` then answers "The database could not be reached", without any details. The details go only to the server's own log.
 
 Why the `shared/` folder is sent to browsers too: it holds the game rules, and the browser needs them to run a practice race. Nothing in it is secret.
 

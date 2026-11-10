@@ -8,13 +8,15 @@
     "node": "26.x"
   },
   "scripts": {
-    "start": "node server/start.js",
-    "test": "vitest run"
+    "start": "node --env-file-if-exists=.env server/start.js",
+    "test": "vitest run",
+    "test:database": "node --env-file-if-exists=.env node_modules/vitest/vitest.mjs run tests/db-live.test.js"
   },
   "devDependencies": {
     "vitest": "5.1.0"
   },
   "dependencies": {
+    "pg": "8.23.1",
     "ws": "8.22.2"
   }
 }

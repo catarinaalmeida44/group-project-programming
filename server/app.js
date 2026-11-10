@@ -8,6 +8,8 @@
 //     to run a practice race
 //   - answers "/health" with a short "I am alive" message, which Render uses
 //     to check that the server is running
+//   - answers "/database-check" with what it can read from the database, to
+//     prove that the server and the database can talk to each other
 //
 // What it refuses:
 //   - anything that tries to change something (only reading is allowed for now)
@@ -43,10 +45,14 @@ const FILE_TYPES = {
   ".svg": "image/svg+xml",
 };
 
-/** Builds the server. It does not start listening yet. */
-export function createApp() {
+/**
+ * Builds the server. It does not start listening yet.
+ *   database  what createDatabase() in db.js gave, or null when the server
+ *             runs without a database
+ */
+export function createApp({ database = null } = {}) {
   return http.createServer((request, response) => {
-    answer(request, response).catch((error) => {
+    answer(request, response, database).catch((error) => {
       // Something we did not plan for. Write it in the server's log and
       // tell the browser only that it failed, without any details.
       console.error("Unexpected error while answering a request:", error);
@@ -60,7 +66,7 @@ export function createApp() {
 }
 
 /** Decides what to send back for one request. */
-async function answer(request, response) {
+async function answer(request, response, database) {
   // GET means "please send me this". HEAD means the same, without the content.
   // Everything else (POST, DELETE, ...) asks to change something: refused.
   if (request.method !== "GET" && request.method !== "HEAD") {
@@ -77,11 +83,39 @@ async function answer(request, response) {
     return send(response, 200, FILE_TYPES[".json"], JSON.stringify({ status: "ok" }));
   }
 
+  if (address === "/database-check") {
+    return answerDatabaseCheck(response, database);
+  }
+
   const file = await findPublicFile(address);
   if (file === null) {
     return sendText(response, 404, "Page not found.");
   }
   return send(response, 200, file.type, file.content);
+}
+
+/**
+ * Answers "/database-check": can the server read from the database?
+ *
+ * The visitor only ever gets one of three short answers. When something
+ * goes wrong, the details go to the server's own log and never to the
+ * visitor, because an error from a database can mention names and
+ * addresses that are nobody else's business.
+ */
+async function answerDatabaseCheck(response, database) {
+  const sendJson = (status, body) => send(response, status, FILE_TYPES[".json"], JSON.stringify(body));
+
+  if (database === null) {
+    // 503 means "this part is not available right now".
+    return sendJson(503, { ok: false, message: "The database is not set up on this computer." });
+  }
+  try {
+    const { starts, latest } = await database.status();
+    return sendJson(200, { ok: true, starts, latest });
+  } catch (error) {
+    console.error("Database check failed:", error.message);
+    return sendJson(503, { ok: false, message: "The database could not be reached. Try again in a moment." });
+  }
 }
 
 /**
