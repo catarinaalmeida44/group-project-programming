@@ -9,11 +9,11 @@ The base is the working foundation described in section 8 of `PROJECT_BRIEF.md`.
 | Step | What it adds | State |
 |---|---|---|
 | 1 | Project skeleton: folders, README, rules for agents, example secrets file, these notes | Merged into `main` on 10 Nov (pull request #2) |
-| 2 | Automatic tests: one example test, and GitHub runs the tests on every pull request | Pull request #3 is open and waiting for Fran's approval. GitHub ran the tests on it and they passed |
-| 3 | A small server on Render that shows a "hello" page at a public link | The server is built and works on a laptop. Waiting for review. Not online yet |
+| 2 | Automatic tests: one example test, and GitHub runs the tests on every pull request | Merged into `main` on 10 Nov (pull request #3) |
+| 3 | A small server on Render that shows a "hello" page at a public link | The server is built and works on a laptop. Not on GitHub yet. Not online yet |
 | 4 | Database: the server writes and reads one row in Neon | Not started |
-| 5 | Driving rules, first version: one kart speeds up, brakes, steers, bounces off walls (tests only, no screen) | Not started |
-| 6 | Test track and laps: a simple oval, and laps that only count if no checkpoint is skipped (tests only) | Not started |
+| 5 | Driving rules, first version: one kart speeds up, brakes, steers and slides (tests only, no screen) | Built. Not on GitHub yet |
+| 6 | Test track, walls and laps: a simple oval with walls to bounce off, and laps that only count if no checkpoint is skipped (tests only) | Not started |
 | 7 | Drive in the browser: arrow keys, lap counter, finish time | Not started |
 | 8 | First online connection: two browsers see each other's kart | Not started |
 | 9 | Two-laptop checklist, run on two different networks | Not started |
@@ -37,6 +37,96 @@ Steps 3 and 4, step 5 and step 6 touch different files, so three people can buil
 | Agent | The AI coding assistant (Claude Code or Codex) that writes most of the code |
 
 ## Entries
+
+### 10 November 2026: Step 5, driving rules, first version
+
+Done on Catarina's laptop with Claude Code. Step 4 (the database) is skipped for now, because it needs a Neon account and the server online first. It comes back later.
+
+**First, where things stood**
+
+- Step 2 is merged: pull request #3 went into `main`.
+- The step 3 branch, `small-server`, had not reached GitHub when this step started. So this step's branch, `driving-rules`, starts from `small-server` and contains step 3 as well. Publishing `driving-rules` sends both steps to GitHub in one go.
+
+**What was done**
+
+The project now knows how a kart moves. There is still nothing to see on a screen: this step is only the rules and their tests. The screen comes in step 7.
+
+| File | What it is for |
+|---|---|
+| `shared/physics.js` | The driving rules. The main function, `stepKart`, takes a kart and the keys that are pressed and gives back the kart one sixtieth of a second later |
+| `shared/characters.js` | The drivers and their scores. One placeholder driver with middle scores (3.5 out of 5.75) |
+| `shared/surfaces.js` | The kinds of ground: road and grass |
+| `tests/physics.test.js` | Thirty-four tests for the driving rules |
+| `README.md`, `WALKTHROUGH.md`, `shared/README.md`, `tests/README.md` | Updated. `shared/README.md` has the rules as a table in plain words |
+
+**The rules, in plain words**
+
+- **Speeding up.** Speed climbs toward the top speed, quickly when slow and gently near the top.
+- **Coasting.** With no pedal the kart slows down gradually and stops.
+- **Braking.** The kart stops quickly. Holding the brake after stopping reverses, slowly. If gas and brake are both pressed, the brake wins.
+- **Steering.** No turning when standing still. Turning is a little slower at top speed. Steering is mirrored when reversing, as in a real car.
+- **Grip.** In a corner the kart can slide sideways for a moment. More grip stops the slide sooner.
+- **Grass.** The top speed is lower on grass. A kart that leaves the road at full speed is slowed down quickly.
+
+Not in this version: walls, laps, drifting and boosts, karts bumping each other, sand and sea. Walls were planned for this step, but a wall needs a track to stand on, so they move to step 6 together with the test track.
+
+**How the placeholder kart behaves with today's numbers**
+
+These were measured by running the rules, not by driving. "Units" are pixels of the track drawing.
+
+| What | Value |
+|---|---|
+| Top speed on the road | 303 units per second |
+| Top speed on grass | 227 units per second, which is 75% of the road speed. The brief asks for about 74% for a middle driver |
+| Time to reach 80% of top speed | 1.2 seconds |
+| Time to stop by coasting from top speed | 2.5 seconds |
+| Time to stop by braking from top speed | 0.5 seconds |
+| Reverse top speed | 90 units per second |
+| Holding a full turn at full gas | Settles at 85% of top speed, in a circle about 127 units wide from centre to edge |
+
+**Why it was done this way**
+
+- All the numbers to tune are together at the top of `physics.js`, with a comment on each.
+- The tests compare behaviours ("more acceleration reaches top speed sooner") and not exact numbers, as the brief asks. Changing a number while playtesting does not break them.
+- `stepKart` never changes the kart it is given. It gives back a new one.
+- Only an exact "pressed" counts as a pressed key. Anything else counts as not pressed.
+- A driver's score outside 1 to 5.75 is pulled back to the nearest allowed score. A score that is missing or not a number stops the rules with an error.
+
+**Decisions**
+
+All made by the agent, please confirm:
+
+- Distances are measured in pixels of the track drawing, and speeds in pixels per second.
+- The starting numbers at the top of `physics.js`. They are first guesses and will change when the kart can be driven.
+- The keys are four yes-or-no values: gas, brake, left, right.
+- The brake wins when gas and brake are pressed together.
+- Steering is mirrored when reversing.
+- The placeholder driver has five scores for now: speed, acceleration, handling, grip and off-road. Weight and mini-turbo are added with the rules that need them.
+- Only road and grass for now.
+
+**Git steps the agent ran, and what each one means**
+
+| Command | In plain words |
+|---|---|
+| `git fetch` | Ask GitHub what changed there. This showed that step 2 was merged and that `small-server` was not on GitHub |
+| `git fetch origin main:main` | Bring the laptop's copy of `main` up to date with GitHub's, without changing the files being worked on |
+| `git switch -c driving-rules` | Make a new branch called `driving-rules`, starting from `small-server` |
+| `git add` and `git commit` | Save the snapshot with a message |
+
+**What was checked, and what was not**
+
+- Checked: `npm test`. 57 of 57 tests pass (23 from before, 34 new).
+- Checked that the tests really guard the rules: the agent broke the rules on purpose in 14 different ways, one at a time, for example "grass is as fast as road" and "the kart can steer while standing still". Every time at least one test failed. Then the file was put back exactly as it was and all tests passed again.
+- **Not checked:** how the driving feels. Nobody has driven the kart, because there is no screen yet.
+- Nothing in this step can be seen in a browser, so nothing was checked there.
+
+**How to check this step yourself**
+
+In a terminal in the project folder, run `npm test`. The last lines should say "Tests 57 passed (57)".
+
+**What comes next**
+
+Step 6: a simple test track with walls to bounce off, and laps. Then step 7, where the kart can be driven on screen.
 
 ### 10 November 2026: Step 3, a small server (not online yet)
 
