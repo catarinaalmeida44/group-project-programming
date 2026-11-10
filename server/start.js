@@ -8,11 +8,17 @@
 //         internet".
 
 import { createApp } from "./app.js";
+import { attachOnlinePlay } from "./online.js";
+import { TEST_OVAL } from "../shared/tracks/test-oval.js";
+import { TEST_DRIVER } from "../shared/characters.js";
 
 const port = Number(process.env.PORT) || 3000;
 const host = process.env.HOST || "127.0.0.1";
 
-createApp().listen(port, host, () => {
+const app = createApp();
+attachOnlinePlay(app, { track: TEST_OVAL, character: TEST_DRIVER });
+
+app.listen(port, host, () => {
   console.log(`The server is running. Open http://localhost:${port} in a browser.`);
   console.log("To stop it, press Ctrl+C in this window.");
 });

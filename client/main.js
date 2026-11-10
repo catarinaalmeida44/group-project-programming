@@ -3,36 +3,30 @@
 // This file connects the parts:
 //   keyboard.js           which keys are held
 //   ../shared/race.js     the rules: where the kart is one step later
+//   camera.js             which part of the track is on the screen
 //   draw.js               the picture of the track and the kart
-//   format.js             the race time as text
+//   hud.js                the lap counter, the clock and the message
 //
 // The race runs entirely in this browser. Nothing is sent to the server and
-// nothing is saved.
+// nothing is saved. (The online page is online.js.)
 
 import { createRacer, stepRacer } from "../shared/race.js";
 import { STEP_SECONDS } from "../shared/physics.js";
-import { raceSeconds, currentLap } from "../shared/laps.js";
+import { currentLap } from "../shared/laps.js";
 import { TEST_DRIVER } from "../shared/characters.js";
 import { TEST_OVAL } from "../shared/tracks/test-oval.js";
 import { createKeyboard } from "./keyboard.js";
-import { paintTrack, drawFrame } from "./draw.js";
+import { createPainter } from "./draw.js";
+import { createHud } from "./hud.js";
+import { VIEWS, followTarget, easeTowards, nextView } from "./camera.js";
 import { formatTime } from "./format.js";
 
 const track = TEST_OVAL;
 const character = TEST_DRIVER;
 
 // ---- The parts of the page ----
-const canvas = document.getElementById("track");
-canvas.width = track.width;
-canvas.height = track.height;
-const context = canvas.getContext("2d");
-const trackPicture = paintTrack(track);
-
-const lapText = document.getElementById("lap");
-const lapsText = document.getElementById("laps");
-const timeText = document.getElementById("time");
-const lapTimesText = document.getElementById("lap-times");
-const messageText = document.getElementById("message");
+const draw = createPainter(document.getElementById("track"), track);
+const showHud = createHud(document);
 
 // ---- The state of the race ----
 let racer = createRacer(track);
@@ -40,7 +34,15 @@ let started = false; //    the clock starts at the first key press
 let lastFrameTime = null;
 let waitingSeconds = 0; // real time that has passed but is not yet turned into game steps
 
-const keyboard = createKeyboard(window, startAgain, start);
+// ---- The state of the camera ----
+let view = VIEWS[0]; // the game starts in the first view of the list in camera.js
+let camera = followTarget(racer.kart, track); // the spot in the middle of the screen, in the follow view
+
+const keyboard = createKeyboard(window, {
+  onDrive: start,
+  onRestart: startAgain,
+  onView: changeView,
+});
 
 function start() {
   started = true;
@@ -50,6 +52,12 @@ function startAgain() {
   racer = createRacer(track);
   started = false;
   waitingSeconds = 0;
+  camera = followTarget(racer.kart, track); // jump straight back, do not glide
+}
+
+function changeView() {
+  view = nextView(view);
+  camera = followTarget(racer.kart, track);
 }
 
 /**
@@ -67,44 +75,48 @@ function frame(now) {
     start();
   }
 
-  if (started && lastFrameTime !== null) {
-    // Never try to catch up more than a quarter of a second, for example
-    // after the player switched to another tab and came back.
-    waitingSeconds += Math.min((now - lastFrameTime) / 1000, 0.25);
+  // Real time since the last picture. Never more than a quarter of a second,
+  // for example after the player switched to another tab and came back.
+  const frameSeconds = lastFrameTime === null ? 0 : Math.min((now - lastFrameTime) / 1000, 0.25);
+  lastFrameTime = now;
+
+  const input = keyboard.input();
+  if (started) {
+    waitingSeconds += frameSeconds;
     while (waitingSeconds >= STEP_SECONDS) {
-      racer = stepRacer(track, racer, keyboard.input(), character);
+      racer = stepRacer(track, racer, input, character);
       waitingSeconds -= STEP_SECONDS;
     }
   }
-  lastFrameTime = now;
 
-  drawFrame(context, trackPicture, racer.kart);
-  showNumbers();
+  // The camera glides towards where it wants to be.
+  camera = easeTowards(camera, followTarget(racer.kart, track), frameSeconds);
+
+  // The kart leans in the chase view while the player steers.
+  const { progress } = racer;
+  const steer = progress.finished ? 0 : (input.right ? 1 : 0) - (input.left ? 1 : 0);
+  draw(view, racer.kart, camera, steer);
+
+  showHud({
+    lap: currentLap(progress, track),
+    laps: track.laps,
+    steps: progress.steps,
+    lapSteps: progress.lapSteps,
+    view,
+    message: messageFor(progress),
+  });
   requestAnimationFrame(frame);
 }
 
-/** Fills in the lap, the time, the lap times and the message. */
-function showNumbers() {
-  const { progress } = racer;
-  lapText.textContent = currentLap(progress, track);
-  lapsText.textContent = track.laps;
-  timeText.textContent = formatTime(raceSeconds(progress));
-
-  // The time each finished lap took: the step count at its end, minus the
-  // step count at the end of the lap before.
-  const lapTimes = progress.lapSteps.map((endStep, index) => {
-    const startStep = index === 0 ? 0 : progress.lapSteps[index - 1];
-    return `Lap ${index + 1}: ${formatTime((endStep - startStep) * STEP_SECONDS)}`;
-  });
-  lapTimesText.textContent = lapTimes.join("   ");
-
+/** The text shown in the middle of the track. */
+function messageFor(progress) {
   if (progress.finished) {
-    messageText.textContent = `Finished in ${formatTime(raceSeconds(progress))}. Press R to race again.`;
-  } else if (!started) {
-    messageText.textContent = "Press an arrow key to start";
-  } else {
-    messageText.textContent = "";
+    return `Finished in ${formatTime(progress.steps * STEP_SECONDS)}. Press R to race again.`;
   }
+  if (!started) {
+    return "Press an arrow key to start";
+  }
+  return "";
 }
 
 // A way to look at the race from the browser's console while tuning the
@@ -113,6 +125,7 @@ function showNumbers() {
 window.kartGame = {
   state: () => ({
     started,
+    view,
     kart: { ...racer.kart },
     progress: { ...racer.progress, lapSteps: [...racer.progress.lapSteps] },
   }),

@@ -1,19 +1,49 @@
 # client
 
-Everything the browser shows and does: the web page, the drawing of the track and the kart, and the keyboard controls.
+Everything the browser shows and does: the web page, the drawing of the track and the kart, the camera, and the keyboard controls.
 
 "Client" is the usual name for the browser's side of an app.
 
 | File | What it does |
 |---|---|
-| `index.html` | The page: the title, the lap counter and clock, the canvas the track is drawn on, and the help text |
-| `style.css` | How the page looks: colours, sizes, spacing |
-| `main.js` | Connects the parts and runs the practice race. Many times a second it asks the keyboard which keys are held, asks the rules in `shared/` where the kart is now, and draws the picture |
-| `keyboard.js` | Turns the arrow keys into the four answers the rules expect: gas, brake, left, right |
-| `draw.js` | Draws the track and the kart on the canvas |
+| `index.html` | The practice page: the title, the lap counter and clock, the canvas the track is drawn on, and the help text |
+| `online.html` | The online page. The same layout, plus a line that says whether you are connected and how many players are there |
+| `style.css` | How both pages look: colours, sizes, spacing |
+| `main.js` | Runs the practice race. Many times a second it asks the keyboard which keys are held, asks the rules in `shared/` where the kart is now, moves the camera, and draws the picture |
+| `online.js` | Runs the online page. It moves no kart itself: it tells the server which keys are held and draws what the server says is happening |
+| `net.js` | Makes online karts move smoothly. The server sends updates 20 times a second, and this file works out where each kart is in between |
+| `hud.js` | Fills in the lap counter, the clock, the lap times, the camera name and the message. Used by both pages |
+| `keyboard.js` | Turns the arrow keys into the four answers the rules expect: gas, brake, left, right. Also listens for R (start again) and V (change the camera) |
+| `camera.js` | The arithmetic of the camera: which part of the track is on the screen, and where things land on it. No painting |
+| `draw.js` | Paints the track, the kart and the small map in the corner on the canvas, in one of the three views |
 | `format.js` | Turns a number of seconds into a race time such as `1:23.45` |
 
-Nothing in this folder decides how a kart moves. That is the job of the rules in `shared/`, which the browser also downloads.
+## The three camera views
+
+The game starts in the first one. The V key switches to the next.
+
+| View | What you see |
+|---|---|
+| Behind the kart | Tilted, from behind and above. The track turns around the kart, so the kart always drives up the screen, and ground further ahead is drawn smaller |
+| From above | Zoomed in, from straight above, moving with the kart. North stays up and the kart turns on the screen. The camera looks a little ahead and stops at the edges of the track |
+| Whole track | The whole track at once, without moving |
+
+The first two show only part of the track, so they have a small map in the corner with a dot for the kart.
+
+The numbers to tune by eye (how far zoomed in, how tilted, how far ahead you can see) are together at the top of `camera.js`.
+
+Nothing in this folder decides how a kart moves. That is the job of the rules in `shared/`, which the browser also downloads. The camera only changes what is shown.
+
+## Practice and online
+
+| | Practice (`/`) | Online test (`/online.html`) |
+|---|---|---|
+| Who moves the kart | This browser, with the rules in `shared/` | Our server, with the same rules |
+| What the browser sends | Nothing | Only which keys are held, and "restart" |
+| Other players | None | Everyone who has the page open, up to eight, each in a different colour |
+| Works when the server is down | Yes, once the page is loaded | No |
+
+In the view from behind, the other players' karts are painted flat on the road, like stickers. Standing-up karts need artwork from several sides.
 
 Drawing uses the canvas that is built into every browser. No drawing library is used.
 

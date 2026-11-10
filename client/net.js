@@ -1,0 +1,163 @@
+// Showing an online race smoothly.
+//
+// The server sends the state of all karts 20 times a second, but the screen
+// shows 60 pictures a second, and the internet delivers the updates at
+// slightly uneven moments. Drawing each update as it arrives would make the
+// karts jump.
+//
+// So the browser shows the race a tenth of a second in the past. For every
+// picture it finds the two updates on either side of that moment and draws
+// each kart at the right point between them. This is the "gliding" of karts
+// between updates.
+//
+// This file is only arithmetic and bookkeeping, so it can be tested. The
+// connection itself is opened in online.js.
+
+/** How far in the past the race is shown, in steps of the game. 6 steps = a tenth of a second. */
+export const DELAY_STEPS = 6;
+
+const STEPS_PER_SECOND = 60;
+const UPDATES_TO_KEEP = 20; //  one second's worth
+const COAST_STEPS = 12; //      if updates stop arriving, keep moving this long, then hold still
+const JUMP_STEPS = 30; //       if we are this far off, jump instead of gliding there
+const CATCH_UP = 0.1; //        share of a small timing error corrected in each picture
+
+/** A value part of the way from "from" to "to". share 0 gives from, share 1 gives to. */
+export function blend(from, to, share) {
+  return from + (to - from) * share;
+}
+
+/** The same for directions, going the short way round the circle. */
+export function blendAngle(from, to, share) {
+  const turn = Math.atan2(Math.sin(to - from), Math.cos(to - from)); // between half a turn left and right
+  return from + turn * share;
+}
+
+/**
+ * The karts part of the way between two updates.
+ * Every kart in the newer update is shown. A kart that is also in the older
+ * update is drawn between its two positions. A kart that just joined is
+ * drawn where the newer update has it.
+ */
+export function blendKarts(olderKarts, newerKarts, share) {
+  return newerKarts.map((newer) => {
+    const older = olderKarts.find((kart) => kart.id === newer.id);
+    if (older === undefined) {
+      return newer;
+    }
+    return {
+      ...newer,
+      x: blend(older.x, newer.x, share),
+      y: blend(older.y, newer.y, share),
+      angle: blendAngle(older.angle, newer.angle, share),
+      vx: blend(older.vx, newer.vx, share),
+      vy: blend(older.vy, newer.vy, share),
+    };
+  });
+}
+
+/**
+ * The karts at one moment of game time (a step number, possibly between two
+ * whole steps), worked out from a list of updates sorted oldest first.
+ * Before the oldest update it gives the oldest. After the newest it gives
+ * the newest: the karts hold still instead of guessing.
+ */
+export function kartsAtStep(updates, step) {
+  if (updates.length === 0) {
+    return null;
+  }
+  let older = null;
+  let newer = null;
+  for (const update of updates) {
+    if (update.step <= step) {
+      older = update;
+    } else {
+      newer = update;
+      break;
+    }
+  }
+  if (older === null) {
+    return newer.karts;
+  }
+  if (newer === null) {
+    return older.karts;
+  }
+  const share = (step - older.step) / (newer.step - older.step);
+  return blendKarts(older.karts, newer.karts, share);
+}
+
+/**
+ * Keeps the latest updates from the server and answers, for every picture,
+ * "where are the karts now?".
+ *   add(update, now)  store an update that just arrived
+ *   advance(now)      the karts to draw at this moment, or null before the first update
+ * "now" is the browser's clock in thousandths of a second.
+ */
+export function createPlayback() {
+  const updates = []; // oldest first
+  let newestArrivedAt = 0;
+  let showingStep = null; // the moment of game time being shown
+  let lastAdvance = 0;
+
+  return {
+    add(update, now) {
+      const newest = updates[updates.length - 1];
+      if (newest !== undefined && update.step <= newest.step) {
+        return; // older than what we already have: ignore it
+      }
+      updates.push(update);
+      if (updates.length > UPDATES_TO_KEEP) {
+        updates.shift();
+      }
+      newestArrivedAt = now;
+    },
+
+    advance(now) {
+      if (updates.length === 0) {
+        return null;
+      }
+      const newest = updates[updates.length - 1];
+
+      // Where the server probably is right now: the newest update, plus the
+      // time since it arrived. Then step back by the delay.
+      const sinceNewest = Math.min(((now - newestArrivedAt) / 1000) * STEPS_PER_SECOND, COAST_STEPS);
+      const wanted = newest.step + sinceNewest - DELAY_STEPS;
+
+      if (showingStep === null || Math.abs(wanted - showingStep) > JUMP_STEPS) {
+        showingStep = wanted;
+      } else {
+        // Move on at the normal speed of time, and gently correct small errors.
+        showingStep += ((now - lastAdvance) / 1000) * STEPS_PER_SECOND;
+        showingStep += (wanted - showingStep) * CATCH_UP;
+      }
+      lastAdvance = now;
+      return kartsAtStep(updates, showingStep);
+    },
+  };
+}
+
+/**
+ * Checks one message from the server. Gives the message if it is one this
+ * page understands, or null. The page must not break on a strange message.
+ */
+export function readServerMessage(text) {
+  let message;
+  try {
+    message = JSON.parse(text);
+  } catch {
+    return null;
+  }
+  if (message === null || typeof message !== "object") {
+    return null;
+  }
+  if (message.type === "welcome" && Number.isInteger(message.id)) {
+    return message;
+  }
+  if (message.type === "state" && Number.isFinite(message.step) && Array.isArray(message.karts)) {
+    return message;
+  }
+  if (message.type === "full") {
+    return message;
+  }
+  return null;
+}

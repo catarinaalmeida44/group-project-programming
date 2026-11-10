@@ -10,13 +10,14 @@ The base is the working foundation described in section 8 of `PROJECT_BRIEF.md`.
 |---|---|---|
 | 1 | Project skeleton: folders, README, rules for agents, example secrets file, these notes | Merged into `main` on 10 Nov (pull request #2) |
 | 2 | Automatic tests: one example test, and GitHub runs the tests on every pull request | Merged into `main` on 10 Nov (pull request #3) |
-| 3 | A small server on Render that shows a "hello" page at a public link | The server works on a laptop. On GitHub in the branch `drive-in-browser`, waiting for a pull request and a review. Not online yet |
+| 3 | A small server on Render that shows a "hello" page at a public link | Online since 10 Nov at https://novasbe-kart.onrender.com. Still to see: a merge into `main` putting the new version online by itself |
 | 4 | Database: the server writes and reads one row in Neon | Not started |
-| 5 | Driving rules, first version: one kart speeds up, brakes, steers and slides (tests only, no screen) | Built. On GitHub in the branch `drive-in-browser`, waiting for a pull request and a review |
-| 6 | Test track, walls and laps: a simple oval with walls to bounce off, and laps that only count if no checkpoint is skipped (tests only) | Built. On GitHub in the branch `drive-in-browser`, waiting for a pull request and a review |
-| 7 | Drive in the browser: arrow keys, lap counter, finish time | Works on a laptop. On GitHub in the branch `drive-in-browser`, waiting for a pull request and a review |
-| 8 | First online connection: two browsers see each other's kart | Not started |
-| 9 | Two-laptop checklist, run on two different networks | Not started |
+| 5 | Driving rules, first version: one kart speeds up, brakes, steers and slides (tests only, no screen) | Merged into `main` on 10 Nov (pull request #4) |
+| 6 | Test track, walls and laps: a simple oval with walls to bounce off, and laps that only count if no checkpoint is skipped (tests only) | Merged into `main` on 10 Nov (pull request #4) |
+| 7 | Drive in the browser: arrow keys, lap counter, finish time | Merged into `main` on 10 Nov (pull request #4) |
+| 7b | Camera views: from above following the kart, tilted from behind the kart, and a small map. Not in the original plan | Built. On GitHub in the branch `online-play`, together with step 8. No pull request yet |
+| 8 | First online connection: two browsers see each other's kart | Built, and it works between two browser tabs on one laptop. On GitHub in the branch `online-play`. Not tried between two laptops yet |
+| 9 | Two-laptop checklist, run on two different networks | The checklist is written (`docs/two-laptop-checklist.md`). It can be run once the `online-play` pull request is merged and the online page is at the public link |
 
 Steps 3 and 4, step 5 and step 6 touch different files, so three people can build them at the same time once step 2 is merged.
 
@@ -37,6 +38,235 @@ Steps 3 and 4, step 5 and step 6 touch different files, so three people can buil
 | Agent | The AI coding assistant (Claude Code or Codex) that writes most of the code |
 
 ## Entries
+
+### 10 November 2026: The server is on the internet
+
+Catarina did this herself on Render's website, with Claude Code telling her the steps. No code changed, only notes.
+
+**What was done**
+
+The game has a public link: https://novasbe-kart.onrender.com
+
+1. Catarina made a Render account by signing in with GitHub.
+2. She gave Render access to this repository. The advice was to choose "Only select repositories" and pick just this one. The agent cannot see which she chose.
+3. She created a "Blueprint" from the repository. A Blueprint means: Render reads the file `render.yaml` in our project and sets the server up from it. Nobody typed any settings into a form.
+4. Render built and started the server from the `main` branch.
+
+**What `render.yaml` told Render**
+
+- One web server called `novasbe-kart`, on the free plan, in Frankfurt.
+- To prepare it: `npm ci --omit=dev`, which downloads our libraries without the test tools.
+- To start it: `npm start`.
+- To check it is alive: visit `/health`.
+- To put a new version online after every change to `main`.
+
+**What is online right now**
+
+The version in `main`: the practice race with the whole track on screen. The camera views and online play are in the branch `online-play` and appear online once that pull request is merged.
+
+**A worry that came up**
+
+Render's review page did not show the word "Free", and Catarina asked whether she would be charged. Our file says `plan: free`, and Render can only charge a payment card that has been given to it. The page carried a standard notice that future changes to the file are applied automatically and may change costs. In this project that file only changes through a reviewed pull request.
+
+**What was checked, and what was not**
+
+- Checked from outside, by the agent: https://novasbe-kart.onrender.com/health answers `{"status":"ok"}`, and the main address sends our game page with the title "Nova SBE kart racer".
+- Checked on Render by Catarina: the Blueprint page shows the service as created, with a green tick.
+- Checked on Render by Catarina: the service page for `novasbe-kart` says "Free".
+- **Not checked yet:** that merging into `main` puts the new version online by itself. That will be seen when the `online-play` pull request is merged.
+- **Not checked yet:** the two-laptop checklist.
+
+**Good to know**
+
+- The free server goes to sleep after 15 minutes without visitors and takes about a minute to wake up. Open the link a few minutes before showing it to anyone.
+- No secret was needed for this step. The project has none yet. The first one will be the database address, which goes into Render's "Environment" page and never into the repository or this chat.
+
+**What comes next**
+
+Merge the `online-play` pull request, check that the new version appears at the link, then run the two-laptop checklist.
+
+### 10 November 2026: Step 8, first online connection
+
+Done on Catarina's laptop with Claude Code. The branch is `online-play`. It starts from `camera-views`, so it contains the camera work as well, and the two will go into one pull request.
+
+**What was done**
+
+There is a second page, "Online test", next to the practice page. Everyone who opens it drives on the same test track and sees everyone else's kart, each in its own colour. Our server moves all the karts.
+
+How it works, in four lines:
+
+1. The browser opens a live connection to the server and sends only which keys are held.
+2. The server keeps one kart for each connected browser and moves them all, 60 steps a second, with the same rules file the practice race uses.
+3. 20 times a second the server sends every browser the state of all karts.
+4. The browser draws what it is told. It moves no kart itself.
+
+| File | What it is for |
+|---|---|
+| `server/room.js` | New. The karts of everyone driving together. Knows nothing about the internet |
+| `server/messages.js` | New. Checks every message a browser sends |
+| `server/online.js` | New. The live connections: who may connect, what they may send, and sending the updates |
+| `server/start.js` | Switches online play on when the server starts |
+| `client/online.html`, `client/online.js` | New. The online page |
+| `client/net.js` | New. Makes online karts move smoothly between the server's updates |
+| `client/hud.js` | New. The lap counter, clock and message, taken out of `main.js` so both pages share it |
+| `client/draw.js` | Draws other players' karts, a colour for each player, and a dot for each on the small map |
+| `client/main.js`, `client/index.html`, `client/style.css` | Use the shared parts, and link the two pages to each other |
+| `docs/two-laptop-checklist.md` | New. Thirteen checks to do by hand with two laptops |
+| `tests/room.test.js`, `tests/online.test.js`, `tests/net.test.js` | New. Seventy-four tests |
+| `tests/client.test.js` | Four more tests |
+| `package.json`, `package-lock.json` | The new library |
+| `PROJECT_BRIEF.md`, `README.md`, `WALKTHROUGH.md` and the notes in `server/`, `client/`, `tests/` | Updated |
+
+**New library: ws 8.22.2**
+
+- What it does: keeps a live two-way connection (a WebSocket) open between a browser and our server.
+- Why we need it: a normal web request is "ask once, get one answer". For online play the server has to keep sending kart positions.
+- The alternative: writing that connection code ourselves, which is long and easy to get wrong in ways that matter for security.
+- It brings no other packages with it. `npm audit` found 0 known security problems on 10 November 2026.
+- Catarina gave her OK before it was added, as rule 8 of the brief and `AGENTS.md` ask.
+
+**Why a player cannot cheat by changing the page**
+
+The browser never says where its kart is. It only says which keys are held. The server works out everything else. One test proves that a kart moves online exactly as it would in practice with the same keys.
+
+**What the server refuses**
+
+Each has a test.
+
+- Any message that is not exactly "these keys are held" or "restart". The browser is disconnected.
+- Data that is not text, and messages that are far too long.
+- More than 60 messages in a second from one browser.
+- A ninth player. The room takes eight.
+- A live connection to any address other than `/play`.
+- A live connection started by a page on someone else's website.
+- Driving someone else's kart. A test has one browser press the gas while claiming to be another player. Only its own kart moves.
+
+**Why karts move smoothly**
+
+Updates arrive 20 times a second, but the screen shows 60 pictures a second. The browser shows the race a tenth of a second in the past, and draws each kart at the right point between the two updates on either side of that moment. If updates stop, the karts hold still.
+
+**Decisions**
+
+All made by the agent, please confirm:
+
+- One room for everyone, with no code, no host and no race start. That is the smallest thing that shows two browsers seeing each other. The brief's rooms with codes come later.
+- Eight players in the room. The brief proposes four humans per race. Eight leaves space for the whole team and a few testers.
+- A separate page for online, linked from the practice page.
+- A player's clock starts at their first key press, as in practice.
+- A browser that sends one message the server does not understand is disconnected at once.
+- At most 60 messages a second from one browser.
+- In the view from behind, other players' karts are painted flat on the road. Standing-up karts need artwork.
+- Your own kart online is also drawn from the server's updates, so it reacts a moment late. The brief lists the fix, "prediction", as a stretch goal.
+
+**Git steps the agent ran, and what each one means**
+
+| Command | In plain words |
+|---|---|
+| `git switch -c online-play` | Make a new branch called `online-play`, starting from `camera-views` |
+| `git add` and `git commit` | Save the snapshot with a message |
+| `git push -u origin online-play` | Send the branch to GitHub as a backup. No pull request yet |
+
+Other commands: `npm install --save-exact ws` adds the library at an exact version. `npm audit` looks for known security problems.
+
+**What was checked, and what was not**
+
+- Checked: `npm test`. 274 of 274 tests pass (196 from before, 78 new). The tests with real connections add about three seconds.
+- Checked that the tests really guard the rules: the agent broke the online code on purpose in 24 different ways, one at a time, for example "other websites may connect" and "keys go to the first player in the room". 23 were caught straight away. One was not: accepting an update that arrives late. The test for it was too weak. It was tightened, and now catches it.
+- Checked in a browser on this laptop: two tabs connected to the server. The first was told it is the red kart and the second the blue one, and both said "2 players here". The first tab pressed the gas. In the second tab, which pressed nothing, the red kart had driven to the far wall and the blue kart had not moved.
+- **Not checked: two laptops on two different internet connections.** That is the real test, and it is what the base asks for. It needs the server online on Render. The checklist for it is written.
+- **Not checked:** how big the delay feels over the real internet, and how the server copes on Render's free plan.
+
+**How to check this step yourself**
+
+Run `npm start`. Open http://localhost:3000/online.html in two browser windows side by side. Drive in one and watch the other.
+
+**What comes next**
+
+Putting the server online, which needs a Render account. Then running the two-laptop checklist. Then a pull request for the camera views and online play together.
+
+### 10 November 2026: Camera views, and working in bigger pieces
+
+Done on Catarina's laptop with Claude Code.
+
+**Where things stood**
+
+Pull request #4 (steps 3, 5, 6 and 7) was approved and merged into `main`. GitHub's copy of `main` now has the server, the driving rules, the test track and the driving in the browser.
+
+**Why this was done**
+
+Catarina drove the kart and found it underwhelming: the whole map sat still on the screen and nothing moved except a small kart. She asked for a camera that moves, ideally a tilted view from behind the kart, depending on how hard that is.
+
+It turned out not to be hard, because the camera is only about drawing. The rules that move the kart did not change at all, and neither did any of their tests.
+
+**What was done**
+
+Three camera views. The V key switches between them, and the page shows the name of the current one.
+
+| View | What you see |
+|---|---|
+| Behind the kart | Tilted, from behind and above. The track turns around the kart, so the kart always drives up the screen, and the road narrows into the distance. The kart is drawn from behind, with the driver's helmet. This is the view Catarina asked for, and the one the game starts in |
+| From above | Zoomed in, from straight above, moving with the kart. North stays up. The camera looks a little ahead, glides, and stops at the edges of the track. This is the view the brief decided on |
+| Whole track | The old view: everything at once |
+
+Three more things were added so the views read well:
+
+- A small map in the corner, with a dot for the kart.
+- A faint chequered pattern on the road and the grass. Without it the road was one flat colour, and a flat colour looks the same whether you are moving or not.
+- A red and white striped edge wherever a wall meets open ground, so it is clear where the track ends.
+
+| File | What changed |
+|---|---|
+| `client/camera.js` | New. The arithmetic of the camera, with no painting in it |
+| `client/draw.js` | Rewritten for the three views, the small map, the road pattern and the striped edges |
+| `client/main.js` | Keeps track of the current view and the camera position |
+| `client/keyboard.js` | Listens for V. The game now tells it what to do by name (`onRestart`, `onView`, `onDrive`) instead of by position, which is easier to read |
+| `client/index.html` | Shows the camera name and mentions V in the help text |
+| `tests/camera.test.js` | New. Thirty-five tests |
+| `tests/client.test.js` | Four more tests, for V |
+| `AGENTS.md`, `PROJECT_BRIEF.md` | The two decisions below |
+| `README.md`, `WALKTHROUGH.md`, `client/README.md`, `tests/README.md` | Updated |
+
+**How the tilt is made**
+
+For every picture, the track is first painted flat on a hidden canvas, turned so that the kart points straight up. Then it is copied to the screen one thin row at a time. A row near the top takes a wide slice from far ahead and squeezes it. A row near the bottom takes a narrow slice from close by and stretches it. That squeezing and stretching is what looks like tilt. Old console racing games did the same thing. No 3D library is used.
+
+**How hard would the rest be?**
+
+- What exists now: flat ground, one kart, drawn with simple coloured shapes. That took one sitting.
+- Other karts in the tilted view: not hard. They are placed and sized by distance, and the arithmetic for that is already written and tested (`chasePoint`).
+- Walls and buildings that stand up, a sky, scenery: clearly more work. Either more drawing code of our own or a 3D library, which would be a big new thing for everyone to understand before the walkthrough.
+- Real artwork for characters: in the tilted view each character needs a picture from behind, and from other sides once other karts are shown. In the view from above one picture per character is enough.
+
+**Decisions**
+
+- **Decided by Catarina on 10 November, teammates confirm by approving the pull request:** the game starts in the tilted view from behind the kart. The brief had decided "north is always up, the map never rotates", and the tilted view does the opposite, so this changes a team decision. Both views are built and V switches between them, so the team can compare before confirming. Changing the starting view is one line: the order of the list `VIEWS` at the top of `client/camera.js`.
+- **Decided by Catarina on 10 November, teammates confirm by approving the pull request:** work in bigger pieces. Each step is still its own commit, but the steps of one piece of work share a branch and one pull request, opened when the piece is complete. The reason: work should not stop while a pull request waits for a teammate. `AGENTS.md` rule 5 was changed to say this.
+- Decisions made by the agent, please confirm: the names of the views, the starting numbers at the top of `camera.js` (zoom, tilt, how far ahead you see), and the road pattern and striped edges.
+
+**Git steps the agent ran, and what each one means**
+
+| Command | In plain words |
+|---|---|
+| `git fetch` | Ask GitHub what changed there. This showed pull request #4 was merged |
+| `git switch -c camera-views main` | Make a new branch called `camera-views`, starting from the up-to-date `main` |
+| `git add` and `git commit` | Save the snapshot with a message |
+| `git push -u origin camera-views` | Send the branch to GitHub as a backup. No pull request is opened yet |
+
+**What was checked, and what was not**
+
+- Checked: `npm test`. 196 of 196 tests pass (157 from before, 39 new). None of the tests for the driving rules, the track or the laps had to change.
+- Checked in the browser after Catarina's choice: the page opens in the view from behind the kart, and V goes on to the view from above and then the whole track.
+- Checked in a browser on this laptop: all three views show without errors, V goes round them, the small map shows the kart's dot, and a script drove the kart through corners in the view from above and in the tilted view.
+- **Not checked: how the views feel at full speed.** As before, the agent's browser redraws slowly. Catarina driving it is the real check, in particular whether the tilted view is comfortable in corners, and whether the numbers at the top of `camera.js` should change.
+- **Not checked:** how the tilted view runs on a slow laptop.
+
+**How to check this step yourself**
+
+Run `npm start`, open http://localhost:3000, drive, and press V to go through the three views.
+
+**What comes next**
+
+More work on this same branch before a pull request is opened. Candidates: putting the server online (needs a Render account), and step 8, two browsers seeing each other's kart.
 
 ### 10 November 2026: The agent can now send work to GitHub
 

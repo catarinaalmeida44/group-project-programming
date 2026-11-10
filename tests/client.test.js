@@ -8,6 +8,42 @@
 import { describe, it, expect } from "vitest";
 import { formatTime } from "../client/format.js";
 import { inputFromKeys, createKeyboard } from "../client/keyboard.js";
+import { lapTimesText, VIEW_NAMES, createHud } from "../client/hud.js";
+import { VIEWS } from "../client/camera.js";
+
+describe("the numbers around the track", () => {
+  it("shows nothing for lap times before the first lap is finished", () => {
+    expect(lapTimesText([])).toBe("");
+  });
+
+  it("shows how long each finished lap took, not the time on the clock when it ended", () => {
+    // Lap 1 ended at step 240 (4 seconds). Lap 2 ended at step 600 (10 seconds), so it took 6.
+    expect(lapTimesText([240])).toBe("Lap 1: 0:04.00");
+    expect(lapTimesText([240, 600])).toBe("Lap 1: 0:04.00   Lap 2: 0:06.00");
+  });
+
+  it("has a name for every camera view", () => {
+    for (const view of VIEWS) {
+      expect(typeof VIEW_NAMES[view]).toBe("string");
+    }
+  });
+
+  it("fills in the lap, the clock, the camera name, the lap times and the message", () => {
+    // A stand-in for the page: it hands out one "element" per name and remembers them.
+    const elements = {};
+    const fakePage = { getElementById: (name) => (elements[name] ??= { textContent: "" }) };
+    const show = createHud(fakePage);
+
+    show({ lap: 2, laps: 3, steps: 600, lapSteps: [240], view: "chase", message: "Hello" });
+
+    expect(elements.lap.textContent).toBe(2);
+    expect(elements.laps.textContent).toBe(3);
+    expect(elements.time.textContent).toBe("0:10.00");
+    expect(elements.view.textContent).toBe("Behind the kart");
+    expect(elements["lap-times"].textContent).toBe("Lap 1: 0:04.00");
+    expect(elements.message.textContent).toBe("Hello");
+  });
+});
 
 describe("showing a race time", () => {
   it("shows minutes, seconds and hundredths", () => {
@@ -70,11 +106,12 @@ describe("listening to the keyboard", () => {
     const fakeWindow = new EventTarget();
     let restarts = 0;
     let drives = 0;
-    const keyboard = createKeyboard(
-      fakeWindow,
-      () => restarts++,
-      () => drives++,
-    );
+    let viewChanges = 0;
+    const keyboard = createKeyboard(fakeWindow, {
+      onRestart: () => restarts++,
+      onDrive: () => drives++,
+      onView: () => viewChanges++,
+    });
 
     /** Pretends the player did something with a key. Gives back the event, to inspect it. */
     function send(type, key, extra = {}) {
@@ -82,8 +119,45 @@ describe("listening to the keyboard", () => {
       fakeWindow.dispatchEvent(event);
       return event;
     }
-    return { keyboard, send, restarts: () => restarts, drives: () => drives };
+    return {
+      keyboard,
+      send,
+      restarts: () => restarts,
+      drives: () => drives,
+      viewChanges: () => viewChanges,
+    };
   }
+
+  it("changes the camera view when V is pressed, in capitals or not", () => {
+    const { send, viewChanges, restarts } = setUp();
+    send("keydown", "v");
+    send("keydown", "V");
+    expect(viewChanges()).toBe(2);
+    expect(restarts()).toBe(0);
+  });
+
+  it("changes the view only once while V is held down", () => {
+    const { send, viewChanges } = setUp();
+    send("keydown", "v");
+    send("keydown", "v", { repeat: true });
+    send("keydown", "v", { repeat: true });
+    expect(viewChanges()).toBe(1);
+  });
+
+  it("does not count V as a driving key", () => {
+    const { keyboard, send, drives } = setUp();
+    send("keydown", "v");
+    expect(keyboard.isDriving()).toBe(false);
+    expect(drives()).toBe(0);
+  });
+
+  it("keeps the arrow keys working while a driving key repeats", () => {
+    // A held arrow key sends "repeat" presses. They must not be ignored.
+    const { keyboard, send } = setUp();
+    send("keydown", "ArrowUp");
+    send("keydown", "ArrowUp", { repeat: true });
+    expect(keyboard.input().gas).toBe(true);
+  });
 
   it("tells the game at once when a driving key goes down, even for the shortest tap", () => {
     const { keyboard, send, drives } = setUp();
@@ -101,10 +175,12 @@ describe("listening to the keyboard", () => {
     expect(drives()).toBe(0);
   });
 
-  it("works when the game gives it nothing to do on a driving key", () => {
+  it("works when the game gives it nothing to do for any key", () => {
     const fakeWindow = new EventTarget();
-    const keyboard = createKeyboard(fakeWindow, () => {});
-    fakeWindow.dispatchEvent(Object.assign(new Event("keydown"), { key: "ArrowUp" }));
+    const keyboard = createKeyboard(fakeWindow);
+    for (const key of ["ArrowUp", "r", "v"]) {
+      fakeWindow.dispatchEvent(Object.assign(new Event("keydown"), { key }));
+    }
     expect(keyboard.input().gas).toBe(true);
   });
 

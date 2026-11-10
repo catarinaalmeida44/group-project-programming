@@ -3,11 +3,13 @@
 A 2D online kart racing game set at the Nova SBE Carcavelos campus.
 Team project for Introduction to Programming (course 2477) at Nova SBE.
 
-**Status:** one kart can be driven round a test track in the browser, with a lap counter and a finish time. Not online yet, and no multiplayer yet.
+**Status:** one kart can be driven round a test track in the browser, with a lap counter, a finish time and three camera views. On the "Online test" page, up to eight browsers connected to the same server see each other's karts. The server is on the internet at the link below.
 
 ## Play it
 
-Deployed URL: _not deployed yet (it will be added when the first server is online)_
+Deployed URL: https://novasbe-kart.onrender.com
+
+The server is on a free plan and goes to sleep after 15 minutes without visitors. If the page does not open at once, wait about a minute: it is waking up.
 
 ## Team
 
@@ -40,7 +42,9 @@ Run the app:
 npm start
 ```
 
-Then open http://localhost:3000 in a browser and drive with the arrow keys. To stop the app, press Ctrl+C in the terminal.
+Then open http://localhost:3000 in a browser and drive with the arrow keys. V changes the camera and R starts again. To stop the app, press Ctrl+C in the terminal.
+
+To try online play on one laptop, open http://localhost:3000/online.html in two browser windows side by side.
 
 ## Where things are
 
@@ -51,6 +55,7 @@ Then open http://localhost:3000 in a browser and drive with the arrow keys. To s
 | `shared/` | The rules of the game (driving physics, laps), used by both the browser and the server |
 | `tests/` | Automatic tests that check the rules |
 | `docs/build-diary.md` | A dated diary, in plain language, of what was built and why |
+| `docs/two-laptop-checklist.md` | The checks we do by hand, with two laptops, for online play |
 | `WALKTHROUGH.md` | Answers to the questions staff may ask about the project |
 | `PROJECT_BRIEF.md` | What we are building and what has been decided |
 | `AGENTS.md` | The rules our coding agents must follow (`CLAUDE.md` points to it) |

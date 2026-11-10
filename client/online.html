@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nova SBE kart racer: online test</title>
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <main>
+      <h1>Nova SBE kart racer</h1>
+      <nav class="modes">
+        <a href="/">Practice alone</a>
+        <strong>Online test</strong>
+      </nav>
+
+      <!-- The numbers above the track. online.js fills them in. -->
+      <div class="hud">
+        <span>Lap <strong id="lap">1</strong> of <strong id="laps">3</strong></span>
+        <span>Time <strong id="time">0:00.00</strong></span>
+        <span>Camera <strong id="view"></strong></span>
+        <span id="lap-times" class="lap-times"></span>
+      </div>
+
+      <!-- The track is drawn on the canvas. The message sits on top of it. -->
+      <div class="screen">
+        <canvas id="track" width="960" height="576">Your browser cannot show the game.</canvas>
+        <p id="message" class="message" role="status"></p>
+      </div>
+
+      <p id="status" class="status" role="status">Connecting to the server...</p>
+      <p class="help">
+        Arrow keys: <kbd>↑</kbd> gas, <kbd>↓</kbd> brake and reverse, <kbd>←</kbd> <kbd>→</kbd> steer.
+        <kbd>R</kbd> puts your kart back at the start. <kbd>V</kbd> changes the camera. Drive clockwise.
+      </p>
+      <p class="note">
+        Everyone who opens this page drives on the same track, and our server moves all the karts.
+        There is no race start yet, and karts pass through each other. Nothing is saved.
+      </p>
+    </main>
+
+    <script type="module" src="/online.js"></script>
+  </body>
+</html>
