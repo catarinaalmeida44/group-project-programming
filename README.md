@@ -3,7 +3,7 @@
 A 2D online kart racing game set at the Nova SBE Carcavelos campus.
 Team project for Introduction to Programming (course 2477) at Nova SBE.
 
-**Status:** a small server that shows a "hello" page, a first version of the driving rules, and automatic tests. Nothing can be driven on screen yet.
+**Status:** a small server that shows a "hello" page, the driving rules, a test track with walls and laps, and automatic tests. Nothing can be driven on screen yet.
 
 ## Play it
 

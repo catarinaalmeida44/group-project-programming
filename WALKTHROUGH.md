@@ -10,7 +10,11 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 |---|---|---|
 | What the browser shows (page, drawing, keyboard) | `client/` | Only a "hello" page |
 | The game server | `server/app.js` builds it, `server/start.js` starts it | Yes, a first version that only sends the page |
-| The driving rules | `shared/physics.js` | Yes, a first version: speeding up, braking, steering, grip, grass. No walls or laps yet |
+| The driving rules | `shared/physics.js` | Yes, a first version: speeding up, braking, steering, grip, grass |
+| Tracks, the ground and walls | `shared/track.js` | Yes |
+| Laps and race time | `shared/laps.js` | Yes |
+| All the rules put together for one racer | `shared/race.js` | Yes |
+| The test track | `shared/tracks/test-oval.js` | Yes. It is a simple loop, not a campus track |
 | The drivers and their scores | `shared/characters.js` | One placeholder driver |
 | The kinds of ground | `shared/surfaces.js` | Road and grass |
 | The automatic tests | `tests/` | Yes, for the driving rules, the server and a number helper |
@@ -44,6 +48,26 @@ A driver's scores go from 1 to 5.75. They are not speeds. At the top of `physics
 
 Our placeholder driver, with middle scores, reaches 80% of its top speed in about 1.2 seconds, stops in about half a second when braking, and keeps about 75% of its top speed on grass.
 
+## How is a track described, and how do walls work?
+
+A track is drawn with letters in a file, one letter for each square of ground: `#` is wall, `.` is road and `,` is grass. Open `shared/tracks/test-oval.js` to see one. When the game starts, `shared/track.js` checks the drawing and stops with a clear error if it is wrong, for example if the start is inside a wall.
+
+For walls, a kart is treated as a circle. After every move, the game checks whether the circle overlaps a wall square. If it does, the kart is pushed back out and bounces: the part of its speed going into the wall is turned round and halved, and the part going along the wall is kept. A head-on hit sends the kart back at half speed. A scrape costs very little. Everything outside the drawing counts as wall, so a kart can never leave the track.
+
+## How are laps counted, and can a player cheat?
+
+A track has checkpoints: invisible rectangles across the road, in driving order. The first one is the finish line. The game keeps one count for each kart: checkpoints passed.
+
+- Driving into the next checkpoint adds one.
+- Driving back into the checkpoint before the last one takes one away.
+- Driving into any other checkpoint changes nothing.
+
+A lap is complete each time the count reaches a new full round. These cannot complete a lap, and each has a test: skipping a checkpoint, taking them in the wrong order, driving the wrong way round, going back and forth over the finish line, and reversing over the finish line to count the same lap twice.
+
+Race time is counted in steps of the game, 60 per second, not with a clock. A finish time is therefore exact and the same on every computer.
+
+Our first version of this rule had a mistake: a kart driving the wrong way round was given a lap after about three rounds. A test that drives a "robot" kart the wrong way round the test track found it, and the rule was rewritten as described above.
+
 ## Where is data stored, and what exactly is stored?
 
 Nothing is stored yet.
@@ -52,17 +76,20 @@ Plan: a Postgres database hosted on Neon. The base will have one simple table th
 
 ## What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 57 tests today.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 132 tests today.
 
 **Covered today**
 
+- Tracks and walls in `shared/track.js`. Thirty-five tests: reading a track, twelve kinds of badly drawn track that must be refused, the ground at a spot, and bouncing off walls from every side and in a corner.
+- Laps in `shared/laps.js`. Twenty-seven tests. Fourteen of them are laps that must not count.
+- Whole races in `shared/race.js`. Thirteen tests. A small "robot driver" written in the test file steers a kart round the test track: three whole laps, the wrong way round, and flat out into a wall.
 - The driving rules in `shared/physics.js`. Thirty-four tests: speeding up, top speed, coasting, braking, reversing, steering, grip, grass, and bad input that must be refused or ignored (keys that are not exactly "pressed", scores that are out of range, a driver with a missing score). They compare behaviours, such as "more acceleration reaches top speed sooner", instead of exact numbers, so we can tune the numbers without breaking the tests.
 - `clamp` in `shared/numbers.js`, which keeps a number between a lowest and a highest value. Ten tests: six for normal use and four for bad input that must be refused.
 - The server in `server/app.js`. Thirteen tests. Seven check what it must do: send the page, the style file and the health check. Six check what it must refuse: missing pages, requests that change things, file kinds not on the list, files outside the `client/` folder (seven different ways of writing such an address), and two kinds of broken address.
 
 The server tests start a real copy of the server on the computer running the tests and send it real requests.
 
-To check that the tests really guard the rules, we broke the driving rules on purpose in 14 different ways, one at a time (for example "grass is as fast as road"). Every time, at least one test failed.
+To check that the tests really guard the rules, we broke the rules on purpose in 33 different ways, one at a time (for example "grass is as fast as road" and "driving backwards is not counted"). Every time, at least one test failed.
 
 **Not covered today**
 
@@ -100,6 +127,8 @@ Nothing is deployed yet. These are the limits we expect from the free hosting pl
 ## What are the known limits, and what would we change next?
 
 - The numbers in the driving rules are first guesses. Nobody has driven the kart yet, so they will change once we can.
-- The driving rules have no walls, laps, drifting, bumping between karts, sand or sea yet.
+- The driving rules have no drifting, bumping between karts, sand or sea yet.
+- A kart is a circle for walls, although it will be drawn as a rectangle. Its corners can look as if they poke slightly into a wall.
+- Walls are whole squares. A track cannot have a diagonal or curved wall yet, only steps.
 - The server reads a file from disk for every request. That is fine for a few players. With many visitors we would keep the files in memory.
 - The rest is to be filled in as we build.

@@ -13,7 +13,7 @@ The base is the working foundation described in section 8 of `PROJECT_BRIEF.md`.
 | 3 | A small server on Render that shows a "hello" page at a public link | The server is built and works on a laptop. Not on GitHub yet. Not online yet |
 | 4 | Database: the server writes and reads one row in Neon | Not started |
 | 5 | Driving rules, first version: one kart speeds up, brakes, steers and slides (tests only, no screen) | Built. Not on GitHub yet |
-| 6 | Test track, walls and laps: a simple oval with walls to bounce off, and laps that only count if no checkpoint is skipped (tests only) | Not started |
+| 6 | Test track, walls and laps: a simple oval with walls to bounce off, and laps that only count if no checkpoint is skipped (tests only) | Built. Not on GitHub yet |
 | 7 | Drive in the browser: arrow keys, lap counter, finish time | Not started |
 | 8 | First online connection: two browsers see each other's kart | Not started |
 | 9 | Two-laptop checklist, run on two different networks | Not started |
@@ -37,6 +37,74 @@ Steps 3 and 4, step 5 and step 6 touch different files, so three people can buil
 | Agent | The AI coding assistant (Claude Code or Codex) that writes most of the code |
 
 ## Entries
+
+### 10 November 2026: Step 6, test track, walls and laps
+
+Done on Catarina's laptop with Claude Code. This step's branch, `test-track`, starts from `driving-rules`, so it contains steps 3 and 5 as well.
+
+**What was done**
+
+The project now has a track to drive on, walls that karts bounce off, and laps that are counted and timed. There is still nothing to see on a screen. That is the next step.
+
+| File | What it is for |
+|---|---|
+| `shared/track.js` | Reads a track drawn with letters, says what the ground is at any spot, and makes karts bounce off walls |
+| `shared/tracks/test-oval.js` | The test track: a loop of road four squares wide, around a block of wall with a strip of grass round it. Open the file to see it drawn with letters |
+| `shared/laps.js` | Counts checkpoints, laps and race time |
+| `shared/race.js` | Puts the rule files together. `stepRacer` moves one racer forward by one step: look at the ground, move the kart, bounce off walls, update the laps |
+| `tests/track.test.js`, `tests/laps.test.js`, `tests/race.test.js` | Seventy-five new tests |
+| `tests/small-track.js` | A tiny track shared by the tests. Not a test itself |
+| `README.md`, `WALKTHROUGH.md`, `shared/README.md`, `tests/README.md` | Updated |
+
+**The new rules, in plain words**
+
+- **Track.** One letter per square of ground: `#` wall, `.` road, `,` grass. A badly drawn track is refused with a message that says what is wrong.
+- **Walls.** A kart is treated as a circle. If it overlaps a wall it is pushed back out and bounces. A head-on hit sends it back at half speed. A scrape along a wall costs very little. Everything outside the drawing counts as wall.
+- **Laps.** A track has checkpoints, invisible rectangles across the road, and the first one is the finish line. The game counts the checkpoints a kart has passed: the next one adds one, going back through the one before takes one away, any other changes nothing. A lap is complete each time the count reaches a new full round.
+- **Time.** Counted in steps of the game, 60 per second, not with a clock. A finish time is exact and the same on every computer.
+- **After the finish.** The keys are ignored and the kart rolls to a stop.
+
+**A mistake the tests found**
+
+The first version of the lap rule only remembered "which checkpoint comes next" and ignored all the others. One test drives a small robot kart the wrong way round the test track for a minute and expects zero laps. It failed: the kart had been given two laps. Going the wrong way, the kart still met the "next" checkpoint once per round, so after three rounds or so it had collected them all.
+
+The rule was rewritten to count checkpoints forwards and backwards, as described above. The tests that only place a kart in checkpoints by hand had not found this, because none of them went round more than twice. There is now one that goes round ten times.
+
+**The robot driver**
+
+Nobody can press keys during a test. So `tests/race.test.js` has a few lines of code that steer a kart towards the next corner of the track. With today's numbers the robot finishes three laps in 24.3 seconds, about 8 seconds a lap. It is only in the tests, not in the game. The computer karts planned for later will work in a similar way.
+
+**Decisions**
+
+All made by the agent, please confirm:
+
+- Tracks are drawn with letters in a file. This is easy to read and to change by hand. The campus tracks are planned to be drawn in a map editor called Tiled, which also stores a track as a grid of squares, so the same rules will work.
+- A square of track is 32 units wide. A kart is a circle 10 units from middle to edge for walls.
+- A scrape along a wall keeps its speed along the wall. The brief says "bounce back and lose about half your speed", which is what happens in a head-on hit. Halving the whole speed on every touch would stop a kart almost dead whenever it brushed a wall.
+- A track needs a finish line and at least two more checkpoints. With fewer, "the one before" and "the next one" would be the same checkpoint.
+- Checkpoints cover the grass beside the road too, so a kart that runs wide onto the grass does not lose its lap.
+- After the finish, the keys are ignored.
+
+**Git steps the agent ran, and what each one means**
+
+| Command | In plain words |
+|---|---|
+| `git switch -c test-track` | Make a new branch called `test-track`, starting from `driving-rules` |
+| `git add` and `git commit` | Save the snapshot with a message |
+
+**What was checked, and what was not**
+
+- Checked: `npm test`. 132 of 132 tests pass (57 from before, 75 new).
+- Checked that the tests really guard the rules: the agent broke the track, wall and lap rules on purpose in 19 different ways, one at a time, for example "driving backwards is not counted" and "no walls during a race". Every time at least one test failed. The files were put back exactly as they were.
+- **Not checked:** how the track and the walls feel to drive. There is no screen yet.
+
+**How to check this step yourself**
+
+In a terminal in the project folder, run `npm test`. The last lines should say "Tests 132 passed (132)".
+
+**What comes next**
+
+Step 7: drawing the track and the kart in the browser, and driving with the arrow keys.
 
 ### 10 November 2026: Step 5, driving rules, first version
 
