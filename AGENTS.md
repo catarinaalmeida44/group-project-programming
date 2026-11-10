@@ -18,7 +18,7 @@ Needs Node.js 26 or newer. Whoever adds or changes a command also updates it her
 
 - Download the libraries (once, and again whenever `package-lock.json` changes): `npm install`
 - Run the tests: `npm test`
-- Run the app: _to be added with the first server_
+- Run the app: `npm start`, then open http://localhost:3000. Stop it with Ctrl+C.
 
 Test files live in `tests/` and end in `.test.js`. GitHub runs `npm test` on every pull request (`.github/workflows/tests.yml`).
 

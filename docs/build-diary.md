@@ -9,8 +9,8 @@ The base is the working foundation described in section 8 of `PROJECT_BRIEF.md`.
 | Step | What it adds | State |
 |---|---|---|
 | 1 | Project skeleton: folders, README, rules for agents, example secrets file, these notes | Merged into `main` on 10 Nov (pull request #2) |
-| 2 | Automatic tests: one example test, and GitHub runs the tests on every pull request | Waiting for review |
-| 3 | A small server on Render that shows a "hello" page at a public link | Not started |
+| 2 | Automatic tests: one example test, and GitHub runs the tests on every pull request | Pull request #3 is open and waiting for Fran's approval. GitHub ran the tests on it and they passed |
+| 3 | A small server on Render that shows a "hello" page at a public link | The server is built and works on a laptop. Waiting for review. Not online yet |
 | 4 | Database: the server writes and reads one row in Neon | Not started |
 | 5 | Driving rules, first version: one kart speeds up, brakes, steers, bounces off walls (tests only, no screen) | Not started |
 | 6 | Test track and laps: a simple oval, and laps that only count if no checkpoint is skipped (tests only) | Not started |
@@ -37,6 +37,86 @@ Steps 3 and 4, step 5 and step 6 touch different files, so three people can buil
 | Agent | The AI coding assistant (Claude Code or Codex) that writes most of the code |
 
 ## Entries
+
+### 10 November 2026: Step 3, a small server (not online yet)
+
+Done on Catarina's laptop with Claude Code.
+
+**First, a check on step 2**
+
+The one thing not checked in step 2 is now checked. On pull request #3, GitHub ran the tests by itself and they passed in 11 seconds. The pull request also says "At least 1 approving review is required", so `main` already refuses changes that no teammate approved.
+
+Pull request #3 was not merged yet when this step started. It was waiting for Fran's approval. So this step's branch starts from the step 2 branch instead of from `main`.
+
+**What was done**
+
+The project now has a server: a program that waits for browsers to ask for a page and sends it to them. Running `npm start` on a laptop and opening http://localhost:3000 shows a "hello" page. `localhost` means "this same computer", so nobody else can see it yet.
+
+| File | What it is for |
+|---|---|
+| `server/app.js` | Builds the server and decides what to answer for each request |
+| `server/start.js` | Starts the server. This is what `npm start` runs |
+| `client/index.html` | The "hello" page |
+| `client/style.css` | How the page looks |
+| `tests/server.test.js` | Thirteen tests for the server |
+| `render.yaml` | Tells Render how to set the server up: free plan, Frankfurt, which commands to run. Not used until the Render account exists |
+| `.node-version` | The exact Node.js version (26.13.0). Render and the tests on GitHub both read it, so they use the same one |
+| `package.json` | Added the command `npm start`. Changed the Node.js rule from "26 or newer" to "any 26", because Render advises against a rule with no upper limit |
+| `.github/workflows/tests.yml` | Now reads the Node.js version from `.node-version` |
+| `README.md`, `AGENTS.md`, `WALKTHROUGH.md` and the notes in `server/`, `client/`, `tests/` | Updated |
+
+**What the server does**
+
+- Sends files from the `client/` folder. The address `/` means `index.html`.
+- Answers `/health` with a short "I am alive" message. Render will visit that address to check the server is running.
+
+**What the server refuses**
+
+- Requests that try to change something. Only reading is allowed for now.
+- Files outside the `client/` folder. An address such as `/../server/app.js` means "go up one folder", and would otherwise let anyone read any file of the project.
+- Kinds of file that are not on its short list.
+- Addresses that are broken.
+
+**No new library**
+
+The server is built on `http`, the web server that comes with Node.js. The usual alternative is a library called Express, which would be less code for us to write but brings dozens of other packages with it. The brief asks for few libraries, and the security grade asks for minimal dependencies.
+
+**Decisions**
+
+- Decision made by the agent, please confirm: no server library (see above).
+- Decision made by the agent, please confirm: the Render service is called `novasbe-kart`, so the public link will be close to `novasbe-kart.onrender.com`. The game title is still open, so the name is neutral. It is hard to change later.
+- Decision made by the agent, please confirm: the Render region is Frankfurt, the closest one to Portugal. It cannot be changed after the service is created.
+- Decision made by the agent, please confirm: on a laptop the server only accepts visitors from that same laptop. This avoids a Windows firewall question. On Render it accepts visitors from the internet.
+
+**Git steps the agent ran, and what each one means**
+
+| Command | In plain words |
+|---|---|
+| `git fetch` | Ask GitHub what changed there. This showed that the step 2 branch was on GitHub and `main` had not changed |
+| `git switch -c small-server` | Make a new branch called `small-server`, starting from the step 2 branch |
+| `git add` and `git commit` | Save the snapshot with a message |
+
+**What was checked, and what was not**
+
+- Checked: `npm test`. 23 of 23 tests pass (10 from step 2, 13 new).
+- Checked that the safety tests really work: the agent switched off the "stay inside the `client/` folder" check on purpose, ran the tests, and the right test failed. Then it switched the check back on and all tests passed again.
+- Checked in a browser on this laptop: the page shows with its style, `/health` answers `{"status":"ok"}`, and the browser reports no errors.
+- **Not checked:** the server on Render. Nothing is online yet.
+- **Not checked:** that Render accepts `render.yaml` as written. It follows Render's documentation, but it has not been used yet.
+
+**How to check this step yourself**
+
+In a terminal in the project folder, run `npm start`, then open http://localhost:3000 in a browser. You should see "Nova SBE kart racer" on a dark background. Press Ctrl+C in the terminal to stop the server.
+
+**Still to do**
+
+- Put the server online. This needs a Render account, which only Catarina can create, and it needs this step to be merged into `main` first, because Render takes the code from `main`.
+- Add the public link to the README.
+- In the GitHub settings, also require the "Run the tests" check before merging. One approval is already required.
+
+**What comes next**
+
+Putting the server online, then step 5, the first version of the driving rules.
 
 ### 10 November 2026: Step 2, automatic tests
 

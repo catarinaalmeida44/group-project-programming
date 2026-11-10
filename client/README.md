@@ -4,4 +4,9 @@ Everything the browser shows and does: the web page, the drawing of the track an
 
 "Client" is the usual name for the browser's side of an app.
 
-Empty for now. The first files arrive when one kart can be driven in the browser.
+| File | What it does |
+|---|---|
+| `index.html` | The page. For now it only says that the server is running |
+| `style.css` | How the page looks: colours, sizes, spacing |
+
+Everything in this folder can be downloaded by anyone who visits the site, so nothing private ever goes here. This note itself is not sent to browsers, because the server does not send `.md` files.
