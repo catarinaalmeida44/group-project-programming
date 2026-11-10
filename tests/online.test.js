@@ -8,6 +8,8 @@
 // the server's clock, which runs in real time.
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import net from "node:net";
+import crypto from "node:crypto";
 import WebSocket from "ws";
 import { createApp } from "../server/app.js";
 import { attachOnlinePlay, ONLINE_ADDRESS, MAX_MESSAGES_PER_SECOND } from "../server/online.js";
@@ -15,6 +17,7 @@ import { TEST_DRIVER } from "../shared/characters.js";
 import { TEST_OVAL } from "../shared/tracks/test-oval.js";
 
 const ROOM_SIZE = 3;
+const GOODBYE_WAIT = 300; // thousandths of a second the test server waits before hanging up on someone it sent away
 const BROKE_THE_RULES = 1008;
 const GAS = { type: "keys", gas: true, brake: false, left: false, right: false };
 const NO_KEYS = { type: "keys", gas: false, brake: false, left: false, right: false };
@@ -26,7 +29,12 @@ let browsers;
 
 beforeEach(async () => {
   app = createApp();
-  online = attachOnlinePlay(app, { track: TEST_OVAL, character: TEST_DRIVER, maxPlayers: ROOM_SIZE });
+  online = attachOnlinePlay(app, {
+    track: TEST_OVAL,
+    character: TEST_DRIVER,
+    maxPlayers: ROOM_SIZE,
+    goodbyeWaitMs: GOODBYE_WAIT,
+  });
   await new Promise((resolve) => app.listen(0, "127.0.0.1", resolve));
   port = app.address().port;
   browsers = [];
@@ -34,7 +42,8 @@ beforeEach(async () => {
 
 afterEach(async () => {
   for (const browser of browsers) {
-    browser.socket.terminate();
+    // Normal pretend browsers have terminate(). The "deaf" ones have destroy().
+    (browser.socket.terminate ?? browser.socket.destroy).call(browser.socket);
   }
   online.close();
   await new Promise((resolve) => app.close(resolve));
@@ -85,6 +94,56 @@ function connect({ address = ONLINE_ADDRESS, origin } = {}) {
       }
     });
     socket.on("error", reject); // refused before the connection opened
+  });
+}
+
+/**
+ * Connects a "deaf" browser: one that can send, but never reacts to anything
+ * the server sends. In particular it never answers when the server says
+ * goodbye. A broken or hostile program can behave like this, and on the
+ * internet a goodbye can also simply fail to arrive.
+ *
+ * A normal browser tool always answers a goodbye by itself, so this one
+ * speaks the connection's own language by hand.
+ * Gives back:
+ *   send(text)   sends a text message
+ *   hungUp       resolves when the server has cut the connection
+ */
+function connectDeaf() {
+  return new Promise((resolve, reject) => {
+    const socket = net.connect(port, "127.0.0.1");
+    const key = crypto.randomBytes(16).toString("base64");
+    socket.on("error", reject);
+    socket.on("connect", () => {
+      // The request a browser sends to turn a normal connection into a live one.
+      socket.write(
+        `GET ${ONLINE_ADDRESS} HTTP/1.1\r\n` +
+          `Host: 127.0.0.1:${port}\r\n` +
+          "Upgrade: websocket\r\nConnection: Upgrade\r\n" +
+          `Sec-WebSocket-Key: ${key}\r\nSec-WebSocket-Version: 13\r\n\r\n`,
+      );
+    });
+    const hungUp = new Promise((done) => socket.on("close", done));
+    socket.once("data", (answer) => {
+      if (!answer.toString().startsWith("HTTP/1.1 101")) {
+        reject(new Error("The server did not accept the live connection"));
+        return;
+      }
+      socket.on("data", () => {}); // receive everything, react to nothing
+      browsers.push({ socket }); // so it is tidied away after the test
+      resolve({
+        socket,
+        hungUp,
+        send(text) {
+          // One text message in the connection's format: a marker, the
+          // length, a 4-byte mask, and the text scrambled with that mask.
+          const payload = Buffer.from(text);
+          const mask = crypto.randomBytes(4);
+          const scrambled = Buffer.from(payload.map((byte, index) => byte ^ mask[index % 4]));
+          socket.write(Buffer.concat([Buffer.from([0x81, 0x80 | payload.length]), mask, scrambled]));
+        },
+      });
+    });
   });
 }
 
@@ -243,6 +302,43 @@ describe("what the server refuses", () => {
     // The cheat is gone from the track, and nothing else moved.
     const after = await watcher.next(stateWith(1));
     expect(kartIn(after, watcher.first.id).x).toBe(watcherStart.x);
+  });
+
+  it("takes a rule-breaker's kart off the track at once, even if its browser never answers the goodbye", async () => {
+    // Found on the live server: the server said goodbye and then waited for
+    // an answer that did not come, and the kart stayed on the track.
+    const watcher = await connect();
+    const deaf = await connectDeaf();
+    await watcher.next(stateWith(2));
+
+    deaf.send("hello"); // not a message the server understands
+
+    await watcher.next(stateWith(1), 250); // gone within a quarter of a second
+    expect(online.room.playerCount()).toBe(1);
+    deaf.socket.destroy();
+  });
+
+  it("hangs up on a rule-breaker that does not leave by itself", async () => {
+    const deaf = await connectDeaf();
+    deaf.send("hello");
+    const result = await Promise.race([
+      deaf.hungUp.then(() => "the server hung up"),
+      pause(GOODBYE_WAIT + 1500).then(() => "still connected"),
+    ]);
+    expect(result).toBe("the server hung up");
+  });
+
+  it("hangs up on a player it turned away from a full room, even if their browser never answers", async () => {
+    for (let player = 0; player < ROOM_SIZE; player++) {
+      await connect();
+    }
+    const deaf = await connectDeaf(); // one too many
+    const result = await Promise.race([
+      deaf.hungUp.then(() => "the server hung up"),
+      pause(GOODBYE_WAIT + 1500).then(() => "still connected"),
+    ]);
+    expect(result).toBe("the server hung up");
+    expect(online.room.playerCount()).toBe(ROOM_SIZE);
   });
 
   it("disconnects a browser that sends data that is not text", async () => {

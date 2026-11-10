@@ -4,7 +4,9 @@ The automatic tests check online play with pretend browsers on one computer. The
 
 Run it after anything that touches online play, and before the demo.
 
-**Last run:** not run yet. The server is online, but the "Online test" page only appears there once the pull request with online play is merged into `main`.
+**Last run:** not run yet. It can be run now: the "Online test" page is at the public link.
+
+On 10 November the agent connected two pretend browsers from one laptop to the live server. They saw each other, with 20 updates a second. That is not this checklist: it was one laptop and one internet connection.
 
 ## Before you start
 

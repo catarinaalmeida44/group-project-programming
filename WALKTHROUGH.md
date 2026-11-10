@@ -134,12 +134,12 @@ Plan: a Postgres database hosted on Neon. The base will have one simple table th
 
 ## What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 274 tests today.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 277 tests today.
 
 **Covered today**
 
 - The room and the message checks in `server/room.js` and `server/messages.js`. Thirty-two tests, without any network: joining and leaving, a full room, only your own kart moves, a kart moves online exactly as it would in practice, and ten tests of messages a browser might send, most of which must be refused.
-- Online play in `server/online.js`. Nineteen tests with real live connections to a real copy of the server on the computer running the tests. Two pretend browsers see each other's kart move. Ten tests are refusals: messages that are not understood, data that is not text, a message far too long, too many messages, a full room, a wrong address, another website, and a player claiming to be someone else.
+- Online play in `server/online.js`. Twenty-two tests with real live connections to a real copy of the server on the computer running the tests. Two pretend browsers see each other's kart move. Thirteen tests are refusals: messages that are not understood, data that is not text, a message far too long, too many messages, a full room, a wrong address, another website, a player claiming to be someone else, and a "deaf" browser that breaks a rule and then never answers the server's goodbye.
 - Smooth online movement in `client/net.js`. Twenty-three tests: karts glide between updates, hold still when updates stop, and are not thrown off by a late or repeated update.
 - Tracks and walls in `shared/track.js`. Thirty-five tests: reading a track, twelve kinds of badly drawn track that must be refused, the ground at a spot, and bouncing off walls from every side and in a corner.
 - Laps in `shared/laps.js`. Twenty-seven tests. Fourteen of them are laps that must not count.
@@ -156,11 +156,12 @@ To check that the tests really guard the rules, we broke the code on purpose in 
 
 **Not covered today**
 
-- Online play between two real laptops on two different internet connections. The tests use pretend browsers on one computer, where messages arrive instantly. Delay, uneven arrival and lost connections are checked by hand with `docs/two-laptop-checklist.md`, which has not been run yet because the server is not on the internet.
+- Online play between two real laptops on two different internet connections. The tests use pretend browsers on one computer, where messages arrive instantly. Delay, uneven arrival and lost connections are checked by hand with `docs/two-laptop-checklist.md`, which has not been run yet.
+- Anything that only happens on the real internet. We have one example already. On the first day online, a browser that broke a rule was not removed from the live server, although the test for exactly that passed on one computer: the server was waiting for the browser to answer its goodbye, and through Render's network the answer did not come. It is fixed, and there is now a test with a browser that never answers. The lesson is that passing tests show the code does what the tests imagined, not that it works everywhere.
 - How the driving feels. No test can say whether a kart is fun to drive. That needs a person at the keyboard.
 - The drawing (`client/draw.js`) and the loop that runs the race (`client/main.js`). They need a real page. They were checked in a browser: by looking at the page, and by a script that pressed the keys and drove a whole three-lap race while we watched the lap counter, the clock and the finish message.
 - How smooth the race looks at full speed on a normal screen. The browser used for that check was running in the background, where browsers redraw only about once a second.
-- The server on Render, beyond a first look: it answers its health check and sends the game page. Nothing tests the live server automatically. Whether a merge into `main` really puts the new version online by itself has not been seen yet.
+- The server on Render, beyond two looks by hand: it answers its health check, sends the game pages, updated itself after a merge into `main`, and let two connections see each other at 20 updates a second. Nothing tests the live server automatically.
 - Everything that is not built yet.
 
 The tests use a library called Vitest. It is only used while developing. It is not part of what runs on Render or what players get. The online tests also use `ws` to play the part of a browser.
@@ -192,7 +193,7 @@ These are the limits we expect from the free hosting plans:
 - **One outside library for the server, `ws`, and only for live connections.** Writing that part ourselves would be long and easy to get wrong in ways that matter for security. `ws` is the standard choice, brings no other packages with it, and its version is pinned. Everything else is built on `http`, the web server that comes with Node.js. Fewer libraries means fewer things that can have security problems. The usual alternative for the web part is a library called Express.
 - **The room knows nothing about the internet.** `server/room.js` only keeps the karts and moves them. `server/online.js` does the connections. The room can then be tested without any network, and the rules for "who may do what" sit in one small file.
 - **Online, the browser shows the past.** Showing other karts a tenth of a second late lets them glide smoothly between updates. The alternative, guessing where they are now, makes them jump back when the guess is wrong.
-- **A browser that sends anything unexpected is disconnected at once.** Our own page never sends such a message, so there is no reason to be patient with one.
+- **A browser that sends anything unexpected is sent away at once.** Our own page never sends such a message, so there is no reason to be patient with one. Its kart leaves the track immediately, and the server cuts the connection itself after two seconds instead of waiting for the browser to agree.
 - **The server only sends file kinds on a short list, and only from two folders.** A file we forget somewhere cannot leak by accident.
 - **No drawing library for now.** The track and the kart are drawn with the canvas that is built into every browser. All the drawing is in two files, `client/draw.js` and `client/camera.js`, so it can be replaced by a game library such as Phaser later without touching the rules. Whether to do that is still an open decision for the team.
 - **The browser code is split by job.** Keys, camera, drawing, time as text and the race loop each have their own file, and none of them decides how a kart moves. That is why adding two new camera views changed nothing in the rules or their tests.

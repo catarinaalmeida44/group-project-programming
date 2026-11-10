@@ -34,6 +34,8 @@ For online play:
 - a live connection to any address other than `/play`
 - a live connection started by a page on someone else's website
 - a player when the room is full (eight players)
-- any message that is not exactly one of the two allowed kinds: the browser is disconnected
-- more than 60 messages in a second from one browser: it is disconnected
+- any message that is not exactly one of the two allowed kinds: the browser is sent away
+- more than 60 messages in a second from one browser: it is sent away
+
+"Sent away" means three things, in this order: its kart leaves the track at once, the server tells it why, and two seconds later the server cuts the connection if the browser has not closed it. The server does not wait for the browser to agree.
 - driving another player's kart. A connection can only ever act on its own kart, and anything extra in a message, such as another player's number, is dropped
