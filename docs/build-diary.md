@@ -11,7 +11,7 @@ The base is the working foundation described in section 8 of `PROJECT_BRIEF.md`.
 | 1 | Project skeleton: folders, README, rules for agents, example secrets file, these notes | Merged into `main` on 10 Nov (pull request #2) |
 | 2 | Automatic tests: one example test, and GitHub runs the tests on every pull request | Merged into `main` on 10 Nov (pull request #3) |
 | 3 | A small server on Render that shows a "hello" page at a public link | Done. Online since 10 Nov at https://novasbe-kart.onrender.com, and a merge into `main` puts the new version online by itself (seen with pull request #5) |
-| 4 | Database: the server writes and reads one row in Neon | Built. The database and its address are set up. Not yet seen working: the university Wi-Fi blocks it from a laptop, and the live server gets the code with the next merge |
+| 4 | Database: the server writes and reads one row in Neon | Built, and it works from a laptop on a phone hotspot. The live server gets the code with the next merge and is still to be checked |
 | 5 | Driving rules, first version: one kart speeds up, brakes, steers and slides (tests only, no screen) | Merged into `main` on 10 Nov (pull request #4) |
 | 6 | Test track, walls and laps: a simple oval with walls to bounce off, and laps that only count if no checkpoint is skipped (tests only) | Merged into `main` on 10 Nov (pull request #4) |
 | 7 | Drive in the browser: arrow keys, lap counter, finish time | Merged into `main` on 10 Nov (pull request #4) |
@@ -38,6 +38,40 @@ Steps 3 and 4, step 5 and step 6 touch different files, so three people can buil
 | Agent | The AI coding assistant (Claude Code or Codex) that writes most of the code |
 
 ## Entries
+
+### 10 November 2026: The database works, seen from a phone hotspot
+
+Done on Catarina's laptop with Claude Code. No code changed, only notes.
+
+**What happened**
+
+Catarina moved the laptop from the university Wi-Fi to her phone's hotspot. Nothing else was changed.
+
+| Check | On the university Wi-Fi | On the hotspot |
+|---|---|---|
+| `npm run test:database`, the five tests against the real database | All five failed, each after waiting ten seconds | All five passed, in 13 seconds together |
+| The real server, started with the real address | Started, and said the database could not be reached | Started, and wrote "Database: this start was recorded" |
+| `/database-check` | "The database could not be reached" | `"ok":true`, 1 start |
+
+Then the server was stopped and started again. `/database-check` said 2 starts. The first start was still there after the server that wrote it was gone. That is what a database is for.
+
+**What this settles**
+
+- Our code, the `pg` library and the real database work together.
+- The university's student Wi-Fi was what blocked the database. The same laptop, the same file and the same code work on another network.
+
+**A side effect to know about**
+
+The two starts above were this laptop's, and they are in the real table. The table counts every start of any copy of the server that has the real address, not only the live one. That is harmless for a table that only exists as proof, and it will not be true of real data later: tests and experiments must never write to tables that hold players' data.
+
+**What was checked, and what was not**
+
+- Checked: everything in the table above.
+- **Not checked yet: the live server.** It has the address but not the code. After the next merge, https://novasbe-kart.onrender.com/database-check should say `"ok":true`.
+
+**What comes next**
+
+The pull request for the branch `finish-base`, then that last check. Then the other players' karts, drawn standing up.
 
 ### 10 November 2026: Step 4, the database, and a guide for the team
 

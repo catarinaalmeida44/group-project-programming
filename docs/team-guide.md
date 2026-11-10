@@ -15,7 +15,7 @@ The game is online at https://novasbe-kart.onrender.com
 | "Online test" page: up to eight browsers see each other's karts | Works. Tried with three players on three laptops |
 | Automatic tests | About 300. GitHub runs them on every pull request |
 | The server on the internet | Works. It updates itself a few minutes after every merge into `main` |
-| The database | Set up. The server saves one row each time it starts. See section 8 for a catch on the university Wi-Fi |
+| The database | Works. The server saves one row each time it starts, and remembers it after a restart. See section 8 for a catch on the university Wi-Fi |
 | Accounts, campus tracks, characters, items, computer karts, cup, leaderboards | Not started. This is the work ahead |
 
 The full story of how each part was built, and why, is in `docs/build-diary.md`. The answers to likely staff questions are in `WALKTHROUGH.md`.
@@ -107,7 +107,7 @@ Ask the owner before changing a file they look after. That is the main way we av
 
 ## 8. Things that will trip you up
 
-- **The university Wi-Fi blocks the database.** On `students.novasbe.pt`, a laptop cannot reach our database: the connection opens and then nothing comes back. This was measured on 10 November. The game still runs, and it says "The database could not be reached". For database work, use a phone hotspot or your home Wi-Fi. The tests that use a pretend database run anywhere. The live server is not on that Wi-Fi and is not affected.
+- **The university Wi-Fi blocks the database.** On `students.novasbe.pt`, a laptop cannot reach our database: the connection opens and then nothing comes back. This was measured on 10 November: the same laptop, file and code failed on that Wi-Fi and worked on a phone hotspot. The game still runs, and it says "The database could not be reached". For database work, use a phone hotspot or your home Wi-Fi. The tests that use a pretend database run anywhere. The live server is not on that Wi-Fi and is not affected.
 - **Only Catarina has the database address.** It is a secret and is not in the repository. If your part needs the real database on your laptop, ask her in person. Do not send it through a chat.
 - **The free server sleeps.** After 15 minutes without visitors it takes about a minute to wake up. Open the link a few minutes before you show it to anyone.
 - **Right after installing Node.js, `npm` may be "not found".** Close and reopen the app or terminal you are using.

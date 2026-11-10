@@ -27,7 +27,7 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 | The automatic tests | `tests/` | Yes, for the driving rules, the server and a number helper |
 | The instructions that make GitHub run the tests | `.github/workflows/tests.yml` | Yes |
 | The instructions that tell Render how to run the server | `render.yaml` and `.node-version` | Yes, in use since 10 November |
-| The database connection | `server/db.js` | Yes, a first version with one small table. Checked with a pretend database and by hand. Not yet seen working on the live server |
+| The database connection | `server/db.js` | Yes, a first version with one small table. Works from a laptop against the real database. Not yet seen working on the live server |
 
 ## How does a page reach the browser?
 
@@ -166,7 +166,8 @@ To check that the tests really guard the rules, we broke the code on purpose in 
 
 **Not covered today**
 
-- The five tests against the real database have never passed. They were run once, on the university's student Wi-Fi, which does not let database traffic through, and all five failed for that reason. The address and password in `.env` were confirmed another way: the database answered a question sent over the normal web channel. Whether our code and the real database work together will first be seen on the live server, or on a laptop on another network.
+- The database on the live server. On a laptop it works: with the laptop on a phone hotspot, the five tests against the real database passed, and the real server recorded a start, was stopped and started again, and then reported two starts. On the university's student Wi-Fi the same five tests fail, because that network does not let database traffic through. The live server has the database address but gets the database code only with the next merge, so `/database-check` on the public link has not been seen working yet.
+- The five real-database tests are never run by GitHub, which does not have the database address. They only run when someone runs them by hand, on a network that allows it.
 - Online play between two real laptops on two different internet connections. The tests use pretend browsers on one computer, where messages arrive instantly. Delay, uneven arrival and lost connections are checked by hand with `docs/two-laptop-checklist.md`, which has not been run yet.
 - Anything that only happens on the real internet. We have one example already. On the first day online, a browser that broke a rule was not removed from the live server, although the test for exactly that passed on one computer: the server was waiting for the browser to answer its goodbye, and through Render's network the answer did not come. It is fixed, there is now a test with a browser that never answers, and the fix was checked on the live server. The lesson is that passing tests show the code does what the tests imagined, not that it works everywhere.
 - The "server has gone quiet" notice appearing for real. Its wording and timing are tested, but on one computer a cut connection is noticed at once, so the notice never shows there.
