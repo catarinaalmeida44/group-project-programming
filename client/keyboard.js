@@ -26,7 +26,7 @@ const doNothing = () => {};
  *     onRestart  R was pressed
  *     onView     V was pressed
  *     onDrive    a driving key went down. The game uses it to start the
- *                clock at the very first key press, however short it is
+ *                countdown at the very first key press, however short it is
  * Gives back two questions the game can ask at any moment:
  *   input()      which driving keys are held
  *   isDriving()  is at least one driving key held
