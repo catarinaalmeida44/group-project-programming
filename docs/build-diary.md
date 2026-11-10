@@ -77,7 +77,9 @@ No game code yet. This step only prepares the project so that everything built l
 | `git switch -c project-skeleton` | Make a new branch called `project-skeleton` and move onto it, so `main` is not touched |
 | `git add` | Choose which changed files go into the next snapshot |
 | `git commit` | Save the snapshot with a message |
-| `git push` | Send the branch to GitHub so teammates can see it |
+| `git push` | Send the branch to GitHub so teammates can see it. **This one did not work**, see below |
+
+The push failed because the login to GitHub on this laptop is kept inside GitHub Desktop, and the agent cannot use it from outside. So Catarina sends the branch to GitHub herself with the "Publish branch" button in GitHub Desktop, and then opens the pull request with the "Create Pull Request" button.
 
 **What was checked, and what was not**
 
