@@ -8,7 +8,7 @@ The base is the working foundation described in section 8 of `PROJECT_BRIEF.md`.
 
 | Step | What it adds | State |
 |---|---|---|
-| 1 | Project skeleton: folders, README, rules for agents, example secrets file, these notes | Waiting for review |
+| 1 | Project skeleton: folders, README, rules for agents, example secrets file, these notes | Merged into `main` on 10 Nov (pull request #2) |
 | 2 | Automatic tests: one example test, and GitHub runs the tests on every pull request | Waiting for review |
 | 3 | A small server on Render that shows a "hello" page at a public link | Not started |
 | 4 | Database: the server writes and reads one row in Neon | Not started |
@@ -99,9 +99,9 @@ Sending the branch to GitHub is done by Catarina with "Publish branch" in GitHub
 
 In a terminal in the project folder, run `npm install` once and then `npm test`. The last lines should say "Tests 10 passed (10)".
 
-**Order of merging**
+**Step 1 was merged in the meantime**
 
-Merge the step 1 pull request (`project-skeleton`) first, then this one (`automatic-tests`). Until step 1 is merged, the step 2 pull request also shows the step 1 files. That is expected.
+While this step was being built, the step 1 pull request (#2) was merged into `main`. So the pull request for this step shows only the step 2 files.
 
 **Still to do after this is merged**
 
