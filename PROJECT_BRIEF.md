@@ -276,7 +276,7 @@ Email service: Brevo (verification and password-reset emails)
 ```
 
 - One language for the whole project: JavaScript.
-- **[OPEN]** Drawing: Phaser (handles images, camera, sound and Tiled maps) or plain HTML canvas. The recommendation is Phaser for drawing only; the physics and the rules are our own code.
+- **[OPEN]** Drawing: Phaser (handles images, camera, sound and Tiled maps) or plain HTML canvas. The recommendation is Phaser for drawing only; the physics and the rules are our own code. *10 Nov 2026: the base draws with plain canvas. Decision made by the agent as the simplest option that is easy to undo (all drawing is in `client/draw.js`). The team still has to decide before the campus tracks are built.*
 - The live connection uses the `ws` library. Password scrambling uses Node's built-in `scrypt`, so no extra library.
 - Tests use Vitest and run automatically on every pull request (GitHub Actions). `main` is protected: changes need a pull request, 1 approval and passing tests.
 - Hosting is Render's free web service, which redeploys automatically from `main`. The database is Neon's free plan. Do NOT use Render's free database: it expires 30 days after creation, which would be around presentation time.

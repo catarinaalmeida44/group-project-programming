@@ -1,0 +1,182 @@
+// Tests for the parts of the browser code that can be tested without a
+// browser: turning a time into text (client/format.js) and turning key
+// presses into driving input (client/keyboard.js).
+//
+// The drawing (client/draw.js) and the game loop (client/main.js) need a
+// real page, so they are checked by eye in a browser instead.
+
+import { describe, it, expect } from "vitest";
+import { formatTime } from "../client/format.js";
+import { inputFromKeys, createKeyboard } from "../client/keyboard.js";
+
+describe("showing a race time", () => {
+  it("shows minutes, seconds and hundredths", () => {
+    expect(formatTime(0)).toBe("0:00.00");
+    expect(formatTime(5.5)).toBe("0:05.50");
+    expect(formatTime(24.27)).toBe("0:24.27");
+    expect(formatTime(83.45)).toBe("1:23.45");
+    expect(formatTime(600)).toBe("10:00.00");
+  });
+
+  it("cuts the time off at hundredths instead of rounding up, like a stopwatch", () => {
+    expect(formatTime(59.999)).toBe("0:59.99");
+    expect(formatTime(0.009)).toBe("0:00.00");
+  });
+
+  it("is exact for times that come from counting steps of the game", () => {
+    expect(formatTime(60 / 60)).toBe("0:01.00"); //   60 steps
+    expect(formatTime(90 / 60)).toBe("0:01.50"); //   90 steps
+    expect(formatTime(1456 / 60)).toBe("0:24.26"); // 24.2666... seconds
+    expect(formatTime(0.29)).toBe("0:00.29"); //      0.29 * 100 is 28.999999999999996 in a computer
+  });
+
+  it("shows dashes for anything that is not a sensible time", () => {
+    for (const notATime of [-1, NaN, Infinity, "12", undefined, null]) {
+      expect(formatTime(notATime)).toBe("-:--.--");
+    }
+  });
+});
+
+describe("turning held keys into driving input", () => {
+  it("maps the four arrow keys to gas, brake, left and right", () => {
+    expect(inputFromKeys(new Set(["ArrowUp"]))).toEqual({ gas: true, brake: false, left: false, right: false });
+    expect(inputFromKeys(new Set(["ArrowDown"]))).toEqual({ gas: false, brake: true, left: false, right: false });
+    expect(inputFromKeys(new Set(["ArrowLeft"]))).toEqual({ gas: false, brake: false, left: true, right: false });
+    expect(inputFromKeys(new Set(["ArrowRight"]))).toEqual({ gas: false, brake: false, left: false, right: true });
+  });
+
+  it("reports several keys held together", () => {
+    expect(inputFromKeys(new Set(["ArrowUp", "ArrowRight"]))).toEqual({
+      gas: true,
+      brake: false,
+      left: false,
+      right: true,
+    });
+  });
+
+  it("ignores every other key", () => {
+    expect(inputFromKeys(new Set(["a", " ", "Enter", "arrowup"]))).toEqual({
+      gas: false,
+      brake: false,
+      left: false,
+      right: false,
+    });
+  });
+});
+
+describe("listening to the keyboard", () => {
+  /** A stand-in for the browser window, a keyboard listening to it, and a count of restarts. */
+  function setUp() {
+    const fakeWindow = new EventTarget();
+    let restarts = 0;
+    let drives = 0;
+    const keyboard = createKeyboard(
+      fakeWindow,
+      () => restarts++,
+      () => drives++,
+    );
+
+    /** Pretends the player did something with a key. Gives back the event, to inspect it. */
+    function send(type, key, extra = {}) {
+      const event = Object.assign(new Event(type, { cancelable: true }), { key, ...extra });
+      fakeWindow.dispatchEvent(event);
+      return event;
+    }
+    return { keyboard, send, restarts: () => restarts, drives: () => drives };
+  }
+
+  it("tells the game at once when a driving key goes down, even for the shortest tap", () => {
+    const { keyboard, send, drives } = setUp();
+    send("keydown", "ArrowUp");
+    send("keyup", "ArrowUp"); // released straight away
+    expect(drives()).toBe(1);
+    expect(keyboard.isDriving()).toBe(false);
+  });
+
+  it("does not tell the game to start for keys that do not drive", () => {
+    const { send, drives } = setUp();
+    send("keydown", "a");
+    send("keydown", "r");
+    send("keydown", "Enter");
+    expect(drives()).toBe(0);
+  });
+
+  it("works when the game gives it nothing to do on a driving key", () => {
+    const fakeWindow = new EventTarget();
+    const keyboard = createKeyboard(fakeWindow, () => {});
+    fakeWindow.dispatchEvent(Object.assign(new Event("keydown"), { key: "ArrowUp" }));
+    expect(keyboard.input().gas).toBe(true);
+  });
+
+  it("holds no keys at the start", () => {
+    const { keyboard } = setUp();
+    expect(keyboard.isDriving()).toBe(false);
+    expect(keyboard.input().gas).toBe(false);
+  });
+
+  it("holds a key from the moment it goes down until it comes up", () => {
+    const { keyboard, send } = setUp();
+    send("keydown", "ArrowUp");
+    expect(keyboard.input().gas).toBe(true);
+    expect(keyboard.isDriving()).toBe(true);
+
+    send("keyup", "ArrowUp");
+    expect(keyboard.input().gas).toBe(false);
+    expect(keyboard.isDriving()).toBe(false);
+  });
+
+  it("keeps the other keys held when one of them is released", () => {
+    const { keyboard, send } = setUp();
+    send("keydown", "ArrowUp");
+    send("keydown", "ArrowLeft");
+    send("keyup", "ArrowLeft");
+    expect(keyboard.input()).toEqual({ gas: true, brake: false, left: false, right: false });
+  });
+
+  it("stops the arrow keys from scrolling the page, and leaves other keys alone", () => {
+    const { send } = setUp();
+    expect(send("keydown", "ArrowDown").defaultPrevented).toBe(true);
+    expect(send("keydown", "a").defaultPrevented).toBe(false);
+    expect(send("keydown", "F5").defaultPrevented).toBe(false);
+  });
+
+  it("starts again when R is pressed, in capitals or not", () => {
+    const { send, restarts } = setUp();
+    send("keydown", "r");
+    send("keydown", "R");
+    expect(restarts()).toBe(2);
+  });
+
+  it("starts again only once while R is held down", () => {
+    const { send, restarts } = setUp();
+    send("keydown", "r");
+    send("keydown", "r", { repeat: true });
+    send("keydown", "r", { repeat: true });
+    expect(restarts()).toBe(1);
+  });
+
+  it("does not count other keys as driving, and does not restart for them", () => {
+    const { keyboard, send, restarts } = setUp();
+    send("keydown", "a");
+    send("keydown", " ");
+    send("keydown", "Enter");
+    expect(keyboard.isDriving()).toBe(false);
+    expect(restarts()).toBe(0);
+  });
+
+  it("lets go of every key when the player switches to another window", () => {
+    const { keyboard, send } = setUp();
+    send("keydown", "ArrowUp");
+    send("keydown", "ArrowRight");
+    send("blur");
+    expect(keyboard.isDriving()).toBe(false);
+    expect(keyboard.input()).toEqual({ gas: false, brake: false, left: false, right: false });
+  });
+
+  it("ignores a key event that carries no key name", () => {
+    const { keyboard, send, restarts } = setUp();
+    send("keydown", undefined);
+    expect(keyboard.isDriving()).toBe(false);
+    expect(restarts()).toBe(0);
+  });
+});

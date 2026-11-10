@@ -86,6 +86,27 @@ describe("the server sends the page to the browser", () => {
   });
 });
 
+describe("the server sends the game rules to the browser", () => {
+  it("sends a rules file from the shared folder, labelled as code", async () => {
+    const answer = await ask("/shared/physics.js");
+    expect(answer.status).toBe(200);
+    expect(answer.headers["content-type"]).toContain("text/javascript");
+    expect(answer.body).toContain("export function stepKart");
+  });
+
+  it("sends a file from a folder inside the shared folder", async () => {
+    const answer = await ask("/shared/tracks/test-oval.js");
+    expect(answer.status).toBe(200);
+    expect(answer.body).toContain("TEST_OVAL");
+  });
+
+  it("sends the page's own code from the client folder", async () => {
+    const answer = await ask("/main.js");
+    expect(answer.status).toBe(200);
+    expect(answer.headers["content-type"]).toContain("text/javascript");
+  });
+});
+
 describe("the health check", () => {
   it("says the server is alive", async () => {
     const answer = await ask("/health");
@@ -134,6 +155,36 @@ describe("the server refuses what it should not do", () => {
       const answer = await ask(address);
       expect(answer.status, address).toBe(404);
       expect(answer.body, address).toBe("Page not found.");
+    }
+  });
+
+  it("does not send files from outside the shared folder through a /shared/ address", async () => {
+    const sneakyAddresses = [
+      "/shared/../server/app.js",
+      "/shared/..%2Fserver%2Fapp.js",
+      "/shared/%2e%2e/server/app.js",
+      "/shared/tracks/../../server/app.js",
+      "/shared/../package.json",
+      "/shared/../tests/server.test.js",
+    ];
+    for (const address of sneakyAddresses) {
+      const answer = await ask(address);
+      expect(answer.status, address).toBe(404);
+      expect(answer.body, address).toBe("Page not found.");
+    }
+  });
+
+  it("does not send the notes or the folder itself from the shared folder", async () => {
+    for (const address of ["/shared/README.md", "/shared/", "/shared", "/shared/tracks", "/shared/tracks/"]) {
+      const answer = await ask(address);
+      expect(answer.status, address).toBe(404);
+    }
+  });
+
+  it("does not send the server's own code or the tests under any plain address", async () => {
+    for (const address of ["/server/app.js", "/tests/server.test.js", "/package.json", "/render.yaml"]) {
+      const answer = await ask(address);
+      expect(answer.status, address).toBe(404);
     }
   });
 

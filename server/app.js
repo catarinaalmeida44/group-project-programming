@@ -1,13 +1,17 @@
 // Our game server, first version.
 //
 // What it does today:
-//   - sends the files in the "client" folder to the browser (the page, its style)
+//   - sends the files in the "client" folder to the browser (the page, its
+//     style, the drawing and keyboard code)
+//   - sends the files in the "shared" folder too, under addresses that start
+//     with "/shared/". Those are the game rules, and the browser needs them
+//     to run a practice race
 //   - answers "/health" with a short "I am alive" message, which Render uses
 //     to check that the server is running
 //
 // What it refuses:
 //   - anything that tries to change something (only reading is allowed for now)
-//   - any file outside the "client" folder
+//   - any file outside those two folders
 //   - any kind of file that is not on the list below
 //
 // This file only BUILDS the server. Starting it is done in start.js.
@@ -18,9 +22,15 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-// The folder that holds everything a browser is allowed to download.
+// The folders a browser is allowed to download from, and the beginning of
+// the addresses that lead to each one. The first match wins, so "/shared/"
+// has to come before "/". Nothing in the "server" or "tests" folders, and
+// nothing at the top of the project, can ever be downloaded.
 const SERVER_FOLDER = path.dirname(fileURLToPath(import.meta.url));
-const CLIENT_FOLDER = path.resolve(SERVER_FOLDER, "..", "client");
+const PUBLIC_FOLDERS = [
+  { addressStart: "/shared/", folder: path.resolve(SERVER_FOLDER, "..", "shared") },
+  { addressStart: "/", folder: path.resolve(SERVER_FOLDER, "..", "client") },
+];
 
 // The kinds of file we are willing to send, and the label the browser
 // needs to know what each one is. A file of any other kind is never sent.
@@ -67,7 +77,7 @@ async function answer(request, response) {
     return send(response, 200, FILE_TYPES[".json"], JSON.stringify({ status: "ok" }));
   }
 
-  const file = await findClientFile(address);
+  const file = await findPublicFile(address);
   if (file === null) {
     return sendText(response, 404, "Page not found.");
   }
@@ -95,17 +105,20 @@ function readAddress(rawUrl) {
 }
 
 /**
- * Looks for a file in the client folder.
+ * Looks for a file in one of the public folders.
  * Gives { type, content }, or null if the file may not be sent or does not exist.
  */
-async function findClientFile(address) {
+async function findPublicFile(address) {
   const wanted = address === "/" ? "/index.html" : address;
-  const fullPath = path.join(CLIENT_FOLDER, wanted);
+  const { addressStart, folder } = PUBLIC_FOLDERS.find((entry) =>
+    wanted.startsWith(entry.addressStart),
+  );
+  const fullPath = path.join(folder, wanted.slice(addressStart.length));
 
   // Safety check: an address such as "/../server/app.js" tries to climb out
-  // of the client folder. After joining, such a path no longer starts with
-  // the client folder, so we refuse it.
-  if (!fullPath.startsWith(CLIENT_FOLDER + path.sep)) {
+  // of the public folder. After joining, such a path no longer starts with
+  // that folder, so we refuse it.
+  if (!fullPath.startsWith(folder + path.sep)) {
     return null;
   }
 

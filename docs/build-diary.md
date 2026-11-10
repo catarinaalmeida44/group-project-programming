@@ -14,7 +14,7 @@ The base is the working foundation described in section 8 of `PROJECT_BRIEF.md`.
 | 4 | Database: the server writes and reads one row in Neon | Not started |
 | 5 | Driving rules, first version: one kart speeds up, brakes, steers and slides (tests only, no screen) | Built. Not on GitHub yet |
 | 6 | Test track, walls and laps: a simple oval with walls to bounce off, and laps that only count if no checkpoint is skipped (tests only) | Built. Not on GitHub yet |
-| 7 | Drive in the browser: arrow keys, lap counter, finish time | Not started |
+| 7 | Drive in the browser: arrow keys, lap counter, finish time | Built and working on a laptop. Not on GitHub yet |
 | 8 | First online connection: two browsers see each other's kart | Not started |
 | 9 | Two-laptop checklist, run on two different networks | Not started |
 
@@ -37,6 +37,74 @@ Steps 3 and 4, step 5 and step 6 touch different files, so three people can buil
 | Agent | The AI coding assistant (Claude Code or Codex) that writes most of the code |
 
 ## Entries
+
+### 10 November 2026: Step 7, driving in the browser
+
+Done on Catarina's laptop with Claude Code. This step's branch, `drive-in-browser`, starts from `test-track`, so it contains steps 3, 5 and 6 as well. Publishing this one branch sends all four steps to GitHub.
+
+**What was done**
+
+The kart can be driven. Run `npm start`, open http://localhost:3000, and drive round the test track with the arrow keys. The page shows the lap, the clock, the time of each finished lap, and a "Finished" message with the total time after three laps. R starts again.
+
+| File | What it is for |
+|---|---|
+| `client/index.html` | The page: lap counter, clock, the canvas the track is drawn on, help text. It replaces the "hello" page |
+| `client/style.css` | How the page looks |
+| `client/main.js` | Runs the practice race. For every picture on the screen it asks the keyboard which keys are held, asks the rules where the kart is now, and draws |
+| `client/keyboard.js` | Turns the arrow keys into gas, brake, left and right. R starts again |
+| `client/draw.js` | Draws the track from its letters, a chequered finish line, and the kart as a small red car with a yellow nose |
+| `client/format.js` | Turns seconds into a time such as `1:23.45` |
+| `server/app.js` | Now also sends the files of the `shared/` folder, under addresses that start with `/shared/`. The browser needs the rules to run the race |
+| `tests/client.test.js` | Nineteen tests for the time text and the keyboard |
+| `tests/server.test.js` | Six more tests, for sending the rules and for what must still be refused |
+| `PROJECT_BRIEF.md` | A note on the open "Phaser or plain canvas" item (see Decisions) |
+| `README.md`, `WALKTHROUGH.md` and the notes in `client/`, `server/`, `tests/` | Updated |
+
+**How the race runs**
+
+The rules must move in steps of exactly one sixtieth of a second, but screens do not all refresh at the same speed. So `main.js` measures how much real time has passed since the last picture and runs as many whole steps as fit in it. The clock starts at the first key press.
+
+The practice race runs entirely in the browser. Nothing is sent to the server and nothing is saved.
+
+**A small gap found while checking**
+
+At first the race started when the game noticed, between two pictures, that an arrow key was held. A key tapped and released faster than one picture (a sixtieth of a second) was missed, and the race did not start. A person cannot tap that fast, but the tool used to check the page can. The race now starts on the key press itself, and there is a test for the shortest possible tap.
+
+**Decisions**
+
+All made by the agent, please confirm:
+
+- **Plain canvas instead of Phaser, for now.** The brief marks this as open and recommends Phaser. The base only needs coloured squares and one kart, which the browser's built-in canvas does in under 100 lines with no library. All drawing is in `client/draw.js`, so switching to Phaser later does not touch the rules. The team should decide before the campus tracks are built.
+- The whole track is shown at once. A camera that follows the kart comes with the bigger tracks.
+- The server sends the `shared/` folder to browsers. It holds only the game rules, which are not secret.
+- The clock starts at the first key press, not when the page opens.
+- The page offers `kartGame.state()` in the browser's console, to look at the kart's numbers while tuning. It gives a copy, so it cannot be used to change the race.
+
+**Git steps the agent ran, and what each one means**
+
+| Command | In plain words |
+|---|---|
+| `git switch -c drive-in-browser` | Make a new branch called `drive-in-browser`, starting from `test-track` |
+| `git add` and `git commit` | Save the snapshot with a message |
+
+**What was checked, and what was not**
+
+- Checked: `npm test`. 157 of 157 tests pass (132 from before, 25 new).
+- Checked in a browser on this laptop: the page shows the track, the finish line and the kart, with no errors. One real tap of the up arrow starts the clock. R puts everything back to the start.
+- Checked in the same browser: a small script held the arrow keys the way a player would and drove a whole race. The lap counter went from 1 to 3, the lap times appeared, and the page showed "Finished in 0:28.48. Press R to race again."
+- Checked: in a window as narrow as a phone, the page still fits without scrolling sideways.
+- **Not checked: how it looks and feels at full speed.** The browser the agent uses was running in the background, where browsers redraw only about once a second. The race worked, but in slow motion and with jerky steering. On a normal, visible browser it should run at 60 pictures a second. Catarina driving it herself is the real check.
+- **Not checked:** the server on Render. Nothing is online yet.
+
+**How to check this step yourself**
+
+In a terminal in the project folder, run `npm start`, open http://localhost:3000 in a browser, and drive three laps clockwise. Try hitting a wall, cutting across the grass, and driving the wrong way round: no lap should count.
+
+**What comes next**
+
+- Putting the server online on Render, which needs this work merged into `main` and a Render account.
+- Step 8: two browsers seeing each other's kart.
+- Step 4: the database.
 
 ### 10 November 2026: Step 6, test track, walls and laps
 
