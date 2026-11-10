@@ -3,7 +3,7 @@
 A 2D online kart racing game set at the Nova SBE Carcavelos campus.
 Team project for Introduction to Programming (course 2477) at Nova SBE.
 
-**Status:** one kart can be driven round a test track in the browser, with a lap counter and a finish time. Not online yet, and no multiplayer yet.
+**Status:** one kart can be driven round a test track in the browser, with a lap counter, a finish time and three camera views. Not online yet, and no multiplayer yet.
 
 ## Play it
 
@@ -40,7 +40,7 @@ Run the app:
 npm start
 ```
 
-Then open http://localhost:3000 in a browser and drive with the arrow keys. To stop the app, press Ctrl+C in the terminal.
+Then open http://localhost:3000 in a browser and drive with the arrow keys. V changes the camera and R starts again. To stop the app, press Ctrl+C in the terminal.
 
 ## Where things are
 

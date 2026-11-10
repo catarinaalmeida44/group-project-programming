@@ -10,11 +10,12 @@ The base is the working foundation described in section 8 of `PROJECT_BRIEF.md`.
 |---|---|---|
 | 1 | Project skeleton: folders, README, rules for agents, example secrets file, these notes | Merged into `main` on 10 Nov (pull request #2) |
 | 2 | Automatic tests: one example test, and GitHub runs the tests on every pull request | Merged into `main` on 10 Nov (pull request #3) |
-| 3 | A small server on Render that shows a "hello" page at a public link | The server works on a laptop. On GitHub in the branch `drive-in-browser`, waiting for a pull request and a review. Not online yet |
+| 3 | A small server on Render that shows a "hello" page at a public link | The server is merged into `main` (pull request #4). Not online yet: that needs a Render account |
 | 4 | Database: the server writes and reads one row in Neon | Not started |
-| 5 | Driving rules, first version: one kart speeds up, brakes, steers and slides (tests only, no screen) | Built. On GitHub in the branch `drive-in-browser`, waiting for a pull request and a review |
-| 6 | Test track, walls and laps: a simple oval with walls to bounce off, and laps that only count if no checkpoint is skipped (tests only) | Built. On GitHub in the branch `drive-in-browser`, waiting for a pull request and a review |
-| 7 | Drive in the browser: arrow keys, lap counter, finish time | Works on a laptop. On GitHub in the branch `drive-in-browser`, waiting for a pull request and a review |
+| 5 | Driving rules, first version: one kart speeds up, brakes, steers and slides (tests only, no screen) | Merged into `main` on 10 Nov (pull request #4) |
+| 6 | Test track, walls and laps: a simple oval with walls to bounce off, and laps that only count if no checkpoint is skipped (tests only) | Merged into `main` on 10 Nov (pull request #4) |
+| 7 | Drive in the browser: arrow keys, lap counter, finish time | Merged into `main` on 10 Nov (pull request #4) |
+| 7b | Camera views: from above following the kart, tilted from behind the kart, and a small map. Not in the original plan | Built. On GitHub in the branch `camera-views`. No pull request yet, on purpose (see the newest entry) |
 | 8 | First online connection: two browsers see each other's kart | Not started |
 | 9 | Two-laptop checklist, run on two different networks | Not started |
 
@@ -37,6 +38,89 @@ Steps 3 and 4, step 5 and step 6 touch different files, so three people can buil
 | Agent | The AI coding assistant (Claude Code or Codex) that writes most of the code |
 
 ## Entries
+
+### 10 November 2026: Camera views, and working in bigger pieces
+
+Done on Catarina's laptop with Claude Code.
+
+**Where things stood**
+
+Pull request #4 (steps 3, 5, 6 and 7) was approved and merged into `main`. GitHub's copy of `main` now has the server, the driving rules, the test track and the driving in the browser.
+
+**Why this was done**
+
+Catarina drove the kart and found it underwhelming: the whole map sat still on the screen and nothing moved except a small kart. She asked for a camera that moves, ideally a tilted view from behind the kart, depending on how hard that is.
+
+It turned out not to be hard, because the camera is only about drawing. The rules that move the kart did not change at all, and neither did any of their tests.
+
+**What was done**
+
+Three camera views. The V key switches between them, and the page shows the name of the current one.
+
+| View | What you see |
+|---|---|
+| From above | Zoomed in, from straight above, moving with the kart. North stays up. The camera looks a little ahead, glides, and stops at the edges of the track. This is the view the brief decided on |
+| Behind the kart | Tilted, from behind and above. The track turns around the kart, so the kart always drives up the screen, and the road narrows into the distance. The kart is drawn from behind, with the driver's helmet. This is the view Catarina asked for |
+| Whole track | The old view: everything at once |
+
+Three more things were added so the views read well:
+
+- A small map in the corner, with a dot for the kart.
+- A faint chequered pattern on the road and the grass. Without it the road was one flat colour, and a flat colour looks the same whether you are moving or not.
+- A red and white striped edge wherever a wall meets open ground, so it is clear where the track ends.
+
+| File | What changed |
+|---|---|
+| `client/camera.js` | New. The arithmetic of the camera, with no painting in it |
+| `client/draw.js` | Rewritten for the three views, the small map, the road pattern and the striped edges |
+| `client/main.js` | Keeps track of the current view and the camera position |
+| `client/keyboard.js` | Listens for V. The game now tells it what to do by name (`onRestart`, `onView`, `onDrive`) instead of by position, which is easier to read |
+| `client/index.html` | Shows the camera name and mentions V in the help text |
+| `tests/camera.test.js` | New. Thirty-four tests |
+| `tests/client.test.js` | Four more tests, for V |
+| `AGENTS.md`, `PROJECT_BRIEF.md` | The two decisions below |
+| `README.md`, `WALKTHROUGH.md`, `client/README.md`, `tests/README.md` | Updated |
+
+**How the tilt is made**
+
+For every picture, the track is first painted flat on a hidden canvas, turned so that the kart points straight up. Then it is copied to the screen one thin row at a time. A row near the top takes a wide slice from far ahead and squeezes it. A row near the bottom takes a narrow slice from close by and stretches it. That squeezing and stretching is what looks like tilt. Old console racing games did the same thing. No 3D library is used.
+
+**How hard would the rest be?**
+
+- What exists now: flat ground, one kart, drawn with simple coloured shapes. That took one sitting.
+- Other karts in the tilted view: not hard. They are placed and sized by distance, and the arithmetic for that is already written and tested (`chasePoint`).
+- Walls and buildings that stand up, a sky, scenery: clearly more work. Either more drawing code of our own or a 3D library, which would be a big new thing for everyone to understand before the walkthrough.
+- Real artwork for characters: in the tilted view each character needs a picture from behind, and from other sides once other karts are shown. In the view from above one picture per character is enough.
+
+**Decisions**
+
+- **Open, for the team:** which view is the main one. The brief had decided "north is always up, the map never rotates". The tilted view does the opposite. Both are built so the team can compare them. Until the team decides, the game starts in the view from above, as decided, and the brief has a note on this.
+- **Decided by Catarina on 10 November, teammates confirm by approving the pull request:** work in bigger pieces. Each step is still its own commit, but the steps of one piece of work share a branch and one pull request, opened when the piece is complete. The reason: work should not stop while a pull request waits for a teammate. `AGENTS.md` rule 5 was changed to say this.
+- Decisions made by the agent, please confirm: the names of the views, the starting numbers at the top of `camera.js` (zoom, tilt, how far ahead you see), and the road pattern and striped edges.
+
+**Git steps the agent ran, and what each one means**
+
+| Command | In plain words |
+|---|---|
+| `git fetch` | Ask GitHub what changed there. This showed pull request #4 was merged |
+| `git switch -c camera-views main` | Make a new branch called `camera-views`, starting from the up-to-date `main` |
+| `git add` and `git commit` | Save the snapshot with a message |
+| `git push -u origin camera-views` | Send the branch to GitHub as a backup. No pull request is opened yet |
+
+**What was checked, and what was not**
+
+- Checked: `npm test`. 195 of 195 tests pass (157 from before, 38 new). None of the tests for the driving rules, the track or the laps had to change.
+- Checked in a browser on this laptop: all three views show without errors, V goes round them, the small map shows the kart's dot, and a script drove the kart through corners in the view from above and in the tilted view.
+- **Not checked: how the views feel at full speed.** As before, the agent's browser redraws slowly. Catarina driving it is the real check, in particular whether the tilted view is comfortable in corners, and whether the numbers at the top of `camera.js` should change.
+- **Not checked:** how the tilted view runs on a slow laptop.
+
+**How to check this step yourself**
+
+Run `npm start`, open http://localhost:3000, drive, and press V to go through the three views.
+
+**What comes next**
+
+More work on this same branch before a pull request is opened. Candidates: putting the server online (needs a Render account), and step 8, two browsers seeing each other's kart.
 
 ### 10 November 2026: The agent can now send work to GitHub
 

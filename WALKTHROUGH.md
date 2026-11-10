@@ -2,7 +2,7 @@
 
 Plain-language answers to the questions the teaching staff may ask when they open this repository. Any member can be asked about any part, so everyone should be able to give these answers.
 
-**State on 10 November 2026:** one kart can be driven round a test track in the browser, with a lap counter and a finish time. Nothing is online yet and there is no multiplayer, database or accounts yet, so several answers below describe the plan. Each answer is rewritten as the real thing gets built.
+**State on 10 November 2026:** one kart can be driven round a test track in the browser, with a lap counter, a finish time and three camera views. Nothing is online yet and there is no multiplayer, database or accounts yet, so several answers below describe the plan. Each answer is rewritten as the real thing gets built.
 
 ## Where does each part live?
 
@@ -11,6 +11,7 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 | The page | `client/index.html` and `client/style.css` | Yes |
 | The practice race in the browser | `client/main.js` | Yes |
 | The keyboard controls | `client/keyboard.js` | Yes |
+| The camera: which part of the track is shown | `client/camera.js` | Yes, three views |
 | The drawing of the track and the kart | `client/draw.js` | Yes, simple shapes, no artwork yet |
 | The game server | `server/app.js` builds it, `server/start.js` starts it | Yes, a first version that only sends files. It does not run races yet |
 | The driving rules | `shared/physics.js` | Yes, a first version: speeding up, braking, steering, grip, grass |
@@ -57,13 +58,27 @@ Our placeholder driver, with middle scores, reaches 80% of its top speed in abou
 
 1. Ask `client/keyboard.js` which arrow keys are held.
 2. Ask the rules where the kart is now. This is one call to `stepRacer` in `shared/race.js` for each sixtieth of a second that has passed.
-3. Ask `client/draw.js` to draw the track and the kart, and fill in the lap counter and the clock.
+3. Ask `client/camera.js` where the camera should be, then ask `client/draw.js` to draw the track and the kart from there, and fill in the lap counter and the clock.
 
 Screens do not all refresh at the same speed, but the rules must always move in steps of exactly one sixtieth of a second. So `main.js` measures how much real time has passed and runs as many whole steps as fit in it.
 
 The clock starts at the first key press. After the last lap, the keys are ignored, the kart rolls to a stop and the finish time is shown. R starts again.
 
 The practice race runs entirely in the browser. Nothing is sent to the server and nothing is saved. That also means a practice time could be faked by a player, which is why practice times will never count for leaderboards. Online races will be run by the server.
+
+## How does the camera work?
+
+There are three views, and the V key switches between them. The camera only changes what is shown. The kart moves by the same rules in every view.
+
+- **From above.** The screen shows a zoomed-in part of the track from straight above. North stays up and the kart turns on the screen. The camera aims a little ahead of the kart, in the direction it is moving, glides instead of jumping, and stops at the edges of the track.
+- **Behind the kart.** The track is turned so that the kart always drives up the screen, and it is tilted: ground further ahead is drawn smaller and higher. The kart is drawn from behind.
+- **Whole track.** Everything at once, without moving.
+
+The first two have a small map in the corner with a dot for the kart.
+
+How the tilt is made: for every picture, the track is first painted flat on a hidden canvas, turned so the kart points up. Then it is copied to the screen one thin row at a time. A row near the top of the screen takes a wide slice from far ahead and squeezes it. A row near the bottom takes a narrow slice from close by and stretches it. The arithmetic for "which slice goes on which row" is in `client/camera.js` and has tests. No 3D library is used.
+
+The team's original decision was the view from above with north up. The tilted view was added on 10 November because the still map looked flat. Which of the two is the main view is an open decision.
 
 ## How is a track described, and how do walls work?
 
@@ -93,7 +108,7 @@ Plan: a Postgres database hosted on Neon. The base will have one simple table th
 
 ## What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 157 tests today.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 195 tests today.
 
 **Covered today**
 
@@ -103,7 +118,8 @@ We run them with `npm test`. GitHub also runs them by itself on every pull reque
 - The driving rules in `shared/physics.js`. Thirty-four tests: speeding up, top speed, coasting, braking, reversing, steering, grip, grass, and bad input that must be refused or ignored (keys that are not exactly "pressed", scores that are out of range, a driver with a missing score). They compare behaviours, such as "more acceleration reaches top speed sooner", instead of exact numbers, so we can tune the numbers without breaking the tests.
 - `clamp` in `shared/numbers.js`, which keeps a number between a lowest and a highest value. Ten tests: six for normal use and four for bad input that must be refused.
 - The server in `server/app.js`. Nineteen tests. Ten check what it must do: send the page, its style and code, the game rules and the health check. Nine check what it must refuse: missing pages, requests that change things, file kinds not on the list, files outside the `client/` and `shared/` folders (thirteen different ways of writing such an address), the server's own code and the tests, and two kinds of broken address.
-- The parts of the browser code that need no browser, in `client/format.js` and `client/keyboard.js`. Nineteen tests: a race time as text, arrow keys into gas, brake, left and right, R to start again, and letting go of every key when the player switches to another window.
+- The parts of the browser code that need no browser, in `client/format.js` and `client/keyboard.js`. Twenty-three tests: a race time as text, arrow keys into gas, brake, left and right, R to start again, V to change the camera, and letting go of every key when the player switches to another window.
+- The arithmetic of the camera in `client/camera.js`. Thirty-four tests: the view from above looks ahead, stops at every edge of the track and always keeps the kart on screen, the camera glides without overshooting, and in the tilted view ground further ahead lands higher on the screen and is drawn smaller.
 
 The server tests start a real copy of the server on the computer running the tests and send it real requests.
 
@@ -141,15 +157,18 @@ Nothing is deployed yet. These are the limits we expect from the free hosting pl
 - **Secrets stay out of the repository.** The repository is public, so passwords and keys live only in a local `.env` file and in the hosting settings.
 - **No outside library for the server.** It is built on `http`, the web server that comes with Node.js. Fewer libraries means fewer things that can have security problems, and the whole server is short enough to read in one sitting. The usual alternative is a library called Express.
 - **The server only sends file kinds on a short list, and only from two folders.** A file we forget somewhere cannot leak by accident.
-- **No drawing library for now.** The track and the kart are drawn with the canvas that is built into every browser. All the drawing is in one file, `client/draw.js`, so it can be replaced by a game library such as Phaser later without touching the rules. Whether to do that is still an open decision for the team.
-- **The browser code is split by job.** Keys, drawing, time as text and the race loop each have their own file, and none of them decides how a kart moves.
+- **No drawing library for now.** The track and the kart are drawn with the canvas that is built into every browser. All the drawing is in two files, `client/draw.js` and `client/camera.js`, so it can be replaced by a game library such as Phaser later without touching the rules. Whether to do that is still an open decision for the team.
+- **The browser code is split by job.** Keys, camera, drawing, time as text and the race loop each have their own file, and none of them decides how a kart moves. That is why adding two new camera views changed nothing in the rules or their tests.
 - **The server's settings for Render are a file in the repository** (`render.yaml`), not something typed into a web form. Anyone can read how the live server is set up, and changes to it go through a pull request.
 
 ## What are the known limits, and what would we change next?
 
 - The numbers in the driving rules are first guesses. No person has driven the kart for long yet, so they will change with playtesting.
 - The driving rules have no drifting, bumping between karts, sand or sea yet.
-- The whole test track is shown at once. There is no camera that follows the kart and no minimap yet. Both are needed for the larger campus tracks.
+- In the tilted view everything is flat. Walls are painted on the ground with a striped edge and do not stand up, and there is no sky or scenery. Making things stand up would need more drawing code or a 3D library.
+- The kart is drawn with a few coloured shapes, from above and from behind. Real artwork would need a picture of each character from several sides.
+- Only the player's own kart is drawn. Other karts will need to be placed and sized by distance in the tilted view. The arithmetic for that exists (`chasePoint` in `client/camera.js`) but is not used yet.
+- The tilted view redraws the whole screen row by row for every picture. That is fine on a laptop, but it is more work for the computer than the view from above.
 - The game needs a keyboard. There are no touch controls for phones.
 - The kart is drawn exactly where the last step of the rules put it. On screens faster than 60 pictures a second the movement can look slightly uneven. Drawing in-between positions would fix that.
 - If the browser tab is in the background, the practice race runs in slow motion instead of jumping ahead.

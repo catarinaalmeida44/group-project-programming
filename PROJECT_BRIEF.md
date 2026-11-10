@@ -21,7 +21,7 @@ This brief is context, not a contract. Many details will change as we build and 
 2. **Explain after you build.** Summarize what changed, where it lives, why it was done this way, what it does not handle yet, and how we can check it ourselves (in the browser and in the tests).
 3. **Plain language.** If you need a technical term, explain it the first time you use it (for example: "a session cookie is a random ticket the browser keeps so the server knows you are logged in").
 4. **Never decide silently.** When something is [OPEN] or not covered here, give us the options, the reasoning behind each, your recommendation and a short concrete example. If we are not available, choose the simplest option that is easy to undo and flag it in the pull request as "Decision made by the agent: ... please confirm".
-5. **Small steps.** One task per branch, small pull requests, merged often.
+5. **Small steps.** One task per branch, small pull requests, merged often. *Changed 10 Nov 2026 at Catarina's request, teammates to confirm: each step is still its own commit, but the steps of one piece of work share a branch and one pull request, so work does not stop while a pull request waits for approval. See `AGENTS.md`.*
 6. **Tests for every rule, including rejected actions** (things that must NOT be allowed). Never edit or delete existing tests to make them pass. If you think a test is wrong, tell us why.
 7. **No secrets in the repository, ever** (passwords, database connection strings, API keys). Code reads secrets from environment variables. Real values live in a local `.env` file (ignored by git) and in the hosting settings. Only `.env.example`, with placeholder values, is committed.
 8. **Few outside libraries.** Before adding one, tell us what it does, why we need it and what the alternative is. "Minimal, pinned dependencies with no known vulnerabilities" is part of the grade.
@@ -82,7 +82,7 @@ What this means for you: prefer finished, reliable features over many half-finis
 
 ### Map and camera
 
-- [DECIDED] Top-down view with a fixed map: north is always up, the kart turns but the map never rotates. The camera is zoomed in and follows each player's own kart.
+- [DECIDED] Top-down view with a fixed map: north is always up, the kart turns but the map never rotates. The camera is zoomed in and follows each player's own kart. *10 Nov 2026: Catarina asked for a tilted view from behind the kart instead, in which the map turns around the kart. Both views are built and the V key switches between them, so the team can compare. **[OPEN]** Which view is the main one. Until the team decides, the game starts in the view decided here.*
 - [PROPOSED] The camera looks slightly ahead in the driving direction and stops at the map edges. A minimap in a corner shows a dot for every kart, in each player's colour. After you finish, the camera follows the leader.
 - [PROPOSED] Tracks are drawn in Tiled (a free map editor that Phaser can read), using the real OpenStreetMap layout as a template. Paths are widened to fit 3 to 4 karts and sharp corners are rounded: recognisable, not exact. The game shows the credit "© OpenStreetMap contributors".
 - [PROPOSED] Surfaces:

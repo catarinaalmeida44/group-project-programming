@@ -70,11 +70,12 @@ describe("listening to the keyboard", () => {
     const fakeWindow = new EventTarget();
     let restarts = 0;
     let drives = 0;
-    const keyboard = createKeyboard(
-      fakeWindow,
-      () => restarts++,
-      () => drives++,
-    );
+    let viewChanges = 0;
+    const keyboard = createKeyboard(fakeWindow, {
+      onRestart: () => restarts++,
+      onDrive: () => drives++,
+      onView: () => viewChanges++,
+    });
 
     /** Pretends the player did something with a key. Gives back the event, to inspect it. */
     function send(type, key, extra = {}) {
@@ -82,8 +83,45 @@ describe("listening to the keyboard", () => {
       fakeWindow.dispatchEvent(event);
       return event;
     }
-    return { keyboard, send, restarts: () => restarts, drives: () => drives };
+    return {
+      keyboard,
+      send,
+      restarts: () => restarts,
+      drives: () => drives,
+      viewChanges: () => viewChanges,
+    };
   }
+
+  it("changes the camera view when V is pressed, in capitals or not", () => {
+    const { send, viewChanges, restarts } = setUp();
+    send("keydown", "v");
+    send("keydown", "V");
+    expect(viewChanges()).toBe(2);
+    expect(restarts()).toBe(0);
+  });
+
+  it("changes the view only once while V is held down", () => {
+    const { send, viewChanges } = setUp();
+    send("keydown", "v");
+    send("keydown", "v", { repeat: true });
+    send("keydown", "v", { repeat: true });
+    expect(viewChanges()).toBe(1);
+  });
+
+  it("does not count V as a driving key", () => {
+    const { keyboard, send, drives } = setUp();
+    send("keydown", "v");
+    expect(keyboard.isDriving()).toBe(false);
+    expect(drives()).toBe(0);
+  });
+
+  it("keeps the arrow keys working while a driving key repeats", () => {
+    // A held arrow key sends "repeat" presses. They must not be ignored.
+    const { keyboard, send } = setUp();
+    send("keydown", "ArrowUp");
+    send("keydown", "ArrowUp", { repeat: true });
+    expect(keyboard.input().gas).toBe(true);
+  });
 
   it("tells the game at once when a driving key goes down, even for the shortest tap", () => {
     const { keyboard, send, drives } = setUp();
@@ -101,10 +139,12 @@ describe("listening to the keyboard", () => {
     expect(drives()).toBe(0);
   });
 
-  it("works when the game gives it nothing to do on a driving key", () => {
+  it("works when the game gives it nothing to do for any key", () => {
     const fakeWindow = new EventTarget();
-    const keyboard = createKeyboard(fakeWindow, () => {});
-    fakeWindow.dispatchEvent(Object.assign(new Event("keydown"), { key: "ArrowUp" }));
+    const keyboard = createKeyboard(fakeWindow);
+    for (const key of ["ArrowUp", "r", "v"]) {
+      fakeWindow.dispatchEvent(Object.assign(new Event("keydown"), { key }));
+    }
     expect(keyboard.input().gas).toBe(true);
   });
 
