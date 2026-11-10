@@ -20,11 +20,29 @@ const WALL = COLOURS["#"][0];
 const KERB_RED = "#d8473f";
 const KERB_WHITE = "#f2f5f7";
 const KERB_WIDTH = 5; // units
-const KART_BODY = "#e23d3d";
-const KART_BODY_LIGHT = "#f06a5e";
-const KART_NOSE = "#ffd166";
+const KART_NOSE = "#f2f5f7";
 const KART_DARK = "#15191d";
-const HELMET = "#ffd166";
+const HELMET = "#f2f5f7";
+
+// The colours of the karts: [body, a lighter shade for the top of the body].
+// A kart's starting place decides its colour, so every player in a room has
+// a different one. Practice uses the first.
+const KART_COLOURS = [
+  ["#e23d3d", "#f06a5e"], // red
+  ["#2f7fe0", "#5fa2f0"], // blue
+  ["#f0c330", "#f7d968"], // yellow
+  ["#3fb563", "#6fd08a"], // green
+  ["#9a55d6", "#b683e6"], // purple
+  ["#ef8a2b", "#f5ab64"], // orange
+  ["#2fc4c4", "#6adada"], // teal
+  ["#e667a8", "#f093c4"], // pink
+];
+
+/** The [body, lighter] colours of a kart. A kart with no starting place gets the first. */
+function coloursOf(kart) {
+  const place = Number.isInteger(kart.place) && kart.place >= 0 ? kart.place : 0;
+  return KART_COLOURS[place % KART_COLOURS.length];
+}
 
 // The hidden pictures are painted with more pixels than one per unit of
 // track, so they stay sharp when the camera zooms in.
@@ -36,12 +54,13 @@ const MINIMAP_MARGIN = 10;
 
 /**
  * Gets everything ready to draw one track on one canvas.
- * Gives back draw(view, kart, camera, steer), to be called for every picture:
+ * Gives back draw(view, kart, camera, steer, others), to be called for every picture:
  *   view    "follow", "chase" or "map"
- *   kart    the kart to show
+ *   kart    the player's own kart, which the camera stays with
  *   camera  the spot on the track in the middle of the screen (follow view only)
  *   steer   -1 while steering left, 1 while steering right, 0 otherwise.
  *           Only used to make the kart lean a little in the chase view
+ *   others  the karts of the other players, if any
  */
 export function createPainter(canvas, track) {
   canvas.width = SCREEN.width;
@@ -50,24 +69,32 @@ export function createPainter(canvas, track) {
   const trackPicture = paintTrack(track);
   const chase = prepareChaseView();
 
-  return function draw(view, kart, camera, steer) {
+  return function draw(view, kart, camera, steer, others = []) {
     context.fillStyle = WALL;
     context.fillRect(0, 0, SCREEN.width, SCREEN.height);
 
     if (view === "follow") {
-      drawFollowView(context, trackPicture, track, kart, camera);
+      drawFollowView(context, trackPicture, track, kart, camera, others);
     } else if (view === "chase") {
-      drawChaseView(context, chase, trackPicture, track, kart, steer);
+      drawChaseView(context, chase, trackPicture, track, kart, steer, others);
     } else {
-      drawMapView(context, trackPicture, track, kart);
+      drawMapView(context, trackPicture, track, kart, others);
     }
 
     // The zoomed-in views show only part of the track, so they get a small
     // map in the corner.
     if (view !== "map") {
-      drawMinimap(context, trackPicture, track, kart);
+      drawMinimap(context, trackPicture, track, kart, others);
     }
   };
+}
+
+/** Draws the other karts first and the player's own kart last, so it is never hidden under another. */
+function drawKartsFromAbove(context, kart, others) {
+  for (const other of others) {
+    drawKartFromAbove(context, other);
+  }
+  drawKartFromAbove(context, kart);
 }
 
 // ---- The hidden picture of the track ----
@@ -173,27 +200,27 @@ function copyTrack(context, trackPicture, track) {
 
 // ---- View "map": the whole track at once ----
 
-function drawMapView(context, trackPicture, track, kart) {
+function drawMapView(context, trackPicture, track, kart, others) {
   // Shrink or grow the track so all of it fits, and put it in the middle.
   const fit = Math.min(SCREEN.width / track.width, SCREEN.height / track.height);
   context.save();
   context.translate((SCREEN.width - track.width * fit) / 2, (SCREEN.height - track.height * fit) / 2);
   context.scale(fit, fit);
   copyTrack(context, trackPicture, track);
-  drawKartFromAbove(context, kart);
+  drawKartsFromAbove(context, kart, others);
   context.restore();
 }
 
 // ---- View "follow": from above, zoomed in, moving with the kart ----
 
-function drawFollowView(context, trackPicture, track, kart, camera) {
+function drawFollowView(context, trackPicture, track, kart, camera, others) {
   context.save();
   // Put the camera's spot in the middle of the screen and zoom in around it.
   context.translate(SCREEN.width / 2, SCREEN.height / 2);
   context.scale(FOLLOW.zoom, FOLLOW.zoom);
   context.translate(-camera.x, -camera.y);
   copyTrack(context, trackPicture, track);
-  drawKartFromAbove(context, kart);
+  drawKartsFromAbove(context, kart, others);
   context.restore();
 }
 
@@ -211,11 +238,11 @@ function drawKartFromAbove(context, kart) {
   context.fillRect(3, -8, 6, 3); //   front left wheel
   context.fillRect(3, 5, 6, 3); //    front right wheel
 
-  context.fillStyle = KART_BODY;
+  context.fillStyle = coloursOf(kart)[0];
   context.fillRect(-10, -6, 20, 12); // the body: 20 long, 12 wide
 
   context.fillStyle = KART_NOSE;
-  context.fillRect(5, -4, 5, 8); // a yellow nose, so you can see which way it points
+  context.fillRect(5, -4, 5, 8); // a white nose, so you can see which way it points
 
   context.restore();
 }
@@ -247,7 +274,7 @@ function prepareChaseView() {
   return { rows, farthest, ground, groundContext: ground.getContext("2d") };
 }
 
-function drawChaseView(context, chase, trackPicture, track, kart, steer) {
+function drawChaseView(context, chase, trackPicture, track, kart, steer, others) {
   const { rows, farthest, ground, groundContext } = chase;
 
   // Stage 1: paint the ground, turned so the kart points up.
@@ -259,6 +286,13 @@ function drawChaseView(context, chase, trackPicture, track, kart, steer) {
   groundContext.scale(GROUND_SHARPNESS, GROUND_SHARPNESS);
   groundContext.translate(-kart.x, -kart.y);
   copyTrack(groundContext, trackPicture, track);
+  // The other players' karts are painted on the ground too, seen from above.
+  // Stage 2 then tilts them together with the ground, so they end up in the
+  // right place, at the right size and pointing the right way. They look
+  // flat, like stickers on the road. Standing-up karts need artwork.
+  for (const other of others) {
+    drawKartFromAbove(groundContext, other);
+  }
 
   // Stage 2: copy it to the screen, one row at a time.
   for (let y = 0; y < SCREEN.height; y++) {
@@ -274,7 +308,7 @@ function drawChaseView(context, chase, trackPicture, track, kart, steer) {
     );
   }
 
-  drawKartFromBehind(context, SCREEN.width / 2, CHASE.kartScreenY, CHASE.kartScale, steer);
+  drawKartFromBehind(context, SCREEN.width / 2, CHASE.kartScreenY, CHASE.kartScale, steer, coloursOf(kart));
 }
 
 /**
@@ -283,8 +317,10 @@ function drawChaseView(context, chase, trackPicture, track, kart, steer) {
  *   x, y   where the middle of the back of the kart touches the ground
  *   unit   how many pixels one unit of track is, at the kart
  *   steer  -1, 0 or 1: the kart leans and its front wheels shift when steering
+ *   colours  [body, lighter shade] of this kart
  */
-function drawKartFromBehind(context, x, y, unit, steer) {
+function drawKartFromBehind(context, x, y, unit, steer, colours) {
+  const [body, bodyLight] = colours;
   context.save();
   context.translate(x, y);
   context.scale(unit, unit); // from here on, draw in units of track
@@ -302,7 +338,7 @@ function drawKartFromBehind(context, x, y, unit, steer) {
   context.fillRect(4.6 + steer * 0.8, -9.5, 2.4, 3.2);
 
   // The top of the body, running away from us towards the nose.
-  context.fillStyle = KART_BODY_LIGHT;
+  context.fillStyle = bodyLight;
   context.beginPath();
   context.moveTo(-4.6, -6.5);
   context.lineTo(4.6, -6.5);
@@ -317,7 +353,7 @@ function drawKartFromBehind(context, x, y, unit, steer) {
   context.fillRect(4.8, -5.2, 3.2, 5.4);
 
   // The back of the body.
-  context.fillStyle = KART_BODY;
+  context.fillStyle = body;
   context.beginPath();
   context.moveTo(-5.4, -0.8);
   context.lineTo(5.4, -0.8);
@@ -337,15 +373,15 @@ function drawKartFromBehind(context, x, y, unit, steer) {
   context.beginPath();
   context.arc(0, -12, 2.5, 0, Math.PI * 2);
   context.fill();
-  context.fillStyle = KART_BODY;
-  context.fillRect(-0.5, -14.5, 1, 5); // a stripe down the helmet
+  context.fillStyle = body;
+  context.fillRect(-0.5, -14.5, 1, 5); // a stripe down the helmet, in the kart's colour
 
   context.restore();
 }
 
 // ---- The small map in the corner ----
 
-function drawMinimap(context, trackPicture, track, kart) {
+function drawMinimap(context, trackPicture, track, kart, others) {
   const width = track.width * MINIMAP_SCALE;
   const height = track.height * MINIMAP_SCALE;
   const left = SCREEN.width - width - MINIMAP_MARGIN;
@@ -359,13 +395,20 @@ function drawMinimap(context, trackPicture, track, kart) {
   context.drawImage(trackPicture, left, top, width, height);
   context.globalAlpha = 1;
 
-  // A dot for the kart.
-  context.fillStyle = KART_BODY;
-  context.strokeStyle = "#ffffff";
-  context.lineWidth = 1.5;
-  context.beginPath();
-  context.arc(left + kart.x * MINIMAP_SCALE, top + kart.y * MINIMAP_SCALE, 4, 0, Math.PI * 2);
-  context.fill();
-  context.stroke();
+  // A dot for every kart, in that kart's colour. The player's own dot is
+  // drawn last and a little bigger, with a white ring, so it is easy to find.
+  const dot = (someKart, size, ring) => {
+    context.fillStyle = coloursOf(someKart)[0];
+    context.strokeStyle = ring;
+    context.lineWidth = 1.5;
+    context.beginPath();
+    context.arc(left + someKart.x * MINIMAP_SCALE, top + someKart.y * MINIMAP_SCALE, size, 0, Math.PI * 2);
+    context.fill();
+    context.stroke();
+  };
+  for (const other of others) {
+    dot(other, 3, KART_DARK);
+  }
+  dot(kart, 4, "#ffffff");
   context.restore();
 }

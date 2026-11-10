@@ -8,6 +8,42 @@
 import { describe, it, expect } from "vitest";
 import { formatTime } from "../client/format.js";
 import { inputFromKeys, createKeyboard } from "../client/keyboard.js";
+import { lapTimesText, VIEW_NAMES, createHud } from "../client/hud.js";
+import { VIEWS } from "../client/camera.js";
+
+describe("the numbers around the track", () => {
+  it("shows nothing for lap times before the first lap is finished", () => {
+    expect(lapTimesText([])).toBe("");
+  });
+
+  it("shows how long each finished lap took, not the time on the clock when it ended", () => {
+    // Lap 1 ended at step 240 (4 seconds). Lap 2 ended at step 600 (10 seconds), so it took 6.
+    expect(lapTimesText([240])).toBe("Lap 1: 0:04.00");
+    expect(lapTimesText([240, 600])).toBe("Lap 1: 0:04.00   Lap 2: 0:06.00");
+  });
+
+  it("has a name for every camera view", () => {
+    for (const view of VIEWS) {
+      expect(typeof VIEW_NAMES[view]).toBe("string");
+    }
+  });
+
+  it("fills in the lap, the clock, the camera name, the lap times and the message", () => {
+    // A stand-in for the page: it hands out one "element" per name and remembers them.
+    const elements = {};
+    const fakePage = { getElementById: (name) => (elements[name] ??= { textContent: "" }) };
+    const show = createHud(fakePage);
+
+    show({ lap: 2, laps: 3, steps: 600, lapSteps: [240], view: "chase", message: "Hello" });
+
+    expect(elements.lap.textContent).toBe(2);
+    expect(elements.laps.textContent).toBe(3);
+    expect(elements.time.textContent).toBe("0:10.00");
+    expect(elements.view.textContent).toBe("Behind the kart");
+    expect(elements["lap-times"].textContent).toBe("Lap 1: 0:04.00");
+    expect(elements.message.textContent).toBe("Hello");
+  });
+});
 
 describe("showing a race time", () => {
   it("shows minutes, seconds and hundredths", () => {

@@ -15,9 +15,9 @@ The base is the working foundation described in section 8 of `PROJECT_BRIEF.md`.
 | 5 | Driving rules, first version: one kart speeds up, brakes, steers and slides (tests only, no screen) | Merged into `main` on 10 Nov (pull request #4) |
 | 6 | Test track, walls and laps: a simple oval with walls to bounce off, and laps that only count if no checkpoint is skipped (tests only) | Merged into `main` on 10 Nov (pull request #4) |
 | 7 | Drive in the browser: arrow keys, lap counter, finish time | Merged into `main` on 10 Nov (pull request #4) |
-| 7b | Camera views: from above following the kart, tilted from behind the kart, and a small map. Not in the original plan | Built. On GitHub in the branch `camera-views`. No pull request yet, on purpose (see the newest entry) |
-| 8 | First online connection: two browsers see each other's kart | Not started |
-| 9 | Two-laptop checklist, run on two different networks | Not started |
+| 7b | Camera views: from above following the kart, tilted from behind the kart, and a small map. Not in the original plan | Built. On GitHub in the branch `online-play`, together with step 8. No pull request yet |
+| 8 | First online connection: two browsers see each other's kart | Built, and it works between two browser tabs on one laptop. On GitHub in the branch `online-play`. Not tried between two laptops yet |
+| 9 | Two-laptop checklist, run on two different networks | The checklist is written (`docs/two-laptop-checklist.md`). It cannot be run until the server is online |
 
 Steps 3 and 4, step 5 and step 6 touch different files, so three people can build them at the same time once step 2 is merged.
 
@@ -38,6 +38,105 @@ Steps 3 and 4, step 5 and step 6 touch different files, so three people can buil
 | Agent | The AI coding assistant (Claude Code or Codex) that writes most of the code |
 
 ## Entries
+
+### 10 November 2026: Step 8, first online connection
+
+Done on Catarina's laptop with Claude Code. The branch is `online-play`. It starts from `camera-views`, so it contains the camera work as well, and the two will go into one pull request.
+
+**What was done**
+
+There is a second page, "Online test", next to the practice page. Everyone who opens it drives on the same test track and sees everyone else's kart, each in its own colour. Our server moves all the karts.
+
+How it works, in four lines:
+
+1. The browser opens a live connection to the server and sends only which keys are held.
+2. The server keeps one kart for each connected browser and moves them all, 60 steps a second, with the same rules file the practice race uses.
+3. 20 times a second the server sends every browser the state of all karts.
+4. The browser draws what it is told. It moves no kart itself.
+
+| File | What it is for |
+|---|---|
+| `server/room.js` | New. The karts of everyone driving together. Knows nothing about the internet |
+| `server/messages.js` | New. Checks every message a browser sends |
+| `server/online.js` | New. The live connections: who may connect, what they may send, and sending the updates |
+| `server/start.js` | Switches online play on when the server starts |
+| `client/online.html`, `client/online.js` | New. The online page |
+| `client/net.js` | New. Makes online karts move smoothly between the server's updates |
+| `client/hud.js` | New. The lap counter, clock and message, taken out of `main.js` so both pages share it |
+| `client/draw.js` | Draws other players' karts, a colour for each player, and a dot for each on the small map |
+| `client/main.js`, `client/index.html`, `client/style.css` | Use the shared parts, and link the two pages to each other |
+| `docs/two-laptop-checklist.md` | New. Thirteen checks to do by hand with two laptops |
+| `tests/room.test.js`, `tests/online.test.js`, `tests/net.test.js` | New. Seventy-four tests |
+| `tests/client.test.js` | Four more tests |
+| `package.json`, `package-lock.json` | The new library |
+| `PROJECT_BRIEF.md`, `README.md`, `WALKTHROUGH.md` and the notes in `server/`, `client/`, `tests/` | Updated |
+
+**New library: ws 8.22.2**
+
+- What it does: keeps a live two-way connection (a WebSocket) open between a browser and our server.
+- Why we need it: a normal web request is "ask once, get one answer". For online play the server has to keep sending kart positions.
+- The alternative: writing that connection code ourselves, which is long and easy to get wrong in ways that matter for security.
+- It brings no other packages with it. `npm audit` found 0 known security problems on 10 November 2026.
+- Catarina gave her OK before it was added, as rule 8 of the brief and `AGENTS.md` ask.
+
+**Why a player cannot cheat by changing the page**
+
+The browser never says where its kart is. It only says which keys are held. The server works out everything else. One test proves that a kart moves online exactly as it would in practice with the same keys.
+
+**What the server refuses**
+
+Each has a test.
+
+- Any message that is not exactly "these keys are held" or "restart". The browser is disconnected.
+- Data that is not text, and messages that are far too long.
+- More than 60 messages in a second from one browser.
+- A ninth player. The room takes eight.
+- A live connection to any address other than `/play`.
+- A live connection started by a page on someone else's website.
+- Driving someone else's kart. A test has one browser press the gas while claiming to be another player. Only its own kart moves.
+
+**Why karts move smoothly**
+
+Updates arrive 20 times a second, but the screen shows 60 pictures a second. The browser shows the race a tenth of a second in the past, and draws each kart at the right point between the two updates on either side of that moment. If updates stop, the karts hold still.
+
+**Decisions**
+
+All made by the agent, please confirm:
+
+- One room for everyone, with no code, no host and no race start. That is the smallest thing that shows two browsers seeing each other. The brief's rooms with codes come later.
+- Eight players in the room. The brief proposes four humans per race. Eight leaves space for the whole team and a few testers.
+- A separate page for online, linked from the practice page.
+- A player's clock starts at their first key press, as in practice.
+- A browser that sends one message the server does not understand is disconnected at once.
+- At most 60 messages a second from one browser.
+- In the view from behind, other players' karts are painted flat on the road. Standing-up karts need artwork.
+- Your own kart online is also drawn from the server's updates, so it reacts a moment late. The brief lists the fix, "prediction", as a stretch goal.
+
+**Git steps the agent ran, and what each one means**
+
+| Command | In plain words |
+|---|---|
+| `git switch -c online-play` | Make a new branch called `online-play`, starting from `camera-views` |
+| `git add` and `git commit` | Save the snapshot with a message |
+| `git push -u origin online-play` | Send the branch to GitHub as a backup. No pull request yet |
+
+Other commands: `npm install --save-exact ws` adds the library at an exact version. `npm audit` looks for known security problems.
+
+**What was checked, and what was not**
+
+- Checked: `npm test`. 274 of 274 tests pass (196 from before, 78 new). The tests with real connections add about three seconds.
+- Checked that the tests really guard the rules: the agent broke the online code on purpose in 24 different ways, one at a time, for example "other websites may connect" and "keys go to the first player in the room". 23 were caught straight away. One was not: accepting an update that arrives late. The test for it was too weak. It was tightened, and now catches it.
+- Checked in a browser on this laptop: two tabs connected to the server. The first was told it is the red kart and the second the blue one, and both said "2 players here". The first tab pressed the gas. In the second tab, which pressed nothing, the red kart had driven to the far wall and the blue kart had not moved.
+- **Not checked: two laptops on two different internet connections.** That is the real test, and it is what the base asks for. It needs the server online on Render. The checklist for it is written.
+- **Not checked:** how big the delay feels over the real internet, and how the server copes on Render's free plan.
+
+**How to check this step yourself**
+
+Run `npm start`. Open http://localhost:3000/online.html in two browser windows side by side. Drive in one and watch the other.
+
+**What comes next**
+
+Putting the server online, which needs a Render account. Then running the two-laptop checklist. Then a pull request for the camera views and online play together.
 
 ### 10 November 2026: Camera views, and working in bigger pieces
 

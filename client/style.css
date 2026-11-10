@@ -20,6 +20,23 @@ h1 {
   font-size: 1.5rem;
 }
 
+/* The two links under the title: practice and online. */
+.modes {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.modes a {
+  color: #8fc7ff;
+}
+
+/* The line under the track on the online page: connected or not, how many players. */
+.status {
+  margin: 0.6rem 0 0;
+  font-weight: 600;
+}
+
 /* The numbers above the track: lap, time, lap times. */
 .hud {
   display: flex;

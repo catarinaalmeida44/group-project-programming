@@ -193,6 +193,7 @@ What this means for you: prefer finished, reliable features over many half-finis
   - A room has a 4-letter code and up to 4 humans.
   - The host chooses the mode and the track or difficulty, and starts the race when everyone is ready.
   - Computer karts fill the empty seats.
+- *10 Nov 2026: a first version of the items below is built as an "Online test" page: one room for everyone on the test track, up to 8 players, no race start. It follows the proposals under "During the race" (keys only, 60 steps and 20 updates a second, gliding). Rooms with codes, a host, computer karts, items and disconnect handling beyond removing the kart are not built.*
 - [PROPOSED] During the race:
   - The browser sends only which keys are pressed.
   - The server runs the shared rules for all karts 60 times per second and sends everyone an update 20 times per second.
@@ -277,7 +278,7 @@ Email service: Brevo (verification and password-reset emails)
 
 - One language for the whole project: JavaScript.
 - **[OPEN]** Drawing: Phaser (handles images, camera, sound and Tiled maps) or plain HTML canvas. The recommendation is Phaser for drawing only; the physics and the rules are our own code. *10 Nov 2026: the base draws with plain canvas. Decision made by the agent as the simplest option that is easy to undo (all drawing is in `client/draw.js`). The team still has to decide before the campus tracks are built.*
-- The live connection uses the `ws` library. Password scrambling uses Node's built-in `scrypt`, so no extra library.
+- The live connection uses the `ws` library (*added 10 Nov 2026, version 8.22.2, with Catarina's OK*). Password scrambling uses Node's built-in `scrypt`, so no extra library.
 - Tests use Vitest and run automatically on every pull request (GitHub Actions). `main` is protected: changes need a pull request, 1 approval and passing tests.
 - Hosting is Render's free web service, which redeploys automatically from `main`. The database is Neon's free plan. Do NOT use Render's free database: it expires 30 days after creation, which would be around presentation time.
 - Known limits, which belong in the walkthrough notes:
