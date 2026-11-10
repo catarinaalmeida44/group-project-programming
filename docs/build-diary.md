@@ -11,13 +11,13 @@ The base is the working foundation described in section 8 of `PROJECT_BRIEF.md`.
 | 1 | Project skeleton: folders, README, rules for agents, example secrets file, these notes | Merged into `main` on 10 Nov (pull request #2) |
 | 2 | Automatic tests: one example test, and GitHub runs the tests on every pull request | Merged into `main` on 10 Nov (pull request #3) |
 | 3 | A small server on Render that shows a "hello" page at a public link | Done. Online since 10 Nov at https://novasbe-kart.onrender.com, and a merge into `main` puts the new version online by itself (seen with pull request #5) |
-| 4 | Database: the server writes and reads one row in Neon | Not started |
+| 4 | Database: the server writes and reads one row in Neon | Built, and it works from a laptop on a phone hotspot. The live server gets the code with the next merge and is still to be checked |
 | 5 | Driving rules, first version: one kart speeds up, brakes, steers and slides (tests only, no screen) | Merged into `main` on 10 Nov (pull request #4) |
 | 6 | Test track, walls and laps: a simple oval with walls to bounce off, and laps that only count if no checkpoint is skipped (tests only) | Merged into `main` on 10 Nov (pull request #4) |
 | 7 | Drive in the browser: arrow keys, lap counter, finish time | Merged into `main` on 10 Nov (pull request #4) |
 | 7b | Camera views: from above following the kart, tilted from behind the kart, and a small map. Not in the original plan | Merged into `main` on 10 Nov (pull request #5) and online |
-| 8 | First online connection: two browsers see each other's kart | Merged into `main` on 10 Nov (pull request #5) and online. Two connections from one laptop to the live server saw each other. A fix found there is in the branch `online-fix`. Not tried between two laptops yet |
-| 9 | Two-laptop checklist, run on two different networks | The checklist is written (`docs/two-laptop-checklist.md`) and can be run now. Not run yet |
+| 8 | First online connection: two browsers see each other's kart | Merged into `main` on 10 Nov (pull requests #5 and #6) and online. Two connections from one laptop to the live server saw each other. Not tried between two laptops yet |
+| 9 | Two-laptop checklist, run on two different networks | Run on 10 Nov by Catarina with two other players. It worked. To fix: other karts look flat in the view from behind |
 
 Steps 3 and 4, step 5 and step 6 touch different files, so three people can build them at the same time once step 2 is merged.
 
@@ -38,6 +38,214 @@ Steps 3 and 4, step 5 and step 6 touch different files, so three people can buil
 | Agent | The AI coding assistant (Claude Code or Codex) that writes most of the code |
 
 ## Entries
+
+### 10 November 2026: The database works, seen from a phone hotspot
+
+Done on Catarina's laptop with Claude Code. No code changed, only notes.
+
+**What happened**
+
+Catarina moved the laptop from the university Wi-Fi to her phone's hotspot. Nothing else was changed.
+
+| Check | On the university Wi-Fi | On the hotspot |
+|---|---|---|
+| `npm run test:database`, the five tests against the real database | All five failed, each after waiting ten seconds | All five passed, in 13 seconds together |
+| The real server, started with the real address | Started, and said the database could not be reached | Started, and wrote "Database: this start was recorded" |
+| `/database-check` | "The database could not be reached" | `"ok":true`, 1 start |
+
+Then the server was stopped and started again. `/database-check` said 2 starts. The first start was still there after the server that wrote it was gone. That is what a database is for.
+
+**What this settles**
+
+- Our code, the `pg` library and the real database work together.
+- The university's student Wi-Fi was what blocked the database. The same laptop, the same file and the same code work on another network.
+
+**A side effect to know about**
+
+The two starts above were this laptop's, and they are in the real table. The table counts every start of any copy of the server that has the real address, not only the live one. That is harmless for a table that only exists as proof, and it will not be true of real data later: tests and experiments must never write to tables that hold players' data.
+
+**What was checked, and what was not**
+
+- Checked: everything in the table above.
+- **Not checked yet: the live server.** It has the address but not the code. After the next merge, https://novasbe-kart.onrender.com/database-check should say `"ok":true`.
+
+**What comes next**
+
+The pull request for the branch `finish-base`, then that last check. Then the other players' karts, drawn standing up.
+
+### 10 November 2026: Step 4, the database, and a guide for the team
+
+Done on Catarina's laptop with Claude Code, on the branch `finish-base`. Catarina set up the database on Neon's website herself, with the agent telling her the steps.
+
+**What was done**
+
+The server can now remember something after it is switched off. Each time it starts, it writes one row in a database, and an address on our site, `/database-check`, shows how many rows there are.
+
+| File | What it is for |
+|---|---|
+| `server/db.js` | New. Connects to the database, records a start, and reads how many starts are recorded |
+| `server/app.js` | Answers the new address `/database-check` |
+| `server/start.js` | Connects to the database when the server starts, if an address is set |
+| `package.json`, `package-lock.json` | The new library. `npm start` now also reads a local `.env` file. New command `npm run test:database` |
+| `tests/db.test.js` | New. Fifteen tests with a pretend database |
+| `tests/db-live.test.js` | New. Five tests against the real database, skipped unless asked for |
+| `tests/server.test.js` | Five more tests, for `/database-check` |
+| `docs/team-guide.md` | New. Where the project stands and how to work on it, for teammates and their coding agents |
+| `docs/diary/` | New. One diary file per team member, so diaries never clash when branches are merged |
+| `AGENTS.md`, `PROJECT_BRIEF.md`, `README.md`, `WALKTHROUGH.md`, `.env.example`, notes in `server/` and `tests/` | Updated |
+
+**How the database was set up**
+
+1. Catarina made a free account at Neon and a project called `novasbe-kart` in Frankfurt.
+2. Neon offered a ready-made instruction to paste into the coding agent. It would have installed a Neon program on the laptop and Neon's own add-ons for agents in the project. The agent did not run it. Copying one line by hand does the same job.
+3. Catarina copied the database's secret address from Neon and pasted it in two places: the file `.env` on her laptop, and Render's Environment page, as `DATABASE_URL`.
+
+**A secret that ended up in the chat**
+
+At one point Catarina pasted the full address, password included, into the chat and asked the agent to put it in place for her. The agent did not use it or repeat it. A chat keeps a copy of everything, so the password was no longer a secret. Catarina changed it in Neon ("Reset password") before anything had used the old one, and pasted the new address herself. `AGENTS.md` now says what an agent must do when this happens.
+
+**New library: pg 8.23.1**
+
+- What it does: lets our server send questions to a Postgres database and read the answers.
+- Why we need it: Node.js cannot talk to a database by itself.
+- The alternative: Neon's own library, which ties the code to Neon.
+- It brings 13 small packages with it, all parts of `pg` itself. `npm audit` found 0 known security problems on 10 November 2026.
+- Catarina agreed before it was added.
+
+**What the code does, and what it refuses**
+
+- With no address set, the server runs without a database and says so. That is the normal case on a teammate's laptop.
+- The server does not wait for the database when it starts, and a database that is asleep or unreachable does not stop the game.
+- `/database-check` only reads. Its answer is reused for ten seconds, so many visitors cannot turn into many questions to the database.
+- When the database fails, the visitor gets one short sentence and no details. The details go to the server's own log. A test checks that a pretend error mentioning a user name and a computer's address does not reach the visitor.
+- Values are handed to the database separately from the question, never written into it. The table's name is the one exception, and it is checked to be small letters and underscores only.
+- The table keeps only the newest 50 rows.
+
+**The university Wi-Fi blocks the database**
+
+The five tests against the real database all failed, by waiting ten seconds and getting no answer. Finding out why took several steps, and each one ruled something out:
+
+| Checked | Result | So it is not... |
+|---|---|---|
+| Can the laptop reach Neon's computer on the database channel? | Yes, in under a tenth of a second | ...a network that is simply down |
+| Is the address in `.env` well formed? A script answered yes-or-no questions about it and never showed it | Yes: right computer, right user, a password is there | ...a mistake in pasting |
+| Does the database say anything back after the connection opens? | No, nothing, for eight seconds, both from the agent's protected commands and from the normal terminal | ...the agent's own protection |
+| Do other computers accept a connection on that channel? | No | ...something on the network pretending to be the database |
+| Does the database answer the same question over the normal web channel? | Yes, in one second, and it accepted the user name and password | ...the database, or the password |
+
+What is left: the laptop was on the university's student Wi-Fi, `students.novasbe.pt`, and that network lets the connection open and then drops everything sent through it. This is how a campus firewall typically blocks database traffic. It is the agent's conclusion from the checks above, not something the university has confirmed.
+
+It gave one useful thing: a real unreachable database to test against. With the real address set, the server started, sent the game, and answered `/database-check` with "The database could not be reached" after eight seconds.
+
+That test also showed a weakness, which was fixed. Each visit during a failure started another ten-second wait. Now, after a failure, the server does not ask the database again for three seconds, and answers at once in that time.
+
+**The guide for the team, and the diaries**
+
+`docs/team-guide.md` is for Fran, Pedro and Rodrigo and for their coding agents. It says where the project stands, what each person needs (a GitHub account, Node.js and an agent, and no Render or Neon account), a first prompt to paste, and what will trip them up.
+
+From 11 November, each member's agent writes in that member's own file in `docs/diary/`. If all four wrote in this file, their branches would clash at every merge. This file stays as the diary of the first day.
+
+**Decisions**
+
+- Decided by Catarina: add `pg`. One diary file per member, and a guide for the team.
+- **Open, for the team:** stay with `pg`, or switch to Neon's own library so the database can be reached from a laptop on the university Wi-Fi. The brief has a note. The agent's suggestion is to stay with `pg` unless working on campus without the database becomes a real nuisance, because switching later means changing one file.
+- Decisions made by the agent, please confirm: what the first table holds (server starts), keeping only 50 rows, the address `/database-check`, reusing its answer for ten seconds, and running without a database when no address is set.
+
+**Git steps the agent ran, and what each one means**
+
+| Command | In plain words |
+|---|---|
+| `git add`, `git commit`, `git push` | Save the snapshot on the branch `finish-base` and send it to GitHub |
+
+Other commands: `npm install --save-exact pg` adds the library at an exact version.
+
+**What was checked, and what was not**
+
+- Checked: `npm test`. 305 tests pass and 5 are skipped (the ones that need the real database).
+- Checked: the database is awake and accepts the user name and password in `.env`, by asking it over the web channel.
+- Checked for real: with the database unreachable, the server starts, the game works, and `/database-check` gives the short message.
+- **Not checked: our code working with the real database.** `npm run test:database` has never passed, because of the Wi-Fi. This is the one thing step 4 asks for, so step 4 is not finished.
+- **Not checked:** the live server with the database. It has the address, but it only gets this code when the branch is merged.
+
+**How to check this step yourself**
+
+On a network other than the university Wi-Fi, for example a phone hotspot: run `npm run test:database`. It should say 5 passed. Or, after the next merge, open https://novasbe-kart.onrender.com/database-check. It should show `"ok":true` and a number of starts.
+
+**What comes next**
+
+Seeing the database work, in one of those two ways. Then drawing the other players' karts standing up.
+
+### 10 November 2026: The online test with real players
+
+Done by Catarina and two other players, each on their own laptop, at the public link. No code changed.
+
+**What happened**
+
+Catarina reported that it worked: three players on the "Online test" page saw each other drive. This is the first time real people on separate laptops have used online play. Until now only scripts on one laptop had.
+
+**What she did not like**
+
+In the view from behind the kart, the other players' karts look flat, "in 2D", with no driver on them. Your own kart is drawn standing up, with a helmet. The others are painted on the road like stickers.
+
+This was a known shortcut, listed as a limit since online play was built. It is now a thing to fix.
+
+**What is not known**
+
+- The result of each of the checks in `docs/two-laptop-checklist.md` was not written down, only that it worked overall.
+- Whether the laptops were on different internet connections.
+- How late their own kart felt to each player.
+
+**What comes next**
+
+The database. Then drawing the other karts standing up.
+
+### 10 November 2026: The fix checked on the live server, and a notice for a quiet server
+
+Done on Catarina's laptop with Claude Code. The branch is `finish-base`, started from the up-to-date `main`. It will collect the rest of the base before a pull request is opened.
+
+**Where things stood**
+
+Pull request #6 (remove rule-breakers at once) was approved and merged, and Render put it online by itself.
+
+**The fix works on the live server**
+
+The agent ran the same script as before against the live server. A pretend browser sent a made-up message. This time its kart was gone from the other browser's picture within a quarter of a second. Before the fix it stayed for as long as the script watched.
+
+**Something else the live server showed**
+
+After our server cuts a connection, the other side does not find out straight away. Measured on the live server:
+
+| The cut-off side... | ...noticed after |
+|---|---|
+| stayed silent | about 20 seconds |
+| tried to send something every 3 seconds | about 9 seconds |
+
+On one laptop it is instant. The difference is Render's network, which sits between our server and every browser and passes the news on late. The side that was cut off also never receives our reason for cutting it.
+
+For a rule-breaker this does not matter: its kart is gone and its place is free. For a normal player it would matter. If our server restarts, for example when a new version goes online, the karts would stand still while the page went on saying "Connected" for up to 20 seconds.
+
+**What was added**
+
+The online page no longer trusts "connected" alone. Updates normally arrive 20 times a second. If none has arrived for two seconds, the line under the track says: "The server has gone quiet. If the karts stay still, reload the page to join again." It goes back to normal as soon as updates arrive again.
+
+| File | What changed |
+|---|---|
+| `client/net.js` | New function `statusLine`, which decides what the line under the track says |
+| `client/online.js` | Remembers when the server last sent anything, and uses `statusLine` |
+| `tests/net.test.js` | Seven new tests for that line |
+| `WALKTHROUGH.md`, `docs/two-laptop-checklist.md` | Updated with what was measured |
+
+**What was checked, and what was not**
+
+- Checked on the live server: a rule-breaker's kart is removed within a quarter of a second.
+- Checked: `npm test`. 284 of 284 tests pass (277 from before, 7 new).
+- Checked in a browser on this laptop: the online page connects and its line reads "Connected. You are the red kart. You are alone here."
+- **Not checked: the "gone quiet" notice appearing for real.** On one laptop a cut connection is noticed at once, so the notice never has time to show. It will be seen on the live server the next time a new version goes online while someone has the online page open. The two-laptop checklist now asks for exactly that.
+- **Not known:** why Render's network passes a closed connection on so late. The code no longer depends on it.
+
+**What comes next**
+
+On this same branch: the database. And, by hand, the two-laptop checklist.
 
 ### 10 November 2026: First look at the live server, and a fix it led to
 

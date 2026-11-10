@@ -116,6 +116,87 @@ describe("the health check", () => {
   });
 });
 
+describe("the database check", () => {
+  /** Starts a second copy of the server with a pretend database, asks it one thing, and stops it. */
+  async function askServerWith(database, address = "/database-check", method = "GET") {
+    const other = createApp({ database });
+    await new Promise((resolve) => other.listen(0, "127.0.0.1", resolve));
+    const otherPort = other.address().port;
+    try {
+      return await new Promise((resolve, reject) => {
+        const request = http.request(
+          { host: "127.0.0.1", port: otherPort, path: address, method, agent: false },
+          (response) => {
+            let body = "";
+            response.setEncoding("utf8");
+            response.on("data", (piece) => (body += piece));
+            response.on("end", () => resolve({ status: response.statusCode, headers: response.headers, body }));
+          },
+        );
+        request.on("error", reject);
+        request.end();
+      });
+    } finally {
+      await new Promise((resolve) => other.close(resolve));
+    }
+  }
+
+  it("reports what the server read from the database", async () => {
+    const database = { status: async () => ({ starts: 7, latest: "2026-11-10T18:00:00.000Z" }) };
+    const answer = await askServerWith(database);
+    expect(answer.status).toBe(200);
+    expect(answer.headers["content-type"]).toContain("application/json");
+    expect(JSON.parse(answer.body)).toEqual({ ok: true, starts: 7, latest: "2026-11-10T18:00:00.000Z" });
+  });
+
+  it("says so plainly when the server runs without a database", async () => {
+    // The server used by the other tests in this file has no database.
+    const answer = await ask("/database-check");
+    expect(answer.status).toBe(503);
+    expect(JSON.parse(answer.body)).toEqual({
+      ok: false,
+      message: "The database is not set up on this computer.",
+    });
+  });
+
+  it("gives a short answer when the database fails, without any of the error's details", async () => {
+    const secretLooking = 'password authentication failed for user "neondb_owner" at ep-example.aws.neon.tech';
+    const database = {
+      status: async () => {
+        throw new Error(secretLooking);
+      },
+    };
+    const answer = await askServerWith(database);
+    expect(answer.status).toBe(503);
+    expect(JSON.parse(answer.body)).toEqual({
+      ok: false,
+      message: "The database could not be reached. Try again in a moment.",
+    });
+    expect(answer.body).not.toContain("neondb_owner");
+    expect(answer.body).not.toContain("neon.tech");
+    expect(answer.body).not.toContain("password");
+  });
+
+  it("keeps sending the game when the database is down", async () => {
+    const database = {
+      status: async () => {
+        throw new Error("down");
+      },
+    };
+    const page = await askServerWith(database, "/");
+    expect(page.status).toBe(200);
+    expect(page.body).toContain("Nova SBE kart racer");
+    const health = await askServerWith(database, "/health");
+    expect(health.status).toBe(200);
+  });
+
+  it("refuses requests that try to change something there, like everywhere else", async () => {
+    const database = { status: async () => ({ starts: 1, latest: null }) };
+    const answer = await askServerWith(database, "/database-check", "POST");
+    expect(answer.status).toBe(405);
+  });
+});
+
 describe("the server refuses what it should not do", () => {
   it("says 'not found' for a page that does not exist", async () => {
     const answer = await ask("/no-such-page.html");

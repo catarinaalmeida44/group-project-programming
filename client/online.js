@@ -15,7 +15,7 @@ import { TEST_OVAL } from "../shared/tracks/test-oval.js";
 import { createKeyboard } from "./keyboard.js";
 import { createPainter } from "./draw.js";
 import { createHud } from "./hud.js";
-import { createPlayback, readServerMessage } from "./net.js";
+import { createPlayback, readServerMessage, statusLine } from "./net.js";
 import { VIEWS, followTarget, easeTowards, nextView } from "./camera.js";
 import { formatTime } from "./format.js";
 import { STEP_SECONDS } from "../shared/physics.js";
@@ -35,6 +35,7 @@ let myId = null; //                    our player number, from the "welcome" mes
 let status = "Connecting to the server...";
 let connected = false;
 let kartsShown = null; //              the karts in the picture drawn last
+let lastNewsAt = null; //              when the server last sent us anything
 
 // ---- The camera ----
 let view = VIEWS[0];
@@ -55,6 +56,7 @@ connection.addEventListener("message", (event) => {
   if (message === null) {
     return; // not something this page understands: ignore it
   }
+  lastNewsAt = performance.now();
   if (message.type === "welcome") {
     myId = message.id;
     const colour = COLOUR_NAMES[message.place % COLOUR_NAMES.length];
@@ -116,9 +118,17 @@ function frame(now) {
   kartsShown = karts;
   const mine = karts === null ? undefined : karts.find((kart) => kart.id === myId);
 
+  // The line under the track: connected or not, how many players, or a
+  // warning when the server has sent nothing for a while (see net.js).
+  statusText.textContent = statusLine({
+    status,
+    connected,
+    playerCount: karts === null ? 0 : karts.length,
+    sinceLastUpdateMs: lastNewsAt === null ? 0 : performance.now() - lastNewsAt,
+  });
+
   if (mine === undefined) {
-    // Nothing to show yet: we are still connecting, or we were disconnected.
-    statusText.textContent = status;
+    // Nothing to draw yet: we are still connecting, or we were disconnected.
     requestAnimationFrame(frame);
     return;
   }
@@ -141,8 +151,6 @@ function frame(now) {
       : "",
   });
 
-  const playerCount = karts.length === 1 ? "You are alone here" : `${karts.length} players here`;
-  statusText.textContent = connected ? `${status} ${playerCount}.` : status;
   requestAnimationFrame(frame);
 }
 

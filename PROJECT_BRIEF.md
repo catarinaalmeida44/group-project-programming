@@ -278,6 +278,7 @@ Email service: Brevo (verification and password-reset emails)
 
 - One language for the whole project: JavaScript.
 - **[OPEN]** Drawing: Phaser (handles images, camera, sound and Tiled maps) or plain HTML canvas. The recommendation is Phaser for drawing only; the physics and the rules are our own code. *10 Nov 2026: the base draws with plain canvas. Decision made by the agent as the simplest option that is easy to undo (all drawing is in `client/draw.js`). The team still has to decide before the campus tracks are built.*
+- The database is reached with the `pg` library (*added 10 Nov 2026, version 8.23.1, with Catarina's OK*). **[OPEN]** Whether to switch to Neon's own library. On the university's student Wi-Fi, `pg` cannot reach the database from a laptop, because that network blocks the channel databases normally use. Neon's library uses the normal web channel and would work there, but ties the code to Neon. The live server is not affected either way.
 - The live connection uses the `ws` library (*added 10 Nov 2026, version 8.22.2, with Catarina's OK*). Password scrambling uses Node's built-in `scrypt`, so no extra library.
 - Tests use Vitest and run automatically on every pull request (GitHub Actions). `main` is protected: changes need a pull request, 1 approval and passing tests.
 - Hosting is Render's free web service, which redeploys automatically from `main`. The database is Neon's free plan. Do NOT use Render's free database: it expires 30 days after creation, which would be around presentation time.

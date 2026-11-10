@@ -4,7 +4,7 @@ The automatic tests check online play with pretend browsers on one computer. The
 
 Run it after anything that touches online play, and before the demo.
 
-**Last run:** not run yet. It can be run now: the "Online test" page is at the public link.
+**Last run:** 10 November 2026, by Catarina with two other players, so three laptops. Her report: it worked, and everyone saw the others drive. One thing she did not like: in the view from behind, the other players' karts look flat, with no driver. That is listed under "Known limits" below and is to be fixed. The result of each single check was not written down, and neither was the kind of internet connection each laptop used.
 
 On 10 November the agent connected two pretend browsers from one laptop to the live server. They saw each other, with 20 updates a second. That is not this checklist: it was one laptop and one internet connection.
 
@@ -31,9 +31,17 @@ Write "yes" or what went wrong next to each one.
 | 8 | A: press R | A's kart is back at the start with the clock at zero. B's kart is not affected | |
 | 9 | B: close the browser tab | Within a few seconds the blue kart disappears on A, and A says "You are alone here" | |
 | 10 | B: open the link and "Online test" again | B is back in the room. Both say "2 players here" | |
-| 11 | A: switch off the Wi-Fi and leave it off for one minute | On A, the karts stop moving. On B, the red kart disappears within about half a minute | |
+| 11 | A: switch off the Wi-Fi and leave it off for one minute | On A, the karts stop moving and after two seconds the line under the track says "The server has gone quiet". On B, the red kart disappears within about half a minute | |
 | 12 | A: switch the Wi-Fi on again | A says the connection was lost. This one has never been tried, so write down what really happens | |
 | 13 | A: reload the page | A is back in the room with a kart | |
+
+## One more check, when a new version goes online
+
+This cannot be done at any moment. Do it the next time a pull request is merged while both laptops have the "Online test" page open.
+
+| # | Do this | You should see | Result |
+|---|---|---|---|
+| 14 | Keep both pages open while Render puts the new version online (a few minutes after the merge) | The karts stop. After two seconds both pages say "The server has gone quiet". Some seconds later they say the connection was lost. After a reload, both are in a new, empty room | |
 
 ## Things to write down
 

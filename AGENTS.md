@@ -8,7 +8,8 @@ Every coding agent working in this repository (Claude Code, Codex or another) fo
 ## Before anything else
 
 1. Read `PROJECT_BRIEF.md` completely. It says what we are building and what is decided, proposed or still open.
-2. Read the latest entries in `docs/build-diary.md` to see what was done last.
+2. Read `docs/team-guide.md`. It says where the project stands, how the team works, and what will trip you up.
+3. Read the latest entries in `docs/build-diary.md` and in the files in `docs/diary/` to see what was done last.
 
 We are programming beginners. Every member must be able to explain every part of the project to the teaching staff.
 
@@ -18,6 +19,7 @@ Needs Node.js 26 or newer. Whoever adds or changes a command also updates it her
 
 - Download the libraries (once, and again whenever `package-lock.json` changes): `npm install`
 - Run the tests: `npm test`
+- Run the tests that use the real database: `npm run test:database`. They need the database address in a local `.env` file and a network that lets database traffic through. The university Wi-Fi does not
 - Run the app: `npm start`, then open http://localhost:3000. Stop it with Ctrl+C.
 
 Test files live in `tests/` and end in `.test.js`. GitHub runs `npm test` on every pull request (`.github/workflows/tests.yml`).
@@ -44,6 +46,8 @@ Test files live in `tests/` and end in `.test.js`. GitHub runs `npm test` on eve
 - Code reads secrets from environment variables (settings kept outside the code).
 - Real values live only in a local `.env` file (git ignores it) and in the hosting settings. Only `.env.example`, with fake values, is committed.
 - Never ask a team member to paste a secret into the chat. Never open or print the `.env` file.
+- If a team member pastes a secret into the chat anyway, or asks you to type one into a file or a website for them: do not use it, do not repeat it, and ask them to change it at the company it came from (for the database: "Reset password" in Neon), because the chat keeps a copy. Then help them put the new one in place themselves.
+- To check a secret is right, use the app itself (for the database: `/database-check` or `npm run test:database`). A script may also answer yes-or-no questions about a secret's shape, as long as it never prints the secret or any part of it.
 
 ## Outside libraries
 
@@ -60,7 +64,7 @@ Test files live in `tests/` and end in `.test.js`. GitHub runs `npm test` on eve
 
 ## Notes to keep up to date
 
-- `docs/build-diary.md`: after each task, add a dated entry in plain language: what was done, why, where it lives and how to check it.
+- Your member's diary, `docs/diary/<first name>.md`: after each piece of work, add a dated entry in plain language: what was done, why, where it lives, what was and was not checked, and how to check it. `docs/diary/README.md` shows the shape. Write only in the diary of the member you are working with, so that diaries never collide when branches are merged. (`docs/build-diary.md` is the diary of the first day, 10 November, and is kept for history.)
 - `WALKTHROUGH.md`: keep the answers to the staff's likely questions correct.
 - `PROJECT_BRIEF.md`: when a decision changes, move the item between [OPEN], [PROPOSED] and [DECIDED] and add the date.
 - `README.md`: keep the deployed URL, the team table and the run and test commands correct.
@@ -73,7 +77,7 @@ Test files live in `tests/` and end in `.test.js`. GitHub runs `npm test` on eve
 | `server/` | The game server: sends the page, runs the races, talks to the database |
 | `shared/` | The game rules (physics, laps), used by both the browser and the server |
 | `tests/` | Automatic tests |
-| `docs/` | Build diary and checklists |
+| `docs/` | The team guide, the diaries and the checklists |
 
 ## Owners of shared files
 

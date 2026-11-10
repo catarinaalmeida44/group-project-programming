@@ -46,6 +46,8 @@ Then open http://localhost:3000 in a browser and drive with the arrow keys. V ch
 
 To try online play on one laptop, open http://localhost:3000/online.html in two browser windows side by side.
 
+The app runs without a database. To use the real one, the database address has to be in a file called `.env` (copy `.env.example` and fill it in). Then `npm run test:database` runs the tests that talk to it, and http://localhost:3000/database-check shows what the server can read from it. New here? Start with `docs/team-guide.md`.
+
 ## Where things are
 
 | Folder or file | What it is |
@@ -54,7 +56,9 @@ To try online play on one laptop, open http://localhost:3000/online.html in two 
 | `server/` | Our game server: sends the page to the browser and runs the races |
 | `shared/` | The rules of the game (driving physics, laps), used by both the browser and the server |
 | `tests/` | Automatic tests that check the rules |
-| `docs/build-diary.md` | A dated diary, in plain language, of what was built and why |
+| `docs/team-guide.md` | Start here: where the project stands, what you need, and how the team works |
+| `docs/build-diary.md` | The diary of the first day, in plain language: what was built and why |
+| `docs/diary/` | One diary per team member, for everything after the first day |
 | `docs/two-laptop-checklist.md` | The checks we do by hand, with two laptops, for online play |
 | `WALKTHROUGH.md` | Answers to the questions staff may ask about the project |
 | `PROJECT_BRIEF.md` | What we are building and what has been decided |
