@@ -358,5 +358,5 @@ Before the demo:
 |---|---|---|---|
 | Catarina Almeida | 70573 | catarinaalmeida44 | [OPEN] |
 | Fran | | FranFon15 | [OPEN] |
-| Pedro | | pedrocollarespereira | [OPEN] |
+| Pedro Collares Pereira | 71022 | pedrocollarespereira | [OPEN] |
 | Rodrigo | | rodrigosversos | [OPEN] |

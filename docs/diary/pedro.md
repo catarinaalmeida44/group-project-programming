@@ -42,6 +42,6 @@ Run `npm start`, open http://localhost:3000 in a normal browser and press an arr
 
 **What comes next**
 - Pedro tries it in a normal browser and confirms the two decisions above.
-- Pedro's full name and student number go into the table in `README.md` before the pull request.
-- Push the branch, open the pull request, a teammate approves.
+- Done on the same branch: Pedro's full name and student number are in the team tables in `README.md` and `PROJECT_BRIEF.md`, as the course requires.
+- The agent's push was refused, because git was not signed in to GitHub from the agent's side. Pedro publishes the branch from GitHub Desktop, opens the pull request, and a teammate approves.
 - Later: use the same rule for a real online race start.
