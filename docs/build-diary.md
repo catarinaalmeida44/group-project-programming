@@ -17,7 +17,7 @@ The base is the working foundation described in section 8 of `PROJECT_BRIEF.md`.
 | 7 | Drive in the browser: arrow keys, lap counter, finish time | Merged into `main` on 10 Nov (pull request #4) |
 | 7b | Camera views: from above following the kart, tilted from behind the kart, and a small map. Not in the original plan | Merged into `main` on 10 Nov (pull request #5) and online |
 | 8 | First online connection: two browsers see each other's kart | Merged into `main` on 10 Nov (pull requests #5 and #6) and online. Two connections from one laptop to the live server saw each other. Not tried between two laptops yet |
-| 9 | Two-laptop checklist, run on two different networks | The checklist is written (`docs/two-laptop-checklist.md`) and can be run now. Not run yet |
+| 9 | Two-laptop checklist, run on two different networks | Run on 10 Nov by Catarina with two other players. It worked. To fix: other karts look flat in the view from behind |
 
 Steps 3 and 4, step 5 and step 6 touch different files, so three people can build them at the same time once step 2 is merged.
 
@@ -38,6 +38,30 @@ Steps 3 and 4, step 5 and step 6 touch different files, so three people can buil
 | Agent | The AI coding assistant (Claude Code or Codex) that writes most of the code |
 
 ## Entries
+
+### 10 November 2026: The online test with real players
+
+Done by Catarina and two other players, each on their own laptop, at the public link. No code changed.
+
+**What happened**
+
+Catarina reported that it worked: three players on the "Online test" page saw each other drive. This is the first time real people on separate laptops have used online play. Until now only scripts on one laptop had.
+
+**What she did not like**
+
+In the view from behind the kart, the other players' karts look flat, "in 2D", with no driver on them. Your own kart is drawn standing up, with a helmet. The others are painted on the road like stickers.
+
+This was a known shortcut, listed as a limit since online play was built. It is now a thing to fix.
+
+**What is not known**
+
+- The result of each of the checks in `docs/two-laptop-checklist.md` was not written down, only that it worked overall.
+- Whether the laptops were on different internet connections.
+- How late their own kart felt to each player.
+
+**What comes next**
+
+The database. Then drawing the other karts standing up.
 
 ### 10 November 2026: The fix checked on the live server, and a notice for a quiet server
 
