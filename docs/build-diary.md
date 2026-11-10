@@ -4,17 +4,17 @@ A dated record, in plain language, of what was done in this project, why, and ho
 
 ## The plan for the base
 
-The base is the working foundation described in section 8 of `PROJECT_BRIEF.md`. It is built in nine small steps. Each step is one pull request.
+The base is the working foundation described in section 8 of `PROJECT_BRIEF.md`. It is built in nine small steps. Each step was meant to be one pull request. Steps 3, 5, 6 and 7 ended up together in one (see the entry "The agent can now send work to GitHub").
 
 | Step | What it adds | State |
 |---|---|---|
 | 1 | Project skeleton: folders, README, rules for agents, example secrets file, these notes | Merged into `main` on 10 Nov (pull request #2) |
 | 2 | Automatic tests: one example test, and GitHub runs the tests on every pull request | Merged into `main` on 10 Nov (pull request #3) |
-| 3 | A small server on Render that shows a "hello" page at a public link | The server is built and works on a laptop. Not on GitHub yet. Not online yet |
+| 3 | A small server on Render that shows a "hello" page at a public link | The server works on a laptop. On GitHub in the branch `drive-in-browser`, waiting for a pull request and a review. Not online yet |
 | 4 | Database: the server writes and reads one row in Neon | Not started |
-| 5 | Driving rules, first version: one kart speeds up, brakes, steers and slides (tests only, no screen) | Built. Not on GitHub yet |
-| 6 | Test track, walls and laps: a simple oval with walls to bounce off, and laps that only count if no checkpoint is skipped (tests only) | Built. Not on GitHub yet |
-| 7 | Drive in the browser: arrow keys, lap counter, finish time | Built and working on a laptop. Not on GitHub yet |
+| 5 | Driving rules, first version: one kart speeds up, brakes, steers and slides (tests only, no screen) | Built. On GitHub in the branch `drive-in-browser`, waiting for a pull request and a review |
+| 6 | Test track, walls and laps: a simple oval with walls to bounce off, and laps that only count if no checkpoint is skipped (tests only) | Built. On GitHub in the branch `drive-in-browser`, waiting for a pull request and a review |
+| 7 | Drive in the browser: arrow keys, lap counter, finish time | Works on a laptop. On GitHub in the branch `drive-in-browser`, waiting for a pull request and a review |
 | 8 | First online connection: two browsers see each other's kart | Not started |
 | 9 | Two-laptop checklist, run on two different networks | Not started |
 
@@ -37,6 +37,54 @@ Steps 3 and 4, step 5 and step 6 touch different files, so three people can buil
 | Agent | The AI coding assistant (Claude Code or Codex) that writes most of the code |
 
 ## Entries
+
+### 10 November 2026: The agent can now send work to GitHub
+
+Done on Catarina's laptop with Claude Code. No game code changed in this entry.
+
+**What changed**
+
+Until now the agent could save work on the laptop (commit) but could not send it to GitHub (push), because the laptop's sign-in to GitHub was kept inside GitHub Desktop. Catarina had to click "Publish branch" for every step, and that got out of step with the work.
+
+Catarina agreed that the agent sends the work itself from now on. She signed in to GitHub once, in her own browser, and clicked "Authorize" for a program called Git Credential Manager. That program comes with git. Its only job is to remember the sign-in, so that git can send work to GitHub.
+
+- The agent never saw the password. It was typed only into GitHub's own page.
+- The sign-in is kept by Windows on this laptop, in Windows' own "Credential Manager". It is not in the project and not on GitHub.
+- It works only on Catarina's laptop and sends work as Catarina. Teammates who want the same for their own agent sign in once on their own laptop.
+
+**What was sent**
+
+The branch `drive-in-browser`, with steps 3, 5, 6 and 7 as four separate commits.
+
+**Why four steps are in one pull request**
+
+The rule is one step per branch and per pull request. After step 3 the branch was not published, and the agent kept building each new step on top of the one before. The newest branch therefore contains all four. Splitting them again would mean four pull requests that each wait for the one before. One pull request with four clearly named commits is simpler to review. From the next step on, it is one branch and one pull request per step again.
+
+**How it was done, including what did not work**
+
+1. First try: the agent ran the push in the background. The sign-in window never appeared, and the push waited for six minutes without doing anything. The agent stopped it.
+2. Second try: the agent ran the same push in the app's Terminal panel, where Catarina can see it. This time the browser opened GitHub's "Authorize" page, Catarina approved, and the push went through.
+
+| Command | In plain words |
+|---|---|
+| `git push -u origin drive-in-browser` | Send the branch to GitHub. The `-u` part remembers that the branch on the laptop and the branch on GitHub belong together, so later a plain `git push` is enough |
+
+**What the agent still never does**
+
+It never merges into `main`: a teammate reviews and merges. It never force-pushes, which would overwrite history on GitHub.
+
+**How to undo this**
+
+On GitHub: click your picture, then Settings, Applications, Authorized OAuth Apps, and revoke "Git Credential Manager". Or on the laptop: open "Credential Manager" from the Windows Start menu, choose Windows Credentials, and remove the entry for github.com.
+
+**What was checked, and what was not**
+
+- Checked: the branch `drive-in-browser` is on GitHub.
+- **Not checked yet:** that GitHub ran the tests on it. GitHub runs them when the pull request is opened.
+
+**What comes next**
+
+Open the pull request for `drive-in-browser`, get a teammate's approval, and merge it. Then put the server online.
 
 ### 10 November 2026: Step 7, driving in the browser
 
