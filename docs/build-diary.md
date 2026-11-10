@@ -72,7 +72,7 @@ Render's review page did not show the word "Free", and Catarina asked whether sh
 
 - Checked from outside, by the agent: https://novasbe-kart.onrender.com/health answers `{"status":"ok"}`, and the main address sends our game page with the title "Nova SBE kart racer".
 - Checked on Render by Catarina: the Blueprint page shows the service as created, with a green tick.
-- **Not checked yet:** that the service page on Render says "Free". Catarina was asked to look.
+- Checked on Render by Catarina: the service page for `novasbe-kart` says "Free".
 - **Not checked yet:** that merging into `main` puts the new version online by itself. That will be seen when the `online-play` pull request is merged.
 - **Not checked yet:** the two-laptop checklist.
 
