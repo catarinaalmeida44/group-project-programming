@@ -39,7 +39,8 @@ The game now opens on a main menu instead of straight on the race. It has Single
 - `npm test`: 437 passed, 5 skipped (34 new tests).
 - The best-times code was broken on purpose in three ways. Two made tests fail. The third (one of two checks on the track name) changed nothing, because the other check still protects.
 - In the Claude app's browser: the menu shows, a click on Cup does nothing, both panels open and close, choosing "From above" made the race page start in that view, a broken saved setting was ignored by the online page (it started in the first view and connected), and a saved time showed in the Leaderboard while a bad saved lap time showed as "–".
-- **Not checked:** driving a whole race to the finish on the new page, to see "New best time!" and the time appear in the Leaderboard. The rules behind it are tested, but nobody has driven three laps through it yet.
+- Checked by hand by Francisco on his laptop, after the agent's checks: he drove a race through the new page and reported that everything worked (the test was: Settings, Single race, three laps, "New best time!", then the time in the Leaderboard). The agent did not watch this run.
+- On the way, the race and online pages showed a white screen. The cause was the game server not running (the agent had stopped it after its checks), not the code. Started again with `npm start`, everything opened.
 - Not checked on the live server: it changes only after the pull request is merged.
 
 **How to check it yourself**
