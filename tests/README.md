@@ -16,6 +16,8 @@ Each file here ends in `.test.js`.
 | `countdown.test.js` | `shared/countdown.js`: what the countdown says at each moment, that the kart cannot move and the clock cannot run before GO whatever keys are held, that the race after GO is the normal race, and refusing bad step counts |
 | `small-track.js` | Not a test. A tiny track that the track and lap tests share |
 | `room.test.js` | `server/room.js` and `server/messages.js`, without any network: joining and leaving, a full room, only your own kart moves, and every kind of message a browser might send that must be refused |
+| `room-race.test.js` | The race start in `server/room.js`, without any network: who the host is, who may not start a race, nothing moving during the countdown, everyone starting on the same step, joining and leaving during a race, and the end of a race |
+| `race-view.test.js` | `client/race-view.js`: what the online page says about the race (the countdown, who may start, racing or watching), and the Enter key in `client/keyboard.js` |
 | `online.test.js` | `server/online.js`, with real live connections to a real copy of the server: two browsers see each other's kart move, and the server disconnects or turns away what it should |
 | `net.test.js` | `client/net.js`: online karts move smoothly between updates, hold still when updates stop, and are not thrown off by a late update |
 | `db.test.js` | `server/db.js`, with a pretend database: which questions the code asks and in which order, reusing an answer for ten seconds, what happens when the database fails, and refusing an unsafe table name |

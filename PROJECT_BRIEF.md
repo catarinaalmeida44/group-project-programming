@@ -194,6 +194,7 @@ What this means for you: prefer finished, reliable features over many half-finis
   - The host chooses the mode and the track or difficulty, and starts the race when everyone is ready.
   - Computer karts fill the empty seats.
 - *10 Nov 2026: a first version of the items below is built as an "Online test" page: one room for everyone on the test track, up to 8 players, no race start. It follows the proposals under "During the race" (keys only, 60 steps and 20 updates a second, gliding). Rooms with codes, a host, computer karts, items and disconnect handling beyond removing the kart are not built.*
+- *11 Nov 2026: the one room now has a race start. The host presses Enter, and the server counts 3, 2, 1, GO! for everyone together. Decision made by the agent, please confirm: the host is whoever has been in the room longest, and passes to the next longest when they leave (this matches "if the host leaves before the start, the next player becomes host" below). Decided by Pedro: someone who joins during a race watches it and joins at the next start. Rooms with codes, a "ready" step, a finishing order and results are still not built.*
 - [PROPOSED] During the race:
   - The browser sends only which keys are pressed.
   - The server runs the shared rules for all karts 60 times per second and sends everyone an update 20 times per second.

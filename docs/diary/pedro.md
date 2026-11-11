@@ -2,6 +2,59 @@
 
 Entries from 10 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 11 November 2026: a race start for online play
+
+**What was done**
+Online play now has a real race start. Before a race everyone drives around freely, as before. The host presses Enter: every kart goes back to the grid, the server counts 3, 2, 1, GO! for everyone together, and all karts are let go on the same step. Someone who opens the page during a race watches it and joins at the next start. (The countdown from 10 November was merged as pull request #9 and is live.)
+
+| File | What it is for |
+|---|---|
+| `server/room.js` | The room now has four phases: open, countdown, racing, finished. It knows who the host is, starts a race, refuses R during a race, and keeps the karts of people who are watching off the track |
+| `server/messages.js` | A browser may now send a third kind of message: "start" |
+| `server/online.js` | Passes "start" to the room |
+| `client/race-view.js` (new) | Turns what the server says about the race into words for the page: the big number, who may press Enter, racing or watching |
+| `client/online.js`, `client/online.html` | The online page shows all that, sends "start" on Enter for the host, and follows the kart in front when watching |
+| `client/keyboard.js` | Listens for Enter |
+| `client/net.js` | A kart that was put back on the grid is shown there at once, instead of sliding across the track |
+| `tests/room-race.test.js`, `tests/race-view.test.js` (new) | 36 and 23 tests |
+| `tests/online.test.js`, `tests/net.test.js` | 6 and 4 tests added at the end. No existing test was changed |
+| `WALKTHROUGH.md`, `README.md`, `PROJECT_BRIEF.md`, the READMEs in `client/`, `server/` and `tests/`, `docs/two-laptop-checklist.md` | Kept true. The checklist has ten new checks for the race start |
+
+**Why it was done this way**
+- The room starts "open" and behaves exactly as before until the host starts a race. That is why every one of the older tests still passes untouched.
+- The server counts the countdown, in steps, with the same `countdownAt` rule as practice. The browser only shows the number it is told. So nobody can start early by changing their page, and every clock starts on the same step.
+- The server works out who the host is from the connection a message came on. A message cannot claim to be the host.
+- The karts of people who are watching are left out of what the server sends, and their numbers are listed separately as "watching". The page needs nothing more to know it should follow someone else's kart.
+
+**Decisions**
+- Decided by Pedro: one shared race start (not a private countdown per player), and someone who joins during a race watches, from above or following a player.
+- Decision made by the agent, please confirm: the host is whoever has been in the room longest, and only the host can start. Pedro was asked and did not answer this one.
+- Decision made by the agent, please confirm: the key is Enter.
+- Decision made by the agent, please confirm: the host can also start a new race while one is on (not during the countdown). Otherwise one player who walks away from their laptop would block the room for ever.
+- Decision made by the agent, please confirm: a start from someone who is not the host is ignored, and that browser is not disconnected.
+- Decision made by the agent, please confirm: a watcher's camera follows the kart with the most laps, and V switches to the whole track. The watcher cannot choose which kart to follow.
+- Decision made by the agent, please confirm: if every racer leaves, the room goes back to free driving.
+- Git: the agent made the branch `online-race-start` from an up-to-date `main` and made the commits. Nothing was pushed.
+
+**What was checked, and what was not**
+- `npm test`: 403 passed, 5 skipped (before: 334 and 5).
+- The room's race rules were broken on purpose in eight ways. Seven made between 1 and 6 tests fail. The eighth (moving the hidden karts of people who are watching) made no test fail, and changes nothing anyone can see, because those karts are put back on the grid before they are shown.
+- In the app's built-in browser, two tabs on Pedro's laptop: Enter from the tab that was not the host did nothing. Enter from the host started the countdown, a big "3" appeared, and afterwards both karts showed the same clock. A tab reloaded during the race had no kart, followed the other kart, was told it was watching, and V showed the whole track.
+- Found while checking, and fixed: at a race start a kart could be seen sliding from where it was back to the grid. `client/net.js` now shows it on the grid at once, with tests.
+- NOT checked: the whole countdown at full speed with a person's eyes. The built-in browser only redraws now and then, so 2, 1 and GO! were not seen on screen, only "3". The tests cover what the page says at each moment.
+- NOT checked: a race driven by hand to the finish, and the messages after the finish.
+- NOT checked: two real laptops on two internet connections, and the live server. Checks 15 to 24 in `docs/two-laptop-checklist.md` are for that.
+
+**How to check it yourself**
+Run `npm start` and open http://localhost:3000/online.html in two browser windows side by side. The first window is the host. Press Enter there. Open a third window during the race to see the watching view. Run `npm test`.
+
+**What comes next**
+- Pedro tries it in two windows and confirms the decisions above.
+- Publish the branch from GitHub Desktop, open the pull request, a teammate approves.
+- After the merge: run checks 15 to 24 of the two-laptop checklist with teammates on the live site.
+- Next piece, asked for by Pedro: a boost for pressing the gas exactly at GO. It needs a new driving rule in `shared/physics.js`.
+- Later: a finishing order and a results screen.
+
 ### 10 November 2026: a 3, 2, 1, GO! countdown before the practice race
 
 **What was done**

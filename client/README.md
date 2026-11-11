@@ -12,8 +12,9 @@ Everything the browser shows and does: the web page, the drawing of the track an
 | `main.js` | Runs the practice race. Many times a second it asks the keyboard which keys are held, asks the rules in `shared/` where the kart is now, moves the camera, and draws the picture |
 | `online.js` | Runs the online page. It moves no kart itself: it tells the server which keys are held and draws what the server says is happening |
 | `net.js` | Makes online karts move smoothly. The server sends updates 20 times a second, and this file works out where each kart is in between |
+| `race-view.js` | Turns what the server says about the race into words for the online page: the big countdown number, who may press Enter to start, and whether you are racing or watching |
 | `hud.js` | Fills in the lap counter, the clock, the lap times, the camera name and the message. Used by both pages |
-| `keyboard.js` | Turns the arrow keys into the four answers the rules expect: gas, brake, left, right. Also listens for R (start again) and V (change the camera) |
+| `keyboard.js` | Turns the arrow keys into the four answers the rules expect: gas, brake, left, right. Also listens for R (start again), V (change the camera) and Enter (online: the host starts a race) |
 | `camera.js` | The arithmetic of the camera: which part of the track is on the screen, and where things land on it. No painting |
 | `draw.js` | Paints the track, the kart and the small map in the corner on the canvas, in one of the three views |
 | `format.js` | Turns a number of seconds into a race time such as `1:23.45` |
@@ -39,8 +40,10 @@ Nothing in this folder decides how a kart moves. That is the job of the rules in
 | | Practice (`/`) | Online test (`/online.html`) |
 |---|---|---|
 | Who moves the kart | This browser, with the rules in `shared/` | Our server, with the same rules |
-| What the browser sends | Nothing | Only which keys are held, and "restart" |
+| What the browser sends | Nothing | Only which keys are held, "restart" and "start a race" |
 | Other players | None | Everyone who has the page open, up to eight, each in a different colour |
+| How a race starts | An arrow key, then 3, 2, 1, GO! | The host presses Enter, then 3, 2, 1, GO! for everyone together. Before that, everyone drives freely |
+| Arriving during a race | Does not apply | You watch the kart in front and join at the next start |
 | Works when the server is down | Yes, once the page is loaded | No |
 
 In the view from behind, every kart stands up on the road with its driver. A kart is drawn from behind, from the front or from one side, depending on which way it points compared with you, and smaller the further ahead it is. The karts are drawn with simple coloured shapes in `draw.js`; real character artwork would replace those.
