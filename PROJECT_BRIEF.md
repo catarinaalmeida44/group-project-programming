@@ -76,7 +76,8 @@ What this means for you: prefer finished, reliable features over many half-finis
 ### Modes
 
 - [DECIDED] Two modes: **Single race** (choose one track) and **Cup** (several tracks in a row, with points). There is no boss level.
-- [PROPOSED] Cup = all 5 tracks, 3 laps each. Points per finishing position: 10 / 7 / 5 / 3 / 2 / 1. Ties go to the better finish in the last race. You keep the same character for the whole cup.
+- **[DECIDED 11 Nov 2026 by the team, reported by Francisco]** The cup has 3 tracks, not 5: more doable in the time left.
+- [PROPOSED] Cup = all the tracks, 3 laps each. Points per finishing position: 10 / 7 / 5 / 3 / 2 / 1. Ties go to the better finish in the last race. You keep the same character for the whole cup.
 - [PROPOSED] The cup can be played at three difficulties (Easy, Normal, Hard), set by how well the computer karts drive.
 - [PROPOSED] The host can set races to 1 lap, for testing and for the 5-minute demo.
 
@@ -99,7 +100,7 @@ What this means for you: prefer finished, reliable features over many half-finis
   4. around the São Julião da Barra fort walls (handling and drifting)
   5. a long track combining the campus areas
 
-  **[OPEN]** Final choice of tracks.
+  **[OPEN]** Final choice of tracks: which 3 of these five (the team agreed on 3 tracks on 11 Nov 2026).
 
 ### Driving physics
 
@@ -185,6 +186,10 @@ What this means for you: prefer finished, reliable features over many half-finis
 5. Track selection (single race) or difficulty selection (cup)
 6. Countdown, race, results. In a cup, a standings screen follows, then the next track.
 7. Back to the main menu
+
+*11 Nov 2026, built by Francisco: a first main menu is the first page of the game: Single race (the test track), Cup (shown greyed out until the tracks exist), Online (the online test page), Leaderboard and a Settings button in the top right corner. There is no title screen, login or Profile yet, because there are no accounts. Ideas from Francisco for later, not decided by the team: a character selection page before the race with a Start button, 2 computer karts to begin with, and the game itself driving in the background of the menu ("attract mode") instead of a video.*
+
+*Leaderboard for now: it shows only your own best race time and best lap per track, kept in your browser (chosen by Francisco on 11 Nov 2026 as the first step). These times can be faked, so they are never sent to the server and never count for the shared leaderboards described in section 6, which still need accounts and races run by the server.*
 
 ## 5. Multiplayer
 

@@ -40,7 +40,7 @@ You do not need any password, key or secret to work on the game.
 2. In GitHub Desktop: File, Clone repository, and pick `catarinaalmeida44/group-project-programming`.
 3. Open a terminal in the project folder and run `npm install`. It downloads the libraries the project uses.
 4. Run `npm test`. The last lines should say that about 300 tests passed and 5 were skipped.
-5. Run `npm start` and open http://localhost:3000 in a browser. Drive with the arrow keys. Press Ctrl+C in the terminal to stop.
+5. Run `npm start` and open http://localhost:3000 in a browser. The main menu opens: click Single race and drive with the arrow keys. Press Ctrl+C in the terminal to stop.
 
 **Your first pull request:** put your full name and student number in your row of the table in `README.md`. The course requires both, and it requires that every member has code in the repository from their own account. It is also a safe way to try the whole route once: branch, change, commit, push, pull request, a teammate approves, merge.
 

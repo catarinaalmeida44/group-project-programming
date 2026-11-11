@@ -2,14 +2,17 @@
 
 Plain-language answers to the questions the teaching staff may ask when they open this repository. Any member can be asked about any part, so everyone should be able to give these answers.
 
-**State on 10 November 2026:** one kart can be driven round a test track in the browser, with a lap counter, a finish time and three camera views. On the "Online test" page, up to eight browsers connected to our server see each other's karts. The server is on the internet at https://novasbe-kart.onrender.com, and it has a database that so far only records when the server starts. There are no accounts yet, so several answers below describe the plan. Each answer is rewritten as the real thing gets built.
+**State on 11 November 2026:** the game opens on a main menu. One kart can be driven round a test track in the browser, with a lap counter, a finish time and three camera views, and your best times are kept in your browser. On the "Online test" page, up to eight browsers connected to our server see each other's karts. The server is on the internet at https://novasbe-kart.onrender.com, and it has a database that so far only records when the server starts. There are no accounts yet, so several answers below describe the plan. Each answer is rewritten as the real thing gets built.
 
 ## Where does each part live?
 
 | Part | Where | Built yet? |
 |---|---|---|
-| The page | `client/index.html` and `client/style.css` | Yes |
+| The main menu, the first page | `client/index.html` and `client/menu.js` | Yes: Single race, Cup (greyed out until the tracks exist), Online, Leaderboard and Settings |
+| How every page looks | `client/style.css` | Yes |
+| The single race page | `client/race.html` | Yes, on the test track |
 | The practice race in the browser | `client/main.js` | Yes |
+| Keeping settings and best times in the browser | `client/storage.js`, `client/settings.js`, `client/records.js` | Yes: the starting camera view, and your best race and best lap per track |
 | The keyboard controls | `client/keyboard.js` | Yes |
 | The camera: which part of the track is shown | `client/camera.js` | Yes, three views |
 | The drawing of the track and the kart | `client/draw.js` | Yes, simple shapes, no artwork yet |
@@ -69,7 +72,19 @@ Screens do not all refresh at the same speed, but the rules must always move in 
 
 The first press of an arrow key starts a countdown: 3, 2, 1, GO!, one second each. During 3, 2 and 1 the keys do nothing, the kart stands still and the clock stays at zero. At GO the clock starts, whether a key is held or not. The countdown is counted in steps of the game, 60 for each number, like the race time, so the server can use the same rule for online races later. Holding the gas early gives no head start, and there is a test for that. After the last lap, the keys are ignored, the kart rolls to a stop and the finish time is shown. R starts again.
 
-The practice race runs entirely in the browser. Nothing is sent to the server and nothing is saved. That also means a practice time could be faked by a player, which is why practice times will never count for leaderboards. Online races will be run by the server.
+The practice race runs entirely in the browser. Nothing is sent to the server. When a race is finished, `client/records.js` compares it with your best race time and best lap on that track, keeps the better ones in this browser, and the finish message says "New best time!" or "New best lap!". The Leaderboard button in the menu shows them.
+
+Because the race runs in the browser, a player could fake those times. That is fine for personal records nobody else sees, and it is why they are never sent to the server and will never count for a shared leaderboard. A shared leaderboard needs accounts and races run by the server (sections 5 and 6 of `PROJECT_BRIEF.md`).
+
+## What is the main menu, and what are the settings?
+
+The address of the game opens the menu (`client/index.html`). Single race and Online are plain links to the race page and the online page. Cup is shown but cannot be clicked yet: it needs the three campus tracks. Both the race page and the online page have a "← Menu" link back.
+
+Leaderboard and Settings open a panel over the menu. The panel is a `<dialog>`, a kind of panel built into browsers: Escape or the Close button closes it, and no library is needed.
+
+**Settings** has one real choice today: the camera view a race starts in. The race page and the online page read it when they open. V still changes the view during a race. Sound is shown but greyed out, because the game has no sound yet, and the panel lists the controls.
+
+**Where settings and best times are kept:** in the browser's own storage (`localStorage`), a small space every website gets that keeps short texts after the page is closed. Nothing is sent to our server, and other players never see it. Two things can go wrong and neither may break the game, and each has a test: the browser may refuse storage (some private windows), and what we read back may not be what we wrote, because a player can edit it. So every value read back is checked: an unknown camera view or a time that is not a whole positive number of steps is ignored and the default is used. Times are shown with `textContent`, never as HTML, so a saved text cannot add anything to the page.
 
 ## How does online play work, and can a player cheat?
 
@@ -158,6 +173,8 @@ In a Postgres database kept by a company called Neon, in Frankfurt, on its free 
 
 **What is stored today:** one table, `server_starts`. It has two columns: a number, and the date and time. The server adds one row each time it starts and keeps only the newest 50. No personal data. The table exists to prove that the server can write to the database and read from it.
 
+**Stored in each player's own browser, not by us:** the camera view chosen in Settings, and that player's best race time and best lap on each track. They never reach our server. Clearing the browser's data deletes them.
+
 **What will be stored later:** players, sessions, progress and race results (section 6 of `PROJECT_BRIEF.md`).
 
 **How the server reaches it:** through a secret address that includes a password, the setting `DATABASE_URL`. It is in two places only: Render's Environment page, and a file called `.env` on Catarina's laptop, which git ignores. It is not in the code, and the code never prints it. On the first day the address was once pasted into a chat with the coding agent by mistake. The password was changed in Neon straight away, before anything used it.
@@ -168,10 +185,13 @@ In a Postgres database kept by a company called Neon, in Frankfurt, on its free 
 
 ## What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 403 tests today, plus 5 that only run against the real database.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 437 tests today, plus 5 that only run against the real database.
 
 **Covered today**
 
+- The main menu, in `tests/menu.test.js`. Seven tests with a real copy of the server: the main address opens the menu and not the race, Single race and Online lead to the right pages, the Cup is shown but cannot be clicked, the Leaderboard and Settings buttons are there, the race page still has the track and runs the race, and both pages lead back to the menu.
+- Settings kept in the browser, in `client/storage.js` and `client/settings.js`. Twelve tests with a pretend storage: a choice is remembered, a camera view that does not exist is refused when saving and ignored when read back (for example edited by hand), broken saved text is ignored, and a browser that refuses storage does not break anything.
+- Best times kept in the browser, in `client/records.js`. Fifteen tests: the first finished race is kept, only a faster time replaces it (an equal one does not), the best lap is kept on its own, each track has its own times, and an unfinished race or impossible times (a lap ending before the one before, negative, not whole, not numbers) are never recorded. Saved times that are not sensible are ignored. We broke this code on purpose in three ways. Two made tests fail. The third, removing one of two checks on the track name, changed nothing, because the second check still refuses what the first would have let through.
 - The database code in `server/db.js`. Fifteen tests with a pretend database that writes down every question it is asked: the right questions in the right order, an answer reused for ten seconds, a failure not mistaken for an answer, a pause of three seconds before asking an unreachable database again, and an unsafe table name refused. Five more tests in `tests/server.test.js` check the `/database-check` address, including that an error from the database never reaches the visitor.
 - The real database. Five tests in `tests/db-live.test.js`, run with `npm run test:database`. They write to a table of their own and remove it afterwards. They are skipped on GitHub, because the database address is a secret that GitHub does not have.
 - The room and the message checks in `server/room.js` and `server/messages.js`. Thirty-two tests, without any network: joining and leaving, a full room, only your own kart moves, a kart moves online exactly as it would in practice, and ten tests of messages a browser might send, most of which must be refused.
@@ -203,6 +223,7 @@ To check that the tests really guard the rules, we broke the code on purpose in 
 - Anything that only happens on the real internet. We have one example already. On the first day online, a browser that broke a rule was not removed from the live server, although the test for exactly that passed on one computer: the server was waiting for the browser to answer its goodbye, and through Render's network the answer did not come. It is fixed, there is now a test with a browser that never answers, and the fix was checked on the live server. The lesson is that passing tests show the code does what the tests imagined, not that it works everywhere.
 - The "server has gone quiet" notice appearing for real. Its wording and timing are tested, but on one computer a cut connection is noticed at once, so the notice never shows there.
 - How the driving feels. No test can say whether a kart is fun to drive. That needs a person at the keyboard.
+- The menu's panels and the moment a finished race is recorded. `client/menu.js` and the few lines in `client/main.js` that call the records need a real page. The menu, both panels, the Cup refusing a click, a saved camera view being used by the race page, and a saved best time appearing in the Leaderboard were checked in a browser on 11 November. A whole race driven to the finish, with "New best time!" on the screen, was not: the rules behind it are tested, but nobody has yet driven three laps through the new page.
 - The drawing (`client/draw.js`) and the loop that runs the race (`client/main.js`). They need a real page. They were checked in a browser: by looking at the page, and by a script that pressed the keys and drove a whole three-lap race while we watched the lap counter, the clock and the finish message.
 - How smooth the race looks at full speed on a normal screen. The browser used for that check was running in the background, where browsers redraw only about once a second.
 - The server on Render, beyond two looks by hand: it answers its health check, sends the game pages, updated itself after a merge into `main`, and let two connections see each other at 20 updates a second. Nothing tests the live server automatically.

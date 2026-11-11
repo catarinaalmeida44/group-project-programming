@@ -6,7 +6,12 @@ Everything the browser shows and does: the web page, the drawing of the track an
 
 | File | What it does |
 |---|---|
-| `index.html` | The practice page: the title, the lap counter and clock, the canvas the track is drawn on, and the help text |
+| `index.html` | The main menu, the first page: Single race, Cup (greyed out until the tracks exist), Online, Leaderboard, and the Settings button in the top right corner. The Leaderboard and Settings panels are in this page too |
+| `menu.js` | Opens the Leaderboard and Settings panels and fills them in |
+| `race.html` | The single race page: the title, the lap counter and clock, the canvas the track is drawn on, and the help text |
+| `storage.js` | Keeps short texts in the browser's own storage (`localStorage`), carefully: a browser that refuses, or text that was changed, must not break the game |
+| `settings.js` | The player's settings. Today: the camera view a race starts in |
+| `records.js` | Your best race time and best lap on each track, kept in this browser only |
 | `online.html` | The online page. The same layout, plus a line that says whether you are connected and how many players are there |
 | `style.css` | How both pages look: colours, sizes, spacing |
 | `main.js` | Runs the practice race. Many times a second it asks the keyboard which keys are held, asks the rules in `shared/` where the kart is now, moves the camera, and draws the picture |
@@ -37,7 +42,7 @@ Nothing in this folder decides how a kart moves. That is the job of the rules in
 
 ## Practice and online
 
-| | Practice (`/`) | Online test (`/online.html`) |
+| | Single race (`/race.html`) | Online test (`/online.html`) |
 |---|---|---|
 | Who moves the kart | This browser, with the rules in `shared/` | Our server, with the same rules |
 | What the browser sends | Nothing | Only which keys are held, "restart" and "start a race" |
