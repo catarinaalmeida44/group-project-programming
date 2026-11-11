@@ -16,7 +16,7 @@ The server is on a free plan and goes to sleep after 15 minutes without visitors
 | Name | Student number | GitHub username |
 |---|---|---|
 | Catarina Almeida | 70573 | catarinaalmeida44 |
-| Fran _(full name to add)_ | _to add_ | FranFon15 |
+| Francisco Fonseca | 72576 | FranFon15 |
 | Pedro _(full name to add)_ | _to add_ | pedrocollarespereira |
 | Rodrigo _(full name to add)_ | _to add_ | rodrigosversos |
 

@@ -357,6 +357,6 @@ Before the demo:
 | Name | Student number | GitHub username | Owns |
 |---|---|---|---|
 | Catarina Almeida | 70573 | catarinaalmeida44 | [OPEN] |
-| Fran | | FranFon15 | [OPEN] |
+| Francisco Fonseca (Fran) | 72576 | FranFon15 | [OPEN] |
 | Pedro | | pedrocollarespereira | [OPEN] |
 | Rodrigo | | rodrigosversos | [OPEN] |
