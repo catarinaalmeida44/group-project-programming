@@ -4,6 +4,7 @@
 
 import { describe, it, expect } from "vitest";
 import { createRoom } from "../server/room.js";
+import { readClientMessage } from "../server/messages.js";
 import { COUNTDOWN_STEPS } from "../shared/countdown.js";
 import { stepRacer } from "../shared/race.js";
 import { createKart, speedOf } from "../shared/physics.js";
@@ -433,6 +434,22 @@ describe("leaving during a race", () => {
     room.setKeys(watcher.id, GAS);
     run(room, 30);
     expect(speedOf(kartOf(room, watcher.id))).toBeGreaterThan(0);
+  });
+});
+
+describe("reading a start message from a browser", () => {
+  it("accepts a request to start a race", () => {
+    expect(readClientMessage('{"type":"start"}')).toEqual({ type: "start" });
+  });
+
+  it("drops anything extra, such as a claim to be the host or another player's number", () => {
+    expect(readClientMessage('{"type":"start","host":true,"id":1}')).toEqual({ type: "start" });
+  });
+
+  it("refuses spellings that are not exactly 'start'", () => {
+    for (const text of ['{"type":"START"}', '{"type":"start "}', '{"type":"begin"}', '{"type":["start"]}']) {
+      expect(readClientMessage(text), text).toBe(null);
+    }
   });
 });
 

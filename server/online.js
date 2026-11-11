@@ -7,9 +7,9 @@
 // details of that connection for us.
 //
 // What goes over the connection:
-//   browser -> server   which keys are held, or "restart"   (see messages.js)
+//   browser -> server   which keys are held, "restart", or "start" (see messages.js)
 //   server -> browser   "welcome" with your player number, then the state
-//                       of all karts 20 times a second
+//                       of all karts and of the race 20 times a second
 //
 // What this file refuses:
 //   - connections to any address other than /play
@@ -145,7 +145,7 @@ export function attachOnlinePlay(
         return;
       }
 
-      // Is it one of the two things a browser may say?
+      // Is it one of the three things a browser may say?
       const message = isBinary ? null : readClientMessage(data.toString());
       if (message === null) {
         kick("Message not understood");
@@ -156,8 +156,10 @@ export function attachOnlinePlay(
       // is no way for a message to name someone else's kart.
       if (message.type === "keys") {
         room.setKeys(player.id, message.keys);
+      } else if (message.type === "restart") {
+        room.restart(player.id); // the room says no during a race
       } else {
-        room.restart(player.id);
+        room.startRace(player.id); // the room says no to anyone but the host
       }
     });
 
