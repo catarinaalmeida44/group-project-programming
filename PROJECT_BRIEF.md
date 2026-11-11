@@ -108,6 +108,8 @@ What this means for you: prefer finished, reliable features over many half-finis
 
   [PROPOSED 11 Nov 2026 by the agent] The other two tracks are indoor, for example the ground floor round the Hovione Atrium and the KPMG Gallery. They need a floor plan: photos of the evacuation plans on campus, or one from Facilities & Services.
 
+  *11 Nov 2026, asked for by Rodrigo:* in the view behind the kart, the buildings of the campus loop stand up, as tall as their storeys. Only the picture changes; the driving rules do not. OpenStreetMap has no storey counts for the campus, so they come from the floors listed on the school's campus map, a first guess to check on campus. *Decision made by the agent, please confirm:* 3.5 metres a storey, buildings without a count get 2 storeys, the edge of the campus stays flat, and our own kart is always painted on top. This changes `client/draw.js`, which is not in Rodrigo's area.
+
   **[OPEN]** A lap of the campus loop takes about 20 seconds for the test kart, not 30 to 40, because at this scale a kart drives at about 200 km/h. Rodrigo proposes making all karts about 40% slower (the numbers at the top of `shared/physics.js`). This also makes laps of the test oval longer. For the team, and the owner of the driving physics, to decide.
 
 ### Driving physics

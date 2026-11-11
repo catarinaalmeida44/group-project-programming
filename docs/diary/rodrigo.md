@@ -2,6 +2,48 @@
 
 Rodrigo Simeão Versos (GitHub rodrigosversos). Entries from 11 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 11 November 2026: buildings that stand up
+
+**What was done**
+In the view behind the kart, the buildings of the campus loop now stand up, as tall as their storeys, with shaded sides and flat roofs. A kart driving behind a building disappears behind it. Only the picture changed: the driving rules are the same, and the test oval and the online page still have flat walls. Branch `rodrigo-building-heights`, which starts from `rodrigo-campus-loop`, so it can only be merged after that one.
+
+| File | What changed |
+|---|---|
+| `shared/tracks/campus-loop-storeys.js` | New. One digit per square of the campus loop: how many storeys tall it is (0 is flat) |
+| `shared/tracks/index.js` | `storeysOf(track)`: the storeys of a track, or none |
+| `client/buildings.js` | New. Turns storeys into sides and roofs, and works out which can be seen from behind the kart, and where on the screen |
+| `client/draw.js` | Paints the sides and roofs with the other karts, furthest first. Our own kart is now painted last, so nothing covers it |
+| `client/main.js` | Gives the painter the buildings of the chosen track |
+| `tests/buildings.test.js` | New. 16 tests |
+| `WALKTHROUGH.md`, `PROJECT_BRIEF.md`, `client/README.md`, `shared/README.md`, `tests/README.md` | Kept true |
+
+**Why it was done this way**
+- **No new library.** The karts already stand up in this view, using the camera arithmetic in `client/camera.js`. The buildings use the same arithmetic, so they line up with the karts and the ground, and every line can be explained.
+- **Height only in the picture.** The rules (`shared/`) run on the server too, which draws nothing. Keeping the storeys out of the rules means nothing about driving or laps changed.
+- **The storeys.** I asked for the storey counts from OpenStreetMap, but OpenStreetMap has none for the campus (no `building:levels` or `height` on any campus building). So they come from the school's campus map, which lists what is on each floor of each building. A building counts the floors from 0 up on which something of it is listed: Cascais Academic Hall 3, CTT Student Hall 2, Santander Academic Hall 3, Ming C. Hsu Executive Hall 3, Grand Auditorium 3, gym and Horizon Hall 3, Library 2, main building (Hovione Atrium, KPMG Gallery) 3, Milestone residence 3.
+- **Furthest first.** Painting from far to near (the painter's way) is simple and enough for blocks. Each side and roof is one square (6 metres), so pieces are small and the order is mostly right.
+
+**Decisions**
+- Mine: the buildings stand up; their heights come from storey counts.
+- Decision made by the agent, please confirm: the storeys above, from the school's campus map, as a first guess for me to check on campus; 3.5 metres a storey; buildings with no count get 2 storeys; the edge of the campus stays flat; light grey sides with a different shade per direction and darker roofs; our own kart always painted on top.
+- Decision made by the agent, please confirm, and tell the owner: `client/draw.js` (the drawing) and `client/main.js` changed again. Neither has an owner yet.
+
+**What was checked, and what was not**
+- `npm test`: 473 passed, 5 skipped (16 new tests).
+- `client/buildings.js` was broken on purpose in five ways: sides facing away shown, sides drawn downwards, nothing cut at the bottom of the screen, storeys allowed on road, a side on every edge. Four made tests fail at once. The third did not: the test for the bottom of the screen allowed too much. It was tightened (nothing may be drawn below the screen at all), and then it failed as it should, for the sides and for the roofs.
+- One of the new tests was wrong at first (it looked for the side between two blocks at the wrong place). The test was fixed, not the code.
+- In a Chrome browser without a screen: the buildings stand up along the Walk of Founders and the east side, roofs and sides are painted in the right order there, the test oval is still flat, and there were no errors. Pictures per second in the view behind the kart: about 30 on the campus loop, as before the buildings, and 60 on the test oval.
+- **Not checked:** a person driving past the buildings, on a real laptop; how it looks in the courtyards and round the Auditorium (my test drives did not get there); whether the storeys are right.
+- **Not handled:** buildings far ahead show at the top right, where the small map can cover them; no windows, glass or sloping roofs; where two pieces are about as far away, the wrong one can end up on top for a moment.
+
+**How to check it yourself**
+Run `npm start`, open http://localhost:3000/race.html?track=campus-loop and stay in the first view (behind the kart). The Milestone residence should stand on your left at the start and the main building on your right. Drive round the loop and look at the halls round the CTT hairpin and the Grand Auditorium. Open http://localhost:3000/race.html: the test oval should look as before.
+
+**What comes next**
+- Check the storeys on campus and tell me which are wrong. Each is one digit per square.
+- The team: confirm the decisions above. This branch can only be merged after `rodrigo-campus-loop`.
+- If it feels slow on a real laptop: paint only the part of the track that is on screen.
+
 ### 11 November 2026: the campus loop, the first campus track
 
 **What was done**

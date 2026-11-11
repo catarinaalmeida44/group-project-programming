@@ -23,6 +23,7 @@ Everything the browser shows and does: the web page, the drawing of the track an
 | `keyboard.js` | Turns the arrow keys into the four answers the rules expect: gas, brake, left, right. Also listens for R (start again), V (change the camera) and Enter (online: the host starts a race) |
 | `camera.js` | The arithmetic of the camera: which part of the track is on the screen, and where things land on it. No painting |
 | `draw.js` | Paints the track, the kart and the small map in the corner on the canvas, in one of the three views |
+| `buildings.js` | Makes the buildings of a track stand up in the view behind the kart: works out their sides and roofs from the storeys of each square, and which of them can be seen from the kart. No painting; `draw.js` paints them |
 | `format.js` | Turns a number of seconds into a race time such as `1:23.45` |
 
 ## The three camera views
@@ -31,7 +32,7 @@ The game starts in the first one. The V key switches to the next.
 
 | View | What you see |
 |---|---|
-| Behind the kart | Tilted, from behind and above. The track turns around the kart, so the kart always drives up the screen, and ground further ahead is drawn smaller |
+| Behind the kart | Tilted, from behind and above. The track turns around the kart, so the kart always drives up the screen, and ground further ahead is drawn smaller. On the campus loop the buildings stand up |
 | From above | Zoomed in, from straight above, moving with the kart. North stays up and the kart turns on the screen. The camera looks a little ahead and stops at the edges of the track |
 | Whole track | The whole track at once, without moving |
 
