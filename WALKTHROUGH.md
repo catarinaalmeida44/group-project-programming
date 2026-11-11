@@ -28,6 +28,8 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 | The 3, 2, 1, GO! before a race | `shared/countdown.js` | Yes, in the practice race and in online races |
 | The test track | `shared/tracks/test-oval.js` | Yes. It is a simple loop, not a campus track |
 | The first campus track | `shared/tracks/campus-loop.js` | Yes: the campus loop, round the outside of the campus. Not in the menu yet |
+| How tall the campus buildings are | `shared/tracks/campus-loop-storeys.js` | Yes: storeys per square, for the picture only |
+| Buildings standing up behind the kart | `client/buildings.js`, painted by `client/draw.js` | Yes, on the campus loop |
 | The list of tracks | `shared/tracks/index.js` | Yes: the test oval and the campus loop |
 | Choosing the track of a single race | `client/track-choice.js` | Yes, in the address: `race.html?track=campus-loop` |
 | The drivers and their scores | `shared/characters.js` | One placeholder driver |
@@ -140,7 +142,7 @@ The words on the page (the big number, "You are the host: press Enter", "You are
 
 There are three views. The game starts in the first one and the V key switches to the next. The camera only changes what is shown. The kart moves by the same rules in every view.
 
-- **Behind the kart.** The track is turned so that the kart always drives up the screen, and it is tilted: ground further ahead is drawn smaller and higher. The kart is drawn from behind.
+- **Behind the kart.** The track is turned so that the kart always drives up the screen, and it is tilted: ground further ahead is drawn smaller and higher. The kart is drawn from behind. On a track that comes with storeys, such as the campus loop, the buildings stand up too (see below).
 - **From above.** The screen shows a zoomed-in part of the track from straight above. North stays up and the kart turns on the screen. The camera aims a little ahead of the kart, in the direction it is moving, glides instead of jumping, and stops at the edges of the track.
 - **Whole track.** Everything at once, without moving.
 
@@ -169,6 +171,14 @@ From the real campus. The tracks are taken from the Nova SBE campus and its buil
 **The route** is driven clockwise as it looks on the map: east along the Walk of Founders, south past the Library and Navigator Park, round the gym to EDP Plaza, round the southern tip of the Grand Auditorium, north-west along the outer path, up the western gardens, a hairpin through the courtyards on either side of the CTT Student Hall, and back. About 1.1 km. Away from the driving line there is open ground, so a kart can leave the line and skip a detour, but it gains nothing: there is a checkpoint in each detour, and a lap only counts if every checkpoint was passed in order.
 
 **Recognisable, not exact.** The roads are much wider than the real paths (24 metres), the CTT Student Hall is shorter than it really is because the hairpin cuts through its end, and north is not up. The Hovione Atrium and the KPMG Gallery are walls on this track; they are meant for an indoor track of their own, where the karts would be miniatures in a building of its real size.
+
+## How do the buildings stand up?
+
+Only in the picture. The driving rules know nothing about height: a wall is a wall, and karts bounce off it as before.
+
+A track can come with the number of storeys of each square, in a second drawing of digits: `shared/tracks/campus-loop-storeys.js`, where 0 is flat and 2 means two storeys. One storey is 3.5 metres. When the race page opens, `client/buildings.js` turns every wall square with storeys into a block: a flat roof, and an upright side wherever the square next door is lower. For every picture, it works out which sides and roofs can be seen from behind the kart and where they go on the screen, with the same arithmetic that places the karts (`chasePoint` in `client/camera.js`): further ahead means higher up and smaller, and a side goes up by its height times the size at that distance. Sides that face away from the camera are left out, because the roof and the other sides hide them. Then `client/draw.js` paints everything, karts included, from the furthest to the nearest, so nearer things cover further ones and a kart behind a building disappears. Our own kart is painted last.
+
+**Where the storeys come from.** OpenStreetMap has the shapes of the buildings but no storey counts for the campus. The school's campus map (campustour.novasbe.pt) lists what is on each floor of each building, so a building counts the floors on which something of it is listed: for example Cascais Academic Hall 3, the Library 2. These are a first guess, to be checked on campus.
 
 ## How are laps counted, and can a player cheat?
 
@@ -202,7 +212,7 @@ In a Postgres database kept by a company called Neon, in Frankfurt, on its free 
 
 ## What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 457 tests today, plus 5 that only run against the real database.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 473 tests today, plus 5 that only run against the real database.
 
 **Covered today**
 
@@ -227,6 +237,7 @@ We run them with `npm test`. GitHub also runs them by itself on every pull reque
 - `clamp` in `shared/numbers.js`, which keeps a number between a lowest and a highest value. Ten tests: six for normal use and four for bad input that must be refused.
 - The server in `server/app.js`. Nineteen tests. Ten check what it must do: send the page, its style and code, the game rules and the health check. Nine check what it must refuse: missing pages, requests that change things, file kinds not on the list, files outside the `client/` and `shared/` folders (thirteen different ways of writing such an address), the server's own code and the tests, and two kinds of broken address.
 - The parts of the browser code that need no browser, in `client/format.js`, `client/keyboard.js` and `client/hud.js`. Twenty-seven tests: a race time and lap times as text, arrow keys into gas, brake, left and right, R to start again, V to change the camera, and letting go of every key when the player switches to another window.
+- Buildings standing up, in `tests/buildings.test.js`. Sixteen tests: a block gets four sides and a roof of the right height, a taller block next to a lower one stands only the part that sticks out, walls with 0 storeys stay flat, bad storeys are refused (storeys on a road square, a letter, a row too short, wrong sizes), and from behind the kart only the sides facing the camera are shown, every side stands up, a further building is drawn smaller, and nothing behind the camera or below the bottom of the screen is drawn. We broke `client/buildings.js` on purpose in five ways. One was missed at first, because the test for the bottom of the screen was too loose; it was tightened, and then every one made a test fail.
 - The arithmetic of the camera in `client/camera.js`. Thirty-five tests: the view from above looks ahead, stops at every edge of the track and always keeps the kart on screen, the camera glides without overshooting, and in the tilted view ground further ahead lands higher on the screen and is drawn smaller.
 
 The server tests start a real copy of the server on the computer running the tests and send it real requests.
@@ -240,6 +251,7 @@ To check that the tests really guard the rules, we broke the code on purpose in 
 - The five real-database tests are never run by GitHub, which does not have the database address. They only run when someone runs them by hand, on a network that allows it.
 - Online play between two real laptops on two different internet connections. The tests use pretend browsers on one computer, where messages arrive instantly. Delay, uneven arrival and lost connections are checked by hand with `docs/two-laptop-checklist.md`. It was run once, on 10 November, by three players on three laptops on the live server: everyone saw the others drive. The result of each single check was not written down, nor whether the laptops were on different internet connections, so the checks for a lost connection and for a new version going online are still unconfirmed.
 - Anything that only happens on the real internet. We have one example already. On the first day online, a browser that broke a rule was not removed from the live server, although the test for exactly that passed on one computer: the server was waiting for the browser to answer its goodbye, and through Render's network the answer did not come. It is fixed, there is now a test with a browser that never answers, and the fix was checked on the live server. The lesson is that passing tests show the code does what the tests imagined, not that it works everywhere.
+- How the standing buildings look. They were looked at in a browser without a screen, on the Walk of Founders and down the east side, and the test oval still has flat walls. Nobody has driven past them yet. The storeys are a first guess from the school's campus map, not measured.
 - The campus loop driven by a person. A robot drove it, and it was looked at in a browser without a screen: the three views draw it, and the small map fits in its corner. In that browser the view behind the kart ran at 30 pictures a second on the campus loop, against 60 on the test oval. That browser has no graphics card, so how smooth it is on a real laptop is not checked yet.
 - The "server has gone quiet" notice appearing for real. Its wording and timing are tested, but on one computer a cut connection is noticed at once, so the notice never shows there.
 - How the driving feels. No test can say whether a kart is fun to drive. That needs a person at the keyboard.
@@ -303,10 +315,12 @@ These are the limits we expect from the free hosting plans:
 - The limit of 60 messages a second is per connection. Nothing yet limits how many connections one computer may open, beyond the room being full at eight.
 - The numbers in the driving rules are first guesses. No person has driven the kart for long yet, so they will change with playtesting.
 - The driving rules have no drifting, bumping between karts, sand or sea yet.
-- In the tilted view the track is flat. Walls are painted on the ground with a striped edge and do not stand up, and there is no sky or scenery. Only the karts stand up. Making walls and buildings stand up would need more drawing code or a 3D library.
+- In the tilted view, only tracks with storeys have standing buildings: today the campus loop. Other walls, including the edge of the campus and the whole test oval, are painted on the ground with a striped edge and do not stand up. There is no sky or scenery. The buildings are plain blocks of shaded grey with flat roofs: no windows, no glass, no sloping roofs. They are blocks of 6-metre squares, so their corners are steps, like the walls.
+- The buildings are painted furthest first (the painter's way). Where two pieces are about as far away, the wrong one can end up on top for a moment. Real 3D drawing would sort this out exactly, but needs a 3D library.
+- Buildings far ahead appear at the top right of the screen, where the small map in the corner can cover them.
 - The kart is drawn with a few coloured shapes, from above and from behind. Real artwork would need a picture of each character from several sides.
 - In the tilted view, other players' karts stand up, with a driver, and are placed and sized by distance (`chasePoint` in `client/camera.js`). There are only four pictures of a kart: from behind, from the front, and from each side. A kart that is turning therefore snaps from one picture to the next instead of turning smoothly. More pictures in between would fix that.
-- Karts do not hide behind walls. A kart on the other side of the middle block is drawn as if the block were not there.
+- Karts hide behind the standing buildings of the campus loop, but not behind flat walls. A kart on the other side of the test oval's middle block is drawn as if the block were not there. Our own kart is always painted last, so it is never hidden.
 - The tilted view redraws the whole screen row by row for every picture. That is fine on a laptop, but it is more work for the computer than the view from above.
 - The game needs a keyboard. There are no touch controls for phones.
 - The kart is drawn exactly where the last step of the rules put it. On screens faster than 60 pictures a second the movement can look slightly uneven. Drawing in-between positions would fix that.

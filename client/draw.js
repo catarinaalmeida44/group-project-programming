@@ -6,6 +6,7 @@
 // views described in camera.js.
 
 import { SCREEN, FOLLOW, CHASE, chaseRow, chasePoint, seenFromKart, sideSeen } from "./camera.js";
+import { buildingsInView } from "./buildings.js";
 
 // Each kind of ground has two shades that are almost the same. Tiles are
 // painted in a chequered pattern of the two. The pattern is faint, but it
@@ -21,6 +22,14 @@ const KERB_RED = "#d8473f";
 const KERB_WHITE = "#f2f5f7";
 const KERB_WIDTH = 5; // units
 const KART_NOSE = "#f2f5f7";
+
+// Buildings standing up in the view behind the kart (buildings.js). The
+// campus is white, so the sides are light greys. Each side has its own shade,
+// as if the sun came from one direction, so corners can be seen. The roofs
+// are darker, so the top of a building stands out from its sides.
+const BUILDING_SIDE = { north: "#c3c9d1", east: "#dde2e8", south: "#eef1f4", west: "#aab2bc" };
+const BUILDING_ROOF = "#8d97a3";
+const BUILDING_EDGE = "rgba(40, 52, 64, 0.55)";
 const KART_DARK = "#15191d";
 const HELMET = "#f2f5f7";
 
@@ -63,7 +72,12 @@ const MINIMAP_MARGIN = 10;
  *           Only used to make the kart lean a little in the chase view
  *   others  the karts of the other players, if any
  */
-export function createPainter(canvas, track) {
+/**
+ * Gets a canvas ready to show a track. "buildings" (from buildings.js) makes
+ * the walls of the track stand up in the view behind the kart. Without it, as
+ * on the test oval and the online page, the walls stay flat.
+ */
+export function createPainter(canvas, track, buildings = null) {
   canvas.width = SCREEN.width;
   canvas.height = SCREEN.height;
   const context = canvas.getContext("2d");
@@ -77,7 +91,7 @@ export function createPainter(canvas, track) {
     if (view === "follow") {
       drawFollowView(context, trackPicture, track, kart, camera, others);
     } else if (view === "chase") {
-      drawChaseView(context, chase, trackPicture, track, kart, steer, others);
+      drawChaseView(context, chase, trackPicture, track, kart, steer, others, buildings);
     } else {
       drawMapView(context, trackPicture, track, kart, others);
     }
@@ -275,7 +289,7 @@ function prepareChaseView() {
   return { rows, farthest, ground, groundContext: ground.getContext("2d") };
 }
 
-function drawChaseView(context, chase, trackPicture, track, kart, steer, others) {
+function drawChaseView(context, chase, trackPicture, track, kart, steer, others, buildings) {
   const { rows, farthest, ground, groundContext } = chase;
 
   // Stage 1: paint the ground, turned so the kart points up.
@@ -302,23 +316,13 @@ function drawChaseView(context, chase, trackPicture, track, kart, steer, others)
     );
   }
 
-  // Stage 3: the karts, standing up on the tilted ground.
+  // Stage 3: the karts and the buildings, standing up on the tilted ground.
   // Every kart is drawn as a small picture of a kart with its driver. Where
   // it goes on the screen and how big it is come from camera.js: further
   // ahead means higher up and smaller. Which picture is used depends on which
-  // side of that kart we are looking at.
-  const standing = [
-    // Our own kart: always in the same spot, always seen from behind.
-    {
-      ahead: 0,
-      x: SCREEN.width / 2,
-      y: CHASE.kartScreenY,
-      unit: CHASE.kartScale,
-      side: "back",
-      steer,
-      colours: coloursOf(kart),
-    },
-  ];
+  // side of that kart we are looking at. The sides and roofs of the buildings
+  // come from buildings.js, placed with the same arithmetic.
+  const standing = [];
   for (const other of others) {
     const seen = seenFromKart(kart, other.x, other.y);
     const spot = chasePoint(seen.ahead, seen.sideways);
@@ -336,11 +340,42 @@ function drawChaseView(context, chase, trackPicture, track, kart, steer, others)
       });
     }
   }
-  // Draw the furthest first, so that a nearer kart covers a further one.
+  standing.push(...buildingsInView(buildings, kart));
+  // Draw the furthest first, so that nearer things cover further ones: a kart
+  // driving behind a building disappears behind it.
   standing.sort((a, b) => b.ahead - a.ahead);
   for (const each of standing) {
-    drawKartStandingUp(context, each);
+    if (each.points) {
+      drawBuildingPiece(context, each);
+    } else {
+      drawKartStandingUp(context, each);
+    }
   }
+  // Our own kart last: always in the same spot, always seen from behind, and
+  // never hidden, even by a building between it and the camera.
+  drawKartStandingUp(context, {
+    x: SCREEN.width / 2,
+    y: CHASE.kartScreenY,
+    unit: CHASE.kartScale,
+    side: "back",
+    steer,
+    colours: coloursOf(kart),
+  });
+}
+
+/** Paints one side or roof of a building, as worked out by buildings.js. */
+function drawBuildingPiece(context, { kind, facing, points }) {
+  context.beginPath();
+  points.forEach(([x, y], i) => (i === 0 ? context.moveTo(x, y) : context.lineTo(x, y)));
+  context.closePath();
+  context.fillStyle = kind === "roof" ? BUILDING_ROOF : BUILDING_SIDE[facing];
+  context.fill();
+  // Sides get a thin dark edge, which also marks every 6 metres of wall like
+  // panels of a facade. A roof is painted in squares too, but its edge is in
+  // its own colour, so the roof looks like one surface without gaps.
+  context.strokeStyle = kind === "roof" ? BUILDING_ROOF : BUILDING_EDGE;
+  context.lineWidth = 1;
+  context.stroke();
 }
 
 /** Draws one kart standing up, seen from the given side. */

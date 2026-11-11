@@ -6,6 +6,7 @@
 //   ../shared/countdown.js  the 3, 2, 1, GO! before the race
 //   camera.js            which part of the track is on the screen
 //   draw.js               the picture of the track and the kart
+//   buildings.js          the buildings standing up in the view behind the kart
 //   hud.js                the lap counter, the clock and the message
 //
 // The race runs entirely in this browser. Nothing is sent to the server. Your
@@ -20,6 +21,8 @@ import { STEP_SECONDS } from "../shared/physics.js";
 import { currentLap } from "../shared/laps.js";
 import { TEST_DRIVER } from "../shared/characters.js";
 import { chooseTrack } from "./track-choice.js";
+import { storeysOf } from "../shared/tracks/index.js";
+import { createBuildings } from "./buildings.js";
 import { createKeyboard } from "./keyboard.js";
 import { createPainter } from "./draw.js";
 import { createHud } from "./hud.js";
@@ -34,7 +37,10 @@ const character = TEST_DRIVER;
 
 // ---- The parts of the page ----
 document.getElementById("track-name").textContent = track.name; // as text, never as HTML
-const draw = createPainter(document.getElementById("track"), track);
+// The buildings of the track stand up in the view behind the kart, if the
+// track has storeys (buildings.js). The test oval has none: its walls stay flat.
+const buildings = createBuildings(track, storeysOf(track));
+const draw = createPainter(document.getElementById("track"), track, buildings);
 const showHud = createHud(document);
 const messageBox = document.getElementById("message");
 
