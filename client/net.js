@@ -22,6 +22,14 @@ const COAST_STEPS = 12; //      if updates stop arriving, keep moving this long,
 const JUMP_STEPS = 30; //       if we are this far off, jump instead of gliding there
 const CATCH_UP = 0.1; //        share of a small timing error corrected in each picture
 
+/**
+ * A kart at top speed moves about 18 units between two updates. One that
+ * is further than this from where it was has not driven there: it was put
+ * somewhere else, for example back on the grid at a race start. It is then
+ * shown in its new spot at once, instead of sliding across the track.
+ */
+export const JUMP_DISTANCE = 100;
+
 /** A value part of the way from "from" to "to". share 0 gives from, share 1 gives to. */
 export function blend(from, to, share) {
   return from + (to - from) * share;
@@ -36,13 +44,17 @@ export function blendAngle(from, to, share) {
 /**
  * The karts part of the way between two updates.
  * Every kart in the newer update is shown. A kart that is also in the older
- * update is drawn between its two positions. A kart that just joined is
- * drawn where the newer update has it.
+ * update is drawn between its two positions. A kart that just joined, or
+ * that was put somewhere else on the track, is drawn where the newer
+ * update has it.
  */
 export function blendKarts(olderKarts, newerKarts, share) {
   return newerKarts.map((newer) => {
     const older = olderKarts.find((kart) => kart.id === newer.id);
     if (older === undefined) {
+      return newer;
+    }
+    if (Math.hypot(newer.x - older.x, newer.y - older.y) > JUMP_DISTANCE) {
       return newer;
     }
     return {

@@ -259,3 +259,32 @@ describe("reading a message from the server", () => {
     }
   });
 });
+
+describe("a kart that was put somewhere else, such as back on the grid at a race start", () => {
+  it("is shown in its new spot at once, instead of sliding across the track", () => {
+    const farAway = [kart(1, 900)];
+    const onTheGrid = [kart(1, 500)];
+    expect(blendKarts(farAway, onTheGrid, 0.5)[0].x).toBe(500);
+    expect(blendKarts(farAway, onTheGrid, 0.01)[0].x).toBe(500);
+  });
+
+  it("also jumps when the kart was moved up or down the track", () => {
+    const before = [kart(1, 500, { y: 480 })];
+    const after = [kart(1, 500, { y: 100 })];
+    expect(blendKarts(before, after, 0.5)[0].y).toBe(100);
+  });
+
+  it("still glides a kart that only drove, even at top speed", () => {
+    const before = [kart(1, 500)];
+    const after = [kart(1, 518)]; // about one update at top speed
+    expect(blendKarts(before, after, 0.5)[0].x).toBeCloseTo(509);
+  });
+
+  it("jumps one kart without disturbing the gliding of the others", () => {
+    const before = [kart(1, 900), kart(2, 500)];
+    const after = [kart(1, 500), kart(2, 510)];
+    const shown = blendKarts(before, after, 0.5);
+    expect(shown[0].x).toBe(500);
+    expect(shown[1].x).toBeCloseTo(505);
+  });
+});
