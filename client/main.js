@@ -8,8 +8,10 @@
 //   draw.js               the picture of the track and the kart
 //   hud.js                the lap counter, the clock and the message
 //
-// The race runs entirely in this browser. Nothing is sent to the server and
-// nothing is saved. (The online page is online.js.)
+// The race runs entirely in this browser. Nothing is sent to the server. Your
+// best times are kept in this browser only (records.js), and the camera view
+// you start in comes from the menu's settings (settings.js). (The online page
+// is online.js.)
 
 import { createCountdownRace, stepCountdownRace, countdownAt } from "../shared/countdown.js";
 import { STEP_SECONDS } from "../shared/physics.js";
@@ -19,8 +21,11 @@ import { TEST_OVAL } from "../shared/tracks/test-oval.js";
 import { createKeyboard } from "./keyboard.js";
 import { createPainter } from "./draw.js";
 import { createHud } from "./hud.js";
-import { VIEWS, followTarget, easeTowards, nextView } from "./camera.js";
+import { followTarget, easeTowards, nextView } from "./camera.js";
 import { formatTime } from "./format.js";
+import { storageOf } from "./storage.js";
+import { readSettings } from "./settings.js";
+import { recordFinishedRace } from "./records.js";
 
 const track = TEST_OVAL;
 const character = TEST_DRIVER;
@@ -35,9 +40,11 @@ let race = createCountdownRace(track); // the racer, and how far the countdown i
 let started = false; //    the countdown starts at the first key press
 let lastFrameTime = null;
 let waitingSeconds = 0; // real time that has passed but is not yet turned into game steps
+let record = null; //      once the race is finished: did it beat your best times? (records.js)
 
 // ---- The state of the camera ----
-let view = VIEWS[0]; // the game starts in the first view of the list in camera.js
+const storage = storageOf(window); // this browser's storage, for the settings and the best times
+let view = readSettings(storage).startView; // the view chosen in the menu's settings, or the first one
 let camera = followTarget(race.racer.kart, track); // the spot in the middle of the screen, in the follow view
 
 const keyboard = createKeyboard(window, {
@@ -54,6 +61,7 @@ function startAgain() {
   race = createCountdownRace(track);
   started = false;
   waitingSeconds = 0;
+  record = null;
   camera = followTarget(race.racer.kart, track); // jump straight back, do not glide
 }
 
@@ -94,6 +102,11 @@ function frame(now) {
   const { racer } = race;
   const countdown = countdownAt(race.countdownSteps);
 
+  // The moment the race is finished, compare it with your best times, once.
+  if (racer.progress.finished && record === null) {
+    record = recordFinishedRace(storage, track, racer.progress.lapSteps);
+  }
+
   // The camera glides towards where it wants to be.
   camera = easeTowards(camera, followTarget(racer.kart, track), frameSeconds);
 
@@ -122,12 +135,26 @@ function frame(now) {
 /** The text shown in the middle of the track. */
 function messageFor(progress, countdown) {
   if (progress.finished) {
-    return `Finished in ${formatTime(progress.steps * STEP_SECONDS)}. Press R to race again.`;
+    return `Finished in ${formatTime(progress.steps * STEP_SECONDS)}.${newBestText()} Press R to race again.`;
   }
   if (!started) {
     return "Press an arrow key to start the countdown";
   }
   return countdown.label; // "3", "2", "1", "GO!", and then nothing
+}
+
+/** " New best time!" and similar after a finish, or nothing. */
+function newBestText() {
+  if (record === null) {
+    return "";
+  }
+  if (record.newBestRace) {
+    return " New best time!";
+  }
+  if (record.newBestLap) {
+    return " New best lap!";
+  }
+  return "";
 }
 
 // A way to look at the race from the browser's console while tuning the

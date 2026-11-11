@@ -21,7 +21,7 @@ Write "yes" or what went wrong next to each one.
 
 | # | Do this | You should see | Result |
 |---|---|---|---|
-| 1 | Laptop A: open the link and click "Online test" | "Connected. You are the red kart. You are alone here. You are the host: press Enter to start a race for everyone here." | |
+| 1 | Laptop A: open the link and click "Online" in the menu | "Connected. You are the red kart. You are alone here. You are the host: press Enter to start a race for everyone here." | |
 | 2 | Laptop B: do the same | B says it is the blue kart. Both laptops say "2 players here". B is told to wait for the host | |
 | 3 | Both: look at the small map | Two dots, one red and one blue | |
 | 4 | A: hold the up arrow for two seconds | On B, the red kart drives away smoothly, without jumping | |
@@ -30,7 +30,7 @@ Write "yes" or what went wrong next to each one.
 | 7 | A: press V twice | A's camera changes. Nothing changes on B | |
 | 8 | A: press R (before any race has been started) | A's kart is back at the start with the clock at zero. B's kart is not affected | |
 | 9 | B: close the browser tab | Within a few seconds the blue kart disappears on A, and A says "You are alone here" | |
-| 10 | B: open the link and "Online test" again | B is back in the room. Both say "2 players here" | |
+| 10 | B: open the link and click "Online" in the menu again | B is back in the room. Both say "2 players here" | |
 | 11 | A: switch off the Wi-Fi and leave it off for one minute | On A, the karts stop moving and after two seconds the line under the track says "The server has gone quiet". On B, the red kart disappears within about half a minute | |
 | 12 | A: switch the Wi-Fi on again | A says the connection was lost. This one has never been tried, so write down what really happens | |
 | 13 | A: reload the page | A is back in the room with a kart | |
