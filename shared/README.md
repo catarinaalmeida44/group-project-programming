@@ -11,6 +11,8 @@ These files are used by both the browser and the server, so both follow exactly 
 | `track.js` | Reads a track drawn with letters, says what the ground is at any spot, and makes karts bounce off walls |
 | `laps.js` | Counts checkpoints, laps and race time |
 | `tracks/test-oval.js` | The test track: a simple loop drawn with letters |
+| `tracks/campus-loop.js` | The first campus track: a loop round the outside of the Nova SBE campus, made from OpenStreetMap, 6 metres a square. How it was made is explained at the top of the file |
+| `tracks/index.js` | The list of all tracks, each with a short name for addresses (`test-oval`, `campus-loop`). A new track is added here |
 | `physics.js` | The driving rules. `stepKart` takes a kart and the keys that are pressed, and gives back the kart one sixtieth of a second later. The numbers to tune by playtesting are together at the top of the file |
 | `characters.js` | The drivers and their scores. For now one placeholder driver with middle scores |
 | `surfaces.js` | The kinds of ground. For now road and grass |

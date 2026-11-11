@@ -10,14 +10,16 @@
 //
 // The race runs entirely in this browser. Nothing is sent to the server. Your
 // best times are kept in this browser only (records.js), and the camera view
-// you start in comes from the menu's settings (settings.js). (The online page
-// is online.js.)
+// you start in comes from the menu's settings (settings.js). The track comes
+// from the address of the page (track-choice.js): race.html?track=campus-loop
+// opens the campus loop, and without a choice it is the test oval. (The
+// online page is online.js.)
 
 import { createCountdownRace, stepCountdownRace, countdownAt } from "../shared/countdown.js";
 import { STEP_SECONDS } from "../shared/physics.js";
 import { currentLap } from "../shared/laps.js";
 import { TEST_DRIVER } from "../shared/characters.js";
-import { TEST_OVAL } from "../shared/tracks/test-oval.js";
+import { chooseTrack } from "./track-choice.js";
 import { createKeyboard } from "./keyboard.js";
 import { createPainter } from "./draw.js";
 import { createHud } from "./hud.js";
@@ -27,10 +29,11 @@ import { storageOf } from "./storage.js";
 import { readSettings } from "./settings.js";
 import { recordFinishedRace } from "./records.js";
 
-const track = TEST_OVAL;
+const track = chooseTrack(window.location.search);
 const character = TEST_DRIVER;
 
 // ---- The parts of the page ----
+document.getElementById("track-name").textContent = track.name; // as text, never as HTML
 const draw = createPainter(document.getElementById("track"), track);
 const showHud = createHud(document);
 const messageBox = document.getElementById("message");

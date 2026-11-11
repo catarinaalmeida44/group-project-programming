@@ -50,6 +50,7 @@ const TRACK_SHARPNESS = 2; //  pixels per unit in the hidden picture of the trac
 const GROUND_SHARPNESS = 3; // pixels per unit in the hidden picture used by the chase view
 
 const MINIMAP_SCALE = 0.18;
+const MINIMAP_LARGEST = 180; // pixels: on a big track the small map is shrunk to fit in this
 const MINIMAP_MARGIN = 10;
 
 /**
@@ -516,8 +517,12 @@ function paintKartFromTheSide(context, colours) {
 // ---- The small map in the corner ----
 
 function drawMinimap(context, trackPicture, track, kart, others) {
-  const width = track.width * MINIMAP_SCALE;
-  const height = track.height * MINIMAP_SCALE;
+  // Never wider or taller than MINIMAP_LARGEST, so a big track (such as the
+  // campus loop) does not cover the screen. The test oval is small enough to
+  // keep MINIMAP_SCALE.
+  const scale = Math.min(MINIMAP_SCALE, MINIMAP_LARGEST / track.width, MINIMAP_LARGEST / track.height);
+  const width = track.width * scale;
+  const height = track.height * scale;
   const left = SCREEN.width - width - MINIMAP_MARGIN;
   const top = MINIMAP_MARGIN;
 
@@ -536,7 +541,7 @@ function drawMinimap(context, trackPicture, track, kart, others) {
     context.strokeStyle = ring;
     context.lineWidth = 1.5;
     context.beginPath();
-    context.arc(left + someKart.x * MINIMAP_SCALE, top + someKart.y * MINIMAP_SCALE, size, 0, Math.PI * 2);
+    context.arc(left + someKart.x * scale, top + someKart.y * scale, size, 0, Math.PI * 2);
     context.fill();
     context.stroke();
   };

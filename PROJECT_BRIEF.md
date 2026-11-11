@@ -85,7 +85,7 @@ What this means for you: prefer finished, reliable features over many half-finis
 
 - [DECIDED] Top-down view with a fixed map: north is always up, the kart turns but the map never rotates. The camera is zoomed in and follows each player's own kart. *10 Nov 2026: Catarina asked for a tilted view from behind the kart instead, in which the map turns around the kart. Both views are built and the V key switches between them, so the team can compare. **[DECIDED 10 Nov 2026 by Catarina; teammates confirm by approving the pull request]** The game starts in the tilted view from behind the kart. The view from above stays available with V.*
 - [PROPOSED] The camera looks slightly ahead in the driving direction and stops at the map edges. A minimap in a corner shows a dot for every kart, in each player's colour. After you finish, the camera follows the leader.
-- [PROPOSED] Tracks are drawn in Tiled (a free map editor that Phaser can read), using the real OpenStreetMap layout as a template. Paths are widened to fit 3 to 4 karts and sharp corners are rounded: recognisable, not exact. The game shows the credit "© OpenStreetMap contributors".
+- [PROPOSED] Tracks are drawn in Tiled (a free map editor that Phaser can read), using the real OpenStreetMap layout as a template. Paths are widened to fit 3 to 4 karts and sharp corners are rounded: recognisable, not exact. The game shows the credit "© OpenStreetMap contributors". *11 Nov 2026: Phaser was dropped, so tracks are drawn with letters in a file (`shared/track.js`), not in Tiled. The campus loop was made from OpenStreetMap data by a short script run in the browser, then adjusted by hand. Details in `docs/diary/rodrigo.md`.*
 - [PROPOSED] Surfaces:
   - road: full speed
   - grass: off-road, slower
@@ -101,6 +101,14 @@ What this means for you: prefer finished, reliable features over many half-finis
   5. a long track combining the campus areas
 
   **[OPEN]** Final choice of tracks: which 3 of these five (the team agreed on 3 tracks on 11 Nov 2026).
+
+  **[DECIDED 11 Nov 2026, reported by Rodrigo, who owns the campus tracks]** The tracks are taken from the Nova SBE campus and its building, not from the beach, the Marginal or the fort. Tracks inside the building would be the ideal. Indoor tracks keep the building's real proportions, and the karts are miniatures, instead of making the corridors wider (Rodrigo's idea). Laps should take 30 to 40 seconds.
+
+  *11 Nov 2026, built by Rodrigo:* the **campus loop** (`shared/tracks/campus-loop.js`), round the outside of the campus, with detours round the Grand Auditorium and the CTT Student Hall. 6 metres a square, turned 21° so the buildings line up with the squares. *Decision made by the agent, please confirm:* OpenStreetMap as the source rather than the school's campus-tour drawing (which is drawn at a slant), the 6-metre squares and the 21° turn.
+
+  [PROPOSED 11 Nov 2026 by the agent] The other two tracks are indoor, for example the ground floor round the Hovione Atrium and the KPMG Gallery. They need a floor plan: photos of the evacuation plans on campus, or one from Facilities & Services.
+
+  **[OPEN]** A lap of the campus loop takes about 20 seconds for the test kart, not 30 to 40, because at this scale a kart drives at about 200 km/h. Rodrigo proposes making all karts about 40% slower (the numbers at the top of `shared/physics.js`). This also makes laps of the test oval longer. For the team, and the owner of the driving physics, to decide.
 
 ### Driving physics
 
@@ -365,4 +373,4 @@ Before the demo:
 | Catarina Almeida | 70573 | catarinaalmeida44 | [OPEN] |
 | Francisco Fonseca (Fran) | 72576 | FranFon15 | [OPEN] |
 | Pedro Collares Pereira | 71022 | pedrocollarespereira | [OPEN] |
-| Rodrigo | | rodrigosversos | [OPEN] |
+| Rodrigo Simeão Versos | _to add_ | rodrigosversos | Campus tracks (reported 11 Nov 2026; computer karts not yet confirmed) |
