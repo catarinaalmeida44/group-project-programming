@@ -81,6 +81,16 @@ canvas {
   text-align: center;
 }
 
+/* The countdown before a race: one big number with no box behind it. */
+.message.countdown {
+  padding: 0;
+  background: none;
+  font-size: 6rem;
+  font-weight: 800;
+  line-height: 1;
+  text-shadow: 0 0 12px #10202b, 0 4px 0 #10202b;
+}
+
 /* Hide the message box when it has no text in it. */
 .message:empty {
   display: none;

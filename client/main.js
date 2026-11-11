@@ -3,14 +3,15 @@
 // This file connects the parts:
 //   keyboard.js           which keys are held
 //   ../shared/race.js     the rules: where the kart is one step later
-//   camera.js             which part of the track is on the screen
+//   ../shared/countdown.js  the 3, 2, 1, GO! before the race
+//   camera.js            which part of the track is on the screen
 //   draw.js               the picture of the track and the kart
 //   hud.js                the lap counter, the clock and the message
 //
 // The race runs entirely in this browser. Nothing is sent to the server and
 // nothing is saved. (The online page is online.js.)
 
-import { createRacer, stepRacer } from "../shared/race.js";
+import { createCountdownRace, stepCountdownRace, countdownAt } from "../shared/countdown.js";
 import { STEP_SECONDS } from "../shared/physics.js";
 import { currentLap } from "../shared/laps.js";
 import { TEST_DRIVER } from "../shared/characters.js";
@@ -27,16 +28,17 @@ const character = TEST_DRIVER;
 // ---- The parts of the page ----
 const draw = createPainter(document.getElementById("track"), track);
 const showHud = createHud(document);
+const messageBox = document.getElementById("message");
 
 // ---- The state of the race ----
-let racer = createRacer(track);
-let started = false; //    the clock starts at the first key press
+let race = createCountdownRace(track); // the racer, and how far the countdown is
+let started = false; //    the countdown starts at the first key press
 let lastFrameTime = null;
 let waitingSeconds = 0; // real time that has passed but is not yet turned into game steps
 
 // ---- The state of the camera ----
 let view = VIEWS[0]; // the game starts in the first view of the list in camera.js
-let camera = followTarget(racer.kart, track); // the spot in the middle of the screen, in the follow view
+let camera = followTarget(race.racer.kart, track); // the spot in the middle of the screen, in the follow view
 
 const keyboard = createKeyboard(window, {
   onDrive: start,
@@ -49,15 +51,15 @@ function start() {
 }
 
 function startAgain() {
-  racer = createRacer(track);
+  race = createCountdownRace(track);
   started = false;
   waitingSeconds = 0;
-  camera = followTarget(racer.kart, track); // jump straight back, do not glide
+  camera = followTarget(race.racer.kart, track); // jump straight back, do not glide
 }
 
 function changeView() {
   view = nextView(view);
-  camera = followTarget(racer.kart, track);
+  camera = followTarget(race.racer.kart, track);
 }
 
 /**
@@ -69,7 +71,7 @@ function changeView() {
  * as many whole steps as fit in it. What is left over waits for next time.
  */
 function frame(now) {
-  // Normally the race starts in start(), at the first key press. This covers
+  // Normally the countdown starts in start(), at the first key press. This covers
   // one more case: the player pressed R while still holding an arrow key.
   if (!started && keyboard.isDriving()) {
     start();
@@ -84,18 +86,27 @@ function frame(now) {
   if (started) {
     waitingSeconds += frameSeconds;
     while (waitingSeconds >= STEP_SECONDS) {
-      racer = stepRacer(track, racer, input, character);
+      // During 3, 2 and 1 this only counts down. From GO on it moves the kart.
+      race = stepCountdownRace(track, race, input, character);
       waitingSeconds -= STEP_SECONDS;
     }
   }
+  const { racer } = race;
+  const countdown = countdownAt(race.countdownSteps);
 
   // The camera glides towards where it wants to be.
   camera = easeTowards(camera, followTarget(racer.kart, track), frameSeconds);
 
-  // The kart leans in the chase view while the player steers.
+  // The kart leans in the chase view while the player steers, but not
+  // before GO and not after the finish, when the keys do nothing.
   const { progress } = racer;
-  const steer = progress.finished ? 0 : (input.right ? 1 : 0) - (input.left ? 1 : 0);
+  const keysWork = started && countdown.racing && !progress.finished;
+  const steer = keysWork ? (input.right ? 1 : 0) - (input.left ? 1 : 0) : 0;
   draw(view, racer.kart, camera, steer);
+
+  // The countdown is shown as one big number in the middle of the track.
+  const showingCountdown = started && countdown.label !== "" && !progress.finished;
+  messageBox.classList.toggle("countdown", showingCountdown);
 
   showHud({
     lap: currentLap(progress, track),
@@ -103,20 +114,20 @@ function frame(now) {
     steps: progress.steps,
     lapSteps: progress.lapSteps,
     view,
-    message: messageFor(progress),
+    message: messageFor(progress, countdown),
   });
   requestAnimationFrame(frame);
 }
 
 /** The text shown in the middle of the track. */
-function messageFor(progress) {
+function messageFor(progress, countdown) {
   if (progress.finished) {
     return `Finished in ${formatTime(progress.steps * STEP_SECONDS)}. Press R to race again.`;
   }
   if (!started) {
-    return "Press an arrow key to start";
+    return "Press an arrow key to start the countdown";
   }
-  return "";
+  return countdown.label; // "3", "2", "1", "GO!", and then nothing
 }
 
 // A way to look at the race from the browser's console while tuning the
@@ -125,9 +136,10 @@ function messageFor(progress) {
 window.kartGame = {
   state: () => ({
     started,
+    countdownSteps: race.countdownSteps,
     view,
-    kart: { ...racer.kart },
-    progress: { ...racer.progress, lapSteps: [...racer.progress.lapSteps] },
+    kart: { ...race.racer.kart },
+    progress: { ...race.racer.progress, lapSteps: [...race.racer.progress.lapSteps] },
   }),
 };
 

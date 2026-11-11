@@ -413,3 +413,80 @@ describe("what the server refuses", () => {
     expect(await response.json()).toEqual({ status: "ok" });
   });
 });
+
+describe("starting a race over a live connection", () => {
+  const inPhase = (phase) => (message) => message.type === "state" && message.race.phase === phase;
+
+  it("tells every browser who the host is: the one that connected first", async () => {
+    const host = await connect();
+    const other = await connect();
+    const update = await other.next(stateWith(2));
+    expect(update.race.host).toBe(host.first.id);
+    expect(update.race.phase).toBe("open");
+  });
+
+  it("starts the countdown for everyone when the host says start", async () => {
+    const host = await connect();
+    const other = await connect();
+    await other.next(stateWith(2));
+
+    host.send({ type: "start" });
+
+    const seenByOther = await other.next(inPhase("countdown"));
+    const seenByHost = await host.next(inPhase("countdown"));
+    expect(seenByOther.karts).toHaveLength(2);
+    expect(seenByHost.race.watching).toEqual([]);
+  });
+
+  it("ignores a start from a browser that is not the host, without sending it away", async () => {
+    const host = await connect();
+    const other = await connect();
+    await other.next(stateWith(2));
+
+    other.send({ type: "start" });
+    await pause(300);
+
+    expect(online.room.phase()).toBe("open");
+    expect(online.room.playerCount()).toBe(2); // still welcome: our own page can send this
+    const later = await host.next(stateWith(2));
+    expect(later.race.phase).toBe("open");
+  });
+
+  it("does not let a browser claim to be the host inside its message", async () => {
+    const host = await connect();
+    const other = await connect();
+    await other.next(stateWith(2));
+
+    other.send({ type: "start", id: host.first.id, host: true });
+    await pause(300);
+
+    expect(online.room.phase()).toBe("open");
+  });
+
+  it("shows a browser that joins during a race as watching, with no kart", async () => {
+    const host = await connect();
+    await host.next(stateWith(1));
+    host.send({ type: "start" });
+    await host.next(inPhase("countdown"));
+
+    const latecomer = await connect();
+    expect(latecomer.first.type).toBe("welcome");
+    const update = await latecomer.next((message) => message.type === "state");
+    expect(update.race.watching).toEqual([latecomer.first.id]);
+    expect(update.karts.map((kart) => kart.id)).toEqual([host.first.id]);
+  });
+
+  it("ignores R during a countdown: the countdown is not started over", async () => {
+    const host = await connect();
+    await host.next(stateWith(1));
+    host.send({ type: "start" });
+    const early = await host.next(inPhase("countdown"));
+
+    host.send({ type: "restart" });
+    host.send({ type: "start" });
+    await pause(300);
+
+    const later = await host.next(inPhase("countdown"));
+    expect(later.race.countdownSteps).toBeGreaterThan(early.race.countdownSteps);
+  });
+});

@@ -15,12 +15,14 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 | The drawing of the track and the kart | `client/draw.js` | Yes, simple shapes, no artwork yet |
 | The online page | `client/online.html` and `client/online.js` | Yes, a first version: everyone drives on the same track |
 | Smooth movement of online karts | `client/net.js` | Yes |
+| What the online page says about the race | `client/race-view.js` | Yes |
 | The game server | `server/app.js` builds it, `server/start.js` starts it | Yes |
-| Online play on the server | `server/online.js` (connections), `server/room.js` (the karts), `server/messages.js` (checking what browsers send) | Yes, a first version: one room, no race start yet |
+| Online play on the server | `server/online.js` (connections), `server/room.js` (the karts), `server/messages.js` (checking what browsers send) | Yes: one room, with a host, a race start and watching. No finishing order yet |
 | The driving rules | `shared/physics.js` | Yes, a first version: speeding up, braking, steering, grip, grass |
 | Tracks, the ground and walls | `shared/track.js` | Yes |
 | Laps and race time | `shared/laps.js` | Yes |
 | All the rules put together for one racer | `shared/race.js` | Yes |
+| The 3, 2, 1, GO! before a race | `shared/countdown.js` | Yes, in the practice race and in online races |
 | The test track | `shared/tracks/test-oval.js` | Yes. It is a simple loop, not a campus track |
 | The drivers and their scores | `shared/characters.js` | One placeholder driver |
 | The kinds of ground | `shared/surfaces.js` | Road and grass |
@@ -60,12 +62,12 @@ Our placeholder driver, with middle scores, reaches 80% of its top speed in abou
 `client/main.js` repeats three things for every picture the screen shows, usually 60 times a second:
 
 1. Ask `client/keyboard.js` which arrow keys are held.
-2. Ask the rules where the kart is now. This is one call to `stepRacer` in `shared/race.js` for each sixtieth of a second that has passed.
+2. Ask the rules where the kart is now. This is one call to `stepCountdownRace` in `shared/countdown.js` for each sixtieth of a second that has passed. During the countdown that call only counts. From GO on it passes the work to `stepRacer` in `shared/race.js`.
 3. Ask `client/camera.js` where the camera should be, then ask `client/draw.js` to draw the track and the kart from there, and fill in the lap counter and the clock.
 
 Screens do not all refresh at the same speed, but the rules must always move in steps of exactly one sixtieth of a second. So `main.js` measures how much real time has passed and runs as many whole steps as fit in it.
 
-The clock starts at the first key press. After the last lap, the keys are ignored, the kart rolls to a stop and the finish time is shown. R starts again.
+The first press of an arrow key starts a countdown: 3, 2, 1, GO!, one second each. During 3, 2 and 1 the keys do nothing, the kart stands still and the clock stays at zero. At GO the clock starts, whether a key is held or not. The countdown is counted in steps of the game, 60 for each number, like the race time, so the server can use the same rule for online races later. Holding the gas early gives no head start, and there is a test for that. After the last lap, the keys are ignored, the kart rolls to a stop and the finish time is shown. R starts again.
 
 The practice race runs entirely in the browser. Nothing is sent to the server and nothing is saved. That also means a practice time could be faked by a player, which is why practice times will never count for leaderboards. Online races will be run by the server.
 
@@ -73,16 +75,16 @@ The practice race runs entirely in the browser. Nothing is sent to the server an
 
 When someone opens the "Online test" page, their browser opens a live connection to our server. A normal web request is "ask once, get one answer". A live connection (a WebSocket) stays open, and both sides can send short messages at any time. The `ws` library handles the details of that connection.
 
-- **The browser sends only two things:** which of the four driving keys are held, and "restart". It sends them only when something changes.
+- **The browser sends only three things:** which of the four driving keys are held, "restart", and "start a race". It sends them only when something changes or a key is pressed.
 - **The server moves every kart.** `server/room.js` keeps one kart per connected browser and moves them all 60 times a second with `stepRacer`, the very same function the practice race uses in the browser.
-- **The server tells everyone what happened.** 20 times a second it sends all browsers the position, direction and lap progress of every kart.
+- **The server tells everyone what happened.** 20 times a second it sends all browsers the position, direction and lap progress of every kart on the track, and the state of the race: its phase, how far the countdown is, who the host is and who is watching.
 - **The browser only draws.** `client/online.js` moves no kart itself.
 
 So a player cannot go faster, pass through a wall or skip a lap by changing the page in their browser. The page decides nothing. The worst a changed page can do is hold keys its player is not holding.
 
 The server also protects itself, and each of these has a test:
 
-- Every message is checked in `server/messages.js`. Anything that is not exactly one of the two allowed kinds gets the browser disconnected.
+- Every message is checked in `server/messages.js`. Anything that is not exactly one of the three allowed kinds gets the browser disconnected.
 - A browser that sends more than 60 messages in a second is disconnected. A real player sends a handful.
 - A connection can only act on its own kart. A message has no way to name another player, and anything extra in a message is dropped.
 - The room takes eight players. A ninth is told the room is full.
@@ -90,7 +92,31 @@ The server also protects itself, and each of these has a test:
 
 **Why karts move smoothly:** updates arrive 20 times a second, at slightly uneven moments, but the screen shows 60 pictures a second. `client/net.js` shows the race a tenth of a second in the past and draws each kart at the right point between the two updates on either side of that moment. If updates stop arriving, the karts hold still instead of guessing.
 
-**What this first version does not have:** rooms with codes, a host, a race start, a finishing order, or karts bumping into each other. Everyone who opens the page drives on the same track.
+**What this version does not have:** rooms with codes, a finishing order, a results screen, or karts bumping into each other. Everyone who opens the page is in the same room.
+
+## How does an online race start, and who may start it?
+
+The room in `server/room.js` is always in one of four phases, and the server tells every browser which:
+
+| Phase | What happens |
+|---|---|
+| open | Nobody has started a race. Everyone drives around freely, and each player's own clock starts at their first key press |
+| countdown | The host started a race. Every kart is back on its starting place and 3, 2, 1 is counted. Keys do nothing |
+| racing | GO! Every racer's clock started on the same step, key held or not |
+| finished | Every racer has completed the laps. The room waits for the host to start the next race |
+
+- **The host is whoever has been in the room longest.** When the host leaves, the next longest becomes host. The host presses Enter to start. The host can also start a new race while one is on, which is the way out if a racer walks away from their laptop.
+- **The countdown is the rule the practice race uses**, `countdownAt` in `shared/countdown.js`. It is counted in steps on the server, so every browser sees the same number and all karts are let go on the same step. Holding the gas early gives no head start.
+- **Someone who joins during a race watches.** They are in the room and count towards the eight, but they have no kart on the track. Their camera follows the kart that has done the most laps, and V changes the view as usual, for example to the whole track from above. They join at the next start. If every racer leaves, the room goes back to open, so watchers are never stuck.
+
+What the server refuses here, each with a test:
+
+- A start from anyone but the host. Any browser can send "start", and nothing in the message can claim to be the host: the server looks only at which connection sent it. A start from someone else is ignored. That browser is not sent away, because a slightly out-of-date page of our own could send it honestly.
+- A second start while the countdown is running, so pressing Enter twice does not start the countdown over.
+- "Restart" (the R key) during a countdown or a race. A racer could otherwise give themselves a fresh clock.
+- Keys from someone who is watching: they move nothing.
+
+The words on the page (the big number, "You are the host: press Enter", "You are watching") are worked out in `client/race-view.js` from what the server sent. The page decides nothing about the race.
 
 ## How does the camera work?
 
@@ -142,18 +168,22 @@ In a Postgres database kept by a company called Neon, in Frankfurt, on its free 
 
 ## What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 311 tests today, plus 5 that only run against the real database.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 403 tests today, plus 5 that only run against the real database.
 
 **Covered today**
 
 - The database code in `server/db.js`. Fifteen tests with a pretend database that writes down every question it is asked: the right questions in the right order, an answer reused for ten seconds, a failure not mistaken for an answer, a pause of three seconds before asking an unreachable database again, and an unsafe table name refused. Five more tests in `tests/server.test.js` check the `/database-check` address, including that an error from the database never reaches the visitor.
 - The real database. Five tests in `tests/db-live.test.js`, run with `npm run test:database`. They write to a table of their own and remove it afterwards. They are skipped on GitHub, because the database address is a secret that GitHub does not have.
 - The room and the message checks in `server/room.js` and `server/messages.js`. Thirty-two tests, without any network: joining and leaving, a full room, only your own kart moves, a kart moves online exactly as it would in practice, and ten tests of messages a browser might send, most of which must be refused.
+- The online race start in `server/room.js`, in `tests/room-race.test.js`. Thirty-six tests, without any network, three of them for reading the "start" message: who the host is, the host starting a race, five ways a start must be refused, nothing moving and no clock running during the countdown, everyone's clock starting on the same step, no head start for holding the gas early, R refused during a race, joining during a race (no kart, keys ignored, in the next race), leaving during a race, and the end of a race. For the end, two small "robot drivers" really drive three laps in the room. We broke these rules on purpose in eight ways. Seven made tests fail. The eighth, moving the hidden karts of people who are watching, changed nothing a player could ever see, because those karts are put back on the grid before they are shown again.
+- The race start over real connections, six more tests in `tests/online.test.js`: the host's start reaches every browser, a start from someone else is ignored without sending them away, a browser cannot claim to be the host inside its message, and a browser that joins during a race is told it is watching.
+- What the online page says about the race, in `client/race-view.js`, and the Enter key. Twenty-three tests, including a strange "race" part from the server that must not break the page, and that only the host is ever told to press Enter.
 - Online play in `server/online.js`. Twenty-two tests with real live connections to a real copy of the server on the computer running the tests. Two pretend browsers see each other's kart move. Thirteen tests are refusals: messages that are not understood, data that is not text, a message far too long, too many messages, a full room, a wrong address, another website, a player claiming to be someone else, and a "deaf" browser that breaks a rule and then never answers the server's goodbye.
-- Smooth online movement and the connection notice in `client/net.js`. Thirty tests: karts glide between updates, hold still when updates stop, are not thrown off by a late or repeated update, and the line under the track warns when the server has gone quiet.
+- Smooth online movement and the connection notice in `client/net.js`. Thirty-four tests: a kart that was put back on the grid is shown there at once instead of sliding across the track, karts glide between updates, hold still when updates stop, are not thrown off by a late or repeated update, and the line under the track warns when the server has gone quiet.
 - Tracks and walls in `shared/track.js`. Thirty-five tests: reading a track, twelve kinds of badly drawn track that must be refused, the ground at a spot, and bouncing off walls from every side and in a corner.
 - Laps in `shared/laps.js`. Twenty-seven tests. Fourteen of them are laps that must not count.
 - Whole races in `shared/race.js`. Thirteen tests. A small "robot driver" written in the test file steers a kart round the test track: three whole laps, the wrong way round, and flat out into a wall.
+- The countdown in `shared/countdown.js`. Twenty-three tests: what it says at each moment, when the race begins, and step counts that must be refused. Four are things that must not happen before GO: the kart moving or turning with keys held, the clock running, and a head start for holding the gas early. One test checks that a race after the countdown is exactly the race without one, three seconds later. We broke this rule on purpose in four ways, and each made tests fail.
 - The driving rules in `shared/physics.js`. Thirty-four tests: speeding up, top speed, coasting, braking, reversing, steering, grip, grass, and bad input that must be refused or ignored (keys that are not exactly "pressed", scores that are out of range, a driver with a missing score). They compare behaviours, such as "more acceleration reaches top speed sooner", instead of exact numbers, so we can tune the numbers without breaking the tests.
 - `clamp` in `shared/numbers.js`, which keeps a number between a lowest and a highest value. Ten tests: six for normal use and four for bad input that must be refused.
 - The server in `server/app.js`. Nineteen tests. Ten check what it must do: send the page, its style and code, the game rules and the health check. Nine check what it must refuse: missing pages, requests that change things, file kinds not on the list, files outside the `client/` and `shared/` folders (thirteen different ways of writing such an address), the server's own code and the tests, and two kinds of broken address.
@@ -223,7 +253,11 @@ These are the limits we expect from the free hosting plans:
 - On the university's student Wi-Fi a laptop cannot reach the database. The connection opens and then nothing comes back. The live server is not on that network. For database work on a laptop we need a phone hotspot or home Wi-Fi, or we switch to Neon's own library.
 - The database holds nothing useful yet, only a count of server starts.
 - Online, your own kart reacts a moment late: your key press travels to the server and the result travels back, and then the picture is a tenth of a second behind. On one laptop this is small. Over the internet it will be bigger. The fix is "prediction": the browser moves your own kart at once with the shared rules and corrects it when the server answers. The rules were written to make that possible, but it is not built.
-- Online has one room for everyone, no race start, no finishing order and no bumping between karts. There are no accounts, so anyone with the link can join.
+- Online has one room for everyone, no finishing order, no results screen and no bumping between karts. There are no accounts, so anyone with the link can join.
+- The host is simply whoever has been in the room longest. They can start a new race at any moment, also in the middle of one, and nobody else can stop them. A race with a racer who never finishes only ends when the host starts the next one or that racer leaves.
+- Someone watching always follows the kart with the most laps. They cannot choose which kart to follow. The line under the track still tells them their own kart's colour, although that kart is not on the track.
+- The online race start was checked by hand in two tabs of one browser on one laptop, not yet with real players on different laptops. `docs/two-laptop-checklist.md` has the checks for that.
+- There is no boost for pressing the gas at the right moment of the countdown, and no sound.
 - A very short key tap, shorter than one picture on the screen, is not sent to the server.
 - The limit of 60 messages a second is per connection. Nothing yet limits how many connections one computer may open, beyond the room being full at eight.
 - The numbers in the driving rules are first guesses. No person has driven the kart for long yet, so they will change with playtesting.

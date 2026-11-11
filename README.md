@@ -3,7 +3,7 @@
 A 2D online kart racing game set at the Nova SBE Carcavelos campus.
 Team project for Introduction to Programming (course 2477) at Nova SBE.
 
-**Status:** one kart can be driven round a test track in the browser, with a lap counter, a finish time and three camera views. On the "Online test" page, up to eight browsers connected to the same server see each other's karts. The server is on the internet at the link below.
+**Status:** one kart can be driven round a test track in the browser, with a lap counter, a finish time and three camera views. A race starts with a 3, 2, 1, GO! countdown. On the "Online test" page, up to eight browsers connected to the same server see each other's karts, and the player who has been there longest can start a race for everyone with Enter. The server is on the internet at the link below.
 
 ## Play it
 
@@ -17,7 +17,7 @@ The server is on a free plan and goes to sleep after 15 minutes without visitors
 |---|---|---|
 | Catarina Almeida | 70573 | catarinaalmeida44 |
 | Francisco Fonseca | 72576 | FranFon15 |
-| Pedro _(full name to add)_ | _to add_ | pedrocollarespereira |
+| Pedro Collares Pereira | 71022 | pedrocollarespereira |
 | Rodrigo _(full name to add)_ | _to add_ | rodrigosversos |
 
 ## Run it on your own laptop
