@@ -2,7 +2,7 @@
 
 Plain-language answers to the questions the teaching staff may ask when they open this repository. Any member can be asked about any part, so everyone should be able to give these answers.
 
-**State on 11 November 2026:** the game opens on a main menu. One kart can be driven round a test track in the browser, with a lap counter, a finish time and three camera views, and your best times are kept in your browser. On the "Online test" page, up to eight browsers connected to our server see each other's karts. The server is on the internet at https://novasbe-kart.onrender.com, and it has a database that so far only records when the server starts. There are no accounts yet, so several answers below describe the plan. Each answer is rewritten as the real thing gets built.
+**State on 11 November 2026:** the game opens on a main menu. One kart can be driven round a test track in the browser, with a lap counter, a finish time and three camera views, and your best times are kept in your browser. The first campus track, the campus loop, can be driven at `race.html?track=campus-loop`; it is not in the menu yet. On the "Online test" page, up to eight browsers connected to our server see each other's karts. The server is on the internet at https://novasbe-kart.onrender.com, and it has a database that so far only records when the server starts. There are no accounts yet, so several answers below describe the plan. Each answer is rewritten as the real thing gets built.
 
 ## Where does each part live?
 
@@ -27,6 +27,9 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 | All the rules put together for one racer | `shared/race.js` | Yes |
 | The 3, 2, 1, GO! before a race | `shared/countdown.js` | Yes, in the practice race and in online races |
 | The test track | `shared/tracks/test-oval.js` | Yes. It is a simple loop, not a campus track |
+| The first campus track | `shared/tracks/campus-loop.js` | Yes: the campus loop, round the outside of the campus. Not in the menu yet |
+| The list of tracks | `shared/tracks/index.js` | Yes: the test oval and the campus loop |
+| Choosing the track of a single race | `client/track-choice.js` | Yes, in the address: `race.html?track=campus-loop` |
 | The drivers and their scores | `shared/characters.js` | One placeholder driver |
 | The kinds of ground | `shared/surfaces.js` | Road and grass |
 | The automatic tests | `tests/` | Yes, for the driving rules, the server and a number helper |
@@ -153,6 +156,20 @@ A track is drawn with letters in a file, one letter for each square of ground: `
 
 For walls, a kart is treated as a circle. After every move, the game checks whether the circle overlaps a wall square. If it does, the kart is pushed back out and bounces: the part of its speed going into the wall is turned round and halved, and the part going along the wall is kept. A head-on hit sends the kart back at half speed. A scrape costs very little. Everything outside the drawing counts as wall, so a kart can never leave the track.
 
+## Where do the campus tracks come from?
+
+From the real campus. The tracks are taken from the Nova SBE campus and its building. The first one, the campus loop (`shared/tracks/campus-loop.js`), goes round the outside of the campus.
+
+**The source is OpenStreetMap**, a free map of the world that anyone may reuse if they credit it ("© OpenStreetMap contributors", in the README). We chose it because it draws the campus from straight above, in metres, with every building named. We also looked at the school's online campus map, whose drawing of each floor is at a slant (its walls meet at about 123° instead of 90°) and belongs to the school, and at the architects' published pictures, which are taken at an angle and cannot be measured. No floor plans of the building are published.
+
+**How the letters were made.** A short script, run in a browser, took the OpenStreetMap data of the campus, turned it 21° so that the buildings run along the squares, and gave every 6-by-6-metre square a letter: buildings and everything outside the campus are wall, gardens are grass, paths and squares are road. Then the road along the driving line was widened to about 4 squares, so that several karts fit side by side, and the start and the checkpoints were placed by hand. The script is not in the repository yet.
+
+**Why 6 metres a square.** The game paints the whole track once as one hidden picture (`client/draw.js`, 2 pixels per unit). At 6 metres a square the campus is 64 by 62 squares, a picture of 4096 by 3968 pixels, about 65 MB. Smaller squares would make that picture too big. A test checks that the track stays within this size.
+
+**The route** is driven clockwise as it looks on the map: east along the Walk of Founders, south past the Library and Navigator Park, round the gym to EDP Plaza, round the southern tip of the Grand Auditorium, north-west along the outer path, up the western gardens, a hairpin through the courtyards on either side of the CTT Student Hall, and back. About 1.1 km. Away from the driving line there is open ground, so a kart can leave the line and skip a detour, but it gains nothing: there is a checkpoint in each detour, and a lap only counts if every checkpoint was passed in order.
+
+**Recognisable, not exact.** The roads are much wider than the real paths (24 metres), the CTT Student Hall is shorter than it really is because the hairpin cuts through its end, and north is not up. The Hovione Atrium and the KPMG Gallery are walls on this track; they are meant for an indoor track of their own, where the karts would be miniatures in a building of its real size.
+
 ## How are laps counted, and can a player cheat?
 
 A track has checkpoints: invisible rectangles across the road, in driving order. The first one is the finish line. The game keeps one count for each kart: checkpoints passed.
@@ -185,10 +202,12 @@ In a Postgres database kept by a company called Neon, in Frankfurt, on its free 
 
 ## What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 437 tests today, plus 5 that only run against the real database.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 457 tests today, plus 5 that only run against the real database.
 
 **Covered today**
 
+- The campus loop, in `tests/campus-loop.test.js`. Eight tests: the game accepts it and it is small enough to paint, the start is on the road just after the finish line, every checkpoint reaches a wall at both ends, a robot driver drives all 3 laps without ever being inside a wall, and three things that must not count a lap: skipping the detour round the Grand Auditorium, skipping the hairpin round the CTT Student Hall, and driving the wrong way round. We broke the track on purpose in eight ways (a checkpoint too short, a wall across the road, the start in the wrong place or pointing the wrong way, a detour's checkpoint removed, and others). Each made a test fail.
+- Choosing the track of a single race, in `tests/track-choice.test.js`. Twelve tests: the address chooses the campus loop or the test oval, no choice gives the test oval, and a name that is not a track is refused, including names that every JavaScript object has, such as `constructor` and `__proto__`, which a careless check would accept. Two of the tests ask a real copy of the server for the race page and the new files.
 - The main menu, in `tests/menu.test.js`. Seven tests with a real copy of the server: the main address opens the menu and not the race, Single race and Online lead to the right pages, the Cup is shown but cannot be clicked, the Leaderboard and Settings buttons are there, the race page still has the track and runs the race, and both pages lead back to the menu.
 - Settings kept in the browser, in `client/storage.js` and `client/settings.js`. Twelve tests with a pretend storage: a choice is remembered, a camera view that does not exist is refused when saving and ignored when read back (for example edited by hand), broken saved text is ignored, and a browser that refuses storage does not break anything.
 - Best times kept in the browser, in `client/records.js`. Fifteen tests: the first finished race is kept, only a faster time replaces it (an equal one does not), the best lap is kept on its own, each track has its own times, and an unfinished race or impossible times (a lap ending before the one before, negative, not whole, not numbers) are never recorded. Saved times that are not sensible are ignored. We broke this code on purpose in three ways. Two made tests fail. The third, removing one of two checks on the track name, changed nothing, because the second check still refuses what the first would have let through.
@@ -221,6 +240,7 @@ To check that the tests really guard the rules, we broke the code on purpose in 
 - The five real-database tests are never run by GitHub, which does not have the database address. They only run when someone runs them by hand, on a network that allows it.
 - Online play between two real laptops on two different internet connections. The tests use pretend browsers on one computer, where messages arrive instantly. Delay, uneven arrival and lost connections are checked by hand with `docs/two-laptop-checklist.md`. It was run once, on 10 November, by three players on three laptops on the live server: everyone saw the others drive. The result of each single check was not written down, nor whether the laptops were on different internet connections, so the checks for a lost connection and for a new version going online are still unconfirmed.
 - Anything that only happens on the real internet. We have one example already. On the first day online, a browser that broke a rule was not removed from the live server, although the test for exactly that passed on one computer: the server was waiting for the browser to answer its goodbye, and through Render's network the answer did not come. It is fixed, there is now a test with a browser that never answers, and the fix was checked on the live server. The lesson is that passing tests show the code does what the tests imagined, not that it works everywhere.
+- The campus loop driven by a person. A robot drove it, and it was looked at in a browser without a screen: the three views draw it, and the small map fits in its corner. In that browser the view behind the kart ran at 30 pictures a second on the campus loop, against 60 on the test oval. That browser has no graphics card, so how smooth it is on a real laptop is not checked yet.
 - The "server has gone quiet" notice appearing for real. Its wording and timing are tested, but on one computer a cut connection is noticed at once, so the notice never shows there.
 - How the driving feels. No test can say whether a kart is fun to drive. That needs a person at the keyboard.
 - The menu's panels and the moment a finished race is recorded. `client/menu.js` and the few lines in `client/main.js` that call the records need a real page. The menu, both panels, the Cup refusing a click, a saved camera view being used by the race page, and a saved best time appearing in the Leaderboard were checked in a browser on 11 November. A whole race driven to the finish through the new page, with "New best time!" and the time then in the Leaderboard, was checked by hand by Francisco on his laptop the same day. Nothing checks this automatically.
@@ -293,5 +313,7 @@ These are the limits we expect from the free hosting plans:
 - If the browser tab is in the background, the practice race runs in slow motion instead of jumping ahead.
 - A kart is a circle for walls, although it is drawn as a rectangle. Its corners can look as if they poke slightly into a wall.
 - Walls are whole squares. A track cannot have a diagonal or curved wall yet, only steps.
+- The campus loop: a lap takes about 20 seconds for the robot, not the 30 to 40 we want. At this scale a kart drives at about 200 km/h. Slower karts would fix it; that is for the team to decide. It is not in the menu yet (only in the address), the Leaderboard panel does not list it, and the online page still uses the test oval.
+- A track bigger than about 64 by 64 squares would make the hidden picture of the track too big. Painting only the part of the track that is on screen would remove that limit, and would probably also make the view behind the kart faster on a big track.
 - The server reads a file from disk for every request. That is fine for a few players. With many visitors we would keep the files in memory.
 - The rest is to be filled in as we build.

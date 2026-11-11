@@ -3,7 +3,7 @@
 A 2D online kart racing game set at the Nova SBE Carcavelos campus.
 Team project for Introduction to Programming (course 2477) at Nova SBE.
 
-**Status:** the game opens on a main menu (Single race, Cup coming soon, Online, Leaderboard of your own best times, Settings). One kart can be driven round a test track in the browser, with a lap counter, a finish time and three camera views. A race starts with a 3, 2, 1, GO! countdown. On the "Online test" page, up to eight browsers connected to the same server see each other's karts, and the player who has been there longest can start a race for everyone with Enter. The server is on the internet at the link below.
+**Status:** the game opens on a main menu (Single race, Cup coming soon, Online, Leaderboard of your own best times, Settings). One kart can be driven round a test track in the browser, with a lap counter, a finish time and three camera views. A race starts with a 3, 2, 1, GO! countdown. On the "Online test" page, up to eight browsers connected to the same server see each other's karts, and the player who has been there longest can start a race for everyone with Enter. The first campus track, the campus loop, can be driven on the single race page at `/race.html?track=campus-loop` (it is not in the menu yet). The server is on the internet at the link below.
 
 ## Play it
 
@@ -18,7 +18,7 @@ The server is on a free plan and goes to sleep after 15 minutes without visitors
 | Catarina Almeida | 70573 | catarinaalmeida44 |
 | Francisco Fonseca | 72576 | FranFon15 |
 | Pedro Collares Pereira | 71022 | pedrocollarespereira |
-| Rodrigo _(full name to add)_ | _to add_ | rodrigosversos |
+| Rodrigo Simeão Versos | _to add_ | rodrigosversos |
 
 ## Run it on your own laptop
 
@@ -43,6 +43,8 @@ npm start
 ```
 
 Then open http://localhost:3000 in a browser. It shows the main menu: click Single race and drive with the arrow keys. V changes the camera and R starts again. To stop the app, press Ctrl+C in the terminal.
+
+To drive the first campus track, open http://localhost:3000/race.html?track=campus-loop and drive clockwise.
 
 To try online play on one laptop, open http://localhost:3000/online.html in two browser windows side by side.
 
@@ -75,4 +77,4 @@ The app runs without a database. To use the real one, the database address has t
 To be completed as content is added to the game.
 
 - Character balance adapted from Mario Kart 8 Deluxe stat tables compiled by the Super Mario Wiki community. All characters, names, items and art are our own.
-- Campus track layouts will be based on map data © OpenStreetMap contributors.
+- The campus loop is based on map data © OpenStreetMap contributors, available under the Open Database License (https://www.openstreetmap.org/copyright).

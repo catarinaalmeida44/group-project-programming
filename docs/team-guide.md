@@ -100,7 +100,7 @@ The brief (section 10) proposes four areas. The owners are not decided yet. Fill
 |---|---|---|
 | Accounts, email, security, database | | The database tables |
 | Driving physics, characters, items | | The rules in `shared/` |
-| Campus tracks, computer karts | | The track files in `shared/tracks/` |
+| Campus tracks, computer karts | Rodrigo, for the campus tracks (reported 11 Nov 2026). Computer karts not yet confirmed | The track files in `shared/tracks/` |
 | Game server and multiplayer: rooms, character selection, cup | | `server/online.js` and `server/room.js` |
 
 Ask the owner before changing a file they look after. That is the main way we avoid two people rewriting the same thing.

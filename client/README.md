@@ -8,7 +8,8 @@ Everything the browser shows and does: the web page, the drawing of the track an
 |---|---|
 | `index.html` | The main menu, the first page: Single race, Cup (greyed out until the tracks exist), Online, Leaderboard, and the Settings button in the top right corner. The Leaderboard and Settings panels are in this page too |
 | `menu.js` | Opens the Leaderboard and Settings panels and fills them in |
-| `race.html` | The single race page: the title, the lap counter and clock, the canvas the track is drawn on, and the help text |
+| `race.html` | The single race page: the title, the lap counter and clock, the canvas the track is drawn on, and the help text. The track is chosen in the address: `race.html?track=campus-loop` |
+| `track-choice.js` | Reads the track from the address of the race page. Only a short name from `shared/tracks/index.js` is accepted; anything else gives the test oval |
 | `storage.js` | Keeps short texts in the browser's own storage (`localStorage`), carefully: a browser that refuses, or text that was changed, must not break the game |
 | `settings.js` | The player's settings. Today: the camera view a race starts in |
 | `records.js` | Your best race time and best lap on each track, kept in this browser only |
