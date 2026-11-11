@@ -41,7 +41,7 @@ Course pages: https://2477-introduction-programming.gitlab.io/wiki/team-project/
 - Presentation (weeks 11 to 12):
   1. **Live demo** at the deployed URL. Slides or recorded videos are not accepted as a replacement. Our demo slot is about 5 minutes.
   2. **Repository walkthrough.** Staff open the repo and ask high-level questions (for example: where data is stored, what the tests cover and miss, what happens if an external service is down). Any member can be asked about any part.
-- The course's stack guide says projects in JavaScript need approval from the teaching staff. Our professor approved the game idea. **[OPEN] Confirm explicitly that the approval covers JavaScript.**
+- The course's stack guide says projects in JavaScript need approval from the teaching staff. Our professor approved the game idea. **[DECIDED 11 Nov 2026] The professor accepted JavaScript** (reported by Francisco).
 
 ### Grading criteria
 
@@ -277,7 +277,7 @@ Email service: Brevo (verification and password-reset emails)
 ```
 
 - One language for the whole project: JavaScript.
-- **[OPEN]** Drawing: Phaser (handles images, camera, sound and Tiled maps) or plain HTML canvas. The recommendation is Phaser for drawing only; the physics and the rules are our own code. *10 Nov 2026: the base draws with plain canvas. Decision made by the agent as the simplest option that is easy to undo (all drawing is in `client/draw.js`). The team still has to decide before the campus tracks are built.*
+- **[DECIDED 11 Nov 2026 by Francisco; teammates confirm by approving the pull request]** Drawing: plain HTML canvas, no Phaser. *History: the first recommendation was Phaser for drawing only. On 10 Nov the base was built with plain canvas, as the agent's choice of the simplest option that is easy to undo. On 11 Nov Francisco chose to stay with canvas: switching would cost days of the 12 left, the tilted view behind the kart is our own code either way, it keeps us at three libraries, and every drawing line stays ours to explain. How the game looks will come from artwork (kart pictures, ground textures) and a few simple effects drawn in `client/draw.js`.*
 - The database is reached with the `pg` library (*added 10 Nov 2026, version 8.23.1, with Catarina's OK*). **[OPEN]** Whether to switch to Neon's own library. On the university's student Wi-Fi, `pg` cannot reach the database from a laptop, because that network blocks the channel databases normally use. Neon's library uses the normal web channel and would work there, but ties the code to Neon. The live server is not affected either way.
 - The live connection uses the `ws` library (*added 10 Nov 2026, version 8.22.2, with Catarina's OK*). Password scrambling uses Node's built-in `scrypt`, so no extra library.
 - Tests use Vitest and run automatically on every pull request (GitHub Actions). `main` is protected: changes need a pull request, 1 approval and passing tests.
