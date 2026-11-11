@@ -1,4 +1,10 @@
-// The online page: driving on the test track together with other people.
+// The online page: driving and racing on the test track with other people.
+//
+// Before a race, everyone drives around freely. The host (whoever has been
+// here longest) presses Enter to start a race: every kart goes to the grid,
+// 3, 2, 1, GO! is counted for everyone together, and all karts are let go at
+// the same moment. Someone who opens the page during a race watches it and
+// joins at the next start.
 //
 // The big difference from practice (main.js): this page does not move any
 // kart itself. It only
@@ -15,10 +21,9 @@ import { TEST_OVAL } from "../shared/tracks/test-oval.js";
 import { createKeyboard } from "./keyboard.js";
 import { createPainter } from "./draw.js";
 import { createHud } from "./hud.js";
-import { createPlayback, readServerMessage, statusLine } from "./net.js";
+import { createPlayback, readServerMessage, statusLine, QUIET_AFTER_MS } from "./net.js";
+import { readRace, raceView, kartToWatch } from "./race-view.js";
 import { VIEWS, followTarget, easeTowards, nextView } from "./camera.js";
-import { formatTime } from "./format.js";
-import { STEP_SECONDS } from "../shared/physics.js";
 
 const track = TEST_OVAL;
 
@@ -28,9 +33,11 @@ const COLOUR_NAMES = ["red", "blue", "yellow", "green", "purple", "orange", "tea
 const draw = createPainter(document.getElementById("track"), track);
 const showHud = createHud(document);
 const statusText = document.getElementById("status");
+const messageBox = document.getElementById("message");
 
 // ---- What we know from the server ----
 const playback = createPlayback(); // the latest updates, for smooth drawing
+let race = readRace(null); //          the race as of the latest update: phase, countdown, host, who is watching
 let myId = null; //                    our player number, from the "welcome" message
 let status = "Connecting to the server...";
 let connected = false;
@@ -63,6 +70,11 @@ connection.addEventListener("message", (event) => {
     status = `Connected. You are the ${colour} kart.`;
   } else if (message.type === "state") {
     playback.add(message, performance.now());
+    const raceBefore = race;
+    race = readRace(message);
+    if (race.phase === "countdown" && raceBefore.phase !== "countdown") {
+      camera = null; // a race has just started: jump to the grid, do not glide there
+    }
   } else if (message.type === "full") {
     status = "The room is full. Try again in a few minutes.";
   }
@@ -87,6 +99,13 @@ function send(message) {
 // ---- The keyboard ----
 const keyboard = createKeyboard(window, {
   onRestart: () => send({ type: "restart" }),
+  // Anyone can press Enter, but the server only obeys the host. This page
+  // sends it only for the host, to spare the server pointless messages.
+  onStart: () => {
+    if (race.host === myId) {
+      send({ type: "start" });
+    }
+  },
   onView: () => {
     view = nextView(view);
     camera = null; // jump to the kart in the new view
@@ -118,37 +137,50 @@ function frame(now) {
   kartsShown = karts;
   const mine = karts === null ? undefined : karts.find((kart) => kart.id === myId);
 
+  // What to tell the player about the race: the countdown, who may start,
+  // racing or watching (see race-view.js).
+  const about = raceView({ race, myId, mine });
+
   // The line under the track: connected or not, how many players, or a
   // warning when the server has sent nothing for a while (see net.js).
-  statusText.textContent = statusLine({
+  // While all is well, the sentence about the race is added to it.
+  const sinceLastUpdateMs = lastNewsAt === null ? 0 : performance.now() - lastNewsAt;
+  const allIsWell = connected && myId !== null && karts !== null && sinceLastUpdateMs <= QUIET_AFTER_MS;
+  const line = statusLine({
     status,
     connected,
-    playerCount: karts === null ? 0 : karts.length,
-    sinceLastUpdateMs: lastNewsAt === null ? 0 : performance.now() - lastNewsAt,
+    playerCount: karts === null ? 0 : karts.length + race.watching.length,
+    sinceLastUpdateMs,
   });
+  statusText.textContent = allIsWell && about.line !== "" ? `${line} ${about.line}` : line;
 
-  if (mine === undefined) {
+  // The kart in the middle of the picture: our own, or, when we joined
+  // during a race and are watching, the kart that is furthest ahead.
+  const shown = mine ?? (karts === null ? undefined : kartToWatch(karts));
+  if (shown === undefined) {
     // Nothing to draw yet: we are still connecting, or we were disconnected.
     requestAnimationFrame(frame);
     return;
   }
 
-  const others = karts.filter((kart) => kart.id !== myId);
-  const target = followTarget(mine, track);
+  const others = karts.filter((kart) => kart.id !== shown.id);
+  const target = followTarget(shown, track);
   camera = camera === null ? target : easeTowards(camera, target, frameSeconds);
 
-  const steer = mine.finished ? 0 : (input.right ? 1 : 0) - (input.left ? 1 : 0);
-  draw(view, mine, camera, steer, others);
+  // The kart leans while the player steers, but only when the keys do
+  // something: not when watching, during 3, 2, 1 or after the finish.
+  const keysWork = mine !== undefined && !mine.finished && race.phase !== "countdown";
+  const steer = keysWork ? (input.right ? 1 : 0) - (input.left ? 1 : 0) : 0;
+  draw(view, shown, camera, steer, others);
 
+  messageBox.classList.toggle("countdown", about.big);
   showHud({
-    lap: Math.min(mine.lapsDone + 1, track.laps),
+    lap: Math.min(shown.lapsDone + 1, track.laps),
     laps: track.laps,
-    steps: mine.steps,
-    lapSteps: mine.lapSteps,
+    steps: shown.steps,
+    lapSteps: shown.lapSteps,
     view,
-    message: mine.finished
-      ? `Finished in ${formatTime(mine.steps * STEP_SECONDS)}. Press R to go again.`
-      : "",
+    message: about.message,
   });
 
   requestAnimationFrame(frame);
@@ -156,7 +188,7 @@ function frame(now) {
 
 // A way to look at the online session from the browser's console.
 window.kartGame = {
-  state: () => ({ myId, view, connected, status, karts: kartsShown }),
+  state: () => ({ myId, view, connected, status, race: { ...race }, karts: kartsShown }),
 };
 
 requestAnimationFrame(frame);
