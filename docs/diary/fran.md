@@ -31,6 +31,8 @@ Laptop set-up: Node.js 26.13.0 installed by Francisco. `npm install` added 50 pa
 - Not checked: the three-player test itself. It is written up from Catarina's notes in `docs/two-laptop-checklist.md` and `docs/build-diary.md`. Whether the three laptops were on different internet connections was not recorded.
 - Not checked: how driving feels. The check was done in the Claude app's own browser, which redraws slowly.
 
+- Later the same day, Pedro's pull requests #9 and #11 were merged first and changed the row next to Francisco's in both team tables, so GitHub reported a conflict. `main` was merged into this branch and both rows were kept. Checked after the merge: `npm test` gave 403 passed and 5 skipped (Pedro's work added tests).
+
 **How to check it yourself**
 Open `README.md` on GitHub and look at the team table. Search `PROJECT_BRIEF.md` for "DECIDED 11 Nov". Run `npm test`.
 
