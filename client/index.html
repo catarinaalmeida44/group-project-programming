@@ -7,34 +7,22 @@
     <link rel="stylesheet" href="/style.css">
   </head>
   <body>
-    <main>
+    <!-- The main menu: the first page a player sees. -->
+    <main class="menu">
+      <button type="button" id="open-settings" class="settings-button">⚙ Settings</button>
+
       <h1>Nova SBE kart racer</h1>
-      <nav class="modes">
-        <strong>Practice alone</strong>
-        <a href="/online.html">Online test</a>
+      <p class="tagline">Kart racing on the Carcavelos campus</p>
+
+      <nav class="menu-choices" aria-label="Main menu">
+        <a class="menu-choice" href="/race.html">Single race</a>
+        <button type="button" class="menu-choice" disabled aria-describedby="cup-soon">Cup</button>
+        <p id="cup-soon" class="menu-soon">Cup: coming soon, with three campus tracks</p>
+        <a class="menu-choice" href="/online.html">Online</a>
+        <button type="button" id="open-leaderboard" class="menu-choice">Leaderboard</button>
       </nav>
-
-      <!-- The numbers above the track. main.js fills them in. -->
-      <div class="hud">
-        <span>Lap <strong id="lap">1</strong> of <strong id="laps">3</strong></span>
-        <span>Time <strong id="time">0:00.00</strong></span>
-        <span>Camera <strong id="view"></strong></span>
-        <span id="lap-times" class="lap-times"></span>
-      </div>
-
-      <!-- The track is drawn on the canvas. The message sits on top of it. -->
-      <div class="screen">
-        <canvas id="track" width="960" height="576">Your browser cannot show the game.</canvas>
-        <p id="message" class="message" role="status"></p>
-      </div>
-
-      <p class="help">
-        Arrow keys: <kbd>↑</kbd> gas, <kbd>↓</kbd> brake and reverse, <kbd>←</kbd> <kbd>→</kbd> steer.
-        <kbd>R</kbd> starts again. <kbd>V</kbd> changes the camera. Drive clockwise.
-      </p>
-      <p class="note">Practice on the test track. This race runs in your browser and is not saved.</p>
     </main>
 
-    <script type="module" src="/main.js"></script>
+    <script type="module" src="/menu.js"></script>
   </body>
 </html>

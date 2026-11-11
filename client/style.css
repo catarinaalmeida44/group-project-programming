@@ -106,6 +106,87 @@ canvas {
   font-size: 0.9rem;
 }
 
+/* ---- The main menu (index.html) ---- */
+
+/* The menu is a narrow column in the middle. "relative" lets the settings
+   button sit in its top right corner. */
+.menu {
+  position: relative;
+  max-width: 420px;
+  padding-top: 4rem;
+  text-align: center;
+}
+
+.menu h1 {
+  font-size: 2.2rem;
+}
+
+.tagline {
+  margin: 0 0 2rem;
+  color: #a9b8c4;
+}
+
+.menu-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* The big menu buttons. Some are links (they open another page) and some are
+   buttons (they open a panel), so both are made to look the same. */
+.menu-choice {
+  display: block;
+  padding: 0.9rem 1rem;
+  border: 2px solid #3d5566;
+  border-radius: 8px;
+  background: #1c2f3d;
+  color: #f2f5f7;
+  font: inherit;
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.menu-choice:hover,
+.menu-choice:focus-visible {
+  border-color: #8fc7ff;
+  background: #24404f;
+}
+
+/* A choice that is not ready yet: greyed out and not clickable. */
+.menu-choice:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: #3d5566;
+  background: #1c2f3d;
+}
+
+.menu-soon {
+  margin: -0.5rem 0 0;
+  color: #a9b8c4;
+  font-size: 0.85rem;
+}
+
+/* The settings button in the top right corner of the menu. */
+.settings-button {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #3d5566;
+  border-radius: 6px;
+  background: #1c2f3d;
+  color: #f2f5f7;
+  font: inherit;
+  cursor: pointer;
+}
+
+.settings-button:hover,
+.settings-button:focus-visible {
+  border-color: #8fc7ff;
+}
+
 kbd {
   display: inline-block;
   min-width: 1.4em;

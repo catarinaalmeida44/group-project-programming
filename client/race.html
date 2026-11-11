@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nova SBE kart racer: single race</title>
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <main>
+      <h1>Nova SBE kart racer</h1>
+      <nav class="modes">
+        <a href="/">← Menu</a>
+        <strong>Single race</strong>
+        <a href="/online.html">Online test</a>
+      </nav>
+
+      <!-- The numbers above the track. main.js fills them in. -->
+      <div class="hud">
+        <span>Lap <strong id="lap">1</strong> of <strong id="laps">3</strong></span>
+        <span>Time <strong id="time">0:00.00</strong></span>
+        <span>Camera <strong id="view"></strong></span>
+        <span id="lap-times" class="lap-times"></span>
+      </div>
+
+      <!-- The track is drawn on the canvas. The message sits on top of it. -->
+      <div class="screen">
+        <canvas id="track" width="960" height="576">Your browser cannot show the game.</canvas>
+        <p id="message" class="message" role="status"></p>
+      </div>
+
+      <p class="help">
+        Arrow keys: <kbd>↑</kbd> gas, <kbd>↓</kbd> brake and reverse, <kbd>←</kbd> <kbd>→</kbd> steer.
+        <kbd>R</kbd> starts again. <kbd>V</kbd> changes the camera. Drive clockwise.
+      </p>
+      <p class="note">
+        A race on the test track. It runs in your browser. Your best times are kept in this
+        browser only, and are not shared with anyone.
+      </p>
+    </main>
+
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
