@@ -23,7 +23,9 @@ import { createPainter } from "./draw.js";
 import { createHud } from "./hud.js";
 import { createPlayback, readServerMessage, statusLine, QUIET_AFTER_MS } from "./net.js";
 import { readRace, raceView, kartToWatch } from "./race-view.js";
-import { VIEWS, followTarget, easeTowards, nextView } from "./camera.js";
+import { followTarget, easeTowards, nextView } from "./camera.js";
+import { storageOf } from "./storage.js";
+import { readSettings } from "./settings.js";
 
 const track = TEST_OVAL;
 
@@ -45,7 +47,7 @@ let kartsShown = null; //              the karts in the picture drawn last
 let lastNewsAt = null; //              when the server last sent us anything
 
 // ---- The camera ----
-let view = VIEWS[0];
+let view = readSettings(storageOf(window)).startView; // the view chosen in the menu's settings, or the first one
 let camera = null;
 let lastFrameTime = null;
 

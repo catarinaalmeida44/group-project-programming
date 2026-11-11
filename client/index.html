@@ -23,6 +23,41 @@
       </nav>
     </main>
 
+    <!-- The settings panel. A <dialog> is a panel built into the browser: it
+         opens on top of the page, and Escape or the Close button closes it. -->
+    <dialog id="settings" class="panel" aria-labelledby="settings-title">
+      <h2 id="settings-title">Settings</h2>
+
+      <fieldset>
+        <legend>Camera view at the start of a race</legend>
+        <!-- menu.js puts one choice here for each camera view. -->
+        <div id="view-choices" class="choices"></div>
+      </fieldset>
+      <p id="settings-status" class="note" role="status"></p>
+
+      <fieldset>
+        <legend>Sound</legend>
+        <label class="later">
+          <input type="checkbox" disabled> Sound on
+          <span>(coming later: the game has no sound yet)</span>
+        </label>
+      </fieldset>
+
+      <h3>Controls</h3>
+      <ul class="controls">
+        <li><kbd>↑</kbd> gas</li>
+        <li><kbd>↓</kbd> brake, and reverse when stopped</li>
+        <li><kbd>←</kbd> <kbd>→</kbd> steer</li>
+        <li><kbd>V</kbd> change the camera during a race</li>
+        <li><kbd>R</kbd> start the race again</li>
+        <li><kbd>Enter</kbd> online: the host starts a race for everyone</li>
+      </ul>
+
+      <form method="dialog">
+        <button class="menu-choice">Close</button>
+      </form>
+    </dialog>
+
     <script type="module" src="/menu.js"></script>
   </body>
 </html>

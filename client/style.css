@@ -187,6 +187,56 @@ canvas {
   border-color: #8fc7ff;
 }
 
+/* The panels that open over the menu: Settings and Leaderboard. */
+.panel {
+  width: min(440px, 90vw);
+  padding: 1.25rem 1.5rem;
+  border: 2px solid #3d5566;
+  border-radius: 10px;
+  background: #10202b;
+  color: #f2f5f7;
+  text-align: left;
+}
+
+/* The page behind an open panel is darkened. */
+.panel::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.panel h2 {
+  margin-top: 0;
+}
+
+.panel fieldset {
+  margin: 0 0 0.75rem;
+  border: 1px solid #3d5566;
+  border-radius: 6px;
+}
+
+.choices {
+  display: flex;
+  flex-direction: column;
+}
+
+/* A setting that does nothing yet. */
+.later {
+  color: #a9b8c4;
+}
+
+.controls {
+  padding-left: 1.2rem;
+}
+
+.controls li {
+  margin-bottom: 0.3rem;
+}
+
+.panel .menu-choice {
+  width: 100%;
+  margin-top: 0.75rem;
+  font-size: 1rem;
+}
+
 kbd {
   display: inline-block;
   min-width: 1.4em;

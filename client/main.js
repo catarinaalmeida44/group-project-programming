@@ -19,8 +19,10 @@ import { TEST_OVAL } from "../shared/tracks/test-oval.js";
 import { createKeyboard } from "./keyboard.js";
 import { createPainter } from "./draw.js";
 import { createHud } from "./hud.js";
-import { VIEWS, followTarget, easeTowards, nextView } from "./camera.js";
+import { followTarget, easeTowards, nextView } from "./camera.js";
 import { formatTime } from "./format.js";
+import { storageOf } from "./storage.js";
+import { readSettings } from "./settings.js";
 
 const track = TEST_OVAL;
 const character = TEST_DRIVER;
@@ -37,7 +39,8 @@ let lastFrameTime = null;
 let waitingSeconds = 0; // real time that has passed but is not yet turned into game steps
 
 // ---- The state of the camera ----
-let view = VIEWS[0]; // the game starts in the first view of the list in camera.js
+const storage = storageOf(window); // this browser's storage, for the settings and the best times
+let view = readSettings(storage).startView; // the view chosen in the menu's settings, or the first one
 let camera = followTarget(race.racer.kart, track); // the spot in the middle of the screen, in the follow view
 
 const keyboard = createKeyboard(window, {
