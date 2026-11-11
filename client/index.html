@@ -23,6 +23,33 @@
       </nav>
     </main>
 
+    <!-- The leaderboard panel. For now it shows your own best times, kept in
+         this browser. A leaderboard shared between players needs accounts. -->
+    <dialog id="leaderboard" class="panel" aria-labelledby="leaderboard-title">
+      <h2 id="leaderboard-title">Leaderboard</h2>
+
+      <h3>Single race</h3>
+      <table class="records">
+        <thead>
+          <tr><th>Track</th><th>Best race</th><th>Best lap</th></tr>
+        </thead>
+        <!-- menu.js puts one row here for each track. -->
+        <tbody id="single-race-records"></tbody>
+      </table>
+
+      <h3>Cup</h3>
+      <p class="later">No cup yet: it comes with the three campus tracks.</p>
+
+      <p class="note">
+        These are your own best times, kept in this browser only. Nobody else sees them.
+        A leaderboard shared with other players will come with accounts.
+      </p>
+
+      <form method="dialog">
+        <button class="menu-choice">Close</button>
+      </form>
+    </dialog>
+
     <!-- The settings panel. A <dialog> is a panel built into the browser: it
          opens on top of the page, and Escape or the Close button closes it. -->
     <dialog id="settings" class="panel" aria-labelledby="settings-title">

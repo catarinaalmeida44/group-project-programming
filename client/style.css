@@ -218,7 +218,21 @@ canvas {
   flex-direction: column;
 }
 
-/* A setting that does nothing yet. */
+/* The table of best times in the leaderboard. */
+.records {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.records th,
+.records td {
+  padding: 0.3rem 0.4rem;
+  border-bottom: 1px solid #3d5566;
+  text-align: left;
+}
+
+/* A setting or a part that does nothing yet. */
 .later {
   color: #a9b8c4;
 }
