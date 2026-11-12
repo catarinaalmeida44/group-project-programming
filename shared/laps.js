@@ -82,6 +82,22 @@ export function raceSeconds(progress) {
   return progress.steps * STEP_SECONDS;
 }
 
+/**
+ * The fastest single lap, in steps, from the step count at the end of each
+ * lap: [480, 1000, 1500] means laps of 480, 520 and 500 steps, so it gives
+ * 480. Gives null when no lap is complete.
+ */
+export function fastestLapSteps(lapSteps) {
+  let fastest = null;
+  for (let lap = 0; lap < lapSteps.length; lap++) {
+    const took = lapSteps[lap] - (lap === 0 ? 0 : lapSteps[lap - 1]);
+    if (fastest === null || took < fastest) {
+      fastest = took;
+    }
+  }
+  return fastest;
+}
+
 /** The lap the kart is on, for showing "Lap 2 of 3". Never more than the number of laps. */
 export function currentLap(progress, track) {
   return Math.min(progress.lapsDone + 1, track.laps);

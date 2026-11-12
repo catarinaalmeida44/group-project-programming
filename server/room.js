@@ -21,7 +21,7 @@
 // on the track: they watch, and join in at the next start.
 
 import { createKart } from "../shared/physics.js";
-import { createProgress } from "../shared/laps.js";
+import { createProgress, fastestLapSteps } from "../shared/laps.js";
 import { stepRacer } from "../shared/race.js";
 import { countdownAt } from "../shared/countdown.js";
 
@@ -44,6 +44,8 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
   let step = 0;
   let phase = "open"; //      "open", "countdown", "racing" or "finished"
   let countdownSteps = 0; //  steps since the host started the race
+  let finishedSoFar = 0; //   how many racers have finished the race that is on
+  let newFinishes = []; //    the finishes that takeFinishes() has not handed out yet
 
   /** The players who are in the race that is on. Nobody, while the room is open. */
   function racers() {
@@ -126,11 +128,26 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
       }
       phase = "countdown";
       countdownSteps = 0;
+      finishedSoFar = 0;
       for (const player of players.values()) {
         player.racing = true;
         player.racer = racerAtStart(track, player.place);
       }
       return true;
+    },
+
+    /**
+     * The racers who crossed the finish line since this was last asked, in
+     * the order they finished: [{ id, position, raceSteps, bestLapSteps }].
+     * Each finish is handed out once. Only races that began with the
+     * countdown are listed: laps driven while the room is open are not.
+     * Two racers who finish in the very same step share a position.
+     * online.js uses this to save results for signed-in players.
+     */
+    takeFinishes() {
+      const finishes = newFinishes;
+      newFinishes = [];
+      return finishes;
     },
 
     /** Remembers which keys a player is holding. Says false if there is no such player. */
@@ -189,8 +206,20 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
 
       const inTheRace = racers();
       if (countdownAt(countdownSteps).racing) {
+        const finishedBeforeThisStep = finishedSoFar;
         for (const player of inTheRace) {
+          const wasFinished = player.racer.progress.finished;
           player.racer = stepRacer(track, player.racer, player.keys, character);
+          const { finished, steps, lapSteps } = player.racer.progress;
+          if (finished && !wasFinished) {
+            finishedSoFar++;
+            newFinishes.push({
+              id: player.id,
+              position: finishedBeforeThisStep + 1,
+              raceSteps: steps,
+              bestLapSteps: fastestLapSteps(lapSteps),
+            });
+          }
         }
       }
       countdownSteps++;
