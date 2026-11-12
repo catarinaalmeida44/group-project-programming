@@ -5,8 +5,19 @@
 // connects it to the browsers. Keeping the two apart lets us test the room
 // without any network.
 //
-// For now there is one room, on the test track, for everyone who opens the
-// online page. Karts pass through each other. Rooms with codes come later.
+// There is one room for each track (online.js makes them). Rooms with codes
+// come later.
+//
+// Karts on the track bump into each other (shared/bumps.js), while the room
+// is open and in a race. A bump moves karts and changes their speed. It
+// never touches anyone's laps or clock.
+//
+// A race that began with the countdown has bananas (shared/hazards.js): the
+// first one a few seconds after GO. A kart that drives over one spins out.
+// There are none while the room is open and none during 3, 2, 1. Where they
+// appear is decided here on the server, from a number (the "seed") the room
+// picks when the race starts. No message from a browser can place or remove
+// a banana, or choose the seed.
 //
 // A room is always in one of four phases:
 //   "open"       nobody has started a race. Everyone drives around freely,
@@ -20,25 +31,42 @@
 // can start a race. Someone who joins while a race is on does not get a kart
 // on the track: they watch, and join in at the next start.
 
-import { createKart } from "../shared/physics.js";
-import { createProgress, fastestLapSteps } from "../shared/laps.js";
-import { stepRacer } from "../shared/race.js";
+import { fastestLapSteps } from "../shared/laps.js";
+import { createRacer, stepRacer, rollRacer } from "../shared/race.js";
 import { countdownAt } from "../shared/countdown.js";
+import { GRID_PLACES } from "../shared/grid.js";
+import { bumpKarts } from "../shared/bumps.js";
+import { createBananaMaker, stepBananas, SEED_COUNT } from "../shared/hazards.js";
 
-/** How many players fit in a room. */
-export const MAX_PLAYERS = 8;
+/** How many players fit in a room: one for each place on the starting grid (shared/grid.js). */
+export const MAX_PLAYERS = GRID_PLACES;
 
 /** The server sends everyone an update once every this many steps: 60 / 3 = 20 times a second. */
 export const STEPS_PER_UPDATE = 3;
 
-// The starting places: two columns, with each row a little further back.
-const GAP_SIDEWAYS = 18;
-const GAP_BEHIND = 28;
-
 const NO_KEYS = { gas: false, brake: false, left: false, right: false };
 
-/** Makes an empty room on a track. Every kart in it uses the same driver for now. */
-export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
+/**
+ * Picks a seed by chance, for the bananas of one race. This is the only
+ * place where real chance enters a race: the rules in shared/ never use it.
+ */
+export function randomSeed() {
+  return Math.floor(Math.random() * SEED_COUNT);
+}
+
+/**
+ * Makes an empty room on a track. Every kart in it uses the same driver for now.
+ *
+ *   pickSeed   a function the room calls each time a race starts, to get
+ *              the seed of that race's bananas. online.js gives randomSeed.
+ *              A test gives a function that always answers the same number,
+ *              to get the same bananas every time. Left out, the races of
+ *              this room have no bananas.
+ */
+export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed = null) {
+  if (pickSeed !== null && typeof pickSeed !== "function") {
+    throw new TypeError("createRoom: pickSeed must be a function that gives a seed, or left out");
+  }
   const players = new Map(); // player number -> { id, place, racer, keys, racing }
   let nextId = 1;
   let step = 0;
@@ -46,10 +74,36 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
   let countdownSteps = 0; //  steps since the host started the race
   let finishedSoFar = 0; //   how many racers have finished the race that is on
   let newFinishes = []; //    the finishes that takeFinishes() has not handed out yet
+  let bananas = []; //        the banana peels on the road: [{ id, x, y }]. Only ever during a race
+  let bananaMaker = null; //  what decides when and where the next banana appears. null: no bananas
 
   /** The players who are in the race that is on. Nobody, while the room is open. */
   function racers() {
     return [...players.values()].filter((player) => player.racing);
+  }
+
+  /**
+   * The players whose kart is on the track: everyone while the room is
+   * open, and only the racers during a race. Someone who is watching has no
+   * kart on the track, so nothing can touch it and it is not shown.
+   */
+  function onTrack() {
+    return phase === "open" ? [...players.values()] : racers();
+  }
+
+  /**
+   * Lets the karts on the track bump into each other (shared/bumps.js).
+   * Only the karts change. Laps and clocks are left exactly as they were.
+   */
+  function bump() {
+    const drivers = onTrack();
+    const before = drivers.map((player) => player.racer.kart);
+    const after = bumpKarts(track, before);
+    drivers.forEach((player, index) => {
+      if (after[index] !== before[index]) {
+        player.racer = { ...player.racer, kart: after[index] };
+      }
+    });
   }
 
   /** The player who has been here longest, or null in an empty room. Numbers only go up, so that is the lowest one. */
@@ -57,13 +111,15 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
     return players.size === 0 ? null : Math.min(...players.keys());
   }
 
-  /** Back to free driving, with every kart on its starting place. */
+  /** Back to free driving, with every kart on its starting place and no bananas. */
   function openTheRoom() {
     phase = "open";
     countdownSteps = 0;
+    bananas = [];
+    bananaMaker = null;
     for (const player of players.values()) {
       player.racing = false;
-      player.racer = racerAtStart(track, player.place);
+      player.racer = createRacer(track, player.place);
     }
   }
 
@@ -91,7 +147,7 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
         return null;
       }
       const id = nextId++;
-      players.set(id, { id, place, racer: racerAtStart(track, place), keys: NO_KEYS, racing: false });
+      players.set(id, { id, place, racer: createRacer(track, place), keys: NO_KEYS, racing: false });
       return { id, place };
     },
 
@@ -117,21 +173,28 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
 
     /**
      * Starts a race for everyone who is in the room now: every kart goes
-     * back to its starting place with its laps and clock at zero, and the
-     * countdown begins. Says false, and changes nothing, unless the player
-     * asking is the host. Also says false while a countdown is running, so
-     * that pressing the key twice does not start the countdown over.
+     * back to its starting place with its laps and clock at zero, the
+     * bananas of the race before are cleared away, and the countdown
+     * begins. Says false, and changes nothing, unless the player asking is
+     * the host. Also says false while a countdown is running, so that
+     * pressing the key twice does not start the countdown over.
+     *
+     * This is also the moment the room picks the seed of the race's bananas.
+     * Nothing given to startRace can choose it.
      */
     startRace(id) {
       if (!players.has(id) || id !== hostId() || phase === "countdown") {
         return false;
       }
+      // (A seed that is not a whole number is refused here with an error, before anything changes.)
+      bananaMaker = pickSeed === null ? null : createBananaMaker(pickSeed());
+      bananas = [];
       phase = "countdown";
       countdownSteps = 0;
       finishedSoFar = 0;
       for (const player of players.values()) {
         player.racing = true;
-        player.racer = racerAtStart(track, player.place);
+        player.racer = createRacer(track, player.place);
       }
       return true;
     },
@@ -176,7 +239,7 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
       if (player === undefined || phase !== "open") {
         return false;
       }
-      player.racer = racerAtStart(track, player.place);
+      player.racer = createRacer(track, player.place);
       return true;
     },
 
@@ -184,23 +247,30 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
      * Moves the room forward by one step of game time.
      *
      * While the room is open: a kart that has not started yet and has no
-     * key held is left alone, so a player's clock starts at their first key
-     * press.
+     * key held is parked, so a player's clock starts at their first key
+     * press. A parked kart that is pushed by another kart rolls to a stop,
+     * but its clock stays at zero and its checkpoints are not counted.
      *
      * In a race: during 3, 2 and 1 nothing moves. From GO on, every racer
      * is moved, key held or not, so everyone's clock starts at the same
      * step. The karts of people who are watching are never moved.
+     *
+     * In both cases the karts on the track then bump into each other. In a
+     * race, from GO on, the bananas come last.
      */
     step() {
       step++;
 
       if (phase === "open") {
         for (const player of players.values()) {
-          const waitingToStart = player.racer.progress.steps === 0 && !anyKeyHeld(player.keys);
-          if (!waitingToStart) {
+          if (!isParked(player)) {
             player.racer = stepRacer(track, player.racer, player.keys, character);
+          } else if (isMoving(player.racer.kart)) {
+            // Parked, but pushed by a bump: the kart rolls to a stop. Its clock stays at zero.
+            player.racer = rollRacer(track, player.racer, character);
           }
         }
+        bump();
         return;
       }
 
@@ -221,6 +291,20 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
             });
           }
         }
+        bump(); // a kart that has finished can still be bumped: its result stands
+
+        // The bananas: whoever touches one spins out, and now and then a new one appears.
+        const after = stepBananas(
+          track,
+          bananas,
+          bananaMaker,
+          inTheRace.map((player) => player.racer),
+        );
+        bananas = after.bananas;
+        bananaMaker = after.maker;
+        inTheRace.forEach((player, index) => {
+          player.racer = after.racers[index];
+        });
       }
       countdownSteps++;
 
@@ -245,13 +329,15 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
      * how far along each driver is. Numbers are rounded to keep it short.
      *
      * "karts" lists the karts on the track: everyone while the room is
-     * open, and only the racers during a race. "race" says which phase the
-     * room is in, how far the countdown is, who the host is, and who is
-     * watching without a kart.
+     * open, and only the racers during a race. "spin" is how many more
+     * steps a kart will spin (0 when it is not spinning). "race" says which
+     * phase the room is in, how far the countdown is, who the host is, and
+     * who is watching without a kart. "bananas" lists the banana peels on
+     * the road: none while the room is open or during the countdown.
      */
     snapshot() {
       const everyone = [...players.values()];
-      const onTrack = phase === "open" ? everyone : everyone.filter((player) => player.racing);
+      const drivers = onTrack();
       return {
         type: "state",
         step,
@@ -259,9 +345,9 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
           phase,
           countdownSteps,
           host: hostId(),
-          watching: everyone.filter((player) => !onTrack.includes(player)).map((player) => player.id),
+          watching: everyone.filter((player) => !drivers.includes(player)).map((player) => player.id),
         },
-        karts: onTrack.map(({ id, place, racer }) => ({
+        karts: drivers.map(({ id, place, racer }) => ({
           id,
           place,
           x: round(racer.kart.x, 1),
@@ -273,34 +359,25 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
           steps: racer.progress.steps,
           lapSteps: racer.progress.lapSteps,
           finished: racer.progress.finished,
+          spin: racer.spinSteps,
         })),
+        bananas: bananas.map(({ id, x, y }) => ({ id, x: round(x, 1), y: round(y, 1) })),
       };
     },
   };
 }
 
-/** A racer standing still on one of the starting places of a track. */
-function racerAtStart(track, place) {
-  const { x, y, angle } = track.start;
-  const side = place % 2 === 0 ? -1 : 1; // left column, right column
-  const row = Math.floor(place / 2);
-  // "forward" is the direction the karts point. "right" is a quarter turn clockwise from it.
-  const forwardX = Math.cos(angle);
-  const forwardY = Math.sin(angle);
-  const rightX = -forwardY;
-  const rightY = forwardX;
-  return {
-    kart: createKart(
-      x + rightX * side * GAP_SIDEWAYS - forwardX * row * GAP_BEHIND,
-      y + rightY * side * GAP_SIDEWAYS - forwardY * row * GAP_BEHIND,
-      angle,
-    ),
-    progress: createProgress(),
-  };
-}
-
 function anyKeyHeld(keys) {
   return keys.gas || keys.brake || keys.left || keys.right;
+}
+
+/** While the room is open: has this player not started driving yet? Their clock is at zero and no key is held. */
+function isParked(player) {
+  return player.racer.progress.steps === 0 && !anyKeyHeld(player.keys);
+}
+
+function isMoving(kart) {
+  return kart.vx !== 0 || kart.vy !== 0;
 }
 
 function round(number, decimals) {

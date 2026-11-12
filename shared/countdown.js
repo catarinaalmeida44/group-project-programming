@@ -7,11 +7,15 @@
 // During 3, 2 and 1 the kart is not moved and the race clock stands still,
 // whatever keys are held. At GO the race begins.
 //
-// The practice race in the browser uses this today. An online race can use
-// countdownAt() later, with one countdown for the whole room.
+// The practice race in the browser uses all of this. An online race uses
+// countdownAt(), with one countdown for the whole room (server/room.js).
+//
+// A race with a countdown also carries the bananas of the race (hazards.js):
+// none during 3, 2 and 1, the first one a few seconds after GO.
 
 import { STEP_SECONDS } from "./physics.js";
 import { createRacer, stepRacer } from "./race.js";
+import { createBananaMaker, stepBananas } from "./hazards.js";
 
 /** The countdown starts at this number. */
 export const COUNTDOWN_FROM = 3;
@@ -60,24 +64,50 @@ export function countdownAt(steps) {
 }
 
 /**
- * A race that begins with a countdown: the racer waiting at the start of
- * the track, and how many steps of the countdown have passed.
+ * A race that begins with a countdown:
+ *   racer           the racer waiting at the start of the track
+ *   countdownSteps  how many steps of the countdown have passed
+ *   bananas         the banana peels on the road: [{ id, x, y }]. None yet
+ *   bananaMaker     what decides when and where the next banana appears,
+ *                   or null for a race without bananas
+ *
+ *   seed   the number the bananas of this race grow from (see hazards.js):
+ *          a whole number from 0 to 4294967295. The same seed and the same
+ *          driving always give the same bananas, so the page should pick a
+ *          new one by chance for every race. Left out, the race has no
+ *          bananas.
  */
-export function createCountdownRace(track) {
-  return { racer: createRacer(track), countdownSteps: 0 };
+export function createCountdownRace(track, seed = null) {
+  return {
+    racer: createRacer(track),
+    countdownSteps: 0,
+    bananas: [],
+    bananaMaker: seed === null ? null : createBananaMaker(seed),
+  };
 }
 
 /**
  * Moves a race with a countdown forward by one step and gives back the new race.
  *
  * Before GO, the racer is given back exactly as it was: the keys are
- * ignored, the kart does not move and the race clock does not run.
- * From GO on, the racer moves by the normal rules in race.js.
+ * ignored, the kart does not move and the race clock does not run. No
+ * banana appears and none can be hit.
+ * From GO on, the racer moves by the normal rules in race.js, and the
+ * bananas follow the rules in hazards.js.
  */
 export function stepCountdownRace(track, race, input, character) {
   const { racing } = countdownAt(race.countdownSteps);
+  const countdownSteps = race.countdownSteps + 1;
+  if (!racing) {
+    return { ...race, countdownSteps };
+  }
+  const moved = stepRacer(track, race.racer, input, character);
+  const after = stepBananas(track, race.bananas, race.bananaMaker, [moved]);
   return {
-    racer: racing ? stepRacer(track, race.racer, input, character) : race.racer,
-    countdownSteps: race.countdownSteps + 1,
+    ...race,
+    racer: after.racers[0],
+    countdownSteps,
+    bananas: after.bananas,
+    bananaMaker: after.maker,
   };
 }

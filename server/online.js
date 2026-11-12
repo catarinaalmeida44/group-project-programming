@@ -13,7 +13,8 @@
 // What goes over the connection:
 //   browser -> server   which keys are held, "restart", or "start" (see messages.js)
 //   server -> browser   "welcome" with your player number, then the state
-//                       of all karts and of the race 20 times a second.
+//                       of all karts, of the race and of the bananas on the
+//                       road 20 times a second.
 //                       Also "account" (who you are signed in as, if anyone),
 //                       "names" (the user names of the signed-in players in
 //                       the room) and "saved" (your finished race was written
@@ -35,7 +36,7 @@
 
 import { WebSocketServer } from "ws";
 import { STEP_SECONDS } from "../shared/physics.js";
-import { createRoom, STEPS_PER_UPDATE } from "./room.js";
+import { createRoom, randomSeed, STEPS_PER_UPDATE } from "./room.js";
 import { readClientMessage, MAX_MESSAGE_LENGTH } from "./messages.js";
 import { ticketOf } from "./api.js";
 
@@ -74,12 +75,24 @@ export const GOODBYE_WAIT_MS = 2000;
  *   character, maxPlayers  what every room uses
  *   accounts    the account rules (accounts.js), or null: nothing is saved then
  *   goodbyeWaitMs  how long to wait before cutting a connection we sent away
+ *   pickSeed    what every room calls when a race starts, to get the seed of
+ *               that race's bananas (see room.js). Normally left out: then
+ *               it is real chance. A test can give its own, to know where
+ *               the bananas will be. A browser can never choose it
  * Gives back { room, rooms, close }. "room" is the room at /play, "rooms"
  * has every room by short name. close() ends online play, for the tests.
  */
 export function attachOnlinePlay(
   httpServer,
-  { track, tracks = {}, character, maxPlayers, accounts = null, goodbyeWaitMs = GOODBYE_WAIT_MS },
+  {
+    track,
+    tracks = {},
+    character,
+    maxPlayers,
+    accounts = null,
+    goodbyeWaitMs = GOODBYE_WAIT_MS,
+    pickSeed = randomSeed,
+  },
 ) {
   // "noServer" means: do not open a second server, share the web server we already have.
   const sockets = new WebSocketServer({ noServer: true, maxPayload: MAX_MESSAGE_LENGTH * 4 });
@@ -169,7 +182,7 @@ export function attachOnlinePlay(
    * "shortName" is the name its results are saved under, or null for none.
    */
   function openTable(tableTrack, shortName) {
-    const room = createRoom(tableTrack, character, maxPlayers);
+    const room = createRoom(tableTrack, character, maxPlayers, pickSeed);
     const connections = new Set();
     const seats = new Map(); // player number in the room -> { connection, account, username }
 
