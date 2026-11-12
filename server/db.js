@@ -5,10 +5,10 @@
 // lives in its memory and is gone when it restarts. What is written to the
 // database stays.
 //
-// For now the database holds one small table, "server_starts": one row for
-// every time the server has started. It is only there to prove that the
-// server can write to the database and read from it. Players, sessions,
-// progress and race results come later.
+// This file opens the connection, and looks after one small table,
+// "server_starts": one row for every time the server has started. It is
+// only there to prove that the server can write to the database and read
+// from it. Players, sessions and race results are in store.js.
 //
 // WHERE THE DATABASE IS
 // It is a Postgres database kept by a company called Neon. To reach it the
@@ -39,11 +39,15 @@ export const STATUS_FRESH_MS = 10_000;
 export const STATUS_RETRY_MS = 3_000;
 
 /**
- * Connects to the database at the given address.
+ * Opens the connections to the database at the given address.
  * Gives null if there is no address: the server then runs without a
  * database, which is the normal case on a teammate's laptop.
+ *
+ * What it gives is shared by everything that talks to the database: the
+ * "server_starts" table below, and the players, sessions and race results
+ * in store.js.
  */
-export function createDatabase(connectionString, options = {}) {
+export function openPool(connectionString) {
   if (typeof connectionString !== "string" || connectionString.trim() === "") {
     return null;
   }
@@ -60,7 +64,16 @@ export function createDatabase(connectionString, options = {}) {
   pool.on("error", (error) => {
     console.error("Database: a waiting connection failed:", error.message);
   });
-  return createDatabaseOn(pool, options);
+  return pool;
+}
+
+/**
+ * Connects to the database at the given address, for the "server_starts"
+ * table. Gives null if there is no address.
+ */
+export function createDatabase(connectionString, options = {}) {
+  const pool = openPool(connectionString);
+  return pool === null ? null : createDatabaseOn(pool, options);
 }
 
 /**

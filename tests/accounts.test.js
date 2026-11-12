@@ -12,6 +12,7 @@ import {
   WRONG_PASSWORDS_ALLOWED,
   LOCK_MINUTES,
   LEADERBOARD_SIZE,
+  LEADERBOARD_FRESH_MS,
 } from "../server/accounts.js";
 import { createMemoryStore } from "./memory-store.js";
 
@@ -451,5 +452,95 @@ describe("the leaderboard", () => {
       expect(Object.keys(row).sort()).toEqual(["rank", "steps", "username"]);
     }
     expect(JSON.stringify(board)).not.toContain("scrambled");
+  });
+});
+
+describe("reading the leaderboard without asking the database every time", () => {
+  /** Counts how often the store is asked for the fastest races. */
+  function countQuestions() {
+    const real = store.bestRaces;
+    let asked = 0;
+    store.bestRaces = (...values) => {
+      asked++;
+      return real(...values);
+    };
+    return () => asked;
+  }
+
+  it("reuses a leaderboard for a short while, however many visitors ask", async () => {
+    const ana = await signUp("Ana", "12345678");
+    await accounts.saveResult({ playerId: ana.id, track: "campus-loop", raceSteps: 1800, bestLapSteps: 590, position: 1 });
+    const asked = countQuestions();
+
+    for (let visitor = 0; visitor < 20; visitor++) {
+      await accounts.leaderboard("campus-loop");
+    }
+    expect(asked()).toBe(1);
+
+    time += LEADERBOARD_FRESH_MS + 1;
+    await accounts.leaderboard("campus-loop");
+    expect(asked()).toBe(2);
+  });
+
+  it("shows a new result at once, without waiting", async () => {
+    const ana = await signUp("Ana", "12345678");
+    await accounts.saveResult({ playerId: ana.id, track: "campus-loop", raceSteps: 1800, bestLapSteps: 590, position: 1 });
+    expect((await accounts.leaderboard("campus-loop")).races[0].steps).toBe(1800);
+
+    await accounts.saveResult({ playerId: ana.id, track: "campus-loop", raceSteps: 1700, bestLapSteps: 560, position: 1 });
+    expect((await accounts.leaderboard("campus-loop")).races[0].steps).toBe(1700);
+  });
+
+  it("drops a deleted player from every leaderboard at once", async () => {
+    const ana = await signUp("Ana", "12345678");
+    await accounts.saveResult({ playerId: ana.id, track: "campus-loop", raceSteps: 1800, bestLapSteps: 590, position: 1 });
+    await accounts.saveResult({ playerId: ana.id, track: "test-oval", raceSteps: 900, bestLapSteps: 290, position: 1 });
+    await accounts.leaderboard("campus-loop");
+    await accounts.leaderboard("test-oval");
+
+    await accounts.deleteAccount(ana.id, "12345678");
+
+    expect((await accounts.leaderboard("campus-loop")).races).toEqual([]);
+    expect((await accounts.leaderboard("test-oval")).races).toEqual([]);
+  });
+});
+
+describe("the database tables", () => {
+  it("are created before the first question, and only once", async () => {
+    let created = 0;
+    store.ensureTables = async () => {
+      created++;
+    };
+    await signUp("Ana", "12345678");
+    await accounts.logIn("Ana", "12345678");
+    await accounts.leaderboard("campus-loop");
+    expect(created).toBe(1);
+  });
+
+  it("are tried again at the next question if the database could not be reached", async () => {
+    let tries = 0;
+    store.ensureTables = async () => {
+      tries++;
+      if (tries === 1) {
+        throw new Error("the database is asleep");
+      }
+    };
+    await expect(accounts.signUp("Ana", "12345678")).rejects.toThrow("asleep");
+    expect(await store.findPlayerByKey("ana")).toBe(null); // nothing was made on the failed try
+
+    expect((await accounts.signUp("Ana", "12345678")).ok).toBe(true);
+    expect(tries).toBe(2);
+  });
+
+  it("are not asked for when a request is refused before it reaches the database", async () => {
+    let created = 0;
+    store.ensureTables = async () => {
+      created++;
+    };
+    await accounts.signUp("ab", "12345678"); //            a name that breaks the rules
+    await accounts.logIn("has space", "12345678"); //      a name nobody could have
+    await accounts.playerForSession("not-a-ticket");
+    await accounts.saveResult({ playerId: 1, track: "campus-loop", raceSteps: 0, bestLapSteps: 0, position: 1 });
+    expect(created).toBe(0);
   });
 });

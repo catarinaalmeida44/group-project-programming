@@ -67,6 +67,22 @@ export function createAccounts(
   { now = Date.now, passwords = { hash: hashPassword, matches: passwordMatches, pretend: pretendToCheck } } = {},
 ) {
   const boards = new Map(); // track -> { at, races, laps }: the leaderboards read a moment ago
+  let tablesReady = null; //   a promise, so the tables are only created once
+
+  /**
+   * Makes sure the database tables exist before the first question. If the
+   * database could not be reached, it is tried again at the next question,
+   * so a database that was asleep when the server started is no problem.
+   */
+  function ready() {
+    if (tablesReady === null) {
+      tablesReady = store.ensureTables().catch((error) => {
+        tablesReady = null;
+        throw error;
+      });
+    }
+    return tablesReady;
+  }
 
   /** The ten fastest races and laps of a track, read from the database at most once in a while. */
   async function boardOf(track) {
@@ -114,8 +130,8 @@ export function createAccounts(
   }
 
   return {
-    /** Creates the database tables if needed. Run once when the server starts. */
-    ensureTables: () => store.ensureTables(),
+    /** Creates the database tables if needed. Run when the server starts, and again by itself before any question if that failed. */
+    ensureTables: ready,
 
     /**
      * Makes a new account. Gives { ok: true, player: { id, username } }, or
@@ -131,6 +147,7 @@ export function createAccounts(
       if (passwordProblem !== null) {
         return no("invalid_password", passwordProblem);
       }
+      await ready();
       const passwordHash = await passwords.hash(password);
       const player = await store.addPlayer({ username, usernameKey: usernameKey(username), passwordHash });
       if (player === null) {
@@ -151,6 +168,7 @@ export function createAccounts(
       ) {
         return WRONG_LOGIN;
       }
+      await ready();
       const player = await store.findPlayerByKey(usernameKey(username));
       if (player === null) {
         await passwords.pretend(password); // take as long as a real check would
@@ -163,6 +181,7 @@ export function createAccounts(
     /** Makes a ticket for a player who just signed in, and gives it back to be put in a cookie. */
     async startSession(playerId) {
       const ticket = randomBytes(32).toString("base64url");
+      await ready();
       await store.deleteExpiredSessions(now()); // tidy up old ones while we are here
       await store.addSession({
         tokenHash: scrambleTicket(ticket),
@@ -178,6 +197,7 @@ export function createAccounts(
         return null;
       }
       const tokenHash = scrambleTicket(ticket);
+      await ready();
       const session = await store.findSession(tokenHash);
       if (session === null) {
         return null;
@@ -193,6 +213,7 @@ export function createAccounts(
     /** Signs out: the ticket stops working at once. */
     async endSession(ticket) {
       if (looksLikeATicket(ticket)) {
+        await ready();
         await store.deleteSession(scrambleTicket(ticket));
       }
     },
@@ -202,6 +223,7 @@ export function createAccounts(
      * password is checked again, with the same lock after too many wrong tries.
      */
     async deleteAccount(playerId, password) {
+      await ready();
       const player = await store.findPlayerById(playerId);
       if (player === null) {
         return no("not_signed_in", "You are not signed in.");
@@ -237,6 +259,7 @@ export function createAccounts(
       if (!sensible) {
         return false;
       }
+      await ready();
       await store.addResult({ playerId, track, mode: "online", raceSteps, bestLapSteps, position });
       boards.delete(track); // the next visitor of this leaderboard sees the new result
       return true;
@@ -250,6 +273,7 @@ export function createAccounts(
      * player is ever shown to others.
      */
     async leaderboard(track, playerId = null) {
+      await ready();
       const { races, laps } = await boardOf(track);
       let mine = null;
       if (playerId !== null) {
