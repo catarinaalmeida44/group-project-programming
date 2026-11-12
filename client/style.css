@@ -1479,6 +1479,65 @@ main:has(.status) canvas {
   outline-offset: 2px;
 }
 
+/* -- Your kart -- */
+
+/* The small picture of the kart, on a dark ground like a garage floor. */
+.kart-preview {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  max-height: none;
+  margin: 0 auto 0.8rem;
+  border-radius: 12px;
+  background: radial-gradient(ellipse at 50% 70%, #33475a, var(--navy-deep) 75%);
+  box-shadow: 0 0 0 2px var(--line);
+}
+
+/* A row of round colours to choose from. */
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.swatch {
+  position: relative;
+  display: block;
+  cursor: pointer;
+}
+
+/* The round choice itself is there for the keyboard and for screen readers,
+   but it is not shown: the coloured dot next to it is what a player sees. */
+.panel .swatch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.swatch-colour {
+  display: block;
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid var(--line-strong);
+  border-radius: 50%;
+}
+
+.swatch:hover .swatch-colour {
+  border-color: var(--text);
+}
+
+/* The chosen colour has a yellow ring round it. */
+.swatch input:checked + .swatch-colour {
+  border-color: var(--navy-deep);
+  box-shadow: 0 0 0 3px var(--yellow);
+}
+
+.swatch input:focus-visible + .swatch-colour {
+  outline: 3px solid var(--text);
+  outline-offset: 4px;
+}
+
 /* A setting or a part that does nothing yet. */
 .later {
   display: flex;

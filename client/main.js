@@ -25,6 +25,7 @@ import { storeysOf } from "../shared/tracks/index.js";
 import { createKeyboard } from "./keyboard.js";
 import { createPainter } from "./draw.js";
 import { introShare, startLights } from "./scene.js";
+import { lookFromChoice, readChoice } from "./kart-choice.js";
 import { createHud } from "./hud.js";
 import { followTarget, easeTowards, nextView } from "./camera.js";
 import { formatTime } from "./format.js";
@@ -53,6 +54,9 @@ let record = null; //      once the race is finished: did it beat your best time
 
 // ---- The state of the camera ----
 const storage = storageOf(window); // this browser's storage, for the settings and the best times
+// The colours the player chose for their kart in the menu, or null if they
+// never chose: the kart then gets the first look (kart-choice.js).
+const myLook = lookFromChoice(readChoice(storage));
 let view = readSettings(storage).startView; // the view chosen in the menu's settings, or the first one
 let camera = followTarget(race.racer.kart, track); // the spot in the middle of the screen, in the follow view
 
@@ -124,7 +128,7 @@ function frame(now) {
   const { progress } = racer;
   const keysWork = started && countdown.racing && !progress.finished;
   const steer = keysWork ? (input.right ? 1 : 0) - (input.left ? 1 : 0) : 0;
-  draw(view, racer.kart, camera, steer, [], sceneFor(race.countdownSteps, started));
+  draw(view, { ...racer.kart, look: myLook }, camera, steer, [], sceneFor(race.countdownSteps, started));
 
   // The countdown is shown as one big number in the middle of the track.
   const showingCountdown = started && countdown.label !== "" && !progress.finished;
