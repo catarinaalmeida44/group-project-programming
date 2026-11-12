@@ -5,8 +5,12 @@
 // connects it to the browsers. Keeping the two apart lets us test the room
 // without any network.
 //
-// For now there is one room, on the test track, for everyone who opens the
-// online page. Karts pass through each other. Rooms with codes come later.
+// There is one room for each track (online.js makes them). Rooms with codes
+// come later.
+//
+// Karts on the track bump into each other (shared/bumps.js), while the room
+// is open and in a race. A bump moves karts and changes their speed. It
+// never touches anyone's laps or clock.
 //
 // A room is always in one of four phases:
 //   "open"       nobody has started a race. Everyone drives around freely,
@@ -21,9 +25,10 @@
 // on the track: they watch, and join in at the next start.
 
 import { fastestLapSteps } from "../shared/laps.js";
-import { createRacer, stepRacer } from "../shared/race.js";
+import { createRacer, stepRacer, rollRacer } from "../shared/race.js";
 import { countdownAt } from "../shared/countdown.js";
 import { GRID_PLACES } from "../shared/grid.js";
+import { bumpKarts } from "../shared/bumps.js";
 
 /** How many players fit in a room: one for each place on the starting grid (shared/grid.js). */
 export const MAX_PLAYERS = GRID_PLACES;
@@ -46,6 +51,30 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
   /** The players who are in the race that is on. Nobody, while the room is open. */
   function racers() {
     return [...players.values()].filter((player) => player.racing);
+  }
+
+  /**
+   * The players whose kart is on the track: everyone while the room is
+   * open, and only the racers during a race. Someone who is watching has no
+   * kart on the track, so nothing can touch it and it is not shown.
+   */
+  function onTrack() {
+    return phase === "open" ? [...players.values()] : racers();
+  }
+
+  /**
+   * Lets the karts on the track bump into each other (shared/bumps.js).
+   * Only the karts change. Laps and clocks are left exactly as they were.
+   */
+  function bump() {
+    const drivers = onTrack();
+    const before = drivers.map((player) => player.racer.kart);
+    const after = bumpKarts(track, before);
+    drivers.forEach((player, index) => {
+      if (after[index] !== before[index]) {
+        player.racer = { ...player.racer, kart: after[index] };
+      }
+    });
   }
 
   /** The player who has been here longest, or null in an empty room. Numbers only go up, so that is the lowest one. */
@@ -180,23 +209,29 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
      * Moves the room forward by one step of game time.
      *
      * While the room is open: a kart that has not started yet and has no
-     * key held is left alone, so a player's clock starts at their first key
-     * press.
+     * key held is parked, so a player's clock starts at their first key
+     * press. A parked kart that is pushed by another kart rolls to a stop,
+     * but its clock stays at zero and its checkpoints are not counted.
      *
      * In a race: during 3, 2 and 1 nothing moves. From GO on, every racer
      * is moved, key held or not, so everyone's clock starts at the same
      * step. The karts of people who are watching are never moved.
+     *
+     * In both cases the karts on the track then bump into each other.
      */
     step() {
       step++;
 
       if (phase === "open") {
         for (const player of players.values()) {
-          const waitingToStart = player.racer.progress.steps === 0 && !anyKeyHeld(player.keys);
-          if (!waitingToStart) {
+          if (!isParked(player)) {
             player.racer = stepRacer(track, player.racer, player.keys, character);
+          } else if (isMoving(player.racer.kart)) {
+            // Parked, but pushed by a bump: the kart rolls to a stop. Its clock stays at zero.
+            player.racer = rollRacer(track, player.racer, character);
           }
         }
+        bump();
         return;
       }
 
@@ -217,6 +252,7 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
             });
           }
         }
+        bump(); // a kart that has finished can still be bumped: its result stands
       }
       countdownSteps++;
 
@@ -247,7 +283,7 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
      */
     snapshot() {
       const everyone = [...players.values()];
-      const onTrack = phase === "open" ? everyone : everyone.filter((player) => player.racing);
+      const drivers = onTrack();
       return {
         type: "state",
         step,
@@ -255,9 +291,9 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
           phase,
           countdownSteps,
           host: hostId(),
-          watching: everyone.filter((player) => !onTrack.includes(player)).map((player) => player.id),
+          watching: everyone.filter((player) => !drivers.includes(player)).map((player) => player.id),
         },
-        karts: onTrack.map(({ id, place, racer }) => ({
+        karts: drivers.map(({ id, place, racer }) => ({
           id,
           place,
           x: round(racer.kart.x, 1),
@@ -277,6 +313,15 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
 
 function anyKeyHeld(keys) {
   return keys.gas || keys.brake || keys.left || keys.right;
+}
+
+/** While the room is open: has this player not started driving yet? Their clock is at zero and no key is held. */
+function isParked(player) {
+  return player.racer.progress.steps === 0 && !anyKeyHeld(player.keys);
+}
+
+function isMoving(kart) {
+  return kart.vx !== 0 || kart.vy !== 0;
 }
 
 function round(number, decimals) {

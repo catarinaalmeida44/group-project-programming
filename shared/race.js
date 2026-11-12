@@ -40,9 +40,27 @@ export function createRacer(track, place = 0) {
  */
 export function stepRacer(track, racer, input, character) {
   const keys = racer.progress.finished ? {} : input;
-  const surface = surfaceAt(track, racer.kart.x, racer.kart.y);
-  const moved = stepKart(racer.kart, keys, character, surface);
-  const kart = bounceOffWalls(track, moved, KART_RADIUS);
+  const kart = moveKart(track, racer.kart, keys, character);
   const progress = updateProgress(racer.progress, kart, track);
   return { ...racer, kart, progress };
+}
+
+/**
+ * Lets the kart of a racer roll on by itself for one step, with no key
+ * held, and gives back the new racer. Its laps and its clock are NOT
+ * touched.
+ *
+ * The room uses this while it is open, for a kart whose driver has not
+ * started yet and that was pushed by another kart: it rolls to a stop, and
+ * its clock still starts at its driver's first key press.
+ */
+export function rollRacer(track, racer, character) {
+  return { ...racer, kart: moveKart(track, racer.kart, {}, character) };
+}
+
+/** Steps 1 to 3 of the list at the top: the ground, the driving rules and the walls. */
+function moveKart(track, kart, keys, character) {
+  const surface = surfaceAt(track, kart.x, kart.y);
+  const moved = stepKart(kart, keys, character, surface);
+  return bounceOffWalls(track, moved, KART_RADIUS);
 }
