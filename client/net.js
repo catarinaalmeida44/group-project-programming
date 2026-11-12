@@ -13,6 +13,9 @@
 // This file is only arithmetic and bookkeeping, so it can be tested. The
 // connection itself is opened in online.js.
 
+import { STEP_SECONDS } from "../shared/physics.js";
+import { formatTime } from "./format.js";
+
 /** How far in the past the race is shown, in steps of the game. 6 steps = a tenth of a second. */
 export const DELAY_STEPS = 6;
 
@@ -204,5 +207,88 @@ export function readServerMessage(text) {
   if (message.type === "full") {
     return message;
   }
+  if (message.type === "account" && (message.username === null || typeof message.username === "string")) {
+    return message;
+  }
+  if (message.type === "names" && message.names !== null && typeof message.names === "object" && !Array.isArray(message.names)) {
+    // Keep only what looks like a player number with a user name. Anything
+    // else in the list is dropped, so a strange list cannot break the page.
+    const names = new Map();
+    for (const [id, name] of Object.entries(message.names)) {
+      if (/^[0-9]{1,9}$/.test(id) && typeof name === "string" && /^[A-Za-z0-9_]{3,16}$/.test(name)) {
+        names.set(Number(id), name);
+      }
+    }
+    return { type: "names", names };
+  }
+  if (
+    message.type === "saved" &&
+    typeof message.saved === "boolean" &&
+    Number.isInteger(message.position) &&
+    message.position >= 1 &&
+    Number.isInteger(message.raceSteps) &&
+    message.raceSteps > 0
+  ) {
+    return message;
+  }
   return null;
+}
+
+/**
+ * The line on the online page about the player's account.
+ *   account  the last "account" message from the server, or null before it arrived
+ *   saved    the last "saved" message from the server, or null
+ *
+ * A guest can race like anyone else. Only the results of signed-in players
+ * are written to the shared leaderboard, and the server does that by itself
+ * when they finish: this page never sends a time.
+ */
+export function accountLine(account, saved) {
+  if (account === null) {
+    return "";
+  }
+  if (account.username === null) {
+    return "You are playing as a guest: your results are not saved. Sign in from the menu to appear on the leaderboard.";
+  }
+  const who = `Signed in as ${account.username}.`;
+  if (saved === null) {
+    return `${who} When you finish a race, your time is saved to the leaderboard.`;
+  }
+  if (!saved.saved) {
+    return `${who} Your last result could not be saved: the database did not answer.`;
+  }
+  return `${who} Saved to the leaderboard: ${placeText(saved.position)} place, ${formatTime(saved.raceSteps * STEP_SECONDS)}.`;
+}
+
+/**
+ * The line on the online page that says who else is in the room.
+ *   names      the user names of the signed-in players, by player number (a Map)
+ *   playerIds  the numbers of everyone in the room: on the track or watching
+ *   myId       this player's own number
+ * Gives "" when nobody else is there. Guests have no name, so they are counted.
+ *   "With you: Rui."   "With you: Bea, Rui and 2 guests."   "With you: 1 guest."
+ */
+export function othersLine(names, playerIds, myId) {
+  const others = playerIds.filter((id) => id !== myId);
+  const named = others.filter((id) => names.has(id)).map((id) => names.get(id));
+  const guests = others.length - named.length;
+  const parts = [...named];
+  if (guests > 0) {
+    parts.push(guests === 1 ? "1 guest" : `${guests} guests`);
+  }
+  if (parts.length === 0) {
+    return "";
+  }
+  const last = parts.pop();
+  return parts.length === 0 ? `With you: ${last}.` : `With you: ${parts.join(", ")} and ${last}.`;
+}
+
+/** 1 -> "1st", 2 -> "2nd", 3 -> "3rd", 4 -> "4th", 11 -> "11th", 21 -> "21st". */
+export function placeText(position) {
+  const lastTwo = position % 100;
+  const last = position % 10;
+  if (lastTwo >= 11 && lastTwo <= 13) {
+    return `${position}th`;
+  }
+  return `${position}${last === 1 ? "st" : last === 2 ? "nd" : last === 3 ? "rd" : "th"}`;
 }

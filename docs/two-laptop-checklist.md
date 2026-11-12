@@ -21,7 +21,7 @@ Write "yes" or what went wrong next to each one.
 
 | # | Do this | You should see | Result |
 |---|---|---|---|
-| 1 | Laptop A: open the link and click "Online" in the menu | "Connected. You are the red kart. You are alone here. You are the host: press Enter to start a race for everyone here." | |
+| 1 | Laptop A: open the link, click "Online" in the menu and choose the Test oval | "Connected. You are the red kart. You are alone here. You are the host: press Enter to start a race for everyone here." | |
 | 2 | Laptop B: do the same | B says it is the blue kart. Both laptops say "2 players here". B is told to wait for the host | |
 | 3 | Both: look at the small map | Two dots, one red and one blue | |
 | 4 | A: hold the up arrow for two seconds | On B, the red kart drives away smoothly, without jumping | |
@@ -47,14 +47,35 @@ Added on 11 November 2026. Not run yet with two laptops. Do checks 1 and 2 first
 | 18 | B: press R during the race | Nothing happens. B's kart and clock carry on | |
 | 19 | Both: look at the two clocks during the race | They show the same time, give or take a tenth of a second | |
 | 20 | A: press Enter twice quickly | One countdown, not two | |
-| 21 | C: open "Online test" while A and B are racing | C has no kart. C sees the race, following the kart in front, and is told "You are watching". V on C shows the whole track. A and B say "3 players here" | |
+| 21 | C: click "Online" and choose the same track while A and B are racing | C has no kart. C sees the race, following the kart in front, and is told "You are watching". V on C shows the whole track. A and B say "3 players here" | |
 | 22 | Both: finish the three laps | Each sees its finish time. A is told to press Enter for the next race, B to wait for the host | |
 | 23 | A: press Enter | A new countdown, and this time C has a kart on the grid too | |
 | 24 | A: close the tab during a race | B carries on racing. After the race, B is the host and can start the next one | |
 
+## Accounts and the shared leaderboard
+
+Added on 12 November 2026. Not run yet with two laptops, and not yet on the public link: the live server gets accounts when this work is merged. Make up a user name and a password for the test. Do not use a password you use anywhere else.
+
+| # | Do this | You should see | Result |
+|---|---|---|---|
+| 25 | A: on the menu, click "Create account", type a user name of two letters and any password, and press the button | The panel stays open and says the name needs at least 3 characters. No account is made | |
+| 26 | A: create an account with a proper user name and a password of 8 characters or more | The panel closes. The top of the menu shows your user name and "Sign out" | |
+| 27 | B: try to create an account with the same user name, written in capital letters | "Someone already has that user name" | |
+| 28 | B: create an account with another user name | B is signed in under that name | |
+| 29 | A: click "Online" and choose the Campus loop. B: do the same | Both are in the same room. Under the track each sees "Signed in as ..." with their own name, and "With you: ..." with the other's name | |
+| 30 | A (the host): press Enter. Both: drive the three laps | When each crosses the line, the line under the track says "Saved to the leaderboard", with a place (1st or 2nd) and the time. The times match the clocks above the track | |
+| 31 | Both: go back to the menu and open "Leaderboard", then "Campus loop" | Both names are there with the times from check 30, the faster one first. Your own row is marked "you" | |
+| 32 | A: open "Leaderboard" and choose "Test oval" | Nobody raced there: it says there are no times yet | |
+| 33 | B: click "Sign out", then "Online", choose the Campus loop, and A starts another race. Both finish | B's page says it is playing as a guest and that results are not saved. A sees "With you: 1 guest". After the race the leaderboard has no new time for B | |
+| 34 | B: click "Sign in" and type the right name with a wrong password | "Wrong user name or password." B is not signed in | |
+| 35 | A: close the browser completely, open it again and open the link | A is still signed in | |
+| 36 | A: click your user name, open "Delete my account", type the password, tick the box and press the button | A is signed out. On B, after reopening the Leaderboard, A's name and times are gone | |
+
+Write down as well: how long does "Create account" take after pressing the button? On the free server the password scrambling is slow, and we have not measured it there.
+
 ## One more check, when a new version goes online
 
-This cannot be done at any moment. Do it the next time a pull request is merged while both laptops have the "Online test" page open.
+This cannot be done at any moment. Do it the next time a pull request is merged while both laptops have the online page open.
 
 | # | Do this | You should see | Result |
 |---|---|---|---|
@@ -71,7 +92,9 @@ This cannot be done at any moment. Do it the next time a pull request is merged 
 - Your own kart reacts a moment late. Your key press travels to the server and the result travels back.
 - Other karts are shown a tenth of a second in the past, so that they move smoothly.
 - Karts pass through each other. Bumping comes later.
-- There is no finishing order and no results screen yet. Each player only sees their own finish time.
+- There is no results screen yet. Each player sees their own finish time, and a signed-in player also their own place.
+- Each track has its own room. Two players who choose different tracks do not see each other.
+- A guest's results are not saved, and a guest has no name: others see "1 guest".
 - Only the host can start a race, and the host is whoever has been in the room longest.
 - In the view from behind, a kart that turns snaps between four pictures (back, front, left side, right side) instead of turning smoothly.
 - Karts are not hidden by walls: you can see a kart that is on the other side of the middle block.

@@ -2,42 +2,49 @@
 
 Plain-language answers to the questions the teaching staff may ask when they open this repository. Any member can be asked about any part, so everyone should be able to give these answers.
 
-**State on 11 November 2026:** the game opens on a main menu. One kart can be driven round a test track in the browser, with a lap counter, a finish time and three camera views, and your best times are kept in your browser. The first campus track, the campus loop, can be driven at `race.html?track=campus-loop`; it is not in the menu yet. On the "Online test" page, up to eight browsers connected to our server see each other's karts. The server is on the internet at https://novasbe-kart.onrender.com, and it has a database that so far only records when the server starts. There are no accounts yet, so several answers below describe the plan. Each answer is rewritten as the real thing gets built.
+**State on 12 November 2026:** the game opens on a main menu with a drawn picture of the campus by the sea. From it a player chooses a track (the test oval or the campus loop) for a single race in the browser or for an online race, opens the leaderboard, changes the settings, and creates an account or signs in. A race has a lap counter, a finish time and three camera views. Online, up to eight browsers in the room of a track see each other's karts, the host starts a race for everyone, and when a signed-in player finishes, our server saves the time. The shared leaderboard shows the ten fastest races and laps of each track. The server is on the internet at https://novasbe-kart.onrender.com, with a database that holds the accounts and the results. Accounts have no email yet, and there are no characters, items, computer karts or cup, so some answers below still describe the plan. Each answer is rewritten as the real thing gets built.
 
 ## Where does each part live?
 
 | Part | Where | Built yet? |
 |---|---|---|
-| The main menu, the first page | `client/index.html` and `client/menu.js` | Yes: Single race, Cup (greyed out until the tracks exist), Online, Leaderboard and Settings |
+| The main menu, the first page | `client/index.html` and `client/menu.js` | Yes: Single race, Cup (greyed out until the tracks exist), Online, Leaderboard, Settings and the account corner |
+| Choosing a track in the menu | `client/track-panel.js`, `client/track-list.js`, `client/mini-map.js` | Yes: a card with a small map for each track |
+| The leaderboard in the menu | `client/leaderboard.js`, `client/leaderboard-view.js`, `client/leaderboard-panel.js` | Yes: the shared boards of each track, and your own practice bests |
+| Accounts in the menu | `client/account.js`, `client/account-view.js`, `client/account-panel.js` | Yes: create an account, sign in, sign out, delete your account |
+| How a page asks the server about accounts | `client/account-api.js`, read carefully by `client/answers.js` | Yes |
+| Accounts on the server | `server/api.js` (the addresses), `server/accounts.js` (the rules), `server/passwords.js` (scrambling), `server/store.js` (the database questions) | Yes: a user name and a password. No email yet |
+| Which user names and passwords are allowed | `shared/account-rules.js` | Yes, used by the page and by the server |
 | How every page looks | `client/style.css` | Yes |
-| The single race page | `client/race.html` | Yes, on the test track |
+| The single race page | `client/race.html` | Yes, on either track |
 | The practice race in the browser | `client/main.js` | Yes |
 | Keeping settings and best times in the browser | `client/storage.js`, `client/settings.js`, `client/records.js` | Yes: the starting camera view, and your best race and best lap per track |
 | The keyboard controls | `client/keyboard.js` | Yes |
 | The camera: which part of the track is shown | `client/camera.js` | Yes, three views |
 | The drawing of the track and the kart | `client/draw.js` | Yes, simple shapes, no artwork yet |
-| The online page | `client/online.html` and `client/online.js` | Yes, a first version: everyone drives on the same track |
+| The online page | `client/online.html` and `client/online.js` | Yes: one room for each track, and it says who you are signed in as and whether your result was saved |
 | Smooth movement of online karts | `client/net.js` | Yes |
 | What the online page says about the race | `client/race-view.js` | Yes |
 | The game server | `server/app.js` builds it, `server/start.js` starts it | Yes |
-| Online play on the server | `server/online.js` (connections), `server/room.js` (the karts), `server/messages.js` (checking what browsers send) | Yes: one room, with a host, a race start and watching. No finishing order yet |
+| Online play on the server | `server/online.js` (connections), `server/room.js` (the karts), `server/messages.js` (checking what browsers send) | Yes: a room per track, with a host, a race start, watching, a finishing order, and results saved for signed-in players |
 | The driving rules | `shared/physics.js` | Yes, a first version: speeding up, braking, steering, grip, grass |
 | Tracks, the ground and walls | `shared/track.js` | Yes |
 | Laps and race time | `shared/laps.js` | Yes |
 | All the rules put together for one racer | `shared/race.js` | Yes |
 | The 3, 2, 1, GO! before a race | `shared/countdown.js` | Yes, in the practice race and in online races |
 | The test track | `shared/tracks/test-oval.js` | Yes. It is a simple loop, not a campus track |
-| The first campus track | `shared/tracks/campus-loop.js` | Yes: the campus loop, round the outside of the campus. Not in the menu yet |
+| The first campus track | `shared/tracks/campus-loop.js` | Yes: the campus loop, round the outside of the campus. A first version, to be improved |
 | How tall the campus buildings are | `shared/tracks/campus-loop-storeys.js` | Yes: storeys per square, for the picture only |
 | Buildings standing up behind the kart | `client/buildings.js`, painted by `client/draw.js` | Yes, on the campus loop |
 | The list of tracks | `shared/tracks/index.js` | Yes: the test oval and the campus loop |
-| Choosing the track of a single race | `client/track-choice.js` | Yes, in the address: `race.html?track=campus-loop` |
+| Reading the chosen track from a page's address | `client/track-choice.js` | Yes: `race.html?track=campus-loop` and `online.html?track=campus-loop` |
 | The drivers and their scores | `shared/characters.js` | One placeholder driver |
 | The kinds of ground | `shared/surfaces.js` | Road and grass |
 | The automatic tests | `tests/` | Yes, for the driving rules, the server and a number helper |
 | The instructions that make GitHub run the tests | `.github/workflows/tests.yml` | Yes |
 | The instructions that tell Render how to run the server | `render.yaml` and `.node-version` | Yes, in use since 10 November |
-| The database connection | `server/db.js` | Yes, a first version with one small table. Works on the live server and from a laptop |
+| The database connection | `server/db.js` | Yes. Works on the live server and from a laptop that has the address |
+| The game on a laptop with pretend accounts | `server/start-pretend.js` (`npm run start:pretend`) | Yes: for trying accounts without the database's secret address |
 
 ## How does a page reach the browser?
 
@@ -47,7 +54,7 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 
 The server refuses four things, and each has a test:
 
-- requests that try to change something (only reading is allowed for now)
+- requests that try to change something. Only the account addresses, which all start with `/api/`, accept such a request, and they check each one (see the answer about accounts below)
 - files outside those two folders, for example an address such as `/../server/app.js`. The server's own code, the tests and the project settings can never be downloaded
 - kinds of file that are not on its list (web pages, styles, scripts, data files and two kinds of image)
 - addresses that are broken
@@ -83,9 +90,19 @@ Because the race runs in the browser, a player could fake those times. That is f
 
 ## What is the main menu, and what are the settings?
 
-The address of the game opens the menu (`client/index.html`). Single race and Online are plain links to the race page and the online page. Cup is shown but cannot be clicked yet: it needs the three campus tracks. Both the race page and the online page have a "← Menu" link back.
+The address of the game opens the menu (`client/index.html`). It has four big choices, Single race, Cup, Online and Leaderboard, and at the top the account corner and the Settings button. Cup is shown but cannot be clicked yet: it needs the three campus tracks. Both the race page and the online page have a "← Menu" link back.
 
-Leaderboard and Settings open a panel over the menu. The panel is a `<dialog>`, a kind of panel built into browsers: Escape or the Close button closes it, and no library is needed.
+**The picture behind the menu** is our own drawing: a sunset over the sea, a lighthouse, white campus blocks, palms, and a road with a finish line and two karts. It is written as shapes inside the page (an SVG drawing) and moved with the style file. No image files, no outside fonts, nothing from another website, and no logo or official artwork.
+
+**Choosing a track.** Single race and Online are plain links, so they work even if the page's code does not run. With the code, they open a "Choose a track" panel instead. It has one card for each track in our list (`shared/tracks/index.js`), with the name, the laps, and a small map painted from the very letters the track is drawn with (`client/mini-map.js`), so a new track gets its card and its map without any extra work. A card leads to `race.html?track=...` or `online.html?track=...`.
+
+**The Leaderboard panel** has two parts. "All players" is the shared leaderboard of the chosen track, asked from our server: the fastest races and the fastest laps, the first three on a podium, your own row marked, and your own rank underneath if you are outside the ten. "Your practice bests" are the times of your single races, which stay in your browser. While the answer is on its way, when nobody has raced yet, and when the server has no accounts, the panel says so in words.
+
+**The account corner** shows "Sign in" and "Create account", or your user name and "Sign out". Three panels belong to it: Sign in, Create account, and Your account, where "Delete my account" is folded away and asks for the password and a tick. The forms check the name and the password by the same rules file the server uses and say what is wrong before anything is sent. The server checks again in any case.
+
+Every panel is a `<dialog>`, a kind of panel built into browsers: Escape or the Close button closes it, the keyboard stays inside it while it is open, and no library is needed.
+
+**How the menu code is split.** For each panel, one file works out what to show from plain facts and needs no browser, so it has tests (`track-list.js`, `leaderboard-view.js`, `account-view.js`), and another file puts that on the page (`track-panel.js`, `leaderboard-panel.js`, `account-panel.js`). `menu.js` only starts them. Everything that comes from the server or from the browser's storage, such as a user name, is put on the page as text (`client/page-parts.js`), never as HTML.
 
 **Settings** has one real choice today: the camera view a race starts in. The race page and the online page read it when they open. V still changes the view during a race. Sound is shown but greyed out, because the game has no sound yet, and the panel lists the controls.
 
@@ -93,7 +110,7 @@ Leaderboard and Settings open a panel over the menu. The panel is a `<dialog>`, 
 
 ## How does online play work, and can a player cheat?
 
-When someone opens the "Online test" page, their browser opens a live connection to our server. A normal web request is "ask once, get one answer". A live connection (a WebSocket) stays open, and both sides can send short messages at any time. The `ws` library handles the details of that connection.
+When someone opens the online page, their browser opens a live connection to our server. A normal web request is "ask once, get one answer". A live connection (a WebSocket) stays open, and both sides can send short messages at any time. The `ws` library handles the details of that connection.
 
 - **The browser sends only three things:** which of the four driving keys are held, "restart", and "start a race". It sends them only when something changes or a key is pressed.
 - **The server moves every kart.** `server/room.js` keeps one kart per connected browser and moves them all 60 times a second with `stepRacer`, the very same function the practice race uses in the browser.
@@ -107,12 +124,60 @@ The server also protects itself, and each of these has a test:
 - Every message is checked in `server/messages.js`. Anything that is not exactly one of the three allowed kinds gets the browser disconnected.
 - A browser that sends more than 60 messages in a second is disconnected. A real player sends a handful.
 - A connection can only act on its own kart. A message has no way to name another player, and anything extra in a message is dropped.
-- The room takes eight players. A ninth is told the room is full.
-- A live connection is only accepted at one address, and only from a page of our own site, so another website cannot use a visitor's browser to connect to our game.
+- A room takes eight players. A ninth is told the room is full.
+- A live connection is only accepted at one address (`/play`, with the short name of a track that exists), and only from a page of our own site, so another website cannot use a visitor's browser to connect to our game.
+
+**One room for each track.** `online.html?track=campus-loop` connects to the room of the campus loop, and without a choice it is the room of the test oval. The page takes the short name from its own address, but only if it is a name in our list of tracks (`client/track-choice.js`), and the server checks it again.
 
 **Why karts move smoothly:** updates arrive 20 times a second, at slightly uneven moments, but the screen shows 60 pictures a second. `client/net.js` shows the race a tenth of a second in the past and draws each kart at the right point between the two updates on either side of that moment. If updates stop arriving, the karts hold still instead of guessing.
 
-**What this version does not have:** rooms with codes, a finishing order, a results screen, or karts bumping into each other. Everyone who opens the page is in the same room.
+**What this version does not have:** rooms with codes, a results screen that shows everyone's position, or karts bumping into each other. Everyone who opens the page of a track is in the same room.
+
+## How do accounts work, and what do they refuse?
+
+An account is a user name and a password. There is no email yet. The menu has the forms; the server does the deciding.
+
+1. **Signing up.** The page sends the name and the password to `/api/signup`. The server checks both against the rules in `shared/account-rules.js` (the page uses the same file to warn early, but the server never trusts the page). The name must be 3 to 16 letters, digits or underscores, and "Ana" and "ana" count as the same name. The password must be at least 8 characters.
+2. **The password is scrambled, never kept.** `server/passwords.js` runs it through `scrypt`, a function that comes with Node.js, together with a random "salt", so two players with the same password get different results. What is stored cannot be turned back into the password. It is slow on purpose, about a tenth of a second, so that someone who stole the database could not try millions of guesses.
+3. **Staying signed in.** After a correct password the server makes up a long random "ticket" (32 random bytes) and gives it to the browser in a cookie. The browser sends the cookie back with every later request, and that is how the server knows who is asking. The database holds only a scrambled copy of the ticket, so someone who could read the database still could not use it.
+4. **Signing out** removes the ticket on the server, so a copy of the cookie stops working too. A ticket also stops working after seven days.
+5. **Deleting your account** asks for the password again and removes your sessions and results with it.
+
+The cookie is marked in three ways. `HttpOnly`: the page's own code cannot read it, so a script that somehow got into a page could not steal it. `SameSite=Lax`: the browser does not send it with requests that another website starts. `Secure`: on the live site it only travels over the protected connection (https).
+
+What the server refuses, each with a test in `tests/api.test.js` or `tests/accounts.test.js`:
+
+- A name or password that breaks the rules, also when it is not text at all, and a name that is taken. Two sign-ups for the same new name at the same moment: the database lets exactly one in.
+- A wrong password. A name nobody has gets exactly the same answer, after the same amount of work, so trying names does not reveal which exist.
+- A sign-in while the account is locked. After five wrong passwords in a row an account is locked for ten minutes, and then even the right password is refused.
+- A ticket that is made up, damaged, already signed out or older than seven days.
+- Deleting an account without being signed in or without the right password. The request has no way to name another player: the server only ever uses the player the ticket belongs to.
+- A request to change something that comes from a page on another website. A browser always says which site started such a request, and the server refuses any that is not our own. It also refuses anything that is not in our format (JSON), which a plain form on another site cannot send.
+- A message longer than a couple of lines, or one that is not one object.
+- Too many tries in a minute from one computer, and too much password work in total. Scrambling is slow on purpose, so without a limit a flood of sign-in tries could keep the server too busy to run races.
+- A name that looks like a database command is just an odd name. Values are never glued into the text of a database question (`server/store.js`), and a test checks that for every question.
+
+When the server runs without a database, which is the normal case on a teammate's laptop, every one of these addresses answers "not available" and the menu says so. The game itself still works.
+
+## How does a time get onto the shared leaderboard, and can it be faked?
+
+Only the server can put a time there, and only a time from a race it ran itself.
+
+1. When a browser opens the online page, it sends its cookie along with the request for the live connection. `server/online.js` looks up whose ticket that is and remembers it for that connection. No ticket, or one that does not work, means a guest. The page is told which ("Signed in as Ana" or "You are playing as a guest").
+2. The host starts a race. The room (`server/room.js`) moves every kart with the shared rules and notices the step on which each racer completes the last lap. It keeps the finishing order: position, race time in steps, fastest lap. Two racers who cross the line in the very same step share a position.
+3. For each finisher who is signed in, the server writes one row to `race_results`: the player, the track of that room, the two times and the position. Then it tells that browser "saved", and the page shows the place and the time.
+4. The Leaderboard in the menu asks `/api/leaderboard?track=...` and gets, for that track, the ten fastest races and the ten fastest laps, one row per player, plus the signed-in player's own best and rank. Only user names and times are sent.
+
+Why it cannot be faked from a browser:
+
+- There is no address that accepts a result, and no message a browser may send that contains one. A browser that sends a made-up "saved" or "result" message is sent away. A made-up finish added to a real "keys" message is dropped. Both have tests.
+- The time, the track and the player all come from the server: the room's own count of steps, the room the connection is in, and the cookie.
+- Laps driven while the room is open, without a race, are not saved. Neither is anything a guest drives, or a race a player left before the line.
+- Practice races never count. They run in the browser, and their best times stay in that browser.
+
+What a player can still do: drive well. And two friends can agree that one of them wins, as in any game.
+
+The leaderboard is read from the database at most once every 30 seconds per track, however many people open it, and at once after a new result or a deleted account.
 
 ## How does an online race start, and who may start it?
 
@@ -198,23 +263,46 @@ Our first version of this rule had a mistake: a kart driving the wrong way round
 
 In a Postgres database kept by a company called Neon, in Frankfurt, on its free plan. Everything else the server knows, such as the karts in the online room, lives only in its memory and is gone when it restarts.
 
-**What is stored today:** one table, `server_starts`. It has two columns: a number, and the date and time. The server adds one row each time it starts and keeps only the newest 50. No personal data. The table exists to prove that the server can write to the database and read from it.
+**What is stored today:** four tables.
 
-**Stored in each player's own browser, not by us:** the camera view chosen in Settings, and that player's best race time and best lap on each track. They never reach our server. Clearing the browser's data deletes them.
+| Table | One row for | What is in a row |
+|---|---|---|
+| `server_starts` | each time the server started (the newest 50 are kept) | a number, and the date and time. It exists to prove that the server can write to the database and read from it |
+| `players` | each account | the user name as typed, the same name in small letters (so "Ana" and "ana" cannot both exist), the scrambled password, how many wrong passwords in a row, locked until when, and the date joined |
+| `sessions` | each browser that is signed in | a scrambled copy of the ticket, whose it is, and when it stops working |
+| `race_results` | each finished online race of a signed-in player | the player, the track, the mode ("online"), the race time and the fastest lap in steps, the finishing position, and the date |
 
-**What will be stored later:** players, sessions, progress and race results (section 6 of `PROJECT_BRIEF.md`).
+The only personal data is the user name a player chose. There is no email, no real name and no readable password. Deleting an account deletes that player's rows in all three tables: the database does that by itself, because sessions and results are tied to their player.
+
+**Stored in each player's own browser, not by us:** the camera view chosen in Settings, and that player's best practice race time and best lap on each track. They never reach our server. Clearing the browser's data deletes them. The cookie that keeps a player signed in is also in the browser, but the page's code cannot read it.
+
+**What will be stored later:** progress such as trophies and unlocked characters (section 6 of `PROJECT_BRIEF.md`).
 
 **How the server reaches it:** through a secret address that includes a password, the setting `DATABASE_URL`. It is in two places only: Render's Environment page, and a file called `.env` on Catarina's laptop, which git ignores. It is not in the code, and the code never prints it. On the first day the address was once pasted into a chat with the coding agent by mistake. The password was changed in Neon straight away, before anything used it.
 
 **How to see it working:** the address `/database-check` on our site answers with the number of starts recorded and the time of the latest. Without a database it answers "The database is not set up on this computer", and when the database cannot be reached, "The database could not be reached".
 
-**The code talks to the database safely.** Values are never glued into the text of a question. They are handed over separately, which is what stops the classic attack on databases (SQL injection). The one name that is written into a question, the table's, is checked to be small letters and underscores only.
+**The code talks to the database safely.** Values are never glued into the text of a question. They are handed over separately, which is what stops the classic attack on databases (SQL injection). The one name that is written into a question, the table's, is checked to be small letters and underscores only. All the questions about players, sessions and results are in one file, `server/store.js`.
+
+**Tests never touch the real players.** The tests that use the real database work in tables whose names start with `test_` and remove them at the end. The code that removes tables refuses to run without such a prefix.
 
 ## What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 473 tests today, plus 5 that only run against the real database.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 820 tests today, plus 21 that only run against the real database. They take about 40 seconds, most of it online races that run in real time.
 
 **Covered today**
+
+- The account rules in `server/accounts.js`, in `tests/accounts.test.js`. Forty-seven tests with a pretend store kept in memory and a pretend clock: signing up, names and passwords that must be refused, signing in whatever capitals the name is typed in, the same refusal for a wrong password and for a name nobody has, the lock after five wrong passwords and its end ten minutes later, sessions that stop after seven days, signing out, deleting an account, results that cannot be real (zero steps, a lap longer than the race), and the leaderboard: ten rows, one per player, own rank outside the ten.
+- The account addresses in `server/api.js`, in `tests/api.test.js`. Fifty-three tests that send real requests to a real copy of the server. More than half are refusals: a request started by another website, a form instead of our format, a message that is too long or not one object, the wrong kind of request, an address that does not exist, a made-up or damaged cookie, deleting someone else's account, too many tries from one computer, too much password work in total, a track that does not exist, and every address on a server without a database. One test goes through a whole visit with the same helper the pages use, and one uses the real, slow password scrambler.
+- Scrambling passwords, in `tests/passwords.test.js`. Nine tests: the password is not in what is stored, the same password scrambles differently each time, only the right one matches, and a damaged stored form is refused without breaking.
+- The database questions in `server/store.js`. One list of checks (`tests/store-contract.js`) is run on the pretend store (`tests/store.test.js`, eighteen tests) and on the real database (`tests/store-live.test.js`, sixteen tests, in tables that start with `test_`). It includes two sign-ups for the same name at the same moment, a name that looks like a database command, and a deleted player's sessions and results going with them.
+- The finishing order in `server/room.js`, in `tests/room-finishes.test.js`. Twelve tests: positions in the order of crossing the line, two racers on the same step sharing a position, each finish handed out once, and what is never listed: laps driven outside a race, watchers, racers who left.
+- Saving results over real connections, in `tests/online-accounts.test.js`. Twenty-two tests, with whole races on a short straight test track: a signed-in racer's time is saved and they are told, two racers are each saved under their own name, nothing is saved for a guest or for free driving, a browser that sends a made-up result is sent away, the player is told when the database fails, the names of signed-in players are sent to their room only, and each track has its own room.
+- What the online page shows about accounts, in `tests/online-page.test.js`. Twenty-three tests: the messages it accepts, the line about your account, the names of the others, and the short name it puts in the address of its connection.
+- The pages under the browser's rule, in `tests/page-safety.test.js`. Ten tests: the rule comes with every answer, allows nothing written inside a page and nothing from other sites, and every page and script in `client/` keeps to it.
+- The new menu, in four files. `tests/track-list.test.js` (twenty-three tests): what a track's card says and what the small map paints. `tests/leaderboard.test.js` (thirty-seven): which rows are shown, the podium, your own row, the sentence for each state, and an answer that arrives too late being dropped. `tests/account.test.js` (forty-five): the words in the account corner, what is wrong with a form before it is sent, every refusal the server can give, and that a password is never kept. `tests/menu-page.test.js` (twenty-five): the parts of the page the code needs are there, the text colours can be read against their background, and no code turns text into HTML.
+- The game with pretend accounts, in `tests/start-pretend.test.js`. Four tests that start `npm run start:pretend` as a program of its own: it works without a database, never uses the real one, forgets everything after a restart, and only listens on the laptop itself.
+- To check that these tests really guard the rules, we broke the new code on purpose in 26 ways, one at a time (for example "accept requests from other websites", "the lock is not enforced", "tickets never run out", "a guest's result is saved"). Every one made at least one test fail.
 
 - The campus loop, in `tests/campus-loop.test.js`. Eight tests: the game accepts it and it is small enough to paint, the start is on the road just after the finish line, every checkpoint reaches a wall at both ends, a robot driver drives all 3 laps without ever being inside a wall, and three things that must not count a lap: skipping the detour round the Grand Auditorium, skipping the hairpin round the CTT Student Hall, and driving the wrong way round. We broke the track on purpose in eight ways (a checkpoint too short, a wall across the road, the start in the wrong place or pointing the wrong way, a detour's checkpoint removed, and others). Each made a test fail.
 - Choosing the track of a single race, in `tests/track-choice.test.js`. Twelve tests: the address chooses the campus loop or the test oval, no choice gives the test oval, and a name that is not a track is refused, including names that every JavaScript object has, such as `constructor` and `__proto__`, which a careless check would accept. Two of the tests ask a real copy of the server for the race page and the new files.
@@ -246,6 +334,12 @@ To check that the tests really guard the rules, we broke the code on purpose in 
 
 **Not covered today**
 
+- Accounts on the live server. Until this work is merged, the live server has no accounts, and the real tables `players`, `sessions` and `race_results` do not exist yet: the server creates them the first time it needs them. On the real database only tables starting with `test_` were used, from a laptop on home Wi-Fi. After the merge, someone has to create an account on the public link, finish an online race and see the time on the leaderboard. `docs/two-laptop-checklist.md` has the checks.
+- Accounts used by real people. On 12 November the whole visit was done once in the agent's browser, on a laptop, with pretend accounts kept in memory: create an account through the menu, join the online room, a small robot drove three laps in the real page, the page said "Saved to the leaderboard: 1st place", the Leaderboard panel showed the time, then sign out, a wrong password, sign in, and delete the account. Nobody has typed a password by hand yet, and two signed-in players on two laptops have not raced each other.
+- How long the password scrambling takes on the live server, and whether a burst of sign-ins there can be felt in a race.
+- Whether the limit per computer works as intended behind our hosting company's network, which decides what address we see for a visitor.
+- The new menu in Firefox, Safari, on a real phone and with a screen reader. It was looked at in one browser, at laptop, tablet and phone sizes. How smooth its moving parts are could not be judged there.
+
 - How the standing-up karts look in a real race. Choosing which side of a kart to draw is tested. The pictures themselves were looked at once, in a made-up scene with seven karts, and not yet with real players: they were added after the three-player test.
 - The database on the live server, beyond one look: `/database-check` on the public link answered `"ok":true` with 3 starts on 10 November. On a laptop it works: with the laptop on a phone hotspot, the five tests against the real database passed, and the real server recorded a start, was stopped and started again, and then reported two starts. On the university's student Wi-Fi the same five tests fail, because that network does not let database traffic through. Nothing checks the live server's database automatically.
 - The five real-database tests are never run by GitHub, which does not have the database address. They only run when someone runs them by hand, on a network that allows it.
@@ -255,7 +349,8 @@ To check that the tests really guard the rules, we broke the code on purpose in 
 - The campus loop driven by a person. A robot drove it, and it was looked at in a browser without a screen: the three views draw it, and the small map fits in its corner. In that browser the view behind the kart ran at 30 pictures a second on the campus loop, against 60 on the test oval. That browser has no graphics card, so how smooth it is on a real laptop is not checked yet.
 - The "server has gone quiet" notice appearing for real. Its wording and timing are tested, but on one computer a cut connection is noticed at once, so the notice never shows there.
 - How the driving feels. No test can say whether a kart is fun to drive. That needs a person at the keyboard.
-- The menu's panels and the moment a finished race is recorded. `client/menu.js` and the few lines in `client/main.js` that call the records need a real page. The menu, both panels, the Cup refusing a click, a saved camera view being used by the race page, and a saved best time appearing in the Leaderboard were checked in a browser on 11 November. A whole race driven to the finish through the new page, with "New best time!" and the time then in the Leaderboard, was checked by hand by Francisco on his laptop the same day. Nothing checks this automatically.
+- The files that put the menu's panels on the page (`client/track-panel.js`, `client/leaderboard-panel.js`, `client/account-panel.js`, `client/settings-panel.js`) need a real page and have no tests of their own. They were checked in a browser on 12 November, in every state: loading, empty, full, not available, each refusal.
+- The moment a finished single race is recorded. The few lines in `client/main.js` that call the records need a real page. Earlier checks, on the first menu: The menu, both panels, the Cup refusing a click, a saved camera view being used by the race page, and a saved best time appearing in the Leaderboard were checked in a browser on 11 November. A whole race driven to the finish through the new page, with "New best time!" and the time then in the Leaderboard, was checked by hand by Francisco on his laptop the same day. Nothing checks this automatically.
 - The drawing (`client/draw.js`) and the loop that runs the race (`client/main.js`). They need a real page. They were checked in a browser: by looking at the page, and by a script that pressed the keys and drove a whole three-lap race while we watched the lap counter, the clock and the finish message.
 - How smooth the race looks at full speed on a normal screen. The browser used for that check was running in the background, where browsers redraw only about once a second.
 - The server on Render, beyond two looks by hand: it answers its health check, sends the game pages, updated itself after a merge into `main`, and let two connections see each other at 20 updates a second. Nothing tests the live server automatically.
@@ -278,7 +373,9 @@ These are the limits we expect from the free hosting plans:
 - Render's free plan gives 750 running hours a month, which is enough for one server that is always on.
 - Neon's free database pauses after 5 minutes without use and wakes on the next request.
 
-**The database is asleep, slow or cannot be reached.** The game keeps working: the pages, the practice race and online play do not use the database. The server does not wait for the database when it starts. `/database-check` answers "The database could not be reached. Try again in a moment." An unreachable database takes ten seconds to give up on, so after a failure the server does not ask again for three seconds, and visitors in that time get the same answer at once. This was tried for real on 10 November, when the university Wi-Fi blocked the database: the server started, sent the game, and answered the check with that message.
+**The database is asleep, slow or cannot be reached.** The game keeps working: the pages, the practice race and the driving in online play do not use the database. What stops for that moment is accounts. Signing in, signing up and the shared leaderboard answer "Accounts could not be reached just now. Try again in a moment." A browser that connects to an online race is let in as a guest. A signed-in racer who finishes is told "Your last result could not be saved", and the race goes on for everyone. That one result is lost: the server does not try again later. The tables for accounts are created the first time they are needed, so a database that was asleep when the server started is not a problem. The details of a database error only ever go to the server's own log. Each of these has a test with a pretend database that fails.
+
+The server does not wait for the database when it starts. `/database-check` answers "The database could not be reached. Try again in a moment." An unreachable database takes ten seconds to give up on, so after a failure the server does not ask again for three seconds, and visitors in that time get the same answer at once. This was tried for real on 10 November, when the university Wi-Fi blocked the database: the server started, sent the game, and answered the check with that message.
 
 ## Why did we build it this way?
 
@@ -293,6 +390,11 @@ These are the limits we expect from the free hosting plans:
 - **A second outside library, `pg`, to talk to the database.** Node.js cannot talk to a database by itself. `pg` is the standard choice and works with any Postgres database, not only Neon's. The alternative is Neon's own library. It sends everything over the normal web channel, which would also work on the university Wi-Fi, but it ties the code to Neon. Which to use is an open question for the team.
 - **The game does not depend on the database.** The server starts without it and runs without it. That is why a teammate needs no secret to work on the game, and why a sleeping database cannot stop a race.
 - **The database check is public but cannot be used to wear the database out.** Its answer is reused for ten seconds, and it only reads. The one thing that writes is the server starting.
+- **Signing in uses a cookie the page cannot read, not something kept by the page's own code.** The other common way is to hand the page a token to keep in the browser's storage. Any script running in the page could then read it. With our cookie, even a mistake that let someone's text run as code in a page could not steal a sign-in.
+- **The account rules, the database questions and the internet side are three files.** `server/accounts.js` decides, `server/store.js` asks the database, `server/api.js` reads requests and sets the cookie. The rules can then be tested in a fraction of a second with a pretend store kept in memory and a pretend clock that jumps ten minutes or seven days. So that the pretend store cannot drift away from the real one, one list of checks (`tests/store-contract.js`) is run on both.
+- **Passwords are scrambled with `scrypt`, which comes with Node.js.** No library to add, and it is one of the functions recommended for passwords: slow, and heavy on memory, on purpose.
+- **Results are written by the server at the moment a racer crosses the line.** There is nothing for a browser to send, so there is nothing to fake.
+- **The browser is told to run only our own files.** With every answer the server sends a rule (a "Content-Security-Policy") that allows scripts and styles only from files on our own site. It is a second lock. The first is that our pages put every text on the screen as text, never as HTML. A test reads every page and script in `client/` and fails if one breaks either rule.
 - **The room knows nothing about the internet.** `server/room.js` only keeps the karts and moves them. `server/online.js` does the connections. The room can then be tested without any network, and the rules for "who may do what" sit in one small file.
 - **Online, the browser shows the past.** Showing other karts a tenth of a second late lets them glide smoothly between updates. The alternative, guessing where they are now, makes them jump back when the guess is wrong.
 - **A browser that sends anything unexpected is sent away at once.** Our own page never sends such a message, so there is no reason to be patient with one. Its kart leaves the track immediately, and the server cuts the connection itself after two seconds instead of waiting for the browser to agree.
@@ -304,9 +406,17 @@ These are the limits we expect from the free hosting plans:
 ## What are the known limits, and what would we change next?
 
 - On the university's student Wi-Fi a laptop cannot reach the database. The connection opens and then nothing comes back. The live server is not on that network. For database work on a laptop we need a phone hotspot or home Wi-Fi, or we switch to Neon's own library.
-- The database holds nothing useful yet, only a count of server starts.
+- There is no email. An account is a user name and a password, so nothing proves who someone is, anyone can take any free name, and a forgotten password cannot be reset: that account can no longer be used. Email needs an outside service and a new secret key, which the team has not chosen yet.
+- Anyone can make as many accounts as they like. The limits on sign-ups are per minute, to protect the server, not per person.
+- The limit per computer goes by the address our hosting company tells us a visitor came from. Everyone on the campus Wi-Fi shares one address, so the limits are set for a whole classroom, and someone who really wanted to could pretend to come from many addresses. Two things do not depend on it: the lock on one account after five wrong passwords, and the limit on password work in total.
+- Anyone who knows a user name can lock that account for ten minutes by typing five wrong passwords. That is the price of the lock, which is what stops someone from guessing a password.
+- How long the password scrambling takes on the live server is not measured yet. On a laptop it is under a tenth of a second. The free server is much slower, so the limit on password work in total (60 a minute) is a first guess.
+- A result that could not be saved because the database did not answer at that moment is lost. The player is told.
+- The leaderboard shows the fastest times ever, with no date and no way for us to remove a time except in the database itself. A player who drives online in two tabs appears in a race twice.
+- Guests can drive in online races. Their karts look the same as everyone else's, and the page does not yet show other players' names.
+- There is no profile page and no saved progress yet (trophies, unlocked characters).
 - Online, your own kart reacts a moment late: your key press travels to the server and the result travels back, and then the picture is a tenth of a second behind. On one laptop this is small. Over the internet it will be bigger. The fix is "prediction": the browser moves your own kart at once with the shared rules and corrects it when the server answers. The rules were written to make that possible, but it is not built.
-- Online has one room for everyone, no finishing order, no results screen and no bumping between karts. There are no accounts, so anyone with the link can join.
+- Online has one fixed room for each track, no rooms with codes, no results screen that shows everyone's position and no bumping between karts. Anyone with the link can join, signed in or not.
 - The host is simply whoever has been in the room longest. They can start a new race at any moment, also in the middle of one, and nobody else can stop them. A race with a racer who never finishes only ends when the host starts the next one or that racer leaves.
 - Someone watching always follows the kart with the most laps. They cannot choose which kart to follow. The line under the track still tells them their own kart's colour, although that kart is not on the track.
 - The online race start was checked by hand in two tabs of one browser on one laptop, not yet with real players on different laptops. `docs/two-laptop-checklist.md` has the checks for that.

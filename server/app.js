@@ -23,6 +23,7 @@ import http from "node:http";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { createApi } from "./api.js";
 
 // The folders a browser is allowed to download from, and the beginning of
 // the addresses that lead to each one. The first match wins, so "/shared/"
@@ -49,10 +50,14 @@ const FILE_TYPES = {
  * Builds the server. It does not start listening yet.
  *   database  what createDatabase() in db.js gave, or null when the server
  *             runs without a database
+ *   accounts  the account rules from accounts.js, or null when there is no
+ *             database. The /api/ addresses then answer "not available"
+ *   now       the clock, for counting tries per minute. Only the tests change it
  */
-export function createApp({ database = null } = {}) {
+export function createApp({ database = null, accounts = null, now = Date.now } = {}) {
+  const api = createApi({ accounts, now });
   return http.createServer((request, response) => {
-    answer(request, response, database).catch((error) => {
+    answer(request, response, database, api).catch((error) => {
       // Something we did not plan for. Write it in the server's log and
       // tell the browser only that it failed, without any details.
       console.error("Unexpected error while answering a request:", error);
@@ -65,16 +70,62 @@ export function createApp({ database = null } = {}) {
   });
 }
 
+/**
+ * The rules we hand the browser with every answer, about what a page of
+ * ours may load and do (a "Content-Security-Policy").
+ *
+ * Our pages only ever need files from our own server. So we tell the
+ * browser: run scripts and use styles only from files on this site, never
+ * from text inside a page and never from another site. If a mistake of ours
+ * ever let a visitor's text end up in a page as code, the browser would
+ * refuse to run it. It is a second lock: the first one is that our pages
+ * put text on the screen as text, never as HTML.
+ *
+ *   default-src 'self'      everything comes from our own site, unless said otherwise
+ *   img-src 'self' data:    pictures also from inside our own style file
+ *   connect-src ...         the live connection for online play, to our own site only
+ *   object-src 'none'       no plug-ins
+ *   base-uri 'none'         a page cannot change what its links are relative to
+ *   form-action 'self'      forms can only send to our own site
+ *   frame-ancestors 'none'  no other website may show our pages inside its own
+ */
+function pagePolicy(request) {
+  // 'self' already covers the live connection in current browsers. Older
+  // ones need the address spelled out. It is our own name as the browser
+  // used it, and only letters, digits, dots, colons and dashes are let through.
+  const host = String(request.headers.host ?? "");
+  const live = /^[A-Za-z0-9.:-]{1,100}$/.test(host) ? ` ws://${host} wss://${host}` : "";
+  return [
+    "default-src 'self'",
+    "img-src 'self' data:",
+    `connect-src 'self'${live}`,
+    "object-src 'none'",
+    "base-uri 'none'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ].join("; ");
+}
+
 /** Decides what to send back for one request. */
-async function answer(request, response, database) {
-  // GET means "please send me this". HEAD means the same, without the content.
-  // Everything else (POST, DELETE, ...) asks to change something: refused.
+async function answer(request, response, database, api) {
+  response.setHeader("Content-Security-Policy", pagePolicy(request));
+  const address = readAddress(request.url);
+
+  // Accounts and the leaderboard have their own addresses, all under /api/.
+  // They are the only place where a request may change something, and
+  // api.js checks each one.
+  if (address !== null && address.startsWith("/api/")) {
+    return api(request, response, address);
+  }
+
+  // Everywhere else: GET means "please send me this". HEAD means the same,
+  // without the content. Everything else (POST, DELETE, ...) asks to change
+  // something: refused.
   if (request.method !== "GET" && request.method !== "HEAD") {
     response.setHeader("Allow", "GET, HEAD");
     return sendText(response, 405, "This server only answers requests to read a page.");
   }
 
-  const address = readAddress(request.url);
   if (address === null) {
     return sendText(response, 400, "That address is not valid.");
   }

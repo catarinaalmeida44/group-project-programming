@@ -12,11 +12,15 @@ The game is online at https://novasbe-kart.onrender.com
 |---|---|
 | Driving one kart round a test track in the browser, with laps and a clock | Works |
 | Three camera views, switched with V | Works |
-| "Online test" page: up to eight browsers see each other's karts | Works. Tried with three players on three laptops |
-| Automatic tests | About 300. GitHub runs them on every pull request |
+| Online page: up to eight browsers in a room see each other's karts, and the host starts a race for everyone | Works. One room for each track. Tried with three players on three laptops on 10 November, before the race start and the rooms per track existed |
+| The main menu, with the choice of track | Works (first version by Francisco on 11 November, new design on 12 November) |
+| The first campus track, the campus loop | Works, by Rodrigo. It will be improved a lot |
+| Accounts: sign up, sign in, sign out, delete your account | Works since 12 November. A user name and a password, no email yet |
+| The shared leaderboard | Works since 12 November. The server saves the time when a signed-in player finishes an online race |
+| Automatic tests | More than 700. GitHub runs them on every pull request |
 | The server on the internet | Works. It updates itself a few minutes after every merge into `main` |
-| The database | Works. The server saves one row each time it starts, and remembers it after a restart. See section 8 for a catch on the university Wi-Fi |
-| Accounts, campus tracks, characters, items, computer karts, cup, leaderboards | Not started. This is the work ahead |
+| The database | Works. It holds the accounts, the sign-ins and the race results. See section 8 for a catch on the university Wi-Fi |
+| Characters, items, computer karts, cup, more campus tracks, email for accounts | Not started. This is the work ahead |
 
 The full story of how each part was built, and why, is in `docs/build-diary.md`. The answers to likely staff questions are in `WALKTHROUGH.md`.
 
@@ -68,7 +72,7 @@ The full rules are in `AGENTS.md`. The short version:
 2. **One branch for one piece of work.** Save each step as its own commit, with a message that says what it does.
 3. **Run `npm test` before you ask for a pull request.** GitHub runs the tests again, and a pull request with failing tests should not be merged.
 4. **A teammate approves every pull request.** Nobody merges their own without a review. GitHub enforces one approval.
-5. **Merging puts it online.** A few minutes after a merge into `main`, the public link shows the new version. Anyone on the "Online test" page at that moment is disconnected and has to reload.
+5. **Merging puts it online.** A few minutes after a merge into `main`, the public link shows the new version. Anyone on the online page at that moment is disconnected and has to reload.
 6. **New libraries need a yes first.** Say what it does, why we need it and what the alternative is. We have three so far: `vitest` (tests), `ws` (live connections), `pg` (database).
 7. **No secrets anywhere.** Not in the repository, not in a chat with an agent, not in a screenshot.
 
@@ -109,6 +113,8 @@ Ask the owner before changing a file they look after. That is the main way we av
 
 - **The university Wi-Fi blocks the database.** On `students.novasbe.pt`, a laptop cannot reach our database: the connection opens and then nothing comes back. This was measured on 10 November: the same laptop, file and code failed on that Wi-Fi and worked on a phone hotspot. The game still runs, and it says "The database could not be reached". For database work, use a phone hotspot or your home Wi-Fi. The tests that use a pretend database run anywhere. The live server is not on that Wi-Fi and is not affected.
 - **Only Catarina has the database address.** It is a secret and is not in the repository. If your part needs the real database on your laptop, ask her in person. Do not send it through a chat.
+- **On your laptop, `npm start` has no accounts.** Accounts live in the database, and without its address the menu says that accounts are not available. That is correct, not a mistake. To try signing up, signing in and the leaderboard on your laptop, run `npm run start:pretend` instead: it is the same game with pretend accounts kept in memory, and it forgets everything when you stop it.
+- **Results are only saved for signed-in players, in online races that began with the countdown.** A single race in the browser never reaches the shared leaderboard, and neither does driving around online before the host presses Enter.
 - **The free server sleeps.** After 15 minutes without visitors it takes about a minute to wake up. Open the link a few minutes before you show it to anyone.
 - **Right after installing Node.js, `npm` may be "not found".** Close and reopen the app or terminal you are using.
 - **An agent's own browser can be slow.** The built-in browser of the Claude app redraws about once a second when it is not on screen, so the game looks jerky there. Judge how the game feels in a normal browser.

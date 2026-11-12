@@ -6,18 +6,32 @@ Everything the browser shows and does: the web page, the drawing of the track an
 
 | File | What it does |
 |---|---|
-| `index.html` | The main menu, the first page: Single race, Cup (greyed out until the tracks exist), Online, Leaderboard, and the Settings button in the top right corner. The Leaderboard and Settings panels are in this page too |
-| `menu.js` | Opens the Leaderboard and Settings panels and fills them in |
+| `index.html` | The main menu, the first page: the picture behind it, the account corner and the Settings button at the top, and the four big choices: Single race, Cup (greyed out until the tracks exist), Online and Leaderboard. The panels that open over the menu are in this page too: choosing a track, the leaderboard, the settings, and the three account panels |
+| `menu.js` | Starts the panels of the menu and hands each one what it needs: the browser's storage, the list of tracks, and the way to talk to the server (`account-api.js`) |
+| `page-parts.js` | Makes new parts of the page from code. Text always goes in as plain text, so a name from the server can never become part of the page |
+| `track-list.js` | What the cards for choosing a track say: name, laps, the address of the race (single or online) and your own best times. No browser needed, so it has tests |
+| `mini-map.js` | The small map on a track's card, painted from the track's own letters |
+| `track-panel.js` | The "Choose a track" panel on the page: builds the cards, and makes Single race and Online open it |
+| `account-api.js` | How a page asks the server about accounts and the shared leaderboard: one function per question, and an answer that never breaks the page, also when the server cannot be reached or has no database. The page never holds the password or the sign-in ticket: the browser keeps the ticket in a cookie the page's code cannot read |
+| `answers.js` | Reads an answer from the server carefully: did it say yes, and which sentence to show when it said no or sent something broken |
+| `leaderboard-view.js` | What the Leaderboard panel shows for an answer from the server: which rows, the podium, your own row, and the sentence for loading, empty and "not available". No browser needed, so it has tests |
+| `leaderboard.js` | Remembers the chosen track and who is signed in, asks the server for the boards, and drops an answer that comes too late |
+| `leaderboard-panel.js` | Puts the leaderboard on the page and listens to its buttons |
+| `account-view.js` | The words for the account corner, and what is wrong with a form before it is sent, by the rules in `shared/account-rules.js`. No browser needed, so it has tests |
+| `account.js` | Creating an account, signing in and out, deleting the account: checks the form, asks the server, remembers who is signed in. It never keeps a password |
+| `account-panel.js` | Puts accounts on the page: the account corner and the panels "Sign in", "Create account" and "Your account" |
+| `settings-panel.js` | The Settings panel on the page: the camera view a race starts in |
+| `favicon.svg` | The small picture on the browser's tab: our own drawing of a finish flag |
 | `race.html` | The single race page: the title, the lap counter and clock, the canvas the track is drawn on, and the help text. The track is chosen in the address: `race.html?track=campus-loop` |
-| `track-choice.js` | Reads the track from the address of the race page. Only a short name from `shared/tracks/index.js` is accepted; anything else gives the test oval |
+| `track-choice.js` | Reads the track from the address of the race page or the online page. Only a short name from `shared/tracks/index.js` is accepted; anything else gives the test oval |
 | `storage.js` | Keeps short texts in the browser's own storage (`localStorage`), carefully: a browser that refuses, or text that was changed, must not break the game |
 | `settings.js` | The player's settings. Today: the camera view a race starts in |
 | `records.js` | Your best race time and best lap on each track, kept in this browser only |
-| `online.html` | The online page. The same layout, plus a line that says whether you are connected and how many players are there |
-| `style.css` | How both pages look: colours, sizes, spacing |
+| `online.html` | The online page. The same layout, plus three lines under the track: whether you are connected and how many players are there, who you are signed in as and whether your last result was saved, and the names of the signed-in players with you. The track, and with it the room, is chosen in the address: `online.html?track=campus-loop` |
+| `style.css` | How all three pages look: colours, sizes, spacing |
 | `main.js` | Runs the practice race. Many times a second it asks the keyboard which keys are held, asks the rules in `shared/` where the kart is now, moves the camera, and draws the picture |
-| `online.js` | Runs the online page. It moves no kart itself: it tells the server which keys are held and draws what the server says is happening |
-| `net.js` | Makes online karts move smoothly. The server sends updates 20 times a second, and this file works out where each kart is in between |
+| `online.js` | Runs the online page. It moves no kart itself: it tells the server which keys are held and draws what the server says is happening. It never sends a time: the server saves a signed-in player's result by itself and tells the page |
+| `net.js` | Makes online karts move smoothly. The server sends updates 20 times a second, and this file works out where each kart is in between. It also checks every message from the server, and writes the lines about your account and about who is in the room |
 | `race-view.js` | Turns what the server says about the race into words for the online page: the big countdown number, who may press Enter to start, and whether you are racing or watching |
 | `hud.js` | Fills in the lap counter, the clock, the lap times, the camera name and the message. Used by both pages |
 | `keyboard.js` | Turns the arrow keys into the four answers the rules expect: gas, brake, left, right. Also listens for R (start again), V (change the camera) and Enter (online: the host starts a race) |
@@ -44,11 +58,12 @@ Nothing in this folder decides how a kart moves. That is the job of the rules in
 
 ## Practice and online
 
-| | Single race (`/race.html`) | Online test (`/online.html`) |
+| | Single race (`/race.html`) | Online (`/online.html`) |
 |---|---|---|
 | Who moves the kart | This browser, with the rules in `shared/` | Our server, with the same rules |
 | What the browser sends | Nothing | Only which keys are held, "restart" and "start a race" |
-| Other players | None | Everyone who has the page open, up to eight, each in a different colour |
+| Other players | None | Everyone who has the page of the same track open, up to eight, each in a different colour |
+| Where your time goes | Your best times stay in this browser. Nobody else sees them | If you are signed in, the server saves the time it measured, and it appears on the shared leaderboard |
 | How a race starts | An arrow key, then 3, 2, 1, GO! | The host presses Enter, then 3, 2, 1, GO! for everyone together. Before that, everyone drives freely |
 | Arriving during a race | Does not apply | You watch the kart in front and join at the next start |
 | Works when the server is down | Yes, once the page is loaded | No |

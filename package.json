@@ -9,8 +9,9 @@
   },
   "scripts": {
     "start": "node --env-file-if-exists=.env server/start.js",
+    "start:pretend": "node server/start-pretend.js",
     "test": "vitest run",
-    "test:database": "node --env-file-if-exists=.env node_modules/vitest/vitest.mjs run tests/db-live.test.js"
+    "test:database": "node --env-file-if-exists=.env node_modules/vitest/vitest.mjs run tests/db-live.test.js tests/store-live.test.js"
   },
   "devDependencies": {
     "vitest": "5.1.0"
