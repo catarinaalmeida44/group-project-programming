@@ -68,6 +68,8 @@ const TEST_OVAL_LOOK = {
     { kind: "tree", on: "#", oneIn: 3 },
     { kind: "pine", on: "#", oneIn: 7 },
   ],
+  // Woods round the circuit: "deep" squares beyond the edge of the map, a tree on about one square in "oneIn".
+  treeBelt: { kinds: ["tree", "tree", "pine"], deep: 6, oneIn: 2 },
   route: [
     [2.5, 2.5],
     [26.5, 2.5],
@@ -206,6 +208,25 @@ export function propsOfTrack(track, look, storeys = null) {
         const neighbours = around.map(([dc, dr]) => letterAt(column + dc, row + dr));
         const allowed = on === "#" ? neighbours.every((letter) => letter === "#") : !neighbours.includes(".");
         if (allowed) {
+          props.push({ kind, x: (column + along) * size, y: (row + down) * size, size: scale });
+        }
+      }
+    }
+  }
+
+  // A belt of trees beyond the edge of the map, all the way round, so that
+  // the world does not simply end at the edge of the track.
+  if (look.treeBelt) {
+    const { kinds, deep, oneIn } = look.treeBelt;
+    for (let row = -deep; row < track.rows + deep; row++) {
+      for (let column = -deep; column < track.columns + deep; column++) {
+        const chosen = random() < 1 / oneIn;
+        const kind = kinds[Math.floor(random() * kinds.length)];
+        const along = random();
+        const down = random();
+        const scale = 0.9 + random() * 0.5;
+        const outside = row < 0 || column < 0 || row >= track.rows || column >= track.columns;
+        if (chosen && outside) {
           props.push({ kind, x: (column + along) * size, y: (row + down) * size, size: scale });
         }
       }
