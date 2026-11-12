@@ -6,7 +6,8 @@
 import { describe, it, expect } from "vitest";
 import { createRacer, stepRacer, KART_RADIUS } from "../shared/race.js";
 import { createKart, speedOf, topSpeedOf } from "../shared/physics.js";
-import { createProgress, raceSeconds } from "../shared/laps.js";
+import { createProgress, createProgressBehindLine, raceSeconds } from "../shared/laps.js";
+import { GRID_GAP_SIDEWAYS } from "../shared/grid.js";
 import { tileKindAt, isInsideCheckpoint } from "../shared/track.js";
 import { TEST_DRIVER } from "../shared/characters.js";
 import { ROAD, GRASS } from "../shared/surfaces.js";
@@ -66,13 +67,22 @@ function holdKeys(racer, keys, seconds, everyStep = () => {}) {
 // ---- The tests ----
 
 describe("the start of a race", () => {
-  it("puts the racer at the track's start, standing still, with no laps", () => {
+  // Changed on 12 November 2026 with the start rule (team lead's request):
+  // karts now start on the grid behind the finish line, and the first
+  // crossing of the line starts lap 1. Before, this test put the racer
+  // exactly on the track's start, just after the line.
+  it("puts the racer on pole, in the front row of the grid behind the finish line, standing still, with no laps", () => {
     const racer = createRacer(TEST_OVAL);
+    // The track's start is the middle of the front row. Pole is the left place of that row.
     expect(racer.kart.x).toBe(TEST_OVAL.start.x);
-    expect(racer.kart.y).toBe(TEST_OVAL.start.y);
+    expect(racer.kart.y).toBe(TEST_OVAL.start.y - GRID_GAP_SIDEWAYS);
     expect(racer.kart.angle).toBe(TEST_OVAL.start.angle);
     expect(speedOf(racer.kart)).toBe(0);
-    expect(racer.progress).toEqual(createProgress());
+    // The whole kart is behind the finish line, not on it.
+    expect(racer.kart.x + KART_RADIUS).toBeLessThan(TEST_OVAL.checkpoints[0].left);
+    // No laps, no time, and one checkpoint short of the line: the line is what it has to reach first.
+    expect(racer.progress).toEqual(createProgressBehindLine());
+    expect(racer.progress).toEqual({ passed: -1, lapsDone: 0, steps: 0, lapSteps: [], finished: false });
   });
 });
 

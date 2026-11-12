@@ -276,8 +276,10 @@ describe("painting the small map", () => {
     paintMiniMap(canvas, track);
     const { tile } = mapPictureSize(track.columns, track.rows);
     expect(canvas.painted.circles).toHaveLength(1);
-    // The test oval starts in the middle of column 16, row 2.
-    expect(canvas.painted.circles[0].x).toBe(16.5 * tile);
+    // The test oval starts in the middle of column 13, row 2: just behind the
+    // finish line, which is column 14. (Until 12 November 2026 the start was
+    // column 16, just after the line.)
+    expect(canvas.painted.circles[0].x).toBe(13.5 * tile);
     expect(canvas.painted.circles[0].y).toBe(2.5 * tile);
   });
 });

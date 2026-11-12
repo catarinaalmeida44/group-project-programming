@@ -11,16 +11,26 @@
 
 import { createKart, stepKart } from "./physics.js";
 import { surfaceAt, bounceOffWalls } from "./track.js";
-import { createProgress, updateProgress } from "./laps.js";
+import { progressAtStart, updateProgress } from "./laps.js";
+import { gridSpot } from "./grid.js";
 
 /** For walls, a kart is treated as a circle this many units across, from the middle to the edge. */
 export const KART_RADIUS = 10;
 
-/** A racer waiting at the start of a track. */
-export function createRacer(track) {
+/**
+ * A racer waiting on the starting grid of a track, standing still.
+ *
+ *   place   which place on the grid (see grid.js). Left out, it is place 0,
+ *           pole: that is where the kart of a practice race starts.
+ *
+ * On a track whose start is behind the finish line, the racer's progress
+ * says so (see laps.js), so that the first crossing of the line starts lap 1.
+ */
+export function createRacer(track, place = 0) {
+  const spot = gridSpot(track, place);
   return {
-    kart: createKart(track.start.x, track.start.y, track.start.angle),
-    progress: createProgress(),
+    kart: createKart(spot.x, spot.y, spot.angle),
+    progress: progressAtStart(track),
   };
 }
 

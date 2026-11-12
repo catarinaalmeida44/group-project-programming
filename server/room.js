@@ -20,20 +20,16 @@
 // can start a race. Someone who joins while a race is on does not get a kart
 // on the track: they watch, and join in at the next start.
 
-import { createKart } from "../shared/physics.js";
-import { createProgress, fastestLapSteps } from "../shared/laps.js";
-import { stepRacer } from "../shared/race.js";
+import { fastestLapSteps } from "../shared/laps.js";
+import { createRacer, stepRacer } from "../shared/race.js";
 import { countdownAt } from "../shared/countdown.js";
+import { GRID_PLACES } from "../shared/grid.js";
 
-/** How many players fit in a room. */
-export const MAX_PLAYERS = 8;
+/** How many players fit in a room: one for each place on the starting grid (shared/grid.js). */
+export const MAX_PLAYERS = GRID_PLACES;
 
 /** The server sends everyone an update once every this many steps: 60 / 3 = 20 times a second. */
 export const STEPS_PER_UPDATE = 3;
-
-// The starting places: two columns, with each row a little further back.
-const GAP_SIDEWAYS = 18;
-const GAP_BEHIND = 28;
 
 const NO_KEYS = { gas: false, brake: false, left: false, right: false };
 
@@ -63,7 +59,7 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
     countdownSteps = 0;
     for (const player of players.values()) {
       player.racing = false;
-      player.racer = racerAtStart(track, player.place);
+      player.racer = createRacer(track, player.place);
     }
   }
 
@@ -91,7 +87,7 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
         return null;
       }
       const id = nextId++;
-      players.set(id, { id, place, racer: racerAtStart(track, place), keys: NO_KEYS, racing: false });
+      players.set(id, { id, place, racer: createRacer(track, place), keys: NO_KEYS, racing: false });
       return { id, place };
     },
 
@@ -131,7 +127,7 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
       finishedSoFar = 0;
       for (const player of players.values()) {
         player.racing = true;
-        player.racer = racerAtStart(track, player.place);
+        player.racer = createRacer(track, player.place);
       }
       return true;
     },
@@ -176,7 +172,7 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
       if (player === undefined || phase !== "open") {
         return false;
       }
-      player.racer = racerAtStart(track, player.place);
+      player.racer = createRacer(track, player.place);
       return true;
     },
 
@@ -276,26 +272,6 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS) {
         })),
       };
     },
-  };
-}
-
-/** A racer standing still on one of the starting places of a track. */
-function racerAtStart(track, place) {
-  const { x, y, angle } = track.start;
-  const side = place % 2 === 0 ? -1 : 1; // left column, right column
-  const row = Math.floor(place / 2);
-  // "forward" is the direction the karts point. "right" is a quarter turn clockwise from it.
-  const forwardX = Math.cos(angle);
-  const forwardY = Math.sin(angle);
-  const rightX = -forwardY;
-  const rightY = forwardX;
-  return {
-    kart: createKart(
-      x + rightX * side * GAP_SIDEWAYS - forwardX * row * GAP_BEHIND,
-      y + rightY * side * GAP_SIDEWAYS - forwardY * row * GAP_BEHIND,
-      angle,
-    ),
-    progress: createProgress(),
   };
 }
 
