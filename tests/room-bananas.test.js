@@ -597,6 +597,7 @@ describe("what a browser can NOT do about bananas", () => {
         "startRace",
         "takeFinishes",
         "setKeys",
+        "setLook", // the colours of a kart: three numbers, nothing about bananas (kart-look-online.test.js)
         "restart",
         "step",
         "stepCount",
