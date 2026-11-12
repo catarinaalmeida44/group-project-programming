@@ -30,11 +30,26 @@ export const FOLLOW = {
   quickness: 6, //          how fast the camera catches up; higher is stiffer
 };
 
+// The camera high above and far behind the kart, looking down at the track
+// like a tilted map. No sky is seen. A race opens with this view, so the
+// whole grid can be seen, and then the camera comes down to RACE below.
 export const CHASE = {
   kartScreenY: 450, // the row of the screen the kart sits on (0 is the top)
   kartScale: 5, //     pixels per unit of track, at the kart
   farShrink: 0.4, //   ground at the top of the screen is drawn at 40% of that size. Lower is more tilted
   viewAhead: 340, //   how many units of track can be seen ahead of the kart
+};
+
+// The camera of a race: low and close behind the kart, looking along the
+// road. The horizon is on the screen, with sky above it, and buildings stand
+// tall on both sides. It uses the same arithmetic as CHASE, but says directly
+// where the horizon is and how strong the lens is.
+export const RACE = {
+  kartScreenY: 468, // the row of the screen the kart sits on
+  kartScale: 7.4, //   pixels per unit of track, at the kart
+  horizonY: 204, //    the row of the horizon. Everything above it is sky
+  depth: 600, //       the strength of the lens: bigger shows things further away larger (a flatter picture)
+  viewAhead: 1700, //  buildings, trees and karts further ahead than this are not drawn
 };
 
 // ---------------------------------------------------------------------------
@@ -91,9 +106,24 @@ export function easeTowards(current, target, seconds, quickness = FOLLOW.quickne
 // the bottom is close to the camera and drawn big. Ground near the top is
 // far away and drawn small.
 
-/** Works out the numbers the tilted view needs from its settings. */
+/**
+ * Works out the numbers the tilted view needs from its settings. The
+ * settings come in one of two forms: like CHASE (how small the top row is
+ * and how far it shows), or like RACE (where the horizon is and how strong
+ * the lens is). Both give the same three numbers.
+ */
 export function chaseNumbers(settings = CHASE) {
   const { kartScreenY, kartScale, farShrink, viewAhead } = settings;
+  if (settings.horizonY !== undefined) {
+    const { horizonY, depth } = settings;
+    if (!(horizonY < kartScreenY)) {
+      throw new RangeError("Camera: the horizon must be above the row the kart sits on");
+    }
+    if (!(depth > 0) || !(kartScale > 0)) {
+      throw new RangeError("Camera: depth and kartScale must be above zero");
+    }
+    return { horizonY, growthPerRow: kartScale / (kartScreenY - horizonY), depth };
+  }
   if (!(farShrink > 0 && farShrink < 1)) {
     throw new RangeError("Camera: farShrink must be above 0 and below 1");
   }
@@ -139,6 +169,46 @@ export function chasePoint(ahead, sideways, settings = CHASE, screen = SCREEN) {
     y: horizonY + scale / growthPerRow,
     scale,
   };
+}
+
+/**
+ * Where the camera's eye is, compared with the kart: how many units above
+ * the ground and how many units behind the kart. (The picture is what a
+ * camera at that spot would see, looking level along the road.)
+ */
+export function eyeOf(settings = CHASE) {
+  const { growthPerRow, depth } = chaseNumbers(settings);
+  return { height: 1 / growthPerRow, behind: depth / settings.kartScale };
+}
+
+/**
+ * A camera part of the way between two others: share 0 gives "from", share 1
+ * gives "to". Used to bring the camera down from high above the grid to
+ * behind the kart while 3, 2, 1 is counted. The answer is in the RACE form.
+ */
+export function blendChase(from, to, share) {
+  const part = Math.min(Math.max(share, 0), 1);
+  const a = chaseNumbers(from);
+  const b = chaseNumbers(to);
+  const mix = (start, end) => start + (end - start) * part;
+  return {
+    kartScreenY: mix(from.kartScreenY, to.kartScreenY),
+    kartScale: mix(from.kartScale, to.kartScale),
+    horizonY: mix(a.horizonY, b.horizonY),
+    depth: mix(a.depth, b.depth),
+    viewAhead: mix(from.viewAhead, to.viewAhead),
+  };
+}
+
+/**
+ * Turns an angle part of the way towards another, the short way round.
+ * The race camera uses it to swing round behind the kart a moment after the
+ * kart has turned, which is what lets you see your own kart turn.
+ */
+export function easeAngle(current, target, seconds, quickness) {
+  const share = seconds > 0 ? 1 - Math.exp(-quickness * seconds) : 0;
+  const turn = Math.atan2(Math.sin(target - current), Math.cos(target - current));
+  return current + turn * share;
 }
 
 /**

@@ -8,7 +8,10 @@
 //     ,   grass  (slower)
 //
 // A track also has:
-//   - a start position
+//   - a start position: the middle of the front row of the starting grid
+//     (see grid.js). A track can say that its start is behind the finish
+//     line, with "behindLine: true". Then crossing the line for the first
+//     time starts lap 1 (see laps.js).
 //   - checkpoints: invisible rectangles across the road. The first one is the
 //     finish line. A lap only counts if the kart went through all of them,
 //     in order (see laps.js).
@@ -23,6 +26,9 @@ const TILE_KINDS = { "#": "wall", ".": "road", ",": "grass" };
 
 /** A head-on hit sends the kart back at this share of its speed. */
 export const WALL_BOUNCE = 0.5;
+
+/** On a track that starts behind the finish line, the line is at most this many tiles ahead of the start. */
+const LINE_AHEAD_WITHIN_TILES = 3;
 
 /**
  * Checks a track description and turns it into a track the game can use.
@@ -80,6 +86,12 @@ export function createTrack(description) {
   if (tileKindAt(track, track.start.x, track.start.y) === "wall") {
     throw new Error("Track: the start is inside a wall");
   }
+  // Does the grid stand behind the finish line? Only an exact "true" says
+  // yes. Left out, the karts start just after the line (the older rule).
+  if (start.behindLine !== undefined && typeof start.behindLine !== "boolean") {
+    throw new Error("Track: the start's behindLine must be true or false");
+  }
+  track.startsBehindLine = start.behindLine === true;
 
   // The checkpoints. The first one is the finish line. With fewer than three,
   // a kart could go a little way, turn round and come back to complete a "lap".
@@ -120,7 +132,36 @@ export function createTrack(description) {
     };
   });
 
+  if (track.startsBehindLine && !finishLineIsJustAhead(track)) {
+    throw new Error("Track: the start says it is behind the finish line, but the line is not just ahead of it");
+  }
+
   return track;
+}
+
+/**
+ * For a start that says it is behind the finish line: is that true?
+ * Walks from the start in the direction the karts point, a quarter of a tile
+ * at a time. Says yes if it reaches the finish line within a few tiles
+ * without meeting a wall first. A start that is ON the line is not behind it.
+ */
+function finishLineIsJustAhead(track) {
+  const { x, y, angle } = track.start;
+  if (isInsideCheckpoint(track, 0, x, y)) {
+    return false;
+  }
+  const stride = track.tileSize / 4;
+  for (let distance = stride; distance <= LINE_AHEAD_WITHIN_TILES * track.tileSize; distance += stride) {
+    const aheadX = x + Math.cos(angle) * distance;
+    const aheadY = y + Math.sin(angle) * distance;
+    if (tileKindAt(track, aheadX, aheadY) === "wall") {
+      return false; // a wall is in the way
+    }
+    if (isInsideCheckpoint(track, 0, aheadX, aheadY)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function isTileInside(track, column, row) {

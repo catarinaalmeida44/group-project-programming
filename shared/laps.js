@@ -1,8 +1,16 @@
 // Laps: counting them, and timing the race.
 //
 // A track has checkpoints: invisible rectangles across the road, numbered
-// in the order they are driven. Checkpoint 0 is the finish line. A kart
-// starts just after the finish line.
+// in the order they are driven. Checkpoint 0 is the finish line.
+//
+// WHERE A KART STARTS
+// On the real tracks the karts start BEHIND the finish line, as in real
+// racing. Crossing the line for the first time starts lap 1. It does not
+// count as a lap. The race clock starts at GO, not at the line, so the time
+// of lap 1 includes the short run from the grid to the line.
+// (The older rule, a start just AFTER the line, still exists: the small
+// tracks in the tests use it. A track says which one it wants, see
+// "behindLine" in track.js.)
 //
 // HOW LAPS ARE COUNTED
 // The game keeps one number for each kart: "passed", the count of
@@ -22,7 +30,7 @@
 import { STEP_SECONDS } from "./physics.js";
 import { isInsideCheckpoint } from "./track.js";
 
-/** The progress of a kart at the start of a race. */
+/** The progress of a kart at the start of a race, when it starts just AFTER the finish line. */
 export function createProgress() {
   return {
     passed: 0, //       checkpoints gone through forwards, minus those gone through backwards
@@ -31,6 +39,24 @@ export function createProgress() {
     lapSteps: [], //    the step count at the end of each completed lap
     finished: false, // true once all laps are done
   };
+}
+
+/**
+ * The progress of a kart at the start of a race, when it starts BEHIND the
+ * finish line.
+ *
+ * "passed" starts at -1 instead of 0: the kart is one checkpoint short of
+ * the line. That makes the finish line the next checkpoint, so crossing it
+ * brings the count to 0 without completing a lap. From there on, laps are
+ * counted exactly as for any other kart.
+ */
+export function createProgressBehindLine() {
+  return { ...createProgress(), passed: -1 };
+}
+
+/** The progress of a kart waiting at the start of this track: behind the line if the track says so. */
+export function progressAtStart(track) {
+  return track.startsBehindLine ? createProgressBehindLine() : createProgress();
 }
 
 /** The number of the checkpoint the kart has to reach next. (Number 0 is the finish line.) */

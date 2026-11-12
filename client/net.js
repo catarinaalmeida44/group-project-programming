@@ -234,6 +234,25 @@ export function readServerMessage(text) {
   return null;
 }
 
+/** At most this many banana peels are taken from one update. A real update has far fewer. */
+const MOST_BANANAS_SHOWN = 60;
+
+/**
+ * The banana peels in an update from the server, checked: a list of
+ * { x, y }. Anything in the list that is not a spot on the track is left
+ * out, and an update without a usable list gives none. The page must not
+ * break on a strange message.
+ */
+export function bananasOf(update) {
+  if (!Array.isArray(update?.bananas)) {
+    return [];
+  }
+  return update.bananas
+    .filter((banana) => banana !== null && typeof banana === "object" && Number.isFinite(banana.x) && Number.isFinite(banana.y))
+    .slice(0, MOST_BANANAS_SHOWN)
+    .map((banana) => ({ x: banana.x, y: banana.y }));
+}
+
 /**
  * The line on the online page about the player's account.
  *   account  the last "account" message from the server, or null before it arrived

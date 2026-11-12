@@ -35,9 +35,19 @@ Everything the browser shows and does: the web page, the drawing of the track an
 | `race-view.js` | Turns what the server says about the race into words for the online page: the big countdown number, who may press Enter to start, and whether you are racing or watching |
 | `hud.js` | Fills in the lap counter, the clock, the lap times, the camera name and the message. Used by both pages |
 | `keyboard.js` | Turns the arrow keys into the four answers the rules expect: gas, brake, left, right. Also listens for R (start again), V (change the camera) and Enter (online: the host starts a race) |
-| `camera.js` | The arithmetic of the camera: which part of the track is on the screen, and where things land on it. No painting |
-| `draw.js` | Paints the track, the kart and the small map in the corner on the canvas, in one of the three views |
-| `buildings.js` | Makes the buildings of a track stand up in the view behind the kart: works out their sides and roofs from the storeys of each square, and which of them can be seen from the kart. No painting; `draw.js` paints them |
+| `camera.js` | The arithmetic of the camera: which part of the track is on the screen, and where things land on it. Two cameras for the view behind the kart: high above the grid, and low behind the kart with the horizon on the screen. No painting |
+| `draw.js` | Puts the picture together on the canvas, in one of the three views: the sky, the ground, everything that stands on it from the furthest to the nearest, smoke and dust, the player's own kart, and the small map in the corner |
+| `ground.js` | Paints the whole track once from straight above (road, grass, kerbs, roofs, shadows, the start line, the grid, arrows) and lays that picture flat for the race view, row by row, up to the horizon |
+| `sky.js` | The sky of the race view and what is on the horizon in each direction: hills, the sea, a town, a fort, a lighthouse |
+| `props.js` | The things that stand beside the road or lie on it, each as a flat picture that faces the camera: trees, pines, palms, arrow boards, name signs, cones, banana peels |
+| `track-looks.js` | How each track looks: its colours, the route for the arrows, its sky, and where its trees and signs stand. Changes nothing about how a kart moves |
+| `route.js` | Which way round a track is driven: the direction of the road at a spot, the bends for the arrow boards, and the "wrong way" warning. For the picture only: laps are counted by the rules |
+| `scene.js` | What depends on the countdown: how far the camera has come down, which start lights are on. Also how far a spinning kart is turned in the picture |
+| `kart-shape.js` | The kart and its driver as a shape in three dimensions: boxes, wedges and wheels with real positions, in the colours of a "look". No painting, so it has tests |
+| `kart-paint.js` | Paints that shape from any direction: leaves out the faces that point away, paints the furthest parts first, and makes each face brighter the more it faces the sun |
+| `kart-choice.js` | The colours a player can choose for their kart, turning a choice into a look, and keeping the choice in the browser. The rule for what may be chosen is `shared/kart-looks.js` |
+| `kart-panel.js` | The "Your kart" panel of the menu on the page: the colours to pick, and the kart turning round in a small picture |
+| `buildings.js` | Makes the buildings of a track stand up in the view behind the kart: works out their sides and roofs from the storeys of each square, and which of them can be seen from the kart. Walls without storeys that touch open ground become low banks. No painting; `draw.js` paints them |
 | `format.js` | Turns a number of seconds into a race time such as `1:23.45` |
 
 ## The three camera views
@@ -46,13 +56,13 @@ The game starts in the first one. The V key switches to the next.
 
 | View | What you see |
 |---|---|
-| Behind the kart | Tilted, from behind and above. The track turns around the kart, so the kart always drives up the screen, and ground further ahead is drawn smaller. On the campus loop the buildings stand up |
+| Behind the kart | The race view: low and close behind the kart, looking along the road, with a horizon, a sky, and buildings and trees standing on both sides. The camera swings round behind the kart a moment after it turns, so you see your kart turn. A race opens with the camera high above the grid, and it comes down during 3, 2, 1 |
 | From above | Zoomed in, from straight above, moving with the kart. North stays up and the kart turns on the screen. The camera looks a little ahead and stops at the edges of the track |
 | Whole track | The whole track at once, without moving |
 
 The first two show only part of the track, so they have a small map in the corner with a dot for the kart.
 
-The numbers to tune by eye (how far zoomed in, how tilted, how far ahead you can see) are together at the top of `camera.js`.
+The numbers to tune by eye (how far zoomed in, where the horizon is, how strong the lens is) are together at the top of `camera.js`. How quickly the camera swings round, and the size of the start gantry, are at the top of `draw.js`.
 
 Nothing in this folder decides how a kart moves. That is the job of the rules in `shared/`, which the browser also downloads. The camera only changes what is shown.
 
@@ -61,14 +71,15 @@ Nothing in this folder decides how a kart moves. That is the job of the rules in
 | | Single race (`/race.html`) | Online (`/online.html`) |
 |---|---|---|
 | Who moves the kart | This browser, with the rules in `shared/` | Our server, with the same rules |
-| What the browser sends | Nothing | Only which keys are held, "restart" and "start a race" |
-| Other players | None | Everyone who has the page of the same track open, up to eight, each in a different colour |
+| What the browser sends | Nothing | Only which keys are held, "restart", "start a race" and the colours of its kart, as three numbers |
+| Other players | None | Everyone who has the page of the same track open, up to eight, each in the colours they chose, or in the colour of their starting place. Karts bump into each other |
+| Banana peels | They appear from time to time and make your kart spin | The same, but the server decides where and when |
 | Where your time goes | Your best times stay in this browser. Nobody else sees them | If you are signed in, the server saves the time it measured, and it appears on the shared leaderboard |
 | How a race starts | An arrow key, then 3, 2, 1, GO! | The host presses Enter, then 3, 2, 1, GO! for everyone together. Before that, everyone drives freely |
 | Arriving during a race | Does not apply | You watch the kart in front and join at the next start |
 | Works when the server is down | Yes, once the page is loaded | No |
 
-In the view from behind, every kart stands up on the road with its driver. A kart is drawn from behind, from the front or from one side, depending on which way it points compared with you, and smaller the further ahead it is. The karts are drawn with simple coloured shapes in `draw.js`; real character artwork would replace those.
+Every kart is the same small 3D shape (`kart-shape.js`), painted from wherever the camera is, in its own colours: a nose, pods, wings, four wheels, and a driver with a helmet whose arms turn the steering wheel. Because it is a shape and not a picture, it turns smoothly and can be recoloured. Changing the shape itself, for characters that look different from each other, would be done in that one file.
 
 Drawing uses the canvas that is built into every browser. No drawing library is used.
 

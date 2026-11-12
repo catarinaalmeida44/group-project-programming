@@ -9,9 +9,9 @@ Our game server: the program that runs on Render. It sends the game's files to t
 | `accounts.js` | The rules for accounts: who may sign in, when an account is locked, how long a sign-in lasts, which results may be saved, what the leaderboard shows. Knows nothing about the internet or about database questions, which makes it easy to test |
 | `passwords.js` | Scrambles passwords so they are never kept in a readable form, and checks a password against its scrambled form |
 | `store.js` | Every question the game asks the database about players, sessions and race results |
-| `online.js` | Online play. Keeps a live connection open to every browser on the online page, passes the keys they hold to the room, sends everyone the state of all karts 20 times a second, and saves the result when a signed-in player finishes a race. One room for each track |
-| `room.js` | The karts of everyone driving together, and the race: who the host is, the countdown, who is racing, who is watching, and who finished in which position. Moves the karts with the shared rules, 60 steps a second. Knows nothing about the internet, which makes it easy to test |
-| `messages.js` | Checks every message a browser sends before the game looks at it |
+| `online.js` | Online play. Keeps a live connection open to every browser on the online page, passes the keys they hold to the room, sends everyone the state of all karts and bananas 20 times a second, and saves the result when a signed-in player finishes a race. One room for each track. Gives every room real chance to pick the seeds of its bananas with |
+| `room.js` | The karts of everyone driving together, and the race: who the host is, the countdown, who is racing, who is watching, and who finished in which position. Moves the karts with the shared rules, 60 steps a second: it puts them on the starting grid, lets them bump into each other, and looks after the bananas of a race. Knows nothing about the internet, which makes it easy to test |
+| `messages.js` | Checks every message a browser sends before the game looks at it: keys, restart, start, and the colours of its kart |
 | `db.js` | Opens the connection to the database, and looks after one small table, `server_starts`, with one row for each time the server started |
 | `start.js` | Starts the server. This is what `npm start` runs, on a laptop and on Render |
 | `start-pretend.js` | Starts the server on a laptop with pretend accounts kept in memory (`npm run start:pretend`), so everyone can try accounts without the database's secret address. Never used online |
@@ -45,11 +45,21 @@ A time gets there in one way only. When a signed-in player finishes an online ra
 
 ## Who decides what, online
 
-The browser sends only three kinds of message: "these are the keys I am holding", "restart" and "start a race". The room obeys "start a race" only from the host, the player who has been in the room longest, and it works out who that is itself. The browser never says where its kart is, how fast it is going, which lap it is on, who it is or what time it finished in. The server works all of that out: the driving with the same rules file the practice race uses, and the player from the cookie. So a player cannot go faster, skip a lap or claim a result by changing the page in their browser.
+The browser sends only four kinds of message: "these are the keys I am holding", "restart", "start a race" and "paint my kart in these colours". The last one is three small whole numbers, each the number of a colour in a short list (`shared/kart-looks.js`). The server checks them and passes them on, so everyone sees the kart in those colours. It changes how a kart is drawn and nothing else. The room obeys "start a race" only from the host, the player who has been in the room longest, and it works out who that is itself. The browser never says where its kart is, how fast it is going, which lap it is on, who it is or what time it finished in. The server works all of that out: the driving with the same rules file the practice race uses, and the player from the cookie. So a player cannot go faster, skip a lap or claim a result by changing the page in their browser.
+
+The same goes for what happens between karts and on the road. The server decides who bumped into whom, where each banana appears, who drove over one and how long they spin. The bananas of a race grow from a number, the "seed", that the room picks by chance when the race starts. No message can place or remove a banana, spin a kart or choose the seed.
+
+## What a browser is told
+
+Twenty times a second, every browser in a room gets one update (`snapshot()` in `room.js`):
+
+- `karts`: for each kart on the track its player number, grid place, position, direction, speed, laps, clock, whether it has finished, and `spin`, the number of steps it will still spin (0 when it is not spinning)
+- `race`: the phase (`open`, `countdown`, `racing` or `finished`), how far the countdown is, who the host is and who is watching
+- `bananas`: the banana peels on the road, each with a number and a position. Empty while the room is open and during 3, 2, 1
 
 ## What the server refuses
 
-Each of these has a test, in `tests/server.test.js`, `tests/api.test.js`, `tests/accounts.test.js`, `tests/online.test.js`, `tests/online-accounts.test.js`, `tests/room.test.js`, `tests/room-race.test.js` or `tests/room-finishes.test.js`.
+Each of these has a test, in `tests/server.test.js`, `tests/api.test.js`, `tests/accounts.test.js`, `tests/online.test.js`, `tests/online-accounts.test.js`, `tests/room.test.js`, `tests/room-race.test.js`, `tests/room-finishes.test.js`, `tests/bumps.test.js` or `tests/room-bananas.test.js`.
 
 For normal page requests:
 
@@ -74,12 +84,17 @@ For online play:
 - a live connection to any address other than `/play`, or to a track that does not exist
 - a live connection started by a page on someone else's website
 - a player when the room is full (eight players)
-- any message that is not exactly one of the three allowed kinds: the browser is sent away
+- any message that is not exactly one of the four allowed kinds: the browser is sent away
+- kart colours that are not three whole numbers from the allowed ranges, such as a colour written out or a name: the browser is sent away
+- painting another player's kart: a choice of colours only ever changes the kart of the connection that sent it
 - a race start from anyone but the host, or while a countdown is already running: it is ignored
 - a restart during a countdown or a race: it is ignored, so nobody can give themselves a fresh clock
 - keys from a player who joined during a race and is watching: they move nothing
 - more than 60 messages in a second from one browser: it is sent away
 - driving another player's kart. A connection can only ever act on its own kart, and anything extra in a message, such as another player's number or a made-up finish time, is dropped
+- driving through another kart: karts on the track bump into each other. Someone who is watching has no kart, so nothing can bump into it
+- anything about bananas from a browser: placing or removing one, spinning a kart, choosing the seed. There is no such message, and anything of the kind added to a real message is dropped
+- the keys of a kart that is spinning out: they do nothing until the spin is over
 - saving a result for a guest, for laps driven outside a race, or for a racer who left before the line
 
 "Sent away" means three things, in this order: its kart leaves the track at once, the server tells it why, and two seconds later the server cuts the connection if the browser has not closed it. The server does not wait for the browser to agree.

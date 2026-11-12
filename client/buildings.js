@@ -25,36 +25,57 @@ import { CHASE, SCREEN, chaseNumbers, chaseRow, chasePoint, seenFromKart } from 
  * that its walls stay flat. Stops with an error that says what is wrong if the
  * storeys do not fit the track.
  */
-export function createBuildings(track, storeys) {
-  if (storeys === null || storeys === undefined) {
+export function createBuildings(track, storeys, { barrierHeight = 0 } = {}) {
+  const hasStoreys = storeys !== null && storeys !== undefined;
+  if (!hasStoreys && !(barrierHeight > 0)) {
     return null;
   }
-  const { storeyMetres, squareMetres, rows } = storeys;
-  if (!isPositiveNumber(storeyMetres) || !isPositiveNumber(squareMetres)) {
-    throw new Error("Buildings: storeyMetres and squareMetres must be numbers above zero");
-  }
-  if (!Array.isArray(rows) || rows.length !== track.rows) {
-    throw new Error(`Buildings: there must be one row of storeys for each of the ${track.rows} rows of the map`);
-  }
-  rows.forEach((row, r) => {
-    if (typeof row !== "string" || row.length !== track.columns) {
-      throw new Error(`Buildings: row ${r} of the storeys is not as long as the map`);
+  let unitsPerStorey = 0;
+  let rows = null;
+  if (hasStoreys) {
+    const { storeyMetres, squareMetres } = storeys;
+    rows = storeys.rows;
+    if (!isPositiveNumber(storeyMetres) || !isPositiveNumber(squareMetres)) {
+      throw new Error("Buildings: storeyMetres and squareMetres must be numbers above zero");
     }
-    for (let c = 0; c < row.length; c++) {
-      if (!/^[0-9]$/.test(row[c])) {
-        throw new Error(`Buildings: row ${r} has "${row[c]}", which is not a number of storeys from 0 to 9`);
-      }
-      if (row[c] !== "0" && track.map[r][c] !== "#") {
-        throw new Error(`Buildings: row ${r}, column ${c} has storeys but is not a wall`);
-      }
+    if (!Array.isArray(rows) || rows.length !== track.rows) {
+      throw new Error(`Buildings: there must be one row of storeys for each of the ${track.rows} rows of the map`);
     }
-  });
+    rows.forEach((row, r) => {
+      if (typeof row !== "string" || row.length !== track.columns) {
+        throw new Error(`Buildings: row ${r} of the storeys is not as long as the map`);
+      }
+      for (let c = 0; c < row.length; c++) {
+        if (!/^[0-9]$/.test(row[c])) {
+          throw new Error(`Buildings: row ${r} has "${row[c]}", which is not a number of storeys from 0 to 9`);
+        }
+        if (row[c] !== "0" && track.map[r][c] !== "#") {
+          throw new Error(`Buildings: row ${r}, column ${c} has storeys but is not a wall`);
+        }
+      }
+    });
+    unitsPerStorey = (storeys.storeyMetres / storeys.squareMetres) * track.tileSize;
+  }
 
   const size = track.tileSize;
-  const unitsPerStorey = (storeyMetres / squareMetres) * size;
+  const inside = (c, r) => r >= 0 && c >= 0 && r < track.rows && c < track.columns;
+  const isWall = (c, r) => inside(c, r) && track.map[r][c] === "#";
+  const storeysAt = (c, r) => (rows !== null && inside(c, r) ? Number(rows[r][c]) : 0);
+  // A wall without storeys that touches open ground is where a kart would
+  // bounce off thin air. With a barrier height it becomes a low barrier
+  // there, so the edge of the track can be seen. Walls further in stay flat.
+  const touchesOpenGround = (c, r) =>
+    [[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]].some(
+      ([dc, dr]) => inside(c + dc, r + dr) && !isWall(c + dc, r + dr),
+    );
+  const isBarrier = (c, r) => barrierHeight > 0 && isWall(c, r) && storeysAt(c, r) === 0 && touchesOpenGround(c, r);
   // Height in units of a square. Outside the map counts as flat.
-  const heightAt = (c, r) =>
-    r < 0 || c < 0 || r >= track.rows || c >= track.columns ? 0 : Number(rows[r][c]) * unitsPerStorey;
+  const heightAt = (c, r) => {
+    if (!inside(c, r)) {
+      return 0;
+    }
+    return storeysAt(c, r) > 0 ? storeysAt(c, r) * unitsPerStorey : isBarrier(c, r) ? barrierHeight : 0;
+  };
 
   const sides = [];
   const roofs = [];
@@ -68,10 +89,14 @@ export function createBuildings(track, storeys) {
       const right = (c + 1) * size;
       const top = r * size;
       const bottom = (r + 1) * size;
+      // What draw.js needs to choose colours and paint windows: which square
+      // this is, and whether it is a building or a low barrier.
+      const about = { column: c, row: r, style: storeysAt(c, r) > 0 ? "building" : "barrier" };
       roofs.push({
         corners: [[left, top], [right, top], [right, bottom], [left, bottom]],
         middle: [left + size / 2, top + size / 2],
         height,
+        ...about,
       });
       // A side stands wherever the square next door is lower. It goes from
       // the height of that neighbour up to the height of this square.
@@ -84,7 +109,7 @@ export function createBuildings(track, storeys) {
       ];
       for (const { facing, from, to, outward, below } of neighbours) {
         if (below < height) {
-          sides.push({ facing, from, to, outward, bottom: below, top: height });
+          sides.push({ facing, from, to, outward, bottom: below, top: height, ...about });
         }
       }
     }
@@ -143,11 +168,27 @@ export function buildingsInView(buildings, kart, settings = CHASE, screen = SCRE
       [pa.x, pa.y - side.top * pa.scale],
     ];
     if (onScreen(points)) {
-      shapes.push({ kind: "side", facing: side.facing, ahead: (a.ahead + b.ahead) / 2, points });
+      shapes.push({
+        kind: "side",
+        facing: side.facing,
+        ahead: (a.ahead + b.ahead) / 2,
+        points,
+        column: side.column,
+        row: side.row,
+        style: side.style,
+        bottom: side.bottom,
+        top: side.top,
+      });
     }
   }
 
+  // A roof higher than the camera's eye is seen from below, which means it
+  // is not seen at all: the sides of the building hide it.
+  const eyeHeight = 1 / chaseNumbers(settings).growthPerRow;
   for (const roof of buildings.roofs) {
+    if (roof.height >= eyeHeight) {
+      continue;
+    }
     const corners = keepAhead(
       roof.corners.map(([x, y]) => seenFromKart(kart, x, y)),
       near,
@@ -165,7 +206,15 @@ export function buildingsInView(buildings, kart, settings = CHASE, screen = SCRE
     }
     if (points.length === corners.length && onScreen(points)) {
       const middle = seenFromKart(kart, roof.middle[0], roof.middle[1]);
-      shapes.push({ kind: "roof", facing: "up", ahead: middle.ahead, points });
+      shapes.push({
+        kind: "roof",
+        facing: "up",
+        ahead: middle.ahead,
+        points,
+        column: roof.column,
+        row: roof.row,
+        style: roof.style,
+      });
     }
   }
   return shapes;

@@ -49,10 +49,14 @@ const DRIVING_LINE = [
 // The same loop without the detour round the Grand Auditorium: from EDP Plaza
 // west along the north side of the Auditorium, then straight to the outer
 // path, south of the KPMG Gallery.
+// (The second point was [31, 49] until 12 November 2026. From the new start
+// behind the finish line, the robot then drove into the corner of the wall
+// square at column 34, row 49 and stayed there. One square further up, it
+// goes round cleanly from every place on the grid.)
 const WITHOUT_AUDITORIUM = [
   ...DRIVING_LINE.slice(0, 4),
   [36, 48],
-  [31, 49],
+  [31, 48],
   [27, 51],
   [14, 51],
   ...DRIVING_LINE.slice(11),
@@ -118,17 +122,21 @@ describe("the campus loop", () => {
     expect(track.height).toBeLessThanOrEqual(2048);
   });
 
-  it("starts on the road, just after the finish line, pointing along the road", () => {
+  // Changed on 12 November 2026 with the start rule (team lead's request):
+  // karts now start behind the finish line. Before, this test said the start
+  // was just after the line.
+  it("starts on the road, just behind the finish line, pointing along the road", () => {
     const { x, y, angle } = track.start;
     expect(tileKindAt(track, x, y)).toBe("road");
     expect(angle).toBe(0); // pointing right, the way the loop is driven
     for (let squaresAhead = 1; squaresAhead <= 3; squaresAhead++) {
       expect(tileKindAt(track, x + squaresAhead * size, y)).toBe("road");
     }
-    // The finish line is just behind the start, not under it.
+    // The finish line is just ahead of the start, not under it.
+    expect(track.startsBehindLine).toBe(true);
     expect(isInsideCheckpoint(track, 0, x, y)).toBe(false);
-    expect(track.checkpoints[0].right).toBeLessThanOrEqual(x);
-    expect(x - track.checkpoints[0].right).toBeLessThan(4 * size);
+    expect(x).toBeLessThanOrEqual(track.checkpoints[0].left);
+    expect(track.checkpoints[0].left - x).toBeLessThan(4 * size);
   });
 
   it("closes the road with every checkpoint: both ends of each one touch a wall", () => {

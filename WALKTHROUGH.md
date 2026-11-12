@@ -2,7 +2,7 @@
 
 Plain-language answers to the questions the teaching staff may ask when they open this repository. Any member can be asked about any part, so everyone should be able to give these answers.
 
-**State on 12 November 2026:** the game opens on a main menu with a drawn picture of the campus by the sea. From it a player chooses a track (the test oval or the campus loop) for a single race in the browser or for an online race, opens the leaderboard, changes the settings, and creates an account or signs in. A race has a lap counter, a finish time and three camera views. Online, up to eight browsers in the room of a track see each other's karts, the host starts a race for everyone, and when a signed-in player finishes, our server saves the time. The shared leaderboard shows the ten fastest races and laps of each track. The server is on the internet at https://novasbe-kart.onrender.com, with a database that holds the accounts and the results. Accounts have no email yet, and there are no characters, items, computer karts or cup, so some answers below still describe the plan. Each answer is rewritten as the real thing gets built.
+**State on 12 November 2026:** the game opens on a main menu with a drawn picture of the campus by the sea. From it a player chooses a track (the test oval or the campus loop) for a single race in the browser or for an online race, chooses the colours of their kart, opens the leaderboard, changes the settings, and creates an account or signs in. A race is seen from behind the kart, with a sky, buildings and trees. It starts on a grid behind the start line, under a gantry with start lights. Karts bump into each other, and banana peels on the road make a kart spin. A race has a lap counter, a finish time and three camera views. Online, up to eight browsers in the room of a track see each other's karts, the host starts a race for everyone, and when a signed-in player finishes, our server saves the time. The shared leaderboard shows the ten fastest races and laps of each track. The server is on the internet at https://novasbe-kart.onrender.com, with a database that holds the accounts and the results. Accounts have no email yet, and there are no characters, items, computer karts or cup, so some answers below still describe the plan. Each answer is rewritten as the real thing gets built.
 
 ## Where does each part live?
 
@@ -20,8 +20,17 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 | The practice race in the browser | `client/main.js` | Yes |
 | Keeping settings and best times in the browser | `client/storage.js`, `client/settings.js`, `client/records.js` | Yes: the starting camera view, and your best race and best lap per track |
 | The keyboard controls | `client/keyboard.js` | Yes |
-| The camera: which part of the track is shown | `client/camera.js` | Yes, three views |
-| The drawing of the track and the kart | `client/draw.js` | Yes, simple shapes, no artwork yet |
+| The camera: which part of the track is shown | `client/camera.js` | Yes, three views. The race view is low behind the kart, with a horizon |
+| Putting the picture together | `client/draw.js` | Yes: sky, ground, buildings, trees, karts, in the right order |
+| The ground, the sky, and the things beside the road | `client/ground.js`, `client/sky.js`, `client/props.js` | Yes: our own drawings, no image files |
+| How each track looks | `client/track-looks.js` | Yes: a circuit in the woods for the oval, the campus for the campus loop |
+| The kart and its driver as a 3D shape, and painting it | `client/kart-shape.js`, `client/kart-paint.js` | Yes: one shape, in any colours, from any side |
+| Choosing the colours of your kart | `client/kart-choice.js`, `client/kart-panel.js`, and the rule in `shared/kart-looks.js` | Yes: kart, helmet and suit |
+| Arrows, arrow boards and the "wrong way" warning | `client/route.js` | Yes |
+| The camera coming down at the start, the start lights, the spin | `client/scene.js` | Yes |
+| The starting grid | `shared/grid.js` | Yes: eight places behind the start line |
+| Karts bumping into each other | `shared/bumps.js` | Yes |
+| Banana peels | `shared/hazards.js` | Yes: they appear during a race and make a kart spin |
 | The online page | `client/online.html` and `client/online.js` | Yes: one room for each track, and it says who you are signed in as and whether your result was saved |
 | Smooth movement of online karts | `client/net.js` | Yes |
 | What the online page says about the race | `client/race-view.js` | Yes |
@@ -131,7 +140,9 @@ The server also protects itself, and each of these has a test:
 
 **Why karts move smoothly:** updates arrive 20 times a second, at slightly uneven moments, but the screen shows 60 pictures a second. `client/net.js` shows the race a tenth of a second in the past and draws each kart at the right point between the two updates on either side of that moment. If updates stop arriving, the karts hold still instead of guessing.
 
-**What this version does not have:** rooms with codes, a results screen that shows everyone's position, or karts bumping into each other. Everyone who opens the page of a track is in the same room.
+**A fourth thing a browser may send, since 12 November:** "paint my kart in these colours", three small whole numbers (see the answer about how a kart is drawn). It changes how the kart looks and nothing else.
+
+**What this version does not have:** rooms with codes, or a results screen that shows everyone's position. Everyone who opens the page of a track is in the same room.
 
 ## How do accounts work, and what do they refuse?
 
@@ -207,15 +218,35 @@ The words on the page (the big number, "You are the host: press Enter", "You are
 
 There are three views. The game starts in the first one and the V key switches to the next. The camera only changes what is shown. The kart moves by the same rules in every view.
 
-- **Behind the kart.** The track is turned so that the kart always drives up the screen, and it is tilted: ground further ahead is drawn smaller and higher. The kart is drawn from behind. On a track that comes with storeys, such as the campus loop, the buildings stand up too (see below).
+- **Behind the kart** (the race view). The camera is low and close behind the kart and looks along the road. The horizon is on the screen, with sky above it, and buildings and trees stand tall on both sides. The camera swings round behind the kart a moment after the kart has turned, so you see your own kart turn.
 - **From above.** The screen shows a zoomed-in part of the track from straight above. North stays up and the kart turns on the screen. The camera aims a little ahead of the kart, in the direction it is moving, glides instead of jumping, and stops at the edges of the track.
 - **Whole track.** Everything at once, without moving.
 
-The first two have a small map in the corner with a dot for the kart.
+The first two have a small map in the corner with a dot for every kart.
 
-How the tilt is made: for every picture, the track is first painted flat on a hidden canvas, turned so the kart points up. Then it is copied to the screen one thin row at a time. A row near the top of the screen takes a wide slice from far ahead and squeezes it. A row near the bottom takes a narrow slice from close by and stretches it. The arithmetic for "which slice goes on which row" is in `client/camera.js` and has tests. No 3D library is used.
+**How the race view is put together**, for every picture, in this order (`client/draw.js`):
 
-The team's original decision was the view from above with north up. The tilted view was added on 10 November because the still map looked flat, and Catarina chose it as the view the game starts in. The view from above is still there, one press of V away.
+1. **The sky** (`client/sky.js`): blue, a sun, clouds, and what lies on the horizon in each direction. A cloud is in one direction, like a compass point, so it slides across the screen when the camera turns and stays put when the kart drives.
+2. **The ground** (`client/ground.js`). The whole track was painted once from straight above when the page opened: road, grass, kerbs, the start line, the grid, arrows. For every picture that painting is laid flat under the camera. The screen is filled one row of pixels at a time: for each row we work out how far away the ground on it is and how large it is drawn there, and fill the row from the painting, turned and sized to match. Rows near the horizon show ground far away, drawn small. Rows near the bottom show ground close by, drawn large. Together that is the tilt. Far away the ground fades into a pale haze.
+3. **Everything that stands on the ground**, the furthest first, so nearer things cover further ones: buildings, banks, trees, arrow boards, bananas, the start gantry, the other karts.
+4. **Smoke and dust.**
+5. **Our own kart**, last, so nothing ever hides it.
+
+The arithmetic that says where a spot of the track lands on the screen is in `client/camera.js` and has tests. It is the same for the ground, the buildings, the trees and every corner of a kart, which is why they all line up. No 3D library is used.
+
+**The start of a race.** Before the countdown the camera is high above the grid, looking down at it like a tilted map (this was the game's first "behind the kart" view). While 3, 2, 1 is counted it comes down to its place behind the kart, and the lights on the gantry over the start line go red one by one, then green at GO (`client/scene.js`).
+
+**A history of this view.** The team's original decision was the view from above with north up. A tilted view was added on 10 November because the still map looked flat. On 12 November Catarina asked for much better graphics, and the tilted view became the race view described here: lower, with a horizon, a sky, and things standing beside the road. The view from above is still there, one press of V away.
+
+## How does a player know which way to go?
+
+Three things in the picture, all worked out from one list (`client/route.js`): the track's "route", points along the middle of the road in the order they are driven.
+
+- **Arrows painted on the road**, all the way round.
+- **Arrow boards at the bends**, standing where a driver who missed the bend would end up. They point left or right, as the driver sees it.
+- **A warning.** A kart that drives against the route for more than a moment gets "Wrong way! Turn round and follow the arrows." A kart that is standing, spinning, or just crossing the road does not.
+
+None of this counts laps. A lap counts only if the kart went through every checkpoint in order, and the server decides that. A test checks that following the route goes through every checkpoint in order on both tracks, so the arrows cannot lead a player wrong.
 
 ## How is a track described, and how do walls work?
 
@@ -241,13 +272,60 @@ From the real campus. The tracks are taken from the Nova SBE campus and its buil
 
 Only in the picture. The driving rules know nothing about height: a wall is a wall, and karts bounce off it as before.
 
-A track can come with the number of storeys of each square, in a second drawing of digits: `shared/tracks/campus-loop-storeys.js`, where 0 is flat and 2 means two storeys. One storey is 3.5 metres. When the race page opens, `client/buildings.js` turns every wall square with storeys into a block: a flat roof, and an upright side wherever the square next door is lower. For every picture, it works out which sides and roofs can be seen from behind the kart and where they go on the screen, with the same arithmetic that places the karts (`chasePoint` in `client/camera.js`): further ahead means higher up and smaller, and a side goes up by its height times the size at that distance. Sides that face away from the camera are left out, because the roof and the other sides hide them. Then `client/draw.js` paints everything, karts included, from the furthest to the nearest, so nearer things cover further ones and a kart behind a building disappears. Our own kart is painted last.
+A track can come with the number of storeys of each square, in a second drawing of digits: `shared/tracks/campus-loop-storeys.js`, where 0 is flat and 2 means two storeys. One storey is 3.5 metres. When the race page opens, `client/buildings.js` turns every wall square with storeys into a block: a flat roof, and an upright side wherever the square next door is lower. For every picture, it works out which sides and roofs can be seen from behind the kart and where they go on the screen, with the same arithmetic that places the karts (`chasePoint` in `client/camera.js`): further ahead means higher up and smaller, and a side goes up by its height times the size at that distance. Sides that face away from the camera are left out, because the roof and the other sides hide them. A roof higher than the camera's eye is left out too: it would be seen from below.
+
+**Walls without storeys** used to be flat, so a kart bounced off thin air. Now every such wall that touches open ground becomes a low bank (`barrierHeight` in the track's look): red and white blocks round the test oval, a clipped hedge round the campus.
+
+**What is painted on a building** (`client/draw.js`): each side in a shade of white that depends on which way it faces, so corners can be seen, and on every storey a long band of dark glass, as the campus buildings have. Far-away buildings get no windows and fade into the haze.
+
+**Painting in the right order.** Everything that stands is painted from the furthest to the nearest, so nearer things cover further ones and a kart behind a building disappears. The squares of the map make "furthest" easy to get right: seen from the camera's own square, a thing in a row of squares further away can never be in front of a thing in a nearer row, and within a row the same goes for columns. So the furthest row is painted first, and within a row the furthest column. A wall that stands between the camera and our own kart is left out, as if the camera could see through it, and our own kart is painted last.
+
+**From above**, buildings show their roofs, some with rows of solar panels, and every building and bank throws a shadow on the ground (`client/ground.js`).
 
 **Where the storeys come from.** OpenStreetMap has the shapes of the buildings but no storey counts for the campus. The school's campus map (campustour.novasbe.pt) lists what is on each floor of each building, so a building counts the floors on which something of it is listed: for example Cascais Academic Hall 3, the Library 2. These are a first guess, to be checked on campus.
+
+## What makes the campus loop look like the campus?
+
+The layout is the real one (see above). On 12 November the picture was brought closer to the real place, from what can be read and seen online: the school's own campus tour, its 2018 campus map, newspaper reports and OpenStreetMap. No picture was copied: everything is our own drawing. What was taken from the real campus (`client/track-looks.js`):
+
+- **White, flat-roofed buildings with long bands of dark glass**, and rows of solar panels on the roofs.
+- **Pale stone paving** for the paths and squares, and green lawns.
+- **The sea** on the horizon to the south and west, **the São Julião da Barra fort** with its red roofs and small lighthouse to the south, **the Bugio lighthouse** out in the river mouth, and the red roofs of Carcavelos inland.
+- **Palms** on the side of the coast road, **pines** inland, young trees on the lawns.
+- **Slim black signs** with the names of the places: Walk of Founders, Green Park, Library, Horizon Hall, Grand Auditorium, Student Hall.
+- **The painted tunnel to the beach** at the southern tip.
+
+What is still wrong or missing: every building looks the same (the real ones differ: the Auditorium is a windowless wedge, the entrance has a blank cream wall and white trusses), the storeys are a first guess, there are no stairs, ramps, pools or benches where the real ones are, and nobody has compared it with the place itself. Catarina has asked people to film the campus. Their videos are the next source.
+
+## What happens when karts touch, and what do the banana peels do?
+
+Both are rules, so they are in the `shared/` folder, the server runs them for online races, and a browser cannot change them.
+
+**Bumping** (`shared/bumps.js`). Every kart is a circle. When two circles overlap, the karts are pushed apart along the line between their middles, and the parts of their speeds along that line are swapped, with half of the closing speed lost. So a kart hit from behind is shoved forward and the one behind is slowed, and a side swipe pushes both sideways. After a bump the wall rule runs again, so a bump can never leave a kart inside a wall. A bump never changes a lap count or a clock.
+
+**Banana peels** (`shared/hazards.js`). In a race, a banana peel appears on the road from time to time: the first one four seconds after GO, then one every two to five seconds, up to a number that grows with the size of the track (five on the test oval, twelve on the campus loop). A kart that drives over one spins out for 1.2 seconds: its keys do nothing, it slides the way it was going and slows down, and the banana is gone. For one second after a spin it cannot be spun again. The rules do not turn the kart: the spinning is only drawn (`spinTurnOf` in `client/scene.js`), and after the spin the kart points where it pointed before.
+
+**Where a banana may appear:** only on road, never next to a wall, never near the start line or the grid, never close to a kart or to another banana. One banana can therefore never block the road.
+
+**Chance, but honest chance.** Where and when bananas appear comes from a number picked when the race starts, the "seed", and a small formula that turns it into a long row of numbers that look random. The same seed always gives the same bananas. Online, the server picks the seed and never tells anyone, and no message from a browser can place or remove a banana. That also lets the tests give a seed and know exactly what will happen.
+
+What must NOT happen, each with a test: karts passing through each other at the highest speed, a bump creating speed out of nothing, a kart inside a wall after a bump, a banana on grass or in a wall or on the grid or on top of a kart, a spinning kart being steered, a second banana making a spin longer, a banana being hit during 3, 2, 1 or by someone who is only watching, and a browser message that places or removes a banana.
+
+## How is a kart drawn, and how does a player choose its colours?
+
+**A kart is a small model, not a picture** (`client/kart-shape.js`): boxes, wedges and wheels with real positions in space, about 22 units long, 17 wide and 16 high, with a driver who has a body, arms on the steering wheel and a helmet. `client/kart-paint.js` paints it from any direction: it leaves out the faces that point away from the eye, paints the furthest parts first, and makes each face brighter the more squarely it faces the sun. So a kart turns smoothly, its front wheels and its driver turn with the steering, and the same model is used in all three views. Before 12 November a kart was four flat pictures and jumped from one to the next.
+
+**The colours come from a "look"**: the colour of the kart, of the helmet and of the driver's suit. In the menu, "Your kart" lets a player pick each from a short list and shows the kart turning round in the chosen colours. The choice is kept in the browser.
+
+**A choice is three small whole numbers, never a colour or a text** (`shared/kart-looks.js`): "kart colour number 6, helmet number 2, suit number 1". That matters online. The browser tells the server its choice, and the server passes it on to the other players. A number from a known range cannot carry anything harmful. A free text could. The server checks each number and drops anything else that came with it, and a browser that sends something that is not three numbers in range is sent away. Each of those has a test. A player who never chose gets the colours of their starting place, as before.
+
+Online, the name of a signed-in player is shown above their kart.
 
 ## How are laps counted, and can a player cheat?
 
 A track has checkpoints: invisible rectangles across the road, in driving order. The first one is the finish line. The game keeps one count for each kart: checkpoints passed.
+
+**The karts start behind the line** (changed on 12 November at Catarina's request: before, they started just after it, so there was no start line ahead of them). The grid is two columns of four places behind the line (`shared/grid.js`). Crossing the line for the first time starts lap 1 and does not count as a lap. The clock still starts at GO, so the time of lap 1 includes the short run to the line.
 
 - Driving into the next checkpoint adds one.
 - Driving back into the checkpoint before the last one takes one away.
@@ -288,9 +366,19 @@ The only personal data is the user name a player chose. There is no email, no re
 
 ## What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 820 tests today, plus 21 that only run against the real database. They take about 40 seconds, most of it online races that run in real time.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 1,178 tests today, plus 21 that only run against the real database. They take about 40 seconds, most of it online races that run in real time.
 
 **Covered today**
+
+- The starting grid and the start behind the line, in `tests/grid.test.js`. Sixty-two tests: all eight places are on road, behind the line and clear of the walls on both tracks, the first crossing of the line starts lap 1 without counting as a lap, and driving backwards from the grid or back and forth over the line still never earns a lap.
+- Bumping, in `tests/bumps.test.js`. Fifty-one tests: a kart hit from behind is shoved on and the one behind slowed, a side swipe pushes both, and what must not happen: passing through each other at top speed, speed out of nothing, a kart inside a wall or outside the map after a bump, a changed lap count or clock, and broken arithmetic when two karts are on exactly the same spot.
+- Banana peels, in `tests/hazards.test.js` (eighty-five tests) and `tests/room-bananas.test.js` (thirty-eight, in a room): where one may appear and where never, the spin, the second banana that must not lengthen it, the same seed always giving the same bananas, none during 3, 2, 1 or while the room is open, and no message from a browser that can place or remove one.
+- The kart as a shape, in `tests/kart-shape.test.js`. Twenty-five tests: every face of every part points outwards (one that pointed inwards would vanish from some directions), the kart stands on the ground and is the size the driving rules assume, steering turns only the front wheels and the driver, a look that is incomplete or holds anything but plain colours is not trusted, and the painter agrees with the camera about where every point lands. One of these tests found the wheels floating a little above the ground.
+- The race camera, the countdown picture, the route and the sky's directions, in `tests/race-camera.test.js`. Thirty-nine tests: the horizon is on the screen, further ground is higher and smaller on every row, the camera comes down without ever going up again, the start lights are never green before GO, "wrong way" is not set off by a standing, spinning or crossing kart, and a spin is drawn ending on whole turns.
+- The looks of the tracks, in `tests/track-looks.test.js`. Twenty-three tests: every colour is one the canvas can use, the painted route runs over road and through every checkpoint in order, no tree stands on the road, beside it or on a building, the arrow boards point the way the bends turn, and banks appear exactly where a wall touches open ground.
+- Choosing kart colours, in `tests/kart-choice.test.js` (seventeen tests) and `tests/kart-look-online.test.js` (eighteen, some over real connections): only three whole numbers in range are a choice, a saved choice that was changed by hand is ignored, the server drops anything extra, a player cannot paint someone else's kart, colours change nothing about the driving, and a browser that sends a colour written out, a name or a number out of range is sent away.
+- To check that these tests really guard the rules, the new code was broken on purpose in 68 ways, one at a time (for example "bananas can appear on grass", "a spinning kart can still steer", "the first crossing of the line counts as a lap", "green light before GO", "the server passes on any look"). Every one made at least one test fail.
+- Five older tests were changed, because the rule they pinned was changed on purpose. Four pinned the old start (a kart just after the line, a hard-coded start position, one robot's path from it, the start dot on the small map) and now pin the new one. One pinned the exact list of what the server sends about a kart, and that list gained one word, "spin". Nothing else was removed or loosened. They are listed in `docs/diary/catarina.md` for the team to check.
 
 - The account rules in `server/accounts.js`, in `tests/accounts.test.js`. Forty-seven tests with a pretend store kept in memory and a pretend clock: signing up, names and passwords that must be refused, signing in whatever capitals the name is typed in, the same refusal for a wrong password and for a name nobody has, the lock after five wrong passwords and its end ten minutes later, sessions that stop after seven days, signing out, deleting an account, results that cannot be real (zero steps, a lap longer than the race), and the leaderboard: ten rows, one per player, own rank outside the ten.
 - The account addresses in `server/api.js`, in `tests/api.test.js`. Fifty-three tests that send real requests to a real copy of the server. More than half are refusals: a request started by another website, a form instead of our format, a message that is too long or not one object, the wrong kind of request, an address that does not exist, a made-up or damaged cookie, deleting someone else's account, too many tries from one computer, too much password work in total, a track that does not exist, and every address on a server without a database. One test goes through a whole visit with the same helper the pages use, and one uses the real, slow password scrambler.
@@ -333,6 +421,10 @@ The server tests start a real copy of the server on the computer running the tes
 To check that the tests really guard the rules, we broke the code on purpose in 57 different ways, one at a time (for example "grass is as fast as road", "driving backwards is not counted" and "other websites may connect"). In the end every one made at least one test fail. One did not at first: accepting an update that arrives late. The test for it was too weak, and it was tightened.
 
 **Not covered today**
+
+- How the new race view looks in motion, and whether it runs smoothly. The files that paint (`client/draw.js`, `client/ground.js`, `client/sky.js`, `client/props.js`, `client/kart-paint.js`, `client/kart-panel.js`) need a real page and have no tests of their own beyond the arithmetic they share. On 12 November they were looked at in the agent's browser as single pictures: both tracks in all three views, the start with its lights, karts from every side, every tree and sign, the "Your kart" panel, three karts on the online grid. That browser was not on the screen, so nothing was seen moving.
+- Bumping, bananas and the "wrong way" warning tried by a person. In the real page a robot drove a race with bananas and spun once, reversing down the straight brought up "Wrong way!" and driving forwards again took it away, and two pretend players bumped the page's kart forward on the online grid. Nobody has held the keys.
+- The new work on the live server. It was only run on a laptop.
 
 - Accounts on the live server. Until this work is merged, the live server has no accounts, and the real tables `players`, `sessions` and `race_results` do not exist yet: the server creates them the first time it needs them. On the real database only tables starting with `test_` were used, from a laptop on home Wi-Fi. After the merge, someone has to create an account on the public link, finish an online race and see the time on the leaderboard. `docs/two-laptop-checklist.md` has the checks.
 - Accounts used by real people. On 12 November the whole visit was done once in the agent's browser, on a laptop, with pretend accounts kept in memory: create an account through the menu, join the online room, a small robot drove three laps in the real page, the page said "Saved to the leaderboard: 1st place", the Leaderboard panel showed the time, then sign out, a wrong password, sign in, and delete the account. Nobody has typed a password by hand yet, and two signed-in players on two laptops have not raced each other.
@@ -413,10 +505,15 @@ The server does not wait for the database when it starts. `/database-check` answ
 - How long the password scrambling takes on the live server is not measured yet. On a laptop it is under a tenth of a second. The free server is much slower, so the limit on password work in total (60 a minute) is a first guess.
 - A result that could not be saved because the database did not answer at that moment is lost. The player is told.
 - The leaderboard shows the fastest times ever, with no date and no way for us to remove a time except in the database itself. A player who drives online in two tabs appears in a race twice.
-- Guests can drive in online races. Their karts look the same as everyone else's, and the page does not yet show other players' names.
+- Guests can drive in online races. Their karts look the same as everyone else's. A signed-in player's name is shown above their kart; a guest has no name.
 - There is no profile page and no saved progress yet (trophies, unlocked characters).
 - Online, your own kart reacts a moment late: your key press travels to the server and the result travels back, and then the picture is a tenth of a second behind. On one laptop this is small. Over the internet it will be bigger. The fix is "prediction": the browser moves your own kart at once with the shared rules and corrects it when the server answers. The rules were written to make that possible, but it is not built.
-- Online has one fixed room for each track, no rooms with codes, no results screen that shows everyone's position and no bumping between karts. Anyone with the link can join, signed in or not.
+- Online has one fixed room for each track, no rooms with codes and no results screen that shows everyone's position. Anyone with the link can join, signed in or not.
+- Bumping and bananas were tried by robots in the tests and by pretend players in the agent's browser, never by people. How hard a bump is, how long a spin lasts and how many bananas there are are first guesses, to be tuned by playing (the numbers are named at the top of `shared/bumps.js` and `shared/hazards.js`).
+- A kart that spins into a wall can end up standing nose to the wall. The player then has to reverse, as after any crash.
+- Bananas make a race partly luck, and the shared leaderboard does not know that: a time set in a race with a lucky run of bananas counts the same as any other.
+- Two players can choose the same colours. Online, names above the karts and the dots on the small map tell them apart only if they are signed in.
+- Every kart has the same shape and every driver wears a helmet. Characters that look like particular people, which the team wants, are not built: the model was made so that parts of it can be swapped, but only the colours can be chosen today.
 - The host is simply whoever has been in the room longest. They can start a new race at any moment, also in the middle of one, and nobody else can stop them. A race with a racer who never finishes only ends when the host starts the next one or that racer leaves.
 - Someone watching always follows the kart with the most laps. They cannot choose which kart to follow. The line under the track still tells them their own kart's colour, although that kart is not on the track.
 - The online race start was checked by hand in two tabs of one browser on one laptop, not yet with real players on different laptops. `docs/two-laptop-checklist.md` has the checks for that.
@@ -424,14 +521,14 @@ The server does not wait for the database when it starts. `/database-check` answ
 - A very short key tap, shorter than one picture on the screen, is not sent to the server.
 - The limit of 60 messages a second is per connection. Nothing yet limits how many connections one computer may open, beyond the room being full at eight.
 - The numbers in the driving rules are first guesses. No person has driven the kart for long yet, so they will change with playtesting.
-- The driving rules have no drifting, bumping between karts, sand or sea yet.
-- In the tilted view, only tracks with storeys have standing buildings: today the campus loop. Other walls, including the edge of the campus and the whole test oval, are painted on the ground with a striped edge and do not stand up. There is no sky or scenery. The buildings are plain blocks of shaded grey with flat roofs: no windows, no glass, no sloping roofs. They are blocks of 6-metre squares, so their corners are steps, like the walls.
-- The buildings are painted furthest first (the painter's way). Where two pieces are about as far away, the wrong one can end up on top for a moment. Real 3D drawing would sort this out exactly, but needs a 3D library.
+- The driving rules have no drifting, sand or sea yet.
+- Buildings are blocks of 6-metre squares, so their corners are steps, like the walls, and every building is painted the same way: white with bands of glass. The real buildings differ from each other.
+- Trees, signs and bananas are flat pictures that always face the camera. That is fine for a tree. The rules do not know the trees, so a kart that leaves the road can drive straight through one on a lawn. Trees never stand on the road or right beside it.
+- Things are painted furthest first, by the square of the map they stand on. A wide thing can stick out of its square, so now and then a piece of a kart or a tree is covered by a wall beside it for a moment. Real 3D drawing would sort this out exactly, but needs a 3D library.
+- A wall between the camera and our own kart is left out of the picture, so in a tight corner a building can seem to vanish for a moment.
 - Buildings far ahead appear at the top right of the screen, where the small map in the corner can cover them.
-- The kart is drawn with a few coloured shapes, from above and from behind. Real artwork would need a picture of each character from several sides.
-- In the tilted view, other players' karts stand up, with a driver, and are placed and sized by distance (`chasePoint` in `client/camera.js`). There are only four pictures of a kart: from behind, from the front, and from each side. A kart that is turning therefore snaps from one picture to the next instead of turning smoothly. More pictures in between would fix that.
-- Karts hide behind the standing buildings of the campus loop, but not behind flat walls. A kart on the other side of the test oval's middle block is drawn as if the block were not there. Our own kart is always painted last, so it is never hidden.
-- The tilted view redraws the whole screen row by row for every picture. That is fine on a laptop, but it is more work for the computer than the view from above.
+- The race view was looked at in the agent's browser, which was not on the screen: single pictures, not movement. Whether it runs smoothly on a normal laptop, and how the camera's swing feels, has to be judged by a person. Working out one picture took about 2 to 5 thousandths of a second there, of the 16 there are.
+- The race view fills the screen row by row for every picture and keeps the whole track as one large hidden picture with five smaller copies. That is fine on a laptop. It was not tried on a phone or an old computer.
 - The game needs a keyboard. There are no touch controls for phones.
 - The kart is drawn exactly where the last step of the rules put it. On screens faster than 60 pictures a second the movement can look slightly uneven. Drawing in-between positions would fix that.
 - If the browser tab is in the background, the practice race runs in slow motion instead of jumping ahead.

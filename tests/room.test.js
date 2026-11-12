@@ -239,8 +239,10 @@ describe("the update a room sends to browsers", () => {
     expect(update.type).toBe("state");
     expect(update.step).toBe(0);
     expect(update.karts).toHaveLength(1);
+    // "spin" was added on 12 November 2026 with the banana peels: how many
+    // more steps a kart will spin. It is the only thing added to this list.
     expect(Object.keys(update.karts[0]).sort()).toEqual(
-      ["angle", "finished", "id", "lapSteps", "lapsDone", "place", "steps", "vx", "vy", "x", "y"].sort(),
+      ["angle", "finished", "id", "lapSteps", "lapsDone", "place", "spin", "steps", "vx", "vy", "x", "y"].sort(),
     );
     expect(update.karts[0].id).toBe(player.id);
   });

@@ -229,6 +229,15 @@
         </div>
       </div>
 
+      <button type="button" id="open-kart" class="button">
+        <svg class="button-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+          <path d="M3 13h14l-2-5H7z"/>
+          <circle cx="6" cy="14.5" r="2.4"/>
+          <circle cx="14" cy="14.5" r="2.4"/>
+        </svg>
+        Your kart
+      </button>
+
       <button type="button" id="open-settings" class="button">
         <svg class="button-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
           <path d="M3 5h14M3 10h14M3 15h14"/>
@@ -400,6 +409,30 @@
             </p>
           </div>
         </section>
+      </div>
+    </dialog>
+
+    <!-- Your kart: choosing its colours. kart-panel.js fills in the colours
+         to choose from and paints the kart in the small picture. -->
+    <dialog id="your-kart" class="panel" aria-labelledby="your-kart-title" closedby="any">
+      <div class="panel-head">
+        <h2 id="your-kart-title">Your kart</h2>
+        <form method="dialog">
+          <button class="close-button" aria-label="Close">
+            <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 3l10 10M13 3L3 13"/></svg>
+          </button>
+        </form>
+      </div>
+      <div class="panel-body">
+        <!-- The small picture of the kart is put here by kart-panel.js. -->
+        <div id="kart-preview-place"></div>
+        <!-- One row of colours for the kart, the helmet and the suit goes here. -->
+        <div id="kart-choices" class="kart-choices"></div>
+        <p id="kart-status" class="note" role="status"></p>
+        <p class="note">Other players see these colours too when you race online.</p>
+        <form method="dialog">
+          <button class="button button-wide">Done</button>
+        </form>
       </div>
     </dialog>
 

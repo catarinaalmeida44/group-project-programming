@@ -5,6 +5,7 @@
 // only starts them and hands each one what it needs:
 //
 //   settings-panel.js     Settings
+//   kart-panel.js         Your kart: choosing its colours
 //   track-panel.js        Single race: choosing a track
 //   leaderboard-panel.js  Leaderboard
 //   account-panel.js      the account corner, and signing in and out
@@ -17,6 +18,7 @@ import { storageOf } from "./storage.js";
 import { accountApi } from "./account-api.js";
 import { TRACKS } from "../shared/tracks/index.js";
 import { connectSettings } from "./settings-panel.js";
+import { connectKartChoice } from "./kart-panel.js";
 import { connectTrackChoice } from "./track-panel.js";
 import { connectLeaderboard } from "./leaderboard-panel.js";
 import { connectAccount } from "./account-panel.js";
@@ -24,6 +26,7 @@ import { connectAccount } from "./account-panel.js";
 const storage = storageOf(window); // this browser's storage, for the settings and the best times
 
 connectSettings(document, storage);
+connectKartChoice(document, storage);
 connectTrackChoice(document, TRACKS, storage);
 const leaderboard = connectLeaderboard(document, { api: accountApi, storage, tracks: TRACKS });
 

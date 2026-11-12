@@ -18,8 +18,12 @@
 //   vx, vy  how fast it is really moving, to the right and downwards.
 //           This can differ from the direction it points: that is a slide.
 //
-// WHAT IS NOT HERE YET
-// Walls, drifting and boosts, karts bumping each other, sand and sea.
+// WHAT IS IN OTHER FILES
+// Walls (track.js), karts bumping each other (bumps.js), and what makes a
+// kart spin out (hazards.js). How a spinning kart moves is here: slideKart().
+//
+// WHAT IS NOT WRITTEN YET
+// Drifting and boosts, sand and sea.
 
 import { clamp } from "./numbers.js";
 import { STAT_LOWEST, STAT_HIGHEST } from "./characters.js";
@@ -51,6 +55,13 @@ const OVER_LIMIT_SLOWDOWN = 400; // speed lost each second when faster than the 
 const FULL_STEERING_FROM = 0.25; // steering is at full strength from 25% of top speed
 const STEERING_LOST_AT_TOP_SPEED = 0.2; // turns are 20% slower at top speed
 const SLIDE_TOO_SMALL_TO_SEE = 0.5; //     below this, a sideways slide is set to zero
+
+/**
+ * Speed lost each second while a kart is spinning out. A spin lasts 1.2
+ * seconds (hazards.js), so a kart at a middle top speed has almost stopped
+ * when its spin ends.
+ */
+export const SPIN_SLOWDOWN = 240;
 
 // ---------------------------------------------------------------------------
 
@@ -125,6 +136,33 @@ export function stepKart(kart, input, character, surface = ROAD) {
     x: kart.x + vx * STEP_SECONDS,
     y: kart.y + vy * STEP_SECONDS,
     angle,
+    vx,
+    vy,
+  };
+}
+
+/**
+ * Moves a kart that is spinning out forward in time by one step, and gives
+ * back the new kart.
+ *
+ * A spinning kart has no grip and no driver: it keeps sliding the way it
+ * was going, whichever way it points, and slows down quickly. There are no
+ * keys here at all, so no key can steer it or speed it up. The ground makes
+ * no difference. The direction it points is not changed either: the page
+ * draws the spinning, and after the spin the kart points where it pointed
+ * before.
+ */
+export function slideKart(kart) {
+  const speed = speedOf(kart);
+  const speedAfter = Math.max(0, speed - SPIN_SLOWDOWN * STEP_SECONDS);
+  // The share of its speed the kart keeps. Its direction of travel stays the same.
+  const kept = speed > 0 ? speedAfter / speed : 0;
+  const vx = kart.vx * kept;
+  const vy = kart.vy * kept;
+  return {
+    ...kart,
+    x: kart.x + vx * STEP_SECONDS,
+    y: kart.y + vy * STEP_SECONDS,
     vx,
     vy,
   };

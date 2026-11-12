@@ -4,6 +4,120 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 12 November 2026, later: the race view, karts as 3D models, bumping, bananas, kart colours
+
+**What was done**
+
+Catarina said the graphics were underwhelming and asked for much more: better karts above all, a campus loop that looks like Nova SBE, a real start line, karts that bump, bananas that make a kart spin, and arrows that show the way. She asked the agent to work freely and be ambitious. Three agents worked at the same time: one on all the pictures (on the branch `race-graphics`), one on the new rules in its own copy of the folder (branch `race-rules`), and one that only read about the real campus online and wrote a report. The rules branch was merged into the pictures branch without a clash, because the split was strict: rules own `shared/` and `server/`, pictures own `client/`.
+
+What a player sees now:
+
+- **The race from behind the kart**, low and close, with a horizon, a sky, clouds, and buildings and trees standing on both sides.
+- **Karts as small 3D models** with a driver, a helmet, wings and wheels. They turn smoothly, and the front wheels and the driver turn with the steering.
+- **"Your kart" in the menu**: choose the colour of the kart, the helmet and the suit. Other players see them online.
+- **A real start**: a grid of painted boxes behind a chequered line, a gantry with three lights, and the camera coming down from above the grid during 3, 2, 1.
+- **Arrows** painted on the road, **arrow boards** at the bends, and a **"Wrong way!" warning**.
+- **Bumping**: karts push each other instead of passing through.
+- **Banana peels** that appear on the road during a race and make a kart spin.
+- **The campus loop looking like the campus**: white buildings with dark glass, pale paving, lawns, hedges, palms and pines, the sea, the fort and the lighthouse on the horizon, name signs, the painted beach tunnel.
+- **The test oval as a circuit in the woods**, with red and white banks.
+
+| Where | What it is for |
+|---|---|
+| `client/kart-shape.js`, `client/kart-paint.js` | The kart as a 3D shape, and painting it from any side |
+| `client/draw.js` | Puts the whole picture together, in the right order |
+| `client/ground.js`, `client/sky.js`, `client/props.js` | The ground, the sky, and trees, signs and bananas |
+| `client/track-looks.js` | How each track looks |
+| `client/route.js`, `client/scene.js` | Arrows and "wrong way"; the start lights, the camera coming down, the spin |
+| `client/camera.js`, `client/buildings.js` | Changed: a low race camera next to the high one; banks, and what a low camera sees |
+| `client/kart-choice.js`, `client/kart-panel.js`, `shared/kart-looks.js` | Choosing kart colours, and the rule for what may be chosen |
+| `shared/grid.js`, `shared/laps.js`, `shared/track.js` | The starting grid, and the start behind the line |
+| `shared/bumps.js` | Karts bumping into each other |
+| `shared/hazards.js`, `shared/countdown.js`, `shared/race.js`, `shared/physics.js` | Banana peels and the spin |
+| `server/room.js`, `server/online.js`, `server/messages.js` | Changed: the room uses the grid, bumps the karts, looks after the bananas, and passes on kart colours |
+| `client/main.js`, `client/online.js`, `client/net.js` | Changed: both race pages show all of the above |
+| `tests/` | 9 new files, 358 new tests |
+
+**Why it was done this way**
+
+- **Still no library and no image files.** Everything is drawn by our own code on the browser's canvas, as the team decided on 11 November. A kart is boxes and wheels with real positions, so it can be painted from any side and recoloured. A picture could not.
+- **One piece of arithmetic for everything.** The same sum says where the ground, a building, a tree and every corner of a kart land on the screen. That is why they line up, and it has tests.
+- **Rules stay rules.** Bumping, bananas and the start are in `shared/` and the server runs them. The pictures only show what the rules worked out. A spinning kart is turned in the picture only: the rules do not turn it.
+- **Bananas are chance, but honest chance.** They grow from a number picked at the start of a race. The server picks it, and no message from a browser can place or remove a banana.
+- **Kart colours travel as three small numbers**, never as a colour or a text, so nothing harmful can ride along to other players' screens.
+- **The campus comes from reading, not from copying.** A helper read the school's campus tour, its campus map and newspaper reports, and described the place in its own words. Nothing was copied, and no logo is used.
+
+**Existing tests that were changed, for the team to check**
+
+The team's rule is never to change a test to make it pass. These five were changed because the rule they pinned was changed on purpose, at Catarina's request. Nothing was deleted or loosened.
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `tests/race.test.js`, the racer at the start | on `track.start`, with the old progress | on pole, behind the line, with the new progress | the start moved |
+| `tests/campus-loop.test.js`, where the track starts | just after the finish line | just behind it | the start moved |
+| `tests/campus-loop.test.js`, the robot's path that skips the Auditorium | a point at column 31, row 49 | row 48 | from the new start the simple robot got stuck on a corner. What the test checks is unchanged |
+| `tests/track-list.test.js`, the start dot on the small map | column 16.5 | column 13.5 | the start moved |
+| `tests/room.test.js`, what the server sends about a kart | eleven things | twelve: "spin" was added | a spinning kart has to be shown |
+
+**Decisions**
+
+Decided by Catarina: karts start behind the line; karts bump; bananas; arrows that show the way; better graphics with the karts first.
+
+Decisions made by the agent, please confirm:
+
+1. **Rodrigo's track.** Only where the campus loop starts was changed in `shared/tracks/campus-loop.js` (four squares back, behind the line). The layout, the checkpoints and the storeys are untouched. Everything about how it looks is in new files. Rodrigo should review this.
+2. **Bananas appear by themselves**, about one every 2 to 5 seconds, up to 5 on the oval and 12 on the campus loop. They are not items a player holds. They also appear in a single race.
+3. **Races with bananas count for the shared leaderboard** like any other, although bananas make a race partly luck.
+4. **A bump** gives back half of the closing speed, and all karts weigh the same for now.
+5. **A spin** lasts 1.2 seconds, and for 1 second after it a kart cannot be spun again.
+6. **The camera swings round a moment after the kart turns**, so you see your kart turn.
+7. **The looks**: a circuit in the woods for the oval; for the campus white buildings with glass bands, pale paving, hedges round the edge, palms on the sea side and pines inland.
+8. **Names on the campus signs**: Walk of Founders, Green Park, Library, Horizon Hall, Grand Auditorium, Student Hall. No sponsor names and no logos.
+9. **Two players may choose the same kart colours.**
+10. **A browser may now send a fourth kind of message**, the colours of its kart.
+
+**What was checked, and what was not**
+
+Checked:
+
+- `npm test`: 1,178 tests pass, 5 are skipped (they need the database address). Before this work there were 820.
+- The new code was broken on purpose in 68 ways, one at a time (42 in the rules, 26 in the pictures and the kart colours). Every one made at least one test fail.
+- One test found a real mistake while it was being written: the wheels of the kart floated a little above the ground.
+- In the agent's browser, as single pictures: both tracks in all three views, the start with its lights, the eight kart colours from every side, every tree, sign and banana, the "Your kart" panel, three karts on the online grid in their chosen colours.
+- In the real page: a robot drove a race with bananas and spun once; reversing down the straight brought up "Wrong way!"; two pretend players bumped the page's kart forward on the online grid.
+- Working out one picture took 2 to 5 thousandths of a second in that browser.
+
+Not checked:
+
+- **How any of it looks in motion.** The agent's browser was not on the screen, so it showed single pictures only. Whether the race view is smooth, and how the camera's swing feels, has to be judged by a person.
+- **Bumping and bananas played by people.** All the numbers are first guesses.
+- **The live server.** This was only run on a laptop.
+- **The campus compared with the real place.** It was built from descriptions. The videos Catarina asked people to film are the next step.
+- Firefox, Safari, a phone, an old laptop.
+- One thing a robot showed: after a spin a kart can end up standing nose to a wall, and the player has to reverse. The test robot cannot reverse and got stuck there.
+
+**What was done in git**
+
+- A branch `race-graphics` was made from `main` after pull request 15 was merged.
+- The rules helper worked in a separate folder, `.worktrees/rules`, on the branch `race-rules`. It was merged into `race-graphics` in two steps and then removed.
+- Small commits, one per step, pushed to GitHub as a backup. Nothing was merged into `main`.
+
+**How to check it yourself**
+
+1. Run `npm start` (or `npm run start:pretend`) and open http://localhost:3000.
+2. Click "Your kart" and choose colours.
+3. Click "Single race" and choose the campus loop. Press an arrow key and watch the start. Follow the arrows. Drive over a banana.
+4. Turn round and drive the wrong way for a moment.
+5. Open "Online" in two browser windows, choose the same track in both, and drive one kart into the other.
+6. `docs/two-laptop-checklist.md` has checks 37 to 48 for all of this with two laptops.
+
+**What comes next**
+
+- People play it and say how it feels. The numbers to tune are named at the top of `shared/bumps.js`, `shared/hazards.js`, `client/camera.js` and `client/draw.js`.
+- The campus videos, to make the buildings differ from each other as the real ones do.
+- Characters that look different from each other. The kart model was made so that its parts can be swapped.
+- Still open from before: slower karts on the campus loop, a results screen with everyone's position, the cup.
+
 ### 12 November 2026: accounts, the shared leaderboard, and a new menu
 
 **What was done**
