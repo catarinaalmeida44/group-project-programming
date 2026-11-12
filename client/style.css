@@ -323,6 +323,11 @@ h1 {
   font-weight: 600;
 }
 
+/* A line that has nothing to say takes no room: no empty box on the page. */
+.status:empty {
+  display: none;
+}
+
 /* The numbers above the track: lap, time, camera, lap times. */
 .hud {
   display: flex;
@@ -367,10 +372,11 @@ canvas {
   box-shadow: 0 0 0 2px var(--line);
 }
 
-/* The online page has one more line under the track (connected or not, how
-   many players). Its picture is a little lower, so that line stays in view. */
+/* The online page has two more lines under the track (connected or not and
+   how many players, and who you are signed in as). Its picture is a little
+   lower, so those lines stay in view. */
 main:has(.status) canvas {
-  max-height: calc(100vh - 12.5rem);
+  max-height: calc(100vh - 15.5rem);
 }
 
 .message {
