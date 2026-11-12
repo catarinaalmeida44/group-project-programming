@@ -42,8 +42,8 @@ const DARK = "#14181d";
 const CAMERA_SWING = 6.5;
 /** How quickly the picture of the steering follows the keys. */
 const STEER_QUICKNESS = 14;
-/** The start gantry: how high its beam hangs over the road, and how tall the beam is, in units. */
-const GANTRY = { clear: 40, tall: 13, post: 3 };
+/** The start gantry: how high its beam hangs over the road, how tall the beam is, how thick a post is and how wide the whole thing may be, in units. */
+const GANTRY = { clear: 40, tall: 13, post: 3, widest: 150 };
 /** Further ahead than this, a building is painted as plain walls, without windows. */
 const WINDOWS_TO = 900;
 /** At most this many puffs of smoke and dust at once. */
@@ -584,6 +584,15 @@ function gantryOf(track) {
     }
   }
   if (first === null) {
+    return null;
+  }
+  // On a wide square the road is far wider than the grid. The gantry then
+  // stands over the grid, not from one edge of the square to the other, so
+  // that the start lights hang where the drivers look.
+  const middleOfGrid = alongX ? track.start.y : track.start.x;
+  first = Math.max(first, middleOfGrid - GANTRY.widest / 2);
+  last = Math.min(last, middleOfGrid + GANTRY.widest / 2);
+  if (!(last - first > 20)) {
     return null;
   }
   const point = (across) => (alongX ? { x: at, y: across } : { x: across, y: at });
