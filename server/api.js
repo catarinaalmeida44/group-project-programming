@@ -54,7 +54,7 @@ export const TRIES_PER_MINUTE = {
  * keep the server too busy to run the races.
  */
 export const PASSWORD_ADDRESSES = ["/api/signup", "/api/login", "/api/delete-account"];
-export const PASSWORD_WORK_PER_MINUTE = 90;
+export const PASSWORD_WORK_PER_MINUTE = 60;
 
 /** The limiter remembers at most this many computers at a time. */
 const COMPUTERS_TO_REMEMBER = 5000;

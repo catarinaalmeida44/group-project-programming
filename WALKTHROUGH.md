@@ -373,6 +373,8 @@ The server does not wait for the database when it starts. `/database-check` answ
 - There is no email. An account is a user name and a password, so nothing proves who someone is, anyone can take any free name, and a forgotten password cannot be reset: that account can no longer be used. Email needs an outside service and a new secret key, which the team has not chosen yet.
 - Anyone can make as many accounts as they like. The limits on sign-ups are per minute, to protect the server, not per person.
 - The limit per computer goes by the address our hosting company tells us a visitor came from. Everyone on the campus Wi-Fi shares one address, so the limits are set for a whole classroom, and someone who really wanted to could pretend to come from many addresses. Two things do not depend on it: the lock on one account after five wrong passwords, and the limit on password work in total.
+- Anyone who knows a user name can lock that account for ten minutes by typing five wrong passwords. That is the price of the lock, which is what stops someone from guessing a password.
+- How long the password scrambling takes on the live server is not measured yet. On a laptop it is under a tenth of a second. The free server is much slower, so the limit on password work in total (60 a minute) is a first guess.
 - A result that could not be saved because the database did not answer at that moment is lost. The player is told.
 - The leaderboard shows the fastest times ever, with no date and no way for us to remove a time except in the database itself. A player who drives online in two tabs appears in a race twice.
 - Guests can drive in online races. Their karts look the same as everyone else's, and the page does not yet show other players' names.
