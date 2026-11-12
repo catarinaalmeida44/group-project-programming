@@ -72,7 +72,7 @@ The full rules are in `AGENTS.md`. The short version:
 2. **One branch for one piece of work.** Save each step as its own commit, with a message that says what it does.
 3. **Run `npm test` before you ask for a pull request.** GitHub runs the tests again, and a pull request with failing tests should not be merged.
 4. **A teammate approves every pull request.** Nobody merges their own without a review. GitHub enforces one approval.
-5. **Merging puts it online.** A few minutes after a merge into `main`, the public link shows the new version. Anyone on the "Online test" page at that moment is disconnected and has to reload.
+5. **Merging puts it online.** A few minutes after a merge into `main`, the public link shows the new version. Anyone on the online page at that moment is disconnected and has to reload.
 6. **New libraries need a yes first.** Say what it does, why we need it and what the alternative is. We have three so far: `vitest` (tests), `ws` (live connections), `pg` (database).
 7. **No secrets anywhere.** Not in the repository, not in a chat with an agent, not in a screenshot.
 

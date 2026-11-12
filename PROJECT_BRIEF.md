@@ -199,7 +199,9 @@ What this means for you: prefer finished, reliable features over many half-finis
 
 *11 Nov 2026, built by Francisco: a first main menu is the first page of the game: Single race (the test track), Cup (shown greyed out until the tracks exist), Online (the online test page), Leaderboard and a Settings button in the top right corner. There is no title screen, login or Profile yet, because there are no accounts. Ideas from Francisco for later, not decided by the team: a character selection page before the race with a Start button, 2 computer karts to begin with, and the game itself driving in the background of the menu ("attract mode") instead of a video.*
 
-*Leaderboard for now: it shows only your own best race time and best lap per track, kept in your browser (chosen by Francisco on 11 Nov 2026 as the first step). These times can be faked, so they are never sent to the server and never count for the shared leaderboards described in section 6, which still need accounts and races run by the server.*
+*12 Nov 2026, at Catarina's request: the menu has a new design, a drawn picture of the campus by the sea behind four big choices, and it now has what was missing: a "Choose a track" panel for Single race and for Online, the shared leaderboard of section 6 in the Leaderboard panel, and an account corner with Sign in, Create account and Your account. There is still no title screen and no Profile page. Decisions made by the agent, please confirm: Single race and Online open the track panel instead of going straight to their pages; the picture is our own drawing with no logo or official artwork; the colours stay navy, red and yellow.*
+
+*Your own practice bests: the Leaderboard panel also shows your best race time and best lap per track from single races, kept in your browser (chosen by Francisco on 11 Nov 2026 as the first step). These times can be faked, so they are never sent to the server and never count for the shared leaderboards described in section 6. Since 12 Nov 2026 the shared leaderboards exist, next to them in the same panel, fed only by races the server ran.*
 
 ## 5. Multiplayer
 

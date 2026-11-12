@@ -3,7 +3,7 @@
 A 2D online kart racing game set at the Nova SBE Carcavelos campus.
 Team project for Introduction to Programming (course 2477) at Nova SBE.
 
-**Status:** the game opens on a main menu (Single race, Cup coming soon, Online, Leaderboard of your own best times, Settings). One kart can be driven round a test track in the browser, with a lap counter, a finish time and three camera views. A race starts with a 3, 2, 1, GO! countdown. On the "Online test" page, up to eight browsers connected to the same server see each other's karts, and the player who has been there longest can start a race for everyone with Enter. The first campus track, the campus loop, can be driven on the single race page at `/race.html?track=campus-loop` (it is not in the menu yet). The server is on the internet at the link below.
+**Status:** the game opens on a main menu (Single race, Cup coming soon, Online, Leaderboard, Settings, and an account corner). You choose a track, the test oval or the first campus track, the campus loop, and drive it alone in the browser or online. A race has a lap counter, a finish time, three camera views and a 3, 2, 1, GO! countdown. Online, up to eight browsers in the room of a track see each other's karts, and the player who has been there longest can start a race for everyone with Enter. You can create an account with a user name and a password. When a signed-in player finishes an online race, the server saves the time, and the leaderboard shows the ten fastest races and laps of each track. The server is on the internet at the link below.
 
 ## Play it
 
@@ -42,21 +42,27 @@ Run the app:
 npm start
 ```
 
-Then open http://localhost:3000 in a browser. It shows the main menu: click Single race and drive with the arrow keys. V changes the camera and R starts again. To stop the app, press Ctrl+C in the terminal.
+Then open http://localhost:3000 in a browser. It shows the main menu: click Single race, choose a track and drive with the arrow keys. V changes the camera and R starts again. To stop the app, press Ctrl+C in the terminal.
 
-To drive the first campus track, open http://localhost:3000/race.html?track=campus-loop and drive clockwise.
+To try online play on one laptop, click Online, choose a track, and open the same page in a second browser window side by side.
 
-To try online play on one laptop, open http://localhost:3000/online.html in two browser windows side by side.
+The app runs without a database, and then it has no accounts: the menu says so. To try accounts and the shared leaderboard on your laptop anyway, run this instead of `npm start`:
 
-The app runs without a database. To use the real one, the database address has to be in a file called `.env` (copy `.env.example` and fill it in). Then `npm run test:database` runs the tests that talk to it, and http://localhost:3000/database-check shows what the server can read from it. New here? Start with `docs/team-guide.md`.
+```
+npm run start:pretend
+```
+
+It is the same game with pretend accounts kept in memory. They are forgotten when you stop it, and it never touches the real database.
+
+To use the real database, its address has to be in a file called `.env` (copy `.env.example` and fill it in). Then `npm start` has real accounts, `npm run test:database` runs the tests that talk to the database (in tables of their own, which they remove), and http://localhost:3000/database-check shows what the server can read from it. New here? Start with `docs/team-guide.md`.
 
 ## Where things are
 
 | Folder or file | What it is |
 |---|---|
 | `client/` | Everything the browser shows: the page, the drawing, the keyboard controls |
-| `server/` | Our game server: sends the page to the browser and runs the races |
-| `shared/` | The rules of the game (driving physics, laps), used by both the browser and the server |
+| `server/` | Our game server: sends the page to the browser, runs the races, and keeps the accounts and the leaderboard |
+| `shared/` | The rules of the game (driving physics, laps, which user names and passwords are allowed), used by both the browser and the server |
 | `tests/` | Automatic tests that check the rules |
 | `docs/team-guide.md` | Start here: where the project stands, what you need, and how the team works |
 | `docs/build-diary.md` | The diary of the first day, in plain language: what was built and why |
