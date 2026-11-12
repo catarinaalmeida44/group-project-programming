@@ -31,9 +31,12 @@ const LINE_DARK = "#14181d";
  *   track  from the "shared" folder
  *   look   the colours and markings of this track (track-looks.js)
  *   grid   where the starting places are: a list of { x, y, angle }
+ *   buildings  the buildings and banks of the track, from buildings.js, or
+ *              null. Their roofs are painted into the picture, and the
+ *              shadows they throw on the ground
  * Gives { picture, sharpness, paintTilted }.
  */
-export function createGround(track, look, grid) {
+export function createGround(track, look, grid, buildings = null) {
   const sharpness = Math.min(BEST_SHARPNESS, LARGEST_PICTURE / track.width, LARGEST_PICTURE / track.height);
   const picture = document.createElement("canvas");
   picture.width = Math.round(track.width * sharpness);
@@ -42,6 +45,8 @@ export function createGround(track, look, grid) {
   context.scale(picture.width / track.width, picture.height / track.height); // from here on, draw in units of track
 
   paintTiles(context, track, look);
+  paintShadows(context, track, buildings);
+  paintRoofs(context, track, look, buildings);
   paintEdges(context, track, look);
   paintArrows(context, track, look);
   paintStartLine(context, track);
@@ -213,6 +218,104 @@ function paintTiles(context, track, look) {
         }
       }
     }
+  }
+}
+
+// The sun stands to the upper left of the map, so shadows fall to the lower
+// right. For every unit a thing is tall, its shadow reaches this far.
+const SHADOW_REACH = { x: 0.62, y: 0.47 };
+const SHADOW_DARKNESS = 0.26;
+
+/**
+ * The shadows that buildings and banks throw on the ground. Each square
+ * with a height throws the shape of that square, pushed away from the sun
+ * by an amount that grows with the height.
+ *
+ * The shadows are first painted solid on a hidden canvas of their own and
+ * then laid over the ground all at once, see-through. Painted one by one
+ * straight onto the ground, two shadows that overlap would look twice as dark.
+ */
+function paintShadows(context, track, buildings) {
+  if (buildings === null) {
+    return;
+  }
+  const shadows = document.createElement("canvas");
+  shadows.width = track.width; // one pixel per unit: the soft edge this gives suits a shadow
+  shadows.height = track.height;
+  const shadowContext = shadows.getContext("2d");
+  shadowContext.fillStyle = "#0a141e";
+  for (const roof of buildings.roofs) {
+    const [[left, top], , [right, bottom]] = roof.corners;
+    const reachX = roof.height * SHADOW_REACH.x;
+    const reachY = roof.height * SHADOW_REACH.y;
+    // The square, and the square pushed away from the sun, joined.
+    shadowContext.beginPath();
+    shadowContext.moveTo(left, top);
+    shadowContext.lineTo(right, top);
+    shadowContext.lineTo(right + reachX, top + reachY);
+    shadowContext.lineTo(right + reachX, bottom + reachY);
+    shadowContext.lineTo(left + reachX, bottom + reachY);
+    shadowContext.lineTo(left, bottom);
+    shadowContext.closePath();
+    shadowContext.fill();
+  }
+  context.save();
+  context.globalAlpha = SHADOW_DARKNESS;
+  context.drawImage(shadows, 0, 0, track.width, track.height);
+  context.restore();
+}
+
+/**
+ * The tops of buildings and banks, as seen from above. A building gets a
+ * flat roof with a rim, and on some squares a row of solar panels, as the
+ * campus roofs have. A bank gets its own top, such as a hedge.
+ */
+function paintRoofs(context, track, look, buildings) {
+  if (buildings === null) {
+    return;
+  }
+  const size = track.tileSize;
+  const random = scatter(7723);
+  const highest = Math.max(1, ...buildings.roofs.map((roof) => roof.height));
+  for (const roof of buildings.roofs) {
+    const left = roof.column * size;
+    const top = roof.row * size;
+    if (roof.style === "barrier") {
+      context.fillStyle = look.barrier.top;
+      context.fillRect(left, top, size + 0.5, size + 0.5);
+      for (let i = 0; i < 5; i++) {
+        context.fillStyle = random() < 0.5 ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.1)";
+        context.fillRect(left + random() * (size - 4), top + random() * (size - 4), 2 + random() * 3, 2 + random() * 3);
+      }
+      continue;
+    }
+    // Taller roofs are a little lighter, so different buildings can be told apart.
+    context.fillStyle = look.buildings.roof;
+    context.fillRect(left, top, size + 0.5, size + 0.5);
+    context.fillStyle = `rgba(255, 255, 255, ${0.16 * (roof.height / highest)})`;
+    context.fillRect(left, top, size + 0.5, size + 0.5);
+    if (random() < 0.3) {
+      // Solar panels: three dark blue strips.
+      context.fillStyle = "#2b4468";
+      for (let panel = 0; panel < 3; panel++) {
+        context.fillRect(left + 5, top + 5 + panel * 8, size - 10, 5);
+      }
+    }
+  }
+  // A pale rim along every edge of a roof where the building ends.
+  const heightAt = new Map(buildings.roofs.map((roof) => [`${roof.column},${roof.row}`, roof]));
+  context.fillStyle = "rgba(255, 255, 255, 0.55)";
+  for (const roof of buildings.roofs) {
+    if (roof.style === "barrier") {
+      continue;
+    }
+    const left = roof.column * size;
+    const top = roof.row * size;
+    const lowerAt = (dc, dr) => (heightAt.get(`${roof.column + dc},${roof.row + dr}`)?.height ?? 0) < roof.height;
+    if (lowerAt(0, -1)) context.fillRect(left, top, size, 2);
+    if (lowerAt(0, 1)) context.fillRect(left, top + size - 2, size, 2);
+    if (lowerAt(-1, 0)) context.fillRect(left, top, 2, size);
+    if (lowerAt(1, 0)) context.fillRect(left + size - 2, top, 2, size);
   }
 }
 

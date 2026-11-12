@@ -145,7 +145,8 @@ export function wheel(x, y, radius, width, turn = 0) {
   const ring = (side) => {
     const points = [];
     for (let i = 0; i < WHEEL_SIDES; i++) {
-      const angle = (i / WHEEL_SIDES) * Math.PI * 2;
+      // Half a step on, so that one corner is exactly at the bottom and the wheel touches the ground.
+      const angle = ((i + 0.5) / WHEEL_SIDES) * Math.PI * 2;
       points.push([Math.cos(angle) * radius, side * (width / 2), radius + Math.sin(angle) * radius]);
     }
     return points;

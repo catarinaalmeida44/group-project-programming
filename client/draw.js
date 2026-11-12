@@ -88,8 +88,8 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
   const context = canvas.getContext("2d");
   const look = lookOfTrack(track);
   const grid = gridOf(track);
-  const ground = createGround(track, look, grid);
   const buildings = createBuildings(track, storeys, { barrierHeight: look.barrierHeight });
+  const ground = createGround(track, look, grid, buildings);
   const props = propsOfTrack(track, look, storeys);
   const gantry = gantryOf(track);
   const mini = paintMiniPicture(ground.picture, track);
