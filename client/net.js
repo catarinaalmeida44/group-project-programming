@@ -210,6 +210,17 @@ export function readServerMessage(text) {
   if (message.type === "account" && (message.username === null || typeof message.username === "string")) {
     return message;
   }
+  if (message.type === "names" && message.names !== null && typeof message.names === "object" && !Array.isArray(message.names)) {
+    // Keep only what looks like a player number with a user name. Anything
+    // else in the list is dropped, so a strange list cannot break the page.
+    const names = new Map();
+    for (const [id, name] of Object.entries(message.names)) {
+      if (/^[0-9]{1,9}$/.test(id) && typeof name === "string" && /^[A-Za-z0-9_]{3,16}$/.test(name)) {
+        names.set(Number(id), name);
+      }
+    }
+    return { type: "names", names };
+  }
   if (
     message.type === "saved" &&
     typeof message.saved === "boolean" &&
@@ -247,6 +258,29 @@ export function accountLine(account, saved) {
     return `${who} Your last result could not be saved: the database did not answer.`;
   }
   return `${who} Saved to the leaderboard: ${placeText(saved.position)} place, ${formatTime(saved.raceSteps * STEP_SECONDS)}.`;
+}
+
+/**
+ * The line on the online page that says who else is in the room.
+ *   names      the user names of the signed-in players, by player number (a Map)
+ *   playerIds  the numbers of everyone in the room: on the track or watching
+ *   myId       this player's own number
+ * Gives "" when nobody else is there. Guests have no name, so they are counted.
+ *   "With you: Rui."   "With you: Bea, Rui and 2 guests."   "With you: 1 guest."
+ */
+export function othersLine(names, playerIds, myId) {
+  const others = playerIds.filter((id) => id !== myId);
+  const named = others.filter((id) => names.has(id)).map((id) => names.get(id));
+  const guests = others.length - named.length;
+  const parts = [...named];
+  if (guests > 0) {
+    parts.push(guests === 1 ? "1 guest" : `${guests} guests`);
+  }
+  if (parts.length === 0) {
+    return "";
+  }
+  const last = parts.pop();
+  return parts.length === 0 ? `With you: ${last}.` : `With you: ${parts.join(", ")} and ${last}.`;
 }
 
 /** 1 -> "1st", 2 -> "2nd", 3 -> "3rd", 4 -> "4th", 11 -> "11th", 21 -> "21st". */

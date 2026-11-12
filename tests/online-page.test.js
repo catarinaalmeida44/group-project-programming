@@ -4,7 +4,7 @@
 // (The older tests of client/net.js are in net.test.js.)
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { readServerMessage, accountLine, placeText } from "../client/net.js";
+import { readServerMessage, accountLine, othersLine, placeText } from "../client/net.js";
 import { chooseTrack, chooseTrackName } from "../client/track-choice.js";
 import { createApp } from "../server/app.js";
 import { TRACKS, DEFAULT_TRACK } from "../shared/tracks/index.js";
@@ -77,6 +77,74 @@ describe("the line about the player's account", () => {
   });
 });
 
+describe("the names of the other players in the room", () => {
+  it("reads the list the server sends: player number and user name", () => {
+    const message = readServerMessage('{"type":"names","names":{"3":"Ana","7":"Rui_7"}}');
+    expect(message.type).toBe("names");
+    expect([...message.names]).toEqual([
+      [3, "Ana"],
+      [7, "Rui_7"],
+    ]);
+    expect(readServerMessage('{"type":"names","names":{}}').names.size).toBe(0);
+  });
+
+  it("drops anything in the list that is not a player number with a possible user name", () => {
+    const message = readServerMessage(
+      JSON.stringify({
+        type: "names",
+        names: {
+          1: "Ana",
+          2: "<img src=x onerror=alert(1)>",
+          3: "has space",
+          4: "ab",
+          5: "x".repeat(17),
+          6: 42,
+          7: null,
+          8: { name: "Rui" },
+          "-1": "Minus",
+          "1.5": "Half",
+          abc: "Letters",
+          __proto__: "Proto",
+        },
+      }),
+    );
+    expect([...message.names]).toEqual([[1, "Ana"]]);
+  });
+
+  it("gives nothing for a list that is not a list of names at all", () => {
+    for (const text of ['{"type":"names"}', '{"type":"names","names":null}', '{"type":"names","names":"Ana"}', '{"type":"names","names":["Ana"]}']) {
+      expect(readServerMessage(text), text).toBe(null);
+    }
+  });
+
+  const names = new Map([
+    [1, "Ana"],
+    [2, "Rui"],
+    [3, "Bea"],
+  ]);
+
+  it("says nothing when nobody else is there", () => {
+    expect(othersLine(names, [1], 1)).toBe("");
+    expect(othersLine(names, [], 1)).toBe("");
+  });
+
+  it("names the signed-in players, leaves yourself out and counts the guests", () => {
+    expect(othersLine(names, [1, 2], 1)).toBe("With you: Rui.");
+    expect(othersLine(names, [1, 2, 3], 1)).toBe("With you: Rui and Bea.");
+    expect(othersLine(names, [1, 2, 3, 9], 1)).toBe("With you: Rui, Bea and 1 guest.");
+    expect(othersLine(names, [1, 8, 9], 1)).toBe("With you: 2 guests.");
+    expect(othersLine(names, [1, 9], 1)).toBe("With you: 1 guest.");
+  });
+
+  it("works the same for a guest, who has no name in the list", () => {
+    expect(othersLine(names, [1, 2, 9], 9)).toBe("With you: Ana and Rui.");
+  });
+
+  it("does not name a player who has left, even if the list still has them", () => {
+    expect(othersLine(names, [1, 3], 1)).toBe("With you: Bea.");
+  });
+});
+
 describe("a finishing position as a word", () => {
   it("adds the right ending", () => {
     const expected = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 8: "8th", 11: "11th", 12: "12th", 13: "13th", 21: "21st", 22: "22nd", 101: "101st", 111: "111th" };
@@ -131,6 +199,7 @@ describe("the online page, asked from a real copy of the server", () => {
     expect(answer.status).toBe(200);
     expect(body).toContain('id="track-name"');
     expect(body).toContain('id="account-line"');
+    expect(body).toContain('id="others-line"');
     expect(body).toContain('src="/online.js"');
   });
 

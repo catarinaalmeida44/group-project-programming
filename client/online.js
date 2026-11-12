@@ -31,7 +31,7 @@ import { createBuildings } from "./buildings.js";
 import { createKeyboard } from "./keyboard.js";
 import { createPainter } from "./draw.js";
 import { createHud } from "./hud.js";
-import { createPlayback, readServerMessage, statusLine, accountLine, QUIET_AFTER_MS } from "./net.js";
+import { createPlayback, readServerMessage, statusLine, accountLine, othersLine, QUIET_AFTER_MS } from "./net.js";
 import { readRace, raceView, kartToWatch } from "./race-view.js";
 import { followTarget, easeTowards, nextView } from "./camera.js";
 import { storageOf } from "./storage.js";
@@ -52,6 +52,7 @@ const draw = createPainter(document.getElementById("track"), track, createBuildi
 const showHud = createHud(document);
 const statusText = document.getElementById("status");
 const accountText = document.getElementById("account-line");
+const othersText = document.getElementById("others-line");
 const messageBox = document.getElementById("message");
 
 // ---- What we know from the server ----
@@ -64,6 +65,8 @@ let kartsShown = null; //              the karts in the picture drawn last
 let lastNewsAt = null; //              when the server last sent us anything
 let account = null; //                 who the server says we are signed in as (the "account" message)
 let saved = null; //                   what the server said about saving our last finished race
+let names = new Map(); //              the user names of the signed-in players in the room, by player number
+let othersShown = ""; //               the "With you: ..." line as it is on the page now
 
 // ---- The camera ----
 let view = readSettings(storageOf(window)).startView; // the view chosen in the menu's settings, or the first one
@@ -102,6 +105,8 @@ connection.addEventListener("message", (event) => {
     account = message;
   } else if (message.type === "saved") {
     saved = message;
+  } else if (message.type === "names") {
+    names = message.names;
   }
   accountText.textContent = accountLine(account, saved); // as text, never as HTML
 });
@@ -179,6 +184,15 @@ function frame(now) {
     sinceLastUpdateMs,
   });
   statusText.textContent = allIsWell && about.line !== "" ? `${line} ${about.line}` : line;
+
+  // Who else is in the room: the user names of signed-in players, and how
+  // many guests. Written to the page only when it changes.
+  const everyoneHere = karts === null ? [] : [...karts.map((kart) => kart.id), ...race.watching];
+  const othersNow = allIsWell ? othersLine(names, everyoneHere, myId) : "";
+  if (othersNow !== othersShown) {
+    othersShown = othersNow;
+    othersText.textContent = othersNow; // as text, never as HTML
+  }
 
   // The kart in the middle of the picture: our own, or, when we joined
   // during a race and are watching, the kart that is furthest ahead.

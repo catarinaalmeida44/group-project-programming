@@ -14,9 +14,10 @@
 //   browser -> server   which keys are held, "restart", or "start" (see messages.js)
 //   server -> browser   "welcome" with your player number, then the state
 //                       of all karts and of the race 20 times a second.
-//                       Also "account" (who you are signed in as, if anyone)
-//                       and "saved" (your finished race was written to the
-//                       leaderboard, or could not be)
+//                       Also "account" (who you are signed in as, if anyone),
+//                       "names" (the user names of the signed-in players in
+//                       the room) and "saved" (your finished race was written
+//                       to the leaderboard, or could not be)
 //
 // SAVING RESULTS
 // When a signed-in player finishes a race that began with the countdown,
@@ -170,7 +171,22 @@ export function attachOnlinePlay(
   function openTable(tableTrack, shortName) {
     const room = createRoom(tableTrack, character, maxPlayers);
     const connections = new Set();
-    const seats = new Map(); // player number in the room -> { connection, account }
+    const seats = new Map(); // player number in the room -> { connection, account, username }
+
+    /**
+     * Tells every browser at this table the user names of the signed-in
+     * players in the room, by player number: { "3": "Ana" }. Guests are not
+     * in the list. Sent whenever someone joins or leaves.
+     */
+    function tellNames() {
+      const names = {};
+      for (const [id, seat] of seats) {
+        if (seat.username !== null) {
+          names[id] = seat.username;
+        }
+      }
+      tellEveryone(JSON.stringify({ type: "names", names }));
+    }
 
     /** Runs once for every browser that connects to this table. */
     function welcome(connection, request) {
@@ -197,6 +213,7 @@ export function attachOnlinePlay(
         seats.delete(player.id);
         room.removePlayer(player.id);
         stopTheClockIfEmpty();
+        tellNames();
       }
 
       /** Removes a player who broke the rules: the kart goes at once, then the connection. */
@@ -213,8 +230,16 @@ export function attachOnlinePlay(
       // Find out who this is, and tell them. Asking the database takes a
       // moment, and the player can already drive meanwhile.
       const account = whoIsBehind(request);
-      seats.set(player.id, { connection, account });
-      account.then((found) => tell(connection, { type: "account", username: found === null ? null : found.username }));
+      const seat = { connection, account, username: null };
+      seats.set(player.id, seat);
+      account.then((found) => {
+        if (gone) {
+          return; // left before we knew who it was
+        }
+        seat.username = found === null ? null : found.username;
+        tell(connection, { type: "account", username: seat.username });
+        tellNames();
+      });
 
       connection.on("message", (data, isBinary) => {
         if (gone) {

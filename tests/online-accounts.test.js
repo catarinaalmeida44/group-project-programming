@@ -172,6 +172,56 @@ describe("who a live connection belongs to", () => {
   });
 });
 
+describe("the names of the players in a room", () => {
+  /** A "names" message that lists exactly these player numbers. */
+  const namesOf = (...ids) => (message) =>
+    message.type === "names" && JSON.stringify(Object.keys(message.names).map(Number).sort()) === JSON.stringify([...ids].sort());
+
+  it("tells everyone the user names of the signed-in players, by player number, and leaves guests out", async () => {
+    const ana = await connect({ cookie: (await signedIn("Ana")).cookie });
+    const guest = await connect();
+    const rui = await connect({ cookie: (await signedIn("Rui")).cookie });
+
+    const expected = { [ana.first.id]: "Ana", [rui.first.id]: "Rui" };
+    for (const browser of [ana, guest, rui]) {
+      const message = await browser.next(namesOf(ana.first.id, rui.first.id));
+      expect(message.names).toEqual(expected);
+    }
+  });
+
+  it("takes a player's name off the list when they leave", async () => {
+    const ana = await connect({ cookie: (await signedIn("Ana")).cookie });
+    const rui = await connect({ cookie: (await signedIn("Rui")).cookie });
+    await ana.next(namesOf(ana.first.id, rui.first.id));
+
+    rui.socket.close();
+
+    // A list with only Ana, arriving after the one that still had Rui.
+    const withRui = ana.messages.findIndex(namesOf(ana.first.id, rui.first.id));
+    await ana.next((message) => namesOf(ana.first.id)(message) && ana.messages.indexOf(message) > withRui);
+  });
+
+  it("does not tell one room the names in another", async () => {
+    const onSprint = await connect({ address: "/play?track=sprint", cookie: (await signedIn("Ana")).cookie });
+    const onOther = await connect({ address: "/play?track=other", cookie: (await signedIn("Rui")).cookie });
+    await onSprint.next(namesOf(onSprint.first.id));
+    await onOther.next(namesOf(onOther.first.id));
+    await pause(200);
+    for (const message of onSprint.messages.filter(ofType("names"))) {
+      expect(Object.values(message.names)).not.toContain("Rui");
+    }
+  });
+
+  it("sends nothing about a player but their user name", async () => {
+    const ana = await connect({ cookie: (await signedIn("Ana")).cookie });
+    const message = await ana.next(namesOf(ana.first.id));
+    expect(message).toEqual({ type: "names", names: { [ana.first.id]: "Ana" } });
+    const everything = JSON.stringify(ana.messages);
+    expect(everything).not.toContain("scrambled");
+    expect(everything).not.toContain("12345678");
+  });
+});
+
 describe("saving the result of a finished race", () => {
   it("saves a signed-in player's result, tells them, and shows it on the leaderboard", async () => {
     const { player, cookie } = await signedIn("Ana");
