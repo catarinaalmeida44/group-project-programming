@@ -30,6 +30,7 @@ import { paintKart, viewerBehind, viewerAbove } from "./kart-paint.js";
 import { lookOf, shade } from "./kart-shape.js";
 import { lookOfTrack, propsOfTrack } from "./track-looks.js";
 import { tileKindAt } from "../shared/track.js";
+import { gridSpot, GRID_PLACES } from "../shared/grid.js";
 
 const DARK = "#14181d";
 
@@ -50,12 +51,6 @@ const MOST_PUFFS = 260;
 
 const MINIMAP_LARGEST = 180; // pixels: the small map fits in a square of this size
 const MINIMAP_MARGIN = 10;
-
-// The starting grid: two columns, each row a little further back. These are
-// the same gaps the server uses (server/room.js).
-const GRID_SIDEWAYS = 18;
-const GRID_BEHIND = 28;
-const GRID_PLACES = 8;
 
 // ---------------------------------------------------------------------------
 
@@ -549,21 +544,15 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
 // Worked out once for a track
 // ---------------------------------------------------------------------------
 
-/** Where the starting places are: two columns behind the first place, each row a little further back. */
+/**
+ * Where the starting places are, for painting the boxes of the grid. They
+ * come from the same rule the server uses to put the karts there
+ * (shared/grid.js), so a kart always stands in its box.
+ */
 function gridOf(track) {
-  const { x, y, angle } = track.start;
   const spots = [];
   for (let place = 0; place < GRID_PLACES; place++) {
-    const side = place % 2 === 0 ? -1 : 1; // left column, right column
-    const row = Math.floor(place / 2);
-    // "forward" is the direction the karts point. "right" is a quarter turn clockwise from it.
-    const forwardX = Math.cos(angle);
-    const forwardY = Math.sin(angle);
-    spots.push({
-      x: x - forwardY * side * GRID_SIDEWAYS - forwardX * row * GRID_BEHIND,
-      y: y + forwardX * side * GRID_SIDEWAYS - forwardY * row * GRID_BEHIND,
-      angle,
-    });
+    spots.push(gridSpot(track, place));
   }
   // Only the places that are on open ground are painted. (A very small test track has room for fewer.)
   return spots.filter((spot) => tileKindAt(track, spot.x, spot.y) !== "wall");

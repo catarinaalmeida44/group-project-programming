@@ -24,8 +24,11 @@ import { chooseTrack } from "./track-choice.js";
 import { storeysOf } from "../shared/tracks/index.js";
 import { createKeyboard } from "./keyboard.js";
 import { createPainter } from "./draw.js";
-import { introShare, startLights } from "./scene.js";
+import { introShare, startLights, spinTurnOf } from "./scene.js";
 import { lookFromChoice, readChoice } from "./kart-choice.js";
+import { lookOfTrack } from "./track-looks.js";
+import { routePoints, watchForWrongWay, WRONG_WAY_MESSAGE } from "./route.js";
+import { SEED_COUNT, SPIN_STEPS } from "../shared/hazards.js";
 import { createHud } from "./hud.js";
 import { followTarget, easeTowards, nextView } from "./camera.js";
 import { formatTime } from "./format.js";
@@ -45,8 +48,20 @@ const draw = createPainter(document.getElementById("track"), track, { storeys: s
 const showHud = createHud(document);
 const messageBox = document.getElementById("message");
 
+/**
+ * A number picked by chance, from which the bananas of one race grow
+ * (shared/hazards.js). A new one for every race, so no two races have the
+ * bananas in the same places.
+ */
+function newSeed() {
+  return Math.floor(Math.random() * SEED_COUNT);
+}
+
+// The way round the track, for the "wrong way" warning (route.js).
+const wrongWay = watchForWrongWay(routePoints(track, lookOfTrack(track).route));
+
 // ---- The state of the race ----
-let race = createCountdownRace(track); // the racer, and how far the countdown is
+let race = createCountdownRace(track, newSeed()); // the racer, how far the countdown is, and the bananas
 let started = false; //    the countdown starts at the first key press
 let lastFrameTime = null;
 let waitingSeconds = 0; // real time that has passed but is not yet turned into game steps
@@ -71,7 +86,7 @@ function start() {
 }
 
 function startAgain() {
-  race = createCountdownRace(track);
+  race = createCountdownRace(track, newSeed());
   started = false;
   waitingSeconds = 0;
   record = null;
@@ -127,12 +142,20 @@ function frame(now) {
   // before GO and not after the finish, when the keys do nothing.
   const { progress } = racer;
   const keysWork = started && countdown.racing && !progress.finished;
-  const steer = keysWork ? (input.right ? 1 : 0) - (input.left ? 1 : 0) : 0;
-  draw(view, { ...racer.kart, look: myLook }, camera, steer, [], sceneFor(race.countdownSteps, started));
+  const spinning = racer.spinSteps > 0;
+  const steer = keysWork && !spinning ? (input.right ? 1 : 0) - (input.left ? 1 : 0) : 0;
+  // The kart as it is drawn: in the colours the player chose, and turning
+  // round and round while it spins after a banana. (The rules do not turn
+  // it: after the spin it points where it pointed before.)
+  const shownKart = { ...racer.kart, look: myLook, spinTurn: spinTurnOf(racer.spinSteps, SPIN_STEPS) };
+  draw(view, shownKart, camera, steer, [], { ...sceneFor(race.countdownSteps, started), bananas: race.bananas });
 
   // The countdown is shown as one big number in the middle of the track.
   const showingCountdown = started && countdown.label !== "" && !progress.finished;
   messageBox.classList.toggle("countdown", showingCountdown);
+
+  // Driving against the arrows for a moment brings up a warning.
+  const goingWrongWay = keysWork && !spinning && wrongWay(racer.kart, now / 1000);
 
   showHud({
     lap: currentLap(progress, track),
@@ -140,7 +163,7 @@ function frame(now) {
     steps: progress.steps,
     lapSteps: progress.lapSteps,
     view,
-    message: messageFor(progress, countdown),
+    message: goingWrongWay ? WRONG_WAY_MESSAGE : messageFor(progress, countdown),
   });
   requestAnimationFrame(frame);
 }
@@ -191,6 +214,8 @@ window.kartGame = {
     countdownSteps: race.countdownSteps,
     view,
     kart: { ...race.racer.kart },
+    spinSteps: race.racer.spinSteps,
+    bananas: race.bananas.map((banana) => ({ ...banana })),
     progress: { ...race.racer.progress, lapSteps: [...race.racer.progress.lapSteps] },
   }),
 };

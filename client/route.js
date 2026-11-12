@@ -49,6 +49,9 @@ export function routeDirection(points, x, y) {
   return direction;
 }
 
+/** What both race pages show in the middle of the track while a kart drives the wrong way. */
+export const WRONG_WAY_MESSAGE = "Wrong way! Turn round and follow the arrows.";
+
 /** Below this speed a kart is not "driving the wrong way": it may be turning round, or was bumped. */
 export const WRONG_WAY_SPEED = 70; // units per second
 

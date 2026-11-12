@@ -37,6 +37,7 @@ import { countdownAt } from "../shared/countdown.js";
 import { GRID_PLACES } from "../shared/grid.js";
 import { bumpKarts } from "../shared/bumps.js";
 import { createBananaMaker, stepBananas, SEED_COUNT } from "../shared/hazards.js";
+import { cleanLookChoice } from "../shared/kart-looks.js";
 
 /** How many players fit in a room: one for each place on the starting grid (shared/grid.js). */
 export const MAX_PLAYERS = GRID_PLACES;
@@ -230,6 +231,24 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
     },
 
     /**
+     * Remembers the colours a player chose for their kart, so that the
+     * other players see them. A choice is three small whole numbers
+     * (shared/kart-looks.js). Says false, and changes nothing, if there is
+     * no such player or the choice is not one that is allowed. A choice
+     * changes how a kart is drawn and nothing else: not its place on the
+     * grid, not its speed.
+     */
+    setLook(id, choice) {
+      const player = players.get(id);
+      const look = cleanLookChoice(choice);
+      if (player === undefined || look === null) {
+        return false;
+      }
+      player.look = look;
+      return true;
+    },
+
+    /**
      * Puts a player's kart back at its start, with its laps and clock at zero.
      * Only while the room is open. In a race it says false and changes
      * nothing: a racer could otherwise give themselves a fresh clock.
@@ -347,9 +366,12 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
           host: hostId(),
           watching: everyone.filter((player) => !drivers.includes(player)).map((player) => player.id),
         },
-        karts: drivers.map(({ id, place, racer }) => ({
+        karts: drivers.map(({ id, place, racer, look }) => ({
           id,
           place,
+          // The colours the player chose, if they chose any. Without them
+          // the page gives the kart the colours of its starting place.
+          ...(look === undefined ? {} : { look: { ...look } }),
           x: round(racer.kart.x, 1),
           y: round(racer.kart.y, 1),
           angle: round(racer.kart.angle, 3),

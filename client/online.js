@@ -30,7 +30,12 @@ import { chooseTrackName } from "./track-choice.js";
 import { createKeyboard } from "./keyboard.js";
 import { createPainter } from "./draw.js";
 import { createHud } from "./hud.js";
-import { createPlayback, readServerMessage, statusLine, accountLine, othersLine, QUIET_AFTER_MS } from "./net.js";
+import { createPlayback, readServerMessage, bananasOf, statusLine, accountLine, othersLine, QUIET_AFTER_MS } from "./net.js";
+import { introShare, startLights, spinTurnOf } from "./scene.js";
+import { COLOURS, lookFromChoice, readChoice } from "./kart-choice.js";
+import { lookOfTrack } from "./track-looks.js";
+import { routePoints, watchForWrongWay, WRONG_WAY_MESSAGE } from "./route.js";
+import { SPIN_STEPS } from "../shared/hazards.js";
 import { readRace, raceView, kartToWatch } from "./race-view.js";
 import { followTarget, easeTowards, nextView } from "./camera.js";
 import { storageOf } from "./storage.js";
@@ -65,10 +70,18 @@ let lastNewsAt = null; //              when the server last sent us anything
 let account = null; //                 who the server says we are signed in as (the "account" message)
 let saved = null; //                   what the server said about saving our last finished race
 let names = new Map(); //              the user names of the signed-in players in the room, by player number
+let bananas = []; //                   the banana peels on the track, as of the latest update
 let othersShown = ""; //               the "With you: ..." line as it is on the page now
 
+// ---- What the player chose in the menu ----
+const storage = storageOf(window);
+const myChoice = readChoice(storage); // the colours of their kart, as three numbers, or null (kart-choice.js)
+
+// The way round the track, for the "wrong way" warning (route.js).
+const wrongWay = watchForWrongWay(routePoints(track, lookOfTrack(track).route));
+
 // ---- The camera ----
-let view = readSettings(storageOf(window)).startView; // the view chosen in the menu's settings, or the first one
+let view = readSettings(storage).startView; // the view chosen in the menu's settings, or the first one
 let camera = null;
 let lastFrameTime = null;
 
@@ -89,10 +102,17 @@ connection.addEventListener("message", (event) => {
   lastNewsAt = performance.now();
   if (message.type === "welcome") {
     myId = message.id;
-    const colour = COLOUR_NAMES[message.place % COLOUR_NAMES.length];
+    // Tell the server the colours chosen in the menu, so the others see
+    // them too. Without a choice the kart has the colours of its place.
+    const colour =
+      myChoice === null ? COLOUR_NAMES[message.place % COLOUR_NAMES.length] : COLOURS.body[myChoice.body].name.toLowerCase();
+    if (myChoice !== null) {
+      send({ type: "look", ...myChoice });
+    }
     status = `Connected. You are the ${colour} kart.`;
   } else if (message.type === "state") {
     playback.add(message, performance.now());
+    bananas = bananasOf(message);
     const raceBefore = race;
     race = readRace(message);
     if (race.phase === "countdown" && raceBefore.phase !== "countdown") {
@@ -153,6 +173,16 @@ function sendKeysIfChanged(input) {
   }
 }
 
+/**
+ * A kart as it is drawn. The server sends the colours a player chose as
+ * three numbers, and how many steps of a spin are left. Here they become
+ * the colours themselves (or none, for a kart that keeps the colours of
+ * its starting place) and how far the kart is turned in the picture.
+ */
+function dressed(kart) {
+  return { ...kart, look: lookFromChoice(kart.look), spinTurn: spinTurnOf(kart.spin, SPIN_STEPS) };
+}
+
 /** Runs once for every picture the screen shows. */
 function frame(now) {
   const frameSeconds = lastFrameTime === null ? 0 : Math.min((now - lastFrameTime) / 1000, 0.25);
@@ -202,24 +232,40 @@ function frame(now) {
     return;
   }
 
-  const others = karts.filter((kart) => kart.id !== shown.id);
+  const others = karts.filter((kart) => kart.id !== shown.id).map(dressed);
   const target = followTarget(shown, track);
   camera = camera === null ? target : easeTowards(camera, target, frameSeconds);
 
   // The kart leans while the player steers, but only when the keys do
-  // something: not when watching, during 3, 2, 1 or after the finish.
-  const keysWork = mine !== undefined && !mine.finished && race.phase !== "countdown";
+  // something: not when watching, during 3, 2, 1, after the finish, or
+  // while it spins after a banana.
+  const spinning = mine !== undefined && mine.spin > 0;
+  const keysWork = mine !== undefined && !mine.finished && race.phase !== "countdown" && !spinning;
   const steer = keysWork ? (input.right ? 1 : 0) - (input.left ? 1 : 0) : 0;
-  draw(view, shown, camera, steer, others);
 
-  messageBox.classList.toggle("countdown", about.big);
+  // What the picture shows besides the karts: the camera coming down from
+  // above the grid during 3, 2, 1, the start lights, the banana peels, and
+  // the names of the signed-in players above their karts.
+  const counting = race.phase === "countdown";
+  const scene = {
+    intro: introShare(counting, race.countdownSteps),
+    lights: startLights(counting || race.phase === "racing", race.countdownSteps),
+    bananas,
+    names,
+  };
+  draw(view, dressed(shown), camera, steer, others, scene);
+
+  // Driving against the arrows for a moment brings up a warning.
+  const goingWrongWay = keysWork && race.phase === "racing" && wrongWay(mine, now / 1000);
+
+  messageBox.classList.toggle("countdown", about.big && !goingWrongWay);
   showHud({
     lap: Math.min(shown.lapsDone + 1, track.laps),
     laps: track.laps,
     steps: shown.steps,
     lapSteps: shown.lapSteps,
     view,
-    message: about.message,
+    message: goingWrongWay ? WRONG_WAY_MESSAGE : about.message,
   });
 
   requestAnimationFrame(frame);

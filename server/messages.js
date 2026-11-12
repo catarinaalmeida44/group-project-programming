@@ -2,7 +2,7 @@
 //
 // Anyone on the internet can send our server anything, not only the text
 // our own page sends. So every message is checked here before the game
-// looks at it. A browser may say exactly three things:
+// looks at it. A browser may say exactly four things:
 //
 //   {"type":"keys","gas":true,"brake":false,"left":false,"right":true}
 //       "these are the driving keys I am holding now"
@@ -11,17 +11,24 @@
 //   {"type":"start"}
 //       "start a race for everyone in the room". Any browser may say it,
 //       but the room only obeys the host (see room.js).
+//   {"type":"look","body":2,"helmet":0,"suit":4}
+//       "paint my kart in these colours". Three small whole numbers, each
+//       the number of a colour in a short list (shared/kart-looks.js). It
+//       only changes how the kart is drawn.
 //
 // A browser never says where its kart is, how fast it goes or which lap it
 // is on. The server works those out itself, with the shared rules.
+
+import { cleanLookChoice } from "../shared/kart-looks.js";
 
 /** A real message is far shorter than this. Anything longer is refused unread. */
 export const MAX_MESSAGE_LENGTH = 200;
 
 /**
  * Checks one message from a browser.
- * Gives { type: "keys", keys }, { type: "restart" } or { type: "start" },
- * or null if the message is not one of the three things a browser may say.
+ * Gives { type: "keys", keys }, { type: "restart" }, { type: "start" } or
+ * { type: "look", look }, or null if the message is not one of the four
+ * things a browser may say.
  * What it gives back is built fresh from the checked parts only, so
  * anything extra a browser added to its message is dropped.
  */
@@ -46,6 +53,13 @@ export function readClientMessage(text) {
 
   if (message.type === "start") {
     return { type: "start" };
+  }
+
+  if (message.type === "look") {
+    // Only three whole numbers from the allowed ranges get through. A
+    // colour written out, a name, or a number out of range is refused.
+    const look = cleanLookChoice(message);
+    return look === null ? null : { type: "look", look };
   }
 
   if (message.type === "keys") {

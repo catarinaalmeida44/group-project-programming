@@ -284,6 +284,8 @@ export function attachOnlinePlay(
           room.setKeys(player.id, message.keys);
         } else if (message.type === "restart") {
           room.restart(player.id); // the room says no during a race
+        } else if (message.type === "look") {
+          room.setLook(player.id, message.look); // the colours of this player's own kart
         } else {
           room.startRace(player.id); // the room says no to anyone but the host
         }
