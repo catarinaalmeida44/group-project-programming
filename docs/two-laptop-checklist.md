@@ -73,6 +73,33 @@ Added on 12 November 2026. Not run yet with two laptops, and not yet on the publ
 
 Write down as well: how long does "Create account" take after pressing the button? On the free server the password scrambling is slow, and we have not measured it there.
 
+## The new race view, bumping, bananas and kart colours
+
+Added on 12 November 2026. Not run yet by people: these were only tried by robots and pretend players on one laptop. This is also the first chance to say how the new pictures look when they move.
+
+| # | Do this | You should see | Result |
+|---|---|---|---|
+| 37 | A: on the menu, click "Your kart" and choose a colour for the kart, the helmet and the suit | The small kart in the panel turns round in those colours, and it says "Saved" | |
+| 38 | A and B: click "Online" and choose the same track | Each sees the other's kart in the colours the other chose. A kart whose player chose nothing has the colour of its starting place | |
+| 39 | Both: look at the start | The karts stand in painted boxes behind a chequered line, under a gantry with three lights | |
+| 40 | A (the host): press Enter | The camera comes down from above the grid to behind your kart while 3, 2, 1 is counted. The lights go red one by one and turn green at GO, at the same moment on both laptops | |
+| 41 | Both: drive off and cross the line | The lap counter stays on "Lap 1" when you cross the line the first time, and goes to 2 only after a whole lap | |
+| 42 | B: drive into the back of A's kart | A is shoved forward and B is slowed. Neither kart passes through the other. Both laptops show the same thing | |
+| 43 | Both: drive side by side and steer into each other | The karts push each other sideways and neither ends up inside a wall | |
+| 44 | Both: keep racing for half a minute | Yellow banana peels appear on the road, in the same places on both laptops, and as yellow marks on the small map | |
+| 45 | A: drive over a banana | A's kart spins round twice and slows down, the banana is gone on both laptops, and A's keys do nothing for about a second. On B, A's kart is seen spinning | |
+| 46 | A: turn round and drive against the arrows | After a moment: "Wrong way! Turn round and follow the arrows." It goes away when A turns back | |
+| 47 | Both, signed in: look at the other kart from close by | The other player's user name is shown above their kart | |
+| 48 | Both: press V | The view from above and the view of the whole track still work, with the same karts, trees and bananas | |
+
+Write down as well:
+
+- Does the race view run smoothly on each laptop? "Smooth", "a little jerky" or "jerky", and which laptop.
+- How does it feel that the camera swings round a moment after the kart turns? "Good", "too slow" or "too fast".
+- Is a bump too hard, too soft or about right? Does a spin last too long?
+- Are there too many bananas, too few, or about right?
+- On the campus loop: what looks like the real campus, and what does not?
+
 ## One more check, when a new version goes online
 
 This cannot be done at any moment. Do it the next time a pull request is merged while both laptops have the online page open.
@@ -91,10 +118,11 @@ This cannot be done at any moment. Do it the next time a pull request is merged 
 
 - Your own kart reacts a moment late. Your key press travels to the server and the result travels back.
 - Other karts are shown a tenth of a second in the past, so that they move smoothly.
-- Karts pass through each other. Bumping comes later.
+- A kart that spins into a wall can end up standing nose to the wall. Reverse with the down arrow to get away.
+- A kart can drive straight through a tree on a lawn. Only walls, banks and other karts are solid.
+- In a tight corner a building between the camera and your kart can vanish from the picture for a moment.
 - There is no results screen yet. Each player sees their own finish time, and a signed-in player also their own place.
 - Each track has its own room. Two players who choose different tracks do not see each other.
 - A guest's results are not saved, and a guest has no name: others see "1 guest".
 - Only the host can start a race, and the host is whoever has been in the room longest.
-- In the view from behind, a kart that turns snaps between four pictures (back, front, left side, right side) instead of turning smoothly.
-- Karts are not hidden by walls: you can see a kart that is on the other side of the middle block.
+- On the test oval you can see a kart on the other side of the middle block, between the trees: the bank round the block is low.

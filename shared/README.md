@@ -21,6 +21,8 @@ These files are used by both the browser and the server, so both follow exactly 
 | `characters.js` | The drivers and their scores. For now one placeholder driver with middle scores |
 | `surfaces.js` | The kinds of ground. For now road and grass |
 | `numbers.js` | Small number helpers. For now one: `clamp`, which keeps a number between a lowest and a highest value |
+| `kart-looks.js` | What a player may choose for the look of their kart: a colour for the kart, the helmet and the suit, each as a small whole number from a short list. The browser checks a choice with it before sending, and the server checks it again before passing it on to other players. It changes nothing about how a kart drives |
+| `account-rules.js` | Which user names and passwords are allowed. The page uses it to warn early, the server to decide |
 
 ## The driving rules in plain words
 

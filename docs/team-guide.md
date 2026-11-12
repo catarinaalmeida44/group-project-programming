@@ -14,10 +14,13 @@ The game is online at https://novasbe-kart.onrender.com
 | Three camera views, switched with V | Works |
 | Online page: up to eight browsers in a room see each other's karts, and the host starts a race for everyone | Works. One room for each track. Tried with three players on three laptops on 10 November, before the race start and the rooms per track existed |
 | The main menu, with the choice of track | Works (first version by Francisco on 11 November, new design on 12 November) |
-| The first campus track, the campus loop | Works, by Rodrigo. It will be improved a lot |
+| The first campus track, the campus loop | Works, by Rodrigo. Its look was brought closer to the real campus on 12 November, from what is online. Videos filmed on campus are to follow |
+| The race view: sky, buildings with windows, trees, karts as 3D models, a start grid with lights | Works since 12 November. Looked at as single pictures only: nobody has judged it in motion yet |
+| Karts bumping into each other, banana peels that make a kart spin, arrows and a "wrong way" warning | Works since 12 November. Tried by robots, not yet by people |
+| Choosing the colours of your kart | Works since 12 November. Other players see them online |
 | Accounts: sign up, sign in, sign out, delete your account | Works since 12 November. A user name and a password, no email yet |
 | The shared leaderboard | Works since 12 November. The server saves the time when a signed-in player finishes an online race |
-| Automatic tests | More than 700. GitHub runs them on every pull request |
+| Automatic tests | More than 1,100. GitHub runs them on every pull request |
 | The server on the internet | Works. It updates itself a few minutes after every merge into `main` |
 | The database | Works. It holds the accounts, the sign-ins and the race results. See section 8 for a catch on the university Wi-Fi |
 | Characters, items, computer karts, cup, more campus tracks, email for accounts | Not started. This is the work ahead |
@@ -119,7 +122,8 @@ Ask the owner before changing a file they look after. That is the main way we av
 - **Right after installing Node.js, `npm` may be "not found".** Close and reopen the app or terminal you are using.
 - **An agent's own browser can be slow.** The built-in browser of the Claude app redraws about once a second when it is not on screen, so the game looks jerky there. Judge how the game feels in a normal browser.
 - **Online, your own kart reacts a moment late.** That is known and written down. It is not a mistake in your code.
-- **Karts are drawn with simple shapes, in four fixed pictures** (from behind, from the front, from each side). A turning kart snaps from one picture to the next. That is known. Real artwork would replace the shapes.
+- **Everything in the race is drawn by our own code, with no image files.** A kart is a small 3D shape (`client/kart-shape.js`), a tree is a few circles (`client/props.js`), and how a track looks is in `client/track-looks.js`. To change how something looks, change it there. None of it changes how a kart drives: that is in `shared/`.
+- **A changed rule needs its tests changed too, and that has to be said out loud.** On 12 November the start moved behind the line, and five older tests that pinned the old rule were changed to pin the new one. They are listed in Catarina's diary. Never change a test quietly to make it pass.
 
 ## 9. Where everything is
 
