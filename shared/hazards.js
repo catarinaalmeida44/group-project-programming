@@ -40,8 +40,9 @@
 //
 // NO SEED, NO BANANAS
 // A race that was given no seed has no banana maker (null) and no bananas.
-// The online rooms always get a seed (server/online.js). The practice page
-// gives one too.
+// The online rooms always get a seed (server/online.js). A practice race
+// gets one from the page, when the page gives one to createCountdownRace()
+// in countdown.js.
 
 import { STEP_SECONDS } from "./physics.js";
 import { tileKindAt } from "./track.js";
