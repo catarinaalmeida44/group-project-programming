@@ -255,6 +255,13 @@ describe("signing in", () => {
     expect(first.cookie).not.toBe(second.cookie);
   });
 
+  it("ends the ticket the browser already held when someone makes a new account on it", async () => {
+    const old = (await ask("POST", "/api/login", { body: { username: "Ana", password: "12345678" } })).cookie;
+    const fresh = await ask("POST", "/api/signup", { body: { username: "Rui", password: "12345678" }, cookie: old });
+    expect((await ask("GET", "/api/me", { cookie: old })).json.signedIn).toBe(false);
+    expect((await ask("GET", "/api/me", { cookie: fresh.cookie })).json.username).toBe("Rui");
+  });
+
   it("ends the ticket the browser already held when someone signs in on it", async () => {
     const old = (await ask("POST", "/api/login", { body: { username: "Ana", password: "12345678" } })).cookie;
     const fresh = await ask("POST", "/api/login", { body: { username: "Ana", password: "12345678" }, cookie: old });

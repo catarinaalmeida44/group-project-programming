@@ -43,8 +43,8 @@ export const TRIES_PER_MINUTE = {
   "/api/login": 30,
   "/api/delete-account": 10,
   "/api/logout": 30,
-  "/api/me": 120,
-  "/api/leaderboard": 120,
+  "/api/me": 300,
+  "/api/leaderboard": 300,
 };
 
 /**
@@ -142,6 +142,7 @@ export function createApi({ accounts = null, now = Date.now } = {}) {
         if (!answer.ok) {
           return sendRefusal(response, answer);
         }
+        await accounts.endSession(ticketOf(request)); // whoever was signed in on this browser no longer is
         const ticket = await accounts.startSession(answer.player.id);
         sendJson(response, 201, { ok: true, username: answer.player.username }, { "Set-Cookie": cookieWith(ticket, request) });
       },
