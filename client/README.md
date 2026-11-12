@@ -6,8 +6,21 @@ Everything the browser shows and does: the web page, the drawing of the track an
 
 | File | What it does |
 |---|---|
-| `index.html` | The main menu, the first page: Single race, Cup (greyed out until the tracks exist), Online, Leaderboard, and the Settings button in the top right corner. The Leaderboard and Settings panels are in this page too |
-| `menu.js` | Opens the Leaderboard and Settings panels and fills them in |
+| `index.html` | The main menu, the first page: the picture behind it, the account corner and the Settings button at the top, and the four big choices: Single race, Cup (greyed out until the tracks exist), Online and Leaderboard. The panels that open over the menu are in this page too: choosing a track, the leaderboard, the settings, and the three account panels |
+| `menu.js` | Starts the panels of the menu and hands each one what it needs: the browser's storage, the list of tracks, and the way to talk to the server (`account-api.js`) |
+| `page-parts.js` | Makes new parts of the page from code. Text always goes in as plain text, so a name from the server can never become part of the page |
+| `track-list.js` | What the cards for choosing a track say: name, laps, the address of the race (single or online) and your own best times. No browser needed, so it has tests |
+| `mini-map.js` | The small map on a track's card, painted from the track's own letters |
+| `track-panel.js` | The "Choose a track" panel on the page: builds the cards, and makes Single race and Online open it |
+| `answers.js` | Reads an answer from the server carefully: did it say yes, and which sentence to show when it said no or sent something broken |
+| `leaderboard-view.js` | What the Leaderboard panel shows for an answer from the server: which rows, the podium, your own row, and the sentence for loading, empty and "not available". No browser needed, so it has tests |
+| `leaderboard.js` | Remembers the chosen track and who is signed in, asks the server for the boards, and drops an answer that comes too late |
+| `leaderboard-panel.js` | Puts the leaderboard on the page and listens to its buttons |
+| `account-view.js` | The words for the account corner, and what is wrong with a form before it is sent, by the rules in `shared/account-rules.js`. No browser needed, so it has tests |
+| `account.js` | Creating an account, signing in and out, deleting the account: checks the form, asks the server, remembers who is signed in. It never keeps a password |
+| `account-panel.js` | Puts accounts on the page: the account corner and the panels "Sign in", "Create account" and "Your account" |
+| `settings-panel.js` | The Settings panel on the page: the camera view a race starts in |
+| `favicon.svg` | The small picture on the browser's tab: our own drawing of a finish flag |
 | `race.html` | The single race page: the title, the lap counter and clock, the canvas the track is drawn on, and the help text. The track is chosen in the address: `race.html?track=campus-loop` |
 | `track-choice.js` | Reads the track from the address of the race page. Only a short name from `shared/tracks/index.js` is accepted; anything else gives the test oval |
 | `storage.js` | Keeps short texts in the browser's own storage (`localStorage`), carefully: a browser that refuses, or text that was changed, must not break the game |

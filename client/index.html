@@ -3,86 +3,583 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#10202b">
     <title>Nova SBE kart racer</title>
+    <!-- The small picture on the browser's tab: our own drawing of a finish flag. -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/style.css">
   </head>
   <body>
+    <!-- The picture behind the menu: the sun going down over the sea at
+         Carcavelos, white campus buildings, and a road with two karts. It is
+         our own drawing, made of simple shapes. It is decoration only, so
+         screen readers skip it (aria-hidden). style.css moves the karts, the
+         waves and the lighthouse light, and stops them for players who asked
+         their computer for less motion. -->
+    <div class="scene" aria-hidden="true">
+      <svg class="scene-art" viewBox="0 0 1600 900" preserveAspectRatio="xMaxYMax slice" focusable="false">
+        <defs>
+          <linearGradient id="scene-sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#0b1820"/>
+            <stop offset="0.5" stop-color="#132c3c"/>
+            <stop offset="0.8" stop-color="#34455f"/>
+            <stop offset="0.93" stop-color="#8a5560"/>
+            <stop offset="1" stop-color="#e08a4e"/>
+          </linearGradient>
+          <radialGradient id="scene-glow">
+            <stop offset="0" stop-color="#f7d968" stop-opacity="0.6"/>
+            <stop offset="0.45" stop-color="#ef8a2b" stop-opacity="0.22"/>
+            <stop offset="1" stop-color="#ef8a2b" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="scene-sea" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#3b7f93"/>
+            <stop offset="0.25" stop-color="#1f5d72"/>
+            <stop offset="1" stop-color="#0f3445"/>
+          </linearGradient>
+          <!-- Red and white stripes for the edge of the road. -->
+          <pattern id="scene-kerb" width="56" height="14" patternUnits="userSpaceOnUse">
+            <rect width="28" height="14" fill="#d8473f"/>
+            <rect x="28" width="28" height="14" fill="#f2f5f7"/>
+          </pattern>
+          <!-- Black and white squares for the finish line. -->
+          <pattern id="scene-chequer" width="24" height="24" patternUnits="userSpaceOnUse">
+            <rect width="24" height="24" fill="#f2f5f7"/>
+            <rect width="12" height="12" fill="#15191d"/>
+            <rect x="12" y="12" width="12" height="12" fill="#15191d"/>
+          </pattern>
+        </defs>
+
+        <!-- The sky, a few stars, and the sun on the horizon. -->
+        <rect width="1600" height="524" fill="url(#scene-sky)"/>
+        <g fill="#f2f5f7">
+          <circle cx="720" cy="70" r="2"/>
+          <circle cx="905" cy="150" r="1.5"/>
+          <circle cx="1010" cy="52" r="2"/>
+          <circle cx="1180" cy="120" r="1.5"/>
+          <circle cx="1330" cy="60" r="2"/>
+          <circle cx="1465" cy="170" r="1.5"/>
+          <circle cx="1545" cy="84" r="2"/>
+          <circle cx="1255" cy="230" r="1.5"/>
+          <circle cx="820" cy="250" r="1.5"/>
+        </g>
+        <circle cx="1215" cy="520" r="360" fill="url(#scene-glow)"/>
+        <circle cx="1215" cy="520" r="112" fill="#f0c330"/>
+        <g fill="#2a3f55" class="scene-clouds">
+          <rect x="930" y="330" width="210" height="22" rx="11"/>
+          <rect x="985" y="312" width="120" height="22" rx="11"/>
+          <rect x="1390" y="270" width="170" height="20" rx="10"/>
+          <rect x="1430" y="254" width="90" height="20" rx="10"/>
+        </g>
+
+        <!-- Far away on the right: the headland with the fort and its lighthouse. -->
+        <path d="M1372 524 L1420 506 L1470 498 L1600 492 L1600 524 Z" fill="#13293a"/>
+        <rect x="1476" y="486" width="92" height="14" fill="#13293a"/>
+        <rect x="1516" y="440" width="14" height="48" fill="#dde2e8"/>
+        <rect x="1516" y="456" width="14" height="9" fill="#d8473f"/>
+        <rect x="1512" y="430" width="22" height="11" fill="#13293a"/>
+        <circle class="scene-light" cx="1523" cy="435" r="6" fill="#f7d968"/>
+
+        <!-- The sea, with the sun glittering on it and slow waves. -->
+        <rect y="520" width="1600" height="160" fill="url(#scene-sea)"/>
+        <g class="scene-glitter" fill="#f7d968">
+          <rect x="1135" y="528" width="160" height="5" rx="2.5"/>
+          <rect x="1160" y="542" width="110" height="5" rx="2.5"/>
+          <rect x="1120" y="557" width="190" height="6" rx="3"/>
+          <rect x="1170" y="574" width="90" height="6" rx="3"/>
+          <rect x="1140" y="592" width="150" height="7" rx="3.5"/>
+          <rect x="1180" y="612" width="70" height="7" rx="3.5"/>
+          <rect x="1150" y="632" width="130" height="8" rx="4"/>
+        </g>
+        <g fill="none" stroke="#cfe6f5" stroke-linecap="round">
+          <!-- Every wave is a line of dashes and gaps. A dash and a gap are
+               240 long together, which is how far style.css slides them. -->
+          <path class="scene-wave-far" d="M-300 552 H1900" stroke-width="2" stroke-opacity="0.28" stroke-dasharray="70 170"/>
+          <path class="scene-wave-mid" d="M-300 584 H1900" stroke-width="3" stroke-opacity="0.24" stroke-dasharray="100 140"/>
+          <path class="scene-wave-near" d="M-300 622 H1900" stroke-width="3" stroke-opacity="0.2" stroke-dasharray="130 110"/>
+        </g>
+
+        <!-- The beach: sand, with a line of foam where the sea ends. -->
+        <path d="M0 672 C200 658 420 684 640 668 S1040 656 1240 670 S1500 662 1600 668 V730 H0 Z" fill="#d9c08a"/>
+        <path class="scene-foam" d="M0 672 C200 658 420 684 640 668 S1040 656 1240 670 S1500 662 1600 668" fill="none" stroke="#f2f5f7" stroke-width="5" stroke-opacity="0.8" stroke-linecap="round"/>
+
+        <!-- The grass between the beach and the road. -->
+        <rect y="716" width="1600" height="74" fill="#3c8a4b"/>
+        <rect y="716" width="1600" height="8" fill="#44954f"/>
+
+        <!-- The campus: low white buildings. Windows are dark, a few are lit. -->
+        <g>
+          <!-- a long building on legs, with two rows of windows -->
+          <rect x="850" y="662" width="270" height="74" fill="#eef1f4"/>
+          <rect x="850" y="662" width="270" height="7" fill="#8d97a3"/>
+          <rect x="850" y="662" width="22" height="74" fill="#c3c9d1"/>
+          <rect x="884" y="680" width="224" height="13" fill="#22303c"/>
+          <rect x="884" y="706" width="224" height="13" fill="#22303c"/>
+          <rect x="930" y="680" width="26" height="13" fill="#f0c330"/>
+          <rect x="1040" y="680" width="40" height="13" fill="#f0c330"/>
+          <rect x="976" y="706" width="30" height="13" fill="#f0c330"/>
+          <rect x="864" y="736" width="8" height="14" fill="#c3c9d1"/>
+          <rect x="960" y="736" width="8" height="14" fill="#c3c9d1"/>
+          <rect x="1050" y="736" width="8" height="14" fill="#c3c9d1"/>
+          <rect x="1104" y="736" width="8" height="14" fill="#c3c9d1"/>
+
+          <!-- a taller building -->
+          <rect x="1150" y="598" width="150" height="152" fill="#eef1f4"/>
+          <rect x="1150" y="598" width="150" height="8" fill="#8d97a3"/>
+          <rect x="1150" y="598" width="24" height="152" fill="#c3c9d1"/>
+          <rect x="1186" y="620" width="102" height="14" fill="#22303c"/>
+          <rect x="1186" y="648" width="102" height="14" fill="#22303c"/>
+          <rect x="1186" y="676" width="102" height="14" fill="#22303c"/>
+          <rect x="1186" y="704" width="102" height="14" fill="#22303c"/>
+          <rect x="1206" y="620" width="30" height="14" fill="#f0c330"/>
+          <rect x="1250" y="676" width="26" height="14" fill="#f0c330"/>
+          <rect x="1196" y="704" width="44" height="14" fill="#f0c330"/>
+
+          <!-- a hall with a sloping roof and a glass front -->
+          <path d="M1330 750 V690 L1486 640 V750 Z" fill="#dde2e8"/>
+          <path d="M1330 690 L1486 640 V650 L1330 700 Z" fill="#8d97a3"/>
+          <path d="M1350 750 V712 L1466 676 V750 Z" fill="#22303c"/>
+          <path d="M1388 750 V700 L1396 698 V750 Z M1426 750 V688 L1434 686 V750 Z" fill="#dde2e8"/>
+          <path d="M1350 750 V728 L1388 716 V750 Z" fill="#f0c330"/>
+
+          <!-- one more building, cut off by the edge of the picture -->
+          <rect x="1516" y="650" width="100" height="100" fill="#eef1f4"/>
+          <rect x="1516" y="650" width="100" height="7" fill="#8d97a3"/>
+          <rect x="1516" y="650" width="18" height="100" fill="#c3c9d1"/>
+          <rect x="1546" y="670" width="60" height="13" fill="#22303c"/>
+          <rect x="1546" y="696" width="60" height="13" fill="#22303c"/>
+          <rect x="1560" y="696" width="24" height="13" fill="#f0c330"/>
+        </g>
+
+        <!-- Trees: two palms by the beach and round trees between the buildings. -->
+        <g>
+          <path d="M770 752 C768 720 776 690 784 664" fill="none" stroke="#6b4a2f" stroke-width="7" stroke-linecap="round"/>
+          <path d="M784 664 C760 650 740 652 722 666 M784 664 C770 640 752 632 734 634 M784 664 C788 640 804 628 824 628 M784 664 C806 652 826 656 842 670 M784 664 C796 668 806 680 810 694" fill="none" stroke="#2f7a3f" stroke-width="7" stroke-linecap="round"/>
+          <path d="M650 756 C650 732 656 712 662 694" fill="none" stroke="#6b4a2f" stroke-width="6" stroke-linecap="round"/>
+          <path d="M662 694 C644 684 628 686 614 698 M662 694 C652 674 636 668 622 670 M662 694 C666 674 680 664 696 664 M662 694 C680 684 698 688 710 700" fill="none" stroke="#2f7a3f" stroke-width="6" stroke-linecap="round"/>
+          <rect x="1130" y="728" width="6" height="26" fill="#6b4a2f"/>
+          <circle cx="1133" cy="718" r="20" fill="#2f7a3f"/>
+          <rect x="1310" y="732" width="6" height="22" fill="#6b4a2f"/>
+          <circle cx="1313" cy="722" r="18" fill="#2f7a3f"/>
+          <rect x="1498" y="730" width="6" height="24" fill="#6b4a2f"/>
+          <circle cx="1501" cy="720" r="19" fill="#2f7a3f"/>
+        </g>
+
+        <!-- The road at the front, with striped edges, a dashed middle line and a finish line. -->
+        <rect y="784" width="1600" height="116" fill="#565d68"/>
+        <rect y="778" width="1600" height="14" fill="url(#scene-kerb)"/>
+        <path d="M0 846 H1600" stroke="#f2f5f7" stroke-opacity="0.75" stroke-width="5" stroke-dasharray="46 54"/>
+        <rect x="1404" y="792" width="48" height="108" fill="url(#scene-chequer)"/>
+
+        <!-- The two karts. Each one is drawn standing still at a spot on the
+             road. The outer group is what style.css moves along the road. -->
+        <g class="scene-kart-red">
+          <g transform="translate(1250 824)">
+            <rect x="-34" y="-6" width="70" height="14" rx="5" fill="#e23d3d"/>
+            <path d="M36 -4 L52 4 V8 H30 Z" fill="#f06a5e"/>
+            <rect x="-38" y="-18" width="10" height="16" rx="2" fill="#15191d"/>
+            <rect x="-22" y="-20" width="22" height="16" rx="4" fill="#15191d"/>
+            <circle cx="-10" cy="-27" r="10" fill="#f2f5f7"/>
+            <rect x="-6" y="-31" width="9" height="7" rx="2" fill="#15191d"/>
+            <rect x="-20" y="-30" width="12" height="3" fill="#e23d3d"/>
+            <circle cx="-22" cy="10" r="11" fill="#15191d"/>
+            <circle cx="-22" cy="10" r="4" fill="#8d97a3"/>
+            <circle cx="30" cy="10" r="11" fill="#15191d"/>
+            <circle cx="30" cy="10" r="4" fill="#8d97a3"/>
+          </g>
+        </g>
+        <g class="scene-kart-blue">
+          <g transform="translate(1040 866)">
+            <rect x="-34" y="-6" width="70" height="14" rx="5" fill="#2f7fe0"/>
+            <path d="M36 -4 L52 4 V8 H30 Z" fill="#5fa2f0"/>
+            <rect x="-38" y="-18" width="10" height="16" rx="2" fill="#15191d"/>
+            <rect x="-22" y="-20" width="22" height="16" rx="4" fill="#15191d"/>
+            <circle cx="-10" cy="-27" r="10" fill="#f2f5f7"/>
+            <rect x="-6" y="-31" width="9" height="7" rx="2" fill="#15191d"/>
+            <rect x="-20" y="-30" width="12" height="3" fill="#2f7fe0"/>
+            <circle cx="-22" cy="10" r="11" fill="#15191d"/>
+            <circle cx="-22" cy="10" r="4" fill="#8d97a3"/>
+            <circle cx="30" cy="10" r="11" fill="#15191d"/>
+            <circle cx="30" cy="10" r="4" fill="#8d97a3"/>
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <!-- The bar at the top: the account corner and the Settings button. -->
+    <header class="top-bar">
+      <!-- The account corner. account-panel.js shows the part that fits:
+           a sentence, the two buttons for a visitor, or the player's name. -->
+      <div class="account-corner">
+        <p id="account-status" class="account-status" role="status">Checking who is signed in…</p>
+        <button type="button" id="account-check-again" class="button button-small" hidden>Check again</button>
+        <div id="account-signed-out" class="account-buttons" hidden>
+          <button type="button" id="open-sign-in" class="button">Sign in</button>
+          <button type="button" id="open-sign-up" class="button button-primary">Create account</button>
+        </div>
+        <div id="account-signed-in" class="account-buttons" hidden>
+          <button type="button" id="open-account" class="button player-chip">
+            <svg class="chip-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+              <circle cx="10" cy="10" r="8"/>
+              <rect class="chip-visor" x="10" y="7" width="8" height="5" rx="1.5"/>
+            </svg>
+            <span class="visually-hidden">Your account:</span>
+            <span id="account-name" class="player-name"></span>
+          </button>
+          <button type="button" id="sign-out" class="button">Sign out</button>
+        </div>
+      </div>
+
+      <button type="button" id="open-settings" class="button">
+        <svg class="button-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+          <path d="M3 5h14M3 10h14M3 15h14"/>
+          <circle cx="7" cy="5" r="2.2"/>
+          <circle cx="13" cy="10" r="2.2"/>
+          <circle cx="8" cy="15" r="2.2"/>
+        </svg>
+        Settings
+      </button>
+    </header>
+
     <!-- The main menu: the first page a player sees. -->
     <main class="menu">
-      <button type="button" id="open-settings" class="settings-button">⚙ Settings</button>
+      <div class="title-block">
+        <h1 class="game-title">
+          <span class="title-place">Nova SBE</span>
+          <span class="title-name"><span class="title-kart">kart</span> racer</span>
+        </h1>
+        <div class="chequer-strip"></div>
+        <p class="tagline">Kart racing on the Carcavelos campus, by the sea</p>
+      </div>
 
-      <h1>Nova SBE kart racer</h1>
-      <p class="tagline">Kart racing on the Carcavelos campus</p>
-
+      <!-- The four big choices. Each one is a link (it opens another page) or
+           a button (it opens a panel), with a small picture and a line of
+           explanation laid on top of it by style.css. -->
       <nav class="menu-choices" aria-label="Main menu">
-        <a class="menu-choice" href="/race.html">Single race</a>
-        <button type="button" class="menu-choice" disabled aria-describedby="cup-soon">Cup</button>
-        <p id="cup-soon" class="menu-soon">Cup: coming soon, with three campus tracks</p>
-        <a class="menu-choice" href="/online.html">Online</a>
-        <button type="button" id="open-leaderboard" class="menu-choice">Leaderboard</button>
+        <ul class="tiles">
+          <li id="single-race-tile" class="tile tile-race">
+            <a class="menu-choice" href="/race.html">Single race</a>
+            <span class="tile-icon">
+              <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+                <rect class="ink" x="7" y="5" width="4" height="39" rx="2"/>
+                <rect class="paper" x="11" y="8" width="32" height="24"/>
+                <path class="ink" d="M11 8h8v8h-8zM27 8h8v8h-8zM19 16h8v8h-8zM35 16h8v8h-8zM11 24h8v8h-8zM27 24h8v8h-8z"/>
+              </svg>
+            </span>
+            <p class="tile-note">Pick a track and race against the clock</p>
+          </li>
+          <li class="tile tile-soon">
+            <button type="button" class="menu-choice" disabled aria-describedby="cup-soon">Cup</button>
+            <span class="tile-icon">
+              <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+                <path class="ink" d="M14 7h20v9c0 8-4 13-10 13s-10-5-10-13z"/>
+                <path class="line" d="M14 11H7c0 7 3 10 8 11M34 11h7c0 7-3 10-8 11"/>
+                <rect class="ink" x="21" y="28" width="6" height="8"/>
+                <rect class="ink" x="14" y="36" width="20" height="6" rx="2"/>
+              </svg>
+            </span>
+            <p id="cup-soon" class="tile-note">Cup: coming soon, with three campus tracks</p>
+          </li>
+          <li id="online-tile" class="tile tile-online">
+            <a class="menu-choice" href="/online.html">Online</a>
+            <span class="tile-icon">
+              <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+                <circle class="line" cx="24" cy="24" r="17"/>
+                <ellipse class="line" cx="24" cy="24" rx="7.5" ry="17"/>
+                <path class="line" d="M7 24h34M10.5 14.5h27M10.5 33.5h27"/>
+              </svg>
+            </span>
+            <p class="tile-note">Pick a track and race other players live</p>
+          </li>
+          <li class="tile tile-board">
+            <button type="button" id="open-leaderboard" class="menu-choice">Leaderboard</button>
+            <span class="tile-icon">
+              <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+                <rect class="ink" x="4" y="27" width="12" height="15" rx="1.5"/>
+                <rect class="ink" x="18" y="17" width="12" height="25" rx="1.5"/>
+                <rect class="ink" x="32" y="32" width="12" height="10" rx="1.5"/>
+                <circle class="ink" cx="24" cy="8.5" r="4.5"/>
+              </svg>
+            </span>
+            <p class="tile-note">The fastest races and laps on every track</p>
+          </li>
+        </ul>
       </nav>
     </main>
 
-    <!-- The leaderboard panel. For now it shows your own best times, kept in
-         this browser. A leaderboard shared between players needs accounts. -->
-    <dialog id="leaderboard" class="panel" aria-labelledby="leaderboard-title">
-      <h2 id="leaderboard-title">Leaderboard</h2>
+    <!-- THE PANELS THAT OPEN OVER THE MENU
+         A <dialog> is a panel built into the browser. It opens on top of the
+         page, keeps the keyboard inside it, and Escape closes it. The first
+         three only show things, so a click beside them closes them as well
+         (closedby="any"; a browser that does not know this ignores it). -->
 
-      <h3>Single race</h3>
-      <table class="records">
-        <thead>
-          <tr><th>Track</th><th>Best race</th><th>Best lap</th></tr>
-        </thead>
-        <!-- menu.js puts one row here for each track. -->
-        <tbody id="single-race-records"></tbody>
-      </table>
-
-      <h3>Cup</h3>
-      <p class="later">No cup yet: it comes with the three campus tracks.</p>
-
-      <p class="note">
-        These are your own best times, kept in this browser only. Nobody else sees them.
-        A leaderboard shared with other players will come with accounts.
-      </p>
-
-      <form method="dialog">
-        <button class="menu-choice">Close</button>
-      </form>
+    <!-- Choosing a track, for a single race or for an online race.
+         track-panel.js changes the title and the sentence under it to fit. -->
+    <dialog id="track-choice" class="panel panel-wide" aria-labelledby="track-choice-title" closedby="any">
+      <div class="panel-head">
+        <h2 id="track-choice-title">Choose a track</h2>
+        <form method="dialog">
+          <button class="close-button" aria-label="Close">
+            <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 3l10 10M13 3L3 13"/></svg>
+          </button>
+        </form>
+      </div>
+      <div class="panel-body">
+        <p id="track-choice-lead" class="panel-lead"></p>
+        <!-- track-panel.js puts one card here for each track. -->
+        <ul id="track-cards" class="track-cards"></ul>
+        <p class="note">The campus loop is based on map data © OpenStreetMap contributors.</p>
+      </div>
     </dialog>
 
-    <!-- The settings panel. A <dialog> is a panel built into the browser: it
-         opens on top of the page, and Escape or the Close button closes it. -->
-    <dialog id="settings" class="panel" aria-labelledby="settings-title">
-      <h2 id="settings-title">Settings</h2>
+    <!-- The leaderboard: the fastest times of all players on one track, and
+         your own practice bests. leaderboard-panel.js fills it in. -->
+    <dialog id="leaderboard" class="panel panel-wide" aria-labelledby="leaderboard-title" closedby="any">
+      <div class="panel-head">
+        <h2 id="leaderboard-title">Leaderboard</h2>
+        <form method="dialog">
+          <button class="close-button" aria-label="Close">
+            <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 3l10 10M13 3L3 13"/></svg>
+          </button>
+        </form>
+      </div>
+      <div class="panel-body leaderboard-body">
+        <!-- One button for each track. -->
+        <div id="leaderboard-tracks" class="switcher" role="group" aria-label="Track"></div>
 
-      <fieldset>
-        <legend>Camera view at the start of a race</legend>
-        <!-- menu.js puts one choice here for each camera view. -->
-        <div id="view-choices" class="choices"></div>
-      </fieldset>
-      <p id="settings-status" class="note" role="status"></p>
+        <section aria-labelledby="shared-title">
+          <div class="section-head">
+            <h3 id="shared-title">All players</h3>
+            <p id="shared-status" class="shared-status" role="status"></p>
+          </div>
 
-      <fieldset>
-        <legend>Sound</legend>
-        <label class="later">
-          <input type="checkbox" disabled> Sound on
-          <span>(coming later: the game has no sound yet)</span>
-        </label>
-      </fieldset>
+          <!-- Shown instead of the two boards when the server said no. -->
+          <div id="shared-notice" class="notice" hidden>
+            <p id="shared-notice-text" class="notice-text"></p>
+            <p class="note">Your practice bests are kept in this browser, and still work.</p>
+            <button type="button" id="shared-retry" class="button">Try again</button>
+          </div>
 
-      <h3>Controls</h3>
-      <ul class="controls">
-        <li><kbd>↑</kbd> gas</li>
-        <li><kbd>↓</kbd> brake, and reverse when stopped</li>
-        <li><kbd>←</kbd> <kbd>→</kbd> steer</li>
-        <li><kbd>V</kbd> change the camera during a race</li>
-        <li><kbd>R</kbd> start the race again</li>
-        <li><kbd>Enter</kbd> online: the host starts a race for everyone</li>
-      </ul>
+          <div id="shared-boards" class="boards">
+            <div class="board">
+              <h4 id="race-board-title">Fastest races</h4>
+              <ol id="race-board-rows" class="board-rows" aria-labelledby="race-board-title"></ol>
+              <p id="race-board-empty" class="board-empty" hidden></p>
+              <p id="race-board-mine" class="board-mine" hidden></p>
+            </div>
+            <div class="board">
+              <h4 id="lap-board-title">Fastest laps</h4>
+              <ol id="lap-board-rows" class="board-rows" aria-labelledby="lap-board-title"></ol>
+              <p id="lap-board-empty" class="board-empty" hidden></p>
+              <p id="lap-board-mine" class="board-mine" hidden></p>
+            </div>
+          </div>
+          <p class="note">
+            These boards only count online races that began with the countdown and were
+            finished by a signed-in player. A player appears once, with their best time.
+          </p>
+        </section>
 
-      <form method="dialog">
-        <button class="menu-choice">Close</button>
-      </form>
+        <section class="practice" aria-labelledby="practice-title">
+          <div class="section-head">
+            <h3 id="practice-title">Your practice bests</h3>
+          </div>
+          <div class="practice-card">
+            <dl class="practice-times">
+              <div>
+                <dt>Best race</dt>
+                <dd id="practice-race"></dd>
+              </div>
+              <div>
+                <dt>Best lap</dt>
+                <dd id="practice-lap"></dd>
+              </div>
+            </dl>
+            <p class="note">
+              From your single races on this track. They are kept in this browser only: nobody
+              else sees them, and they never count for the boards of all players.
+            </p>
+          </div>
+        </section>
+      </div>
+    </dialog>
+
+    <!-- The settings. settings-panel.js fills in the camera views. -->
+    <dialog id="settings" class="panel" aria-labelledby="settings-title" closedby="any">
+      <div class="panel-head">
+        <h2 id="settings-title">Settings</h2>
+        <form method="dialog">
+          <button class="close-button" aria-label="Close">
+            <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 3l10 10M13 3L3 13"/></svg>
+          </button>
+        </form>
+      </div>
+      <div class="panel-body">
+        <fieldset>
+          <legend>Camera view at the start of a race</legend>
+          <!-- One choice for each camera view goes here. -->
+          <div id="view-choices" class="choices"></div>
+        </fieldset>
+        <p id="settings-status" class="note" role="status"></p>
+
+        <fieldset>
+          <legend>Sound</legend>
+          <label class="later">
+            <input type="checkbox" disabled> Sound on
+            <span>(coming later: the game has no sound yet)</span>
+          </label>
+        </fieldset>
+
+        <h3>Controls</h3>
+        <ul class="controls">
+          <li><kbd>↑</kbd> gas</li>
+          <li><kbd>↓</kbd> brake, and reverse when stopped</li>
+          <li><kbd>←</kbd> <kbd>→</kbd> steer</li>
+          <li><kbd>V</kbd> change the camera during a race</li>
+          <li><kbd>R</kbd> start the race again</li>
+          <li><kbd>Enter</kbd> online: the host starts a race for everyone</li>
+        </ul>
+
+        <form method="dialog">
+          <button class="button button-wide">Close</button>
+        </form>
+      </div>
+    </dialog>
+
+    <!-- ACCOUNTS
+         account-panel.js sends these three forms itself. They say
+         method="post" so that, even if that code did not load, a password
+         could never end up in the address of the page. "novalidate" switches
+         off the browser's own pop-up messages: ours are shown under each box. -->
+
+    <!-- Signing in. -->
+    <dialog id="sign-in" class="panel" aria-labelledby="sign-in-title">
+      <div class="panel-head">
+        <h2 id="sign-in-title">Sign in</h2>
+        <form method="dialog">
+          <button class="close-button" aria-label="Close">
+            <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 3l10 10M13 3L3 13"/></svg>
+          </button>
+        </form>
+      </div>
+      <div class="panel-body">
+        <form id="sign-in-form" class="account-form" method="post" novalidate>
+          <div class="field">
+            <label for="sign-in-username">User name</label>
+            <input id="sign-in-username" name="username" type="text" autocomplete="username"
+                   autocapitalize="none" spellcheck="false" autofocus
+                   aria-describedby="sign-in-username-error">
+            <p id="sign-in-username-error" class="field-error" data-error-for="username"></p>
+          </div>
+          <div class="field">
+            <label for="sign-in-password">Password</label>
+            <input id="sign-in-password" name="password" type="password" autocomplete="current-password"
+                   aria-describedby="sign-in-password-error">
+            <p id="sign-in-password-error" class="field-error" data-error-for="password"></p>
+          </div>
+          <p class="form-message" data-error-for="form" role="status"></p>
+          <button type="submit" class="button button-primary button-wide" data-waiting="Signing in…">Sign in</button>
+        </form>
+        <p class="panel-foot">
+          No account yet?
+          <button type="button" id="sign-in-to-sign-up" class="link-button">Create an account</button>
+        </p>
+      </div>
+    </dialog>
+
+    <!-- Creating an account. -->
+    <dialog id="sign-up" class="panel" aria-labelledby="sign-up-title">
+      <div class="panel-head">
+        <h2 id="sign-up-title">Create account</h2>
+        <form method="dialog">
+          <button class="close-button" aria-label="Close">
+            <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 3l10 10M13 3L3 13"/></svg>
+          </button>
+        </form>
+      </div>
+      <div class="panel-body">
+        <p class="panel-lead">
+          With an account, your results in online races are saved for the shared leaderboard.
+          You only need a user name and a password.
+        </p>
+        <form id="sign-up-form" class="account-form" method="post" novalidate>
+          <div class="field">
+            <label for="sign-up-username">User name</label>
+            <input id="sign-up-username" name="username" type="text" autocomplete="username"
+                   autocapitalize="none" spellcheck="false" autofocus
+                   aria-describedby="sign-up-username-hint sign-up-username-error">
+            <!-- account-panel.js writes the two hints, from the rules in shared/account-rules.js. -->
+            <p id="sign-up-username-hint" class="field-hint"></p>
+            <p id="sign-up-username-error" class="field-error" data-error-for="username"></p>
+          </div>
+          <div class="field">
+            <label for="sign-up-password">Password</label>
+            <input id="sign-up-password" name="password" type="password" autocomplete="new-password"
+                   aria-describedby="sign-up-password-hint sign-up-password-error">
+            <p id="sign-up-password-hint" class="field-hint"></p>
+            <p id="sign-up-password-error" class="field-error" data-error-for="password"></p>
+          </div>
+          <div class="field field-check">
+            <input id="sign-up-show-password" name="show" type="checkbox">
+            <label for="sign-up-show-password">Show the password while I type</label>
+          </div>
+          <p class="form-message" data-error-for="form" role="status"></p>
+          <button type="submit" class="button button-primary button-wide" data-waiting="Creating your account…">Create account</button>
+        </form>
+        <p class="panel-foot">
+          Already have an account?
+          <button type="button" id="sign-up-to-sign-in" class="link-button">Sign in</button>
+        </p>
+      </div>
+    </dialog>
+
+    <!-- The signed-in player's own account, with the way to delete it. -->
+    <dialog id="your-account" class="panel" aria-labelledby="your-account-title">
+      <div class="panel-head">
+        <h2 id="your-account-title">Your account</h2>
+        <form method="dialog">
+          <button class="close-button" aria-label="Close">
+            <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 3l10 10M13 3L3 13"/></svg>
+          </button>
+        </form>
+      </div>
+      <div class="panel-body">
+        <p class="account-who">Signed in as <strong id="your-account-name"></strong></p>
+        <p class="note">
+          Your results in online races are saved under this name for the shared leaderboard.
+          Other players see the name and the times, nothing else.
+        </p>
+
+        <!-- <details> is a part of the page that stays folded until its
+             first line is clicked. Deleting is kept out of the way in it. -->
+        <details class="danger-zone">
+          <summary>Delete my account</summary>
+          <p>
+            This deletes your account and all your saved results, for good. It cannot be
+            undone. Practice times kept in this browser are not touched.
+          </p>
+          <form id="delete-account-form" class="account-form" method="post" novalidate>
+            <div class="field">
+              <!-- Filled in by account-panel.js and not editable. It shows which
+                   account will go, and tells a password manager whose password this is. -->
+              <label for="delete-username">Account to delete</label>
+              <input id="delete-username" name="username" type="text" autocomplete="username" readonly>
+            </div>
+            <div class="field">
+              <label for="delete-password">Your password</label>
+              <input id="delete-password" name="password" type="password" autocomplete="current-password"
+                     aria-describedby="delete-password-error">
+              <p id="delete-password-error" class="field-error" data-error-for="password"></p>
+            </div>
+            <div class="field field-check">
+              <input id="delete-confirm" name="confirm" type="checkbox" aria-describedby="delete-confirm-error">
+              <label for="delete-confirm">I understand: delete my account and all my saved results</label>
+              <p id="delete-confirm-error" class="field-error" data-error-for="confirm"></p>
+            </div>
+            <p class="form-message" data-error-for="form" role="status"></p>
+            <button type="submit" class="button button-danger button-wide" data-waiting="Deleting your account…">Delete my account for good</button>
+          </form>
+        </details>
+      </div>
     </dialog>
 
     <script type="module" src="/menu.js"></script>
