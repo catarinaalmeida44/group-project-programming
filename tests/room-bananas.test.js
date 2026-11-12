@@ -15,6 +15,7 @@ import {
   SPIN_STEPS,
   FIRST_BANANA_STEPS,
   BANANA_RADIUS,
+  BANANA_SAFE_FROM_KART,
   SEED_COUNT,
   bananaSquares,
   mostBananas,
@@ -438,6 +439,43 @@ describe("who can NOT hit a banana", () => {
       mostSoFar = update.bananas.length;
     });
     expect(mostSoFar).toBe(mostBananas(TEST_OVAL));
+  });
+
+  it("is the place where someone watching would stand: for the bananas their kart is not there at all", () => {
+    const placeOne = gridSpot(TEST_OVAL, 1); // where a watcher who joins a one-kart race is parked
+
+    /** One racer, driven by a robot, for 40 seconds. Gives every banana that appeared, in order. */
+    function bananasOfARace(seed, withWatcher) {
+      const { room, host } = raceAtGo(seed);
+      if (withWatcher) {
+        expect(room.addPlayer().place).toBe(1);
+      }
+      const brain = carefulRobot();
+      const appeared = [];
+      for (let step = 0; step < 60 * 40; step++) {
+        room.setKeys(host, brain(kartOf(room, host)));
+        room.step();
+        for (const banana of room.snapshot().bananas) {
+          if (!appeared.some((each) => each.id === banana.id)) {
+            appeared.push(banana);
+          }
+        }
+      }
+      return appeared;
+    }
+
+    // Find a race in which a banana appears so close to place 1 that a kart
+    // parked there would have kept it away.
+    let seed = 1;
+    const nearPlaceOne = (banana) => Math.hypot(banana.x - placeOne.x, banana.y - placeOne.y) < BANANA_SAFE_FROM_KART;
+    while (seed < 300 && !bananasOfARace(seed, false).some(nearPlaceOne)) {
+      seed++;
+    }
+    const alone = bananasOfARace(seed, false);
+    expect(alone.some(nearPlaceOne)).toBe(true);
+
+    // With someone watching from place 1, the race has exactly the same bananas.
+    expect(bananasOfARace(seed, true)).toEqual(alone);
   });
 });
 
