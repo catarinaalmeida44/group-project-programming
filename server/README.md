@@ -13,7 +13,8 @@ Our game server: the program that runs on Render. It sends the game's files to t
 | `room.js` | The karts of everyone driving together, and the race: who the host is, the countdown, who is racing, who is watching, and who finished in which position. Moves the karts with the shared rules, 60 steps a second. Knows nothing about the internet, which makes it easy to test |
 | `messages.js` | Checks every message a browser sends before the game looks at it |
 | `db.js` | Opens the connection to the database, and looks after one small table, `server_starts`, with one row for each time the server started |
-| `start.js` | Starts the server. This is what `npm start` runs |
+| `start.js` | Starts the server. This is what `npm start` runs, on a laptop and on Render |
+| `start-pretend.js` | Starts the server on a laptop with pretend accounts kept in memory (`npm run start:pretend`), so everyone can try accounts without the database's secret address. Never used online |
 
 The server uses two outside libraries: `ws`, for the live connections, and `pg`, to talk to the database. Everything else is built on what comes with Node.js: `http` for the web server and `crypto` for scrambling passwords and making random tickets.
 

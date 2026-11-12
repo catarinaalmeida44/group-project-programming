@@ -20,7 +20,8 @@ Needs Node.js 26 or newer. Whoever adds or changes a command also updates it her
 - Download the libraries (once, and again whenever `package-lock.json` changes): `npm install`
 - Run the tests: `npm test`
 - Run the tests that use the real database: `npm run test:database`. They need the database address in a local `.env` file and a network that lets database traffic through. The university Wi-Fi does not
-- Run the app: `npm start`, then open http://localhost:3000. Stop it with Ctrl+C.
+- Run the app: `npm start`, then open http://localhost:3000. Stop it with Ctrl+C. Without the database address in `.env` it runs without accounts
+- Run the app with pretend accounts, to try signing in and the leaderboard without the database: `npm run start:pretend`. Accounts and results are kept in memory and forgotten when it stops. It never touches the real database
 
 Test files live in `tests/` and end in `.test.js`. GitHub runs `npm test` on every pull request (`.github/workflows/tests.yml`).
 
