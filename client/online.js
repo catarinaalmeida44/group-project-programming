@@ -1,4 +1,8 @@
-// The online page: driving and racing on the test track with other people.
+// The online page: driving and racing with other people.
+//
+// Each track has its own room on the server. The address of the page says
+// which one (track-choice.js): online.html?track=campus-loop is the campus
+// loop, and without a choice it is the test oval.
 //
 // Before a race, everyone drives around freely. The host (whoever has been
 // here longest) presses Enter to start a race: every kart goes to the grid,
@@ -14,27 +18,40 @@
 // make their kart faster or skip a lap by changing this page, because this
 // page decides nothing.
 //
+// The same goes for the leaderboard. When a signed-in player finishes a race,
+// the server saves the time it measured itself and then tells this page
+// ("saved"). This page never sends a time, so it cannot send a false one.
+//
 // Known limit: your own kart reacts a moment late, because your key press
 // has to travel to the server and the result has to travel back.
 
-import { TEST_OVAL } from "../shared/tracks/test-oval.js";
+import { TRACKS, storeysOf } from "../shared/tracks/index.js";
+import { chooseTrackName } from "./track-choice.js";
+import { createBuildings } from "./buildings.js";
 import { createKeyboard } from "./keyboard.js";
 import { createPainter } from "./draw.js";
 import { createHud } from "./hud.js";
-import { createPlayback, readServerMessage, statusLine, QUIET_AFTER_MS } from "./net.js";
+import { createPlayback, readServerMessage, statusLine, accountLine, QUIET_AFTER_MS } from "./net.js";
 import { readRace, raceView, kartToWatch } from "./race-view.js";
 import { followTarget, easeTowards, nextView } from "./camera.js";
 import { storageOf } from "./storage.js";
 import { readSettings } from "./settings.js";
 
-const track = TEST_OVAL;
+// The short name is always one from our own list of tracks, whatever the
+// address says, so it is safe to use in the address of the connection below.
+const trackName = chooseTrackName(window.location.search);
+const track = TRACKS[trackName];
 
 const COLOUR_NAMES = ["red", "blue", "yellow", "green", "purple", "orange", "teal", "pink"];
 
 // ---- The parts of the page ----
-const draw = createPainter(document.getElementById("track"), track);
+document.getElementById("track-name").textContent = track.name; // as text, never as HTML
+// The buildings of the track stand up in the view behind the kart, if the
+// track has storeys (buildings.js), exactly as on the single race page.
+const draw = createPainter(document.getElementById("track"), track, createBuildings(track, storeysOf(track)));
 const showHud = createHud(document);
 const statusText = document.getElementById("status");
+const accountText = document.getElementById("account-line");
 const messageBox = document.getElementById("message");
 
 // ---- What we know from the server ----
@@ -45,6 +62,8 @@ let status = "Connecting to the server...";
 let connected = false;
 let kartsShown = null; //              the karts in the picture drawn last
 let lastNewsAt = null; //              when the server last sent us anything
+let account = null; //                 who the server says we are signed in as (the "account" message)
+let saved = null; //                   what the server said about saving our last finished race
 
 // ---- The camera ----
 let view = readSettings(storageOf(window)).startView; // the view chosen in the menu's settings, or the first one
@@ -54,7 +73,7 @@ let lastFrameTime = null;
 // ---- The live connection ----
 // "wss" is the secure kind, used when the page itself was loaded securely (https).
 const secure = window.location.protocol === "https:";
-const connection = new WebSocket(`${secure ? "wss" : "ws"}://${window.location.host}/play`);
+const connection = new WebSocket(`${secure ? "wss" : "ws"}://${window.location.host}/play?track=${trackName}`);
 
 connection.addEventListener("open", () => {
   connected = true;
@@ -79,7 +98,12 @@ connection.addEventListener("message", (event) => {
     }
   } else if (message.type === "full") {
     status = "The room is full. Try again in a few minutes.";
+  } else if (message.type === "account") {
+    account = message;
+  } else if (message.type === "saved") {
+    saved = message;
   }
+  accountText.textContent = accountLine(account, saved); // as text, never as HTML
 });
 
 connection.addEventListener("close", () => {
@@ -190,7 +214,7 @@ function frame(now) {
 
 // A way to look at the online session from the browser's console.
 window.kartGame = {
-  state: () => ({ myId, view, connected, status, race: { ...race }, karts: kartsShown }),
+  state: () => ({ myId, view, connected, status, trackName, account, saved, race: { ...race }, karts: kartsShown }),
 };
 
 requestAnimationFrame(frame);

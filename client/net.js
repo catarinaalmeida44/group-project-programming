@@ -13,6 +13,9 @@
 // This file is only arithmetic and bookkeeping, so it can be tested. The
 // connection itself is opened in online.js.
 
+import { STEP_SECONDS } from "../shared/physics.js";
+import { formatTime } from "./format.js";
+
 /** How far in the past the race is shown, in steps of the game. 6 steps = a tenth of a second. */
 export const DELAY_STEPS = 6;
 
@@ -204,5 +207,54 @@ export function readServerMessage(text) {
   if (message.type === "full") {
     return message;
   }
+  if (message.type === "account" && (message.username === null || typeof message.username === "string")) {
+    return message;
+  }
+  if (
+    message.type === "saved" &&
+    typeof message.saved === "boolean" &&
+    Number.isInteger(message.position) &&
+    message.position >= 1 &&
+    Number.isInteger(message.raceSteps) &&
+    message.raceSteps > 0
+  ) {
+    return message;
+  }
   return null;
+}
+
+/**
+ * The line on the online page about the player's account.
+ *   account  the last "account" message from the server, or null before it arrived
+ *   saved    the last "saved" message from the server, or null
+ *
+ * A guest can race like anyone else. Only the results of signed-in players
+ * are written to the shared leaderboard, and the server does that by itself
+ * when they finish: this page never sends a time.
+ */
+export function accountLine(account, saved) {
+  if (account === null) {
+    return "";
+  }
+  if (account.username === null) {
+    return "You are playing as a guest: your results are not saved. Sign in from the menu to appear on the leaderboard.";
+  }
+  const who = `Signed in as ${account.username}.`;
+  if (saved === null) {
+    return `${who} When you finish a race, your time is saved to the leaderboard.`;
+  }
+  if (!saved.saved) {
+    return `${who} Your last result could not be saved: the database did not answer.`;
+  }
+  return `${who} Saved to the leaderboard: ${placeText(saved.position)} place, ${formatTime(saved.raceSteps * STEP_SECONDS)}.`;
+}
+
+/** 1 -> "1st", 2 -> "2nd", 3 -> "3rd", 4 -> "4th", 11 -> "11th", 21 -> "21st". */
+export function placeText(position) {
+  const lastTwo = position % 100;
+  const last = position % 10;
+  if (lastTwo >= 11 && lastTwo <= 13) {
+    return `${position}th`;
+  }
+  return `${position}${last === 1 ? "st" : last === 2 ? "nd" : last === 3 ? "rd" : "th"}`;
 }
