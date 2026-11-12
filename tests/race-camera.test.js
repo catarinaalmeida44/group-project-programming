@@ -10,8 +10,8 @@
 
 import { describe, it, expect } from "vitest";
 import { SCREEN, CHASE, RACE, chaseNumbers, chaseRow, chasePoint, eyeOf, blendChase, easeAngle } from "../client/camera.js";
-import { introShare, startLights } from "../client/scene.js";
-import { routePoints, routeDirection, isWrongWay, bendsOf, WRONG_WAY_SPEED } from "../client/route.js";
+import { introShare, startLights, spinTurnOf } from "../client/scene.js";
+import { routePoints, routeDirection, isWrongWay, watchForWrongWay, bendsOf, WRONG_WAY_SPEED } from "../client/route.js";
 import { acrossScreen, directionOfColumn, isBetween } from "../client/sky.js";
 import { COUNTDOWN_STEPS } from "../shared/countdown.js";
 import { TEST_OVAL } from "../shared/tracks/test-oval.js";
@@ -234,6 +234,78 @@ describe("the route of a track", () => {
     expect(turns).toContain("400,300 left");
     expect(turns).toContain("400,100 right");
     expect(turns.some((turn) => turn.startsWith("200,310"))).toBe(false);
+  });
+});
+
+describe("the 'wrong way' warning", () => {
+  const points = routePoints(TEST_OVAL, [[2.5, 2.5], [26.5, 2.5], [26.5, 14.5], [2.5, 14.5]]);
+  const backwards = { x: 480, y: 96, vx: -200, vy: 0 };
+  const forwards = { x: 480, y: 96, vx: 200, vy: 0 };
+
+  it("comes only after the kart has driven the wrong way for a moment, not at once", () => {
+    const check = watchForWrongWay(points, 0.7);
+    expect(check(backwards, 10.0)).toBe(false);
+    expect(check(backwards, 10.5)).toBe(false);
+    expect(check(backwards, 10.75)).toBe(true);
+    expect(check(backwards, 12)).toBe(true);
+  });
+
+  it("goes away at once when the kart turns the right way, and waits again the next time", () => {
+    const check = watchForWrongWay(points, 0.7);
+    check(backwards, 10);
+    expect(check(backwards, 11)).toBe(true);
+    expect(check(forwards, 11.1)).toBe(false);
+    expect(check(backwards, 11.2)).toBe(false); // the waiting starts over
+    expect(check(backwards, 11.95)).toBe(true);
+  });
+
+  it("is not set off by a kart that is spun round for a moment", () => {
+    const check = watchForWrongWay(points, 0.7);
+    expect(check(backwards, 5.0)).toBe(false);
+    expect(check(backwards, 5.3)).toBe(false);
+    expect(check(forwards, 5.4)).toBe(false);
+    expect(check(forwards, 9)).toBe(false);
+  });
+
+  it("never comes on a track without a route", () => {
+    const check = watchForWrongWay(null);
+    expect(check(backwards, 0)).toBe(false);
+    expect(check(backwards, 100)).toBe(false);
+  });
+});
+
+describe("how a spinning kart is drawn", () => {
+  const WHOLE = 72; // steps a spin lasts, for these tests
+
+  it("is not turned at all when it is not spinning", () => {
+    expect(spinTurnOf(0, WHOLE)).toBe(0);
+    for (const strange of [-3, NaN, undefined, null, "5"]) {
+      expect(spinTurnOf(strange, WHOLE)).toBe(0);
+    }
+    expect(spinTurnOf(10, 0)).toBe(0);
+  });
+
+  it("turns further and further during the spin, and never backwards", () => {
+    let last = -1;
+    for (let left = WHOLE; left >= 1; left--) {
+      const turn = spinTurnOf(left, WHOLE);
+      expect(turn).toBeGreaterThanOrEqual(last);
+      last = turn;
+    }
+    expect(spinTurnOf(WHOLE, WHOLE)).toBe(0); // the very first step: not yet turned
+  });
+
+  it("ends on whole turns, so the kart does not jump when the spin is over", () => {
+    const atTheEnd = spinTurnOf(0.0001, WHOLE);
+    const turns = atTheEnd / (Math.PI * 2);
+    expect(Math.abs(turns - Math.round(turns))).toBeLessThan(0.001);
+    expect(Math.round(turns)).toBeGreaterThanOrEqual(1);
+  });
+
+  it("spins fastest at the start and slows down", () => {
+    const early = spinTurnOf(WHOLE - 10, WHOLE) - spinTurnOf(WHOLE, WHOLE);
+    const late = spinTurnOf(1, WHOLE) - spinTurnOf(11, WHOLE);
+    expect(early).toBeGreaterThan(late);
   });
 });
 

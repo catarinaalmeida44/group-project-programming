@@ -72,6 +72,29 @@ export function isWrongWay(points, kart) {
 }
 
 /**
+ * Watches one kart and says when to show the "wrong way" warning. A kart
+ * that turns round for a moment, or is spun by a bump, should not set it
+ * off, so the warning only comes after the kart has been driving the wrong
+ * way for "patience" seconds without a break.
+ *
+ * Gives a function to call for every picture with the kart and the time in
+ * seconds. It answers true while the warning should show.
+ */
+export function watchForWrongWay(points, patience = 0.7) {
+  let since = null; // when the kart started driving the wrong way, or null if it is not
+  return function check(kart, seconds) {
+    if (!isWrongWay(points, kart)) {
+      since = null;
+      return false;
+    }
+    if (since === null) {
+      since = seconds;
+    }
+    return seconds - since >= patience;
+  };
+}
+
+/**
  * The bends of the route: the points where the road turns by more than a
  * sixth of a turn. Gives a list of { x, y, turn, from, to }:
  *   x, y   the point of the bend
