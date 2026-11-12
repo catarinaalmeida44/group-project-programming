@@ -70,8 +70,45 @@ export function createApp({ database = null, accounts = null, now = Date.now } =
   });
 }
 
+/**
+ * The rules we hand the browser with every answer, about what a page of
+ * ours may load and do (a "Content-Security-Policy").
+ *
+ * Our pages only ever need files from our own server. So we tell the
+ * browser: run scripts and use styles only from files on this site, never
+ * from text inside a page and never from another site. If a mistake of ours
+ * ever let a visitor's text end up in a page as code, the browser would
+ * refuse to run it. It is a second lock: the first one is that our pages
+ * put text on the screen as text, never as HTML.
+ *
+ *   default-src 'self'      everything comes from our own site, unless said otherwise
+ *   img-src 'self' data:    pictures also from inside our own style file
+ *   connect-src ...         the live connection for online play, to our own site only
+ *   object-src 'none'       no plug-ins
+ *   base-uri 'none'         a page cannot change what its links are relative to
+ *   form-action 'self'      forms can only send to our own site
+ *   frame-ancestors 'none'  no other website may show our pages inside its own
+ */
+function pagePolicy(request) {
+  // 'self' already covers the live connection in current browsers. Older
+  // ones need the address spelled out. It is our own name as the browser
+  // used it, and only letters, digits, dots, colons and dashes are let through.
+  const host = String(request.headers.host ?? "");
+  const live = /^[A-Za-z0-9.:-]{1,100}$/.test(host) ? ` ws://${host} wss://${host}` : "";
+  return [
+    "default-src 'self'",
+    "img-src 'self' data:",
+    `connect-src 'self'${live}`,
+    "object-src 'none'",
+    "base-uri 'none'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ].join("; ");
+}
+
 /** Decides what to send back for one request. */
 async function answer(request, response, database, api) {
+  response.setHeader("Content-Security-Policy", pagePolicy(request));
   const address = readAddress(request.url);
 
   // Accounts and the leaderboard have their own addresses, all under /api/.
