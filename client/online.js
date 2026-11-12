@@ -27,7 +27,6 @@
 
 import { TRACKS, storeysOf } from "../shared/tracks/index.js";
 import { chooseTrackName } from "./track-choice.js";
-import { createBuildings } from "./buildings.js";
 import { createKeyboard } from "./keyboard.js";
 import { createPainter } from "./draw.js";
 import { createHud } from "./hud.js";
@@ -46,9 +45,9 @@ const COLOUR_NAMES = ["red", "blue", "yellow", "green", "purple", "orange", "tea
 
 // ---- The parts of the page ----
 document.getElementById("track-name").textContent = track.name; // as text, never as HTML
-// The buildings of the track stand up in the view behind the kart, if the
-// track has storeys (buildings.js), exactly as on the single race page.
-const draw = createPainter(document.getElementById("track"), track, createBuildings(track, storeysOf(track)));
+// The buildings of the track stand up in the race view, if the track says
+// how many storeys each one has, exactly as on the single race page.
+const draw = createPainter(document.getElementById("track"), track, { storeys: storeysOf(track) });
 const showHud = createHud(document);
 const statusText = document.getElementById("status");
 const accountText = document.getElementById("account-line");

@@ -22,9 +22,9 @@ import { currentLap } from "../shared/laps.js";
 import { TEST_DRIVER } from "../shared/characters.js";
 import { chooseTrack } from "./track-choice.js";
 import { storeysOf } from "../shared/tracks/index.js";
-import { createBuildings } from "./buildings.js";
 import { createKeyboard } from "./keyboard.js";
 import { createPainter } from "./draw.js";
+import { introShare, startLights } from "./scene.js";
 import { createHud } from "./hud.js";
 import { followTarget, easeTowards, nextView } from "./camera.js";
 import { formatTime } from "./format.js";
@@ -37,10 +37,10 @@ const character = TEST_DRIVER;
 
 // ---- The parts of the page ----
 document.getElementById("track-name").textContent = track.name; // as text, never as HTML
-// The buildings of the track stand up in the view behind the kart, if the
-// track has storeys (buildings.js). The test oval has none: its walls stay flat.
-const buildings = createBuildings(track, storeysOf(track));
-const draw = createPainter(document.getElementById("track"), track, buildings);
+// The buildings of the track stand up in the race view, if the track says
+// how many storeys each one has (buildings.js). The test oval has none: it
+// gets low barriers along the edge of the road instead.
+const draw = createPainter(document.getElementById("track"), track, { storeys: storeysOf(track) });
 const showHud = createHud(document);
 const messageBox = document.getElementById("message");
 
@@ -124,7 +124,7 @@ function frame(now) {
   const { progress } = racer;
   const keysWork = started && countdown.racing && !progress.finished;
   const steer = keysWork ? (input.right ? 1 : 0) - (input.left ? 1 : 0) : 0;
-  draw(view, racer.kart, camera, steer);
+  draw(view, racer.kart, camera, steer, [], sceneFor(race.countdownSteps, started));
 
   // The countdown is shown as one big number in the middle of the track.
   const showingCountdown = started && countdown.label !== "" && !progress.finished;
@@ -139,6 +139,18 @@ function frame(now) {
     message: messageFor(progress, countdown),
   });
   requestAnimationFrame(frame);
+}
+
+/**
+ * What the picture shows besides the kart: the camera high above the grid
+ * until the countdown starts, coming down during 3, 2, 1, and the start lights.
+ */
+function sceneFor(countdownSteps, hasStarted) {
+  if (!hasStarted) {
+    return { intro: 0, lights: { red: 0, green: false } };
+  }
+  const counting = countdownAt(countdownSteps).label !== "";
+  return { intro: introShare(counting, countdownSteps), lights: startLights(counting, countdownSteps) };
 }
 
 /** The text shown in the middle of the track. */
