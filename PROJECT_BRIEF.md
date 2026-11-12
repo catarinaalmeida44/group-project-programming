@@ -165,7 +165,7 @@ What this means for you: prefer finished, reliable features over many half-finis
 
 ### Characters and the selection menu
 
-- [PROPOSED] 8 original characters: 6 available from the start (2 light, 2 medium, 2 heavy) and 2 to unlock. Based on campus "types", never on real people.
+- [PROPOSED] 8 original characters: 6 available from the start (2 light, 2 medium, 2 heavy) and 2 to unlock. *Changed on 12 Nov 2026 at Catarina's request (teammates confirm by approving the pull request that contains this change): the characters will be based on real people, not only on campus "types" as first proposed. Before a real person's name or face goes into the game or into this repository, which anyone on the internet can read, that person has to have said yes. Still no Nintendo characters, names or images.*
 - [DECIDED] Each character can be used by only one player per race. No duplicates.
 - [DECIDED] All characters are available in the demo.
 - [PROPOSED] Normal players unlock characters 7 and 8 by winning the cup on Normal and on Hard. Demo accounts get everything unlocked through their saved progress, never through a "demo mode" switch or a special address, which would be a security hole. **[OPEN]** The alternative is no unlocking at all.
@@ -229,12 +229,20 @@ What this means for you: prefer finished, reliable features over many half-finis
   - sending too many messages per second
 
   Each connection controls exactly one kart.
+- *12 Nov 2026: there is now one online room for each track, instead of one room on the test track: `online.html?track=campus-loop` is the room of the campus loop. The server also keeps the finishing order of a race (two karts that cross the line in the same step share a position) and uses it to save results, see section 6. Decision made by the agent, please confirm: one fixed room per track is a step towards rooms with codes, not a replacement for them. A results screen that shows everyone's position is still not built.*
 - [PROPOSED] Practice mode runs entirely in the browser. It works even when the server is down, never counts for leaderboards, and is our backup for the demo.
 - **[OPEN, decide around 13 Nov]** Fallback if live online races are not stable in time: ghost racing (racing against recorded runs of other players).
 
 ## 6. Accounts and data
 
 - [DECIDED] Accounts exist to save progress and for leaderboards.
+- *12 Nov 2026, built by Catarina: a first version of accounts and of the shared leaderboard. What is built follows the proposals below: sign up with a user name and a password, sign in, sign out, the session cookie, the wait after 5 wrong passwords, deleting your own account, and for each track the top 10 race times and top 10 laps plus your own rank. Results are written only by the server, when a signed-in player finishes an online race that began with the countdown. The tables are `players`, `sessions` and `race_results`.*
+- *Decisions made by the agent on 12 Nov 2026, please confirm:*
+  - *There is no email yet. An account is a user name and a password. So nothing is verified, and a forgotten password cannot be reset: that account can no longer be used. Email needs an outside service and a new secret key, which the team has not chosen yet. Everything below about email, verifying and "forgot password" is not built.*
+  - *Guests can drive in online races. Only the results of signed-in players are saved. (The proposal below says online races need an account.)*
+  - *Every saved result has the mode "online", because single race against the server and the cup do not exist yet.*
+  - *On top of the wait after 5 wrong passwords, the server limits how many sign-up and sign-in tries it accepts per minute, from one computer and in total, so a flood of tries cannot slow the races down.*
+- *Not built: progress (trophies, unlocked characters, last character chosen), a profile page, and the cup leaderboard.*
 - [PROPOSED] Sign-up:
   - Username: 3 to 16 letters, numbers or underscores, and unique.
   - Email: one account per email, never shown publicly.

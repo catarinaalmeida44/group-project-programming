@@ -47,7 +47,7 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 
 The server refuses four things, and each has a test:
 
-- requests that try to change something (only reading is allowed for now)
+- requests that try to change something. Only the account addresses, which all start with `/api/`, accept such a request, and they check each one (see the answer about accounts below)
 - files outside those two folders, for example an address such as `/../server/app.js`. The server's own code, the tests and the project settings can never be downloaded
 - kinds of file that are not on its list (web pages, styles, scripts, data files and two kinds of image)
 - addresses that are broken
@@ -107,12 +107,60 @@ The server also protects itself, and each of these has a test:
 - Every message is checked in `server/messages.js`. Anything that is not exactly one of the three allowed kinds gets the browser disconnected.
 - A browser that sends more than 60 messages in a second is disconnected. A real player sends a handful.
 - A connection can only act on its own kart. A message has no way to name another player, and anything extra in a message is dropped.
-- The room takes eight players. A ninth is told the room is full.
-- A live connection is only accepted at one address, and only from a page of our own site, so another website cannot use a visitor's browser to connect to our game.
+- A room takes eight players. A ninth is told the room is full.
+- A live connection is only accepted at one address (`/play`, with the short name of a track that exists), and only from a page of our own site, so another website cannot use a visitor's browser to connect to our game.
+
+**One room for each track.** `online.html?track=campus-loop` connects to the room of the campus loop, and without a choice it is the room of the test oval. The page takes the short name from its own address, but only if it is a name in our list of tracks (`client/track-choice.js`), and the server checks it again.
 
 **Why karts move smoothly:** updates arrive 20 times a second, at slightly uneven moments, but the screen shows 60 pictures a second. `client/net.js` shows the race a tenth of a second in the past and draws each kart at the right point between the two updates on either side of that moment. If updates stop arriving, the karts hold still instead of guessing.
 
-**What this version does not have:** rooms with codes, a finishing order, a results screen, or karts bumping into each other. Everyone who opens the page is in the same room.
+**What this version does not have:** rooms with codes, a results screen that shows everyone's position, or karts bumping into each other. Everyone who opens the page of a track is in the same room.
+
+## How do accounts work, and what do they refuse?
+
+An account is a user name and a password. There is no email yet. The menu has the forms; the server does the deciding.
+
+1. **Signing up.** The page sends the name and the password to `/api/signup`. The server checks both against the rules in `shared/account-rules.js` (the page uses the same file to warn early, but the server never trusts the page). The name must be 3 to 16 letters, digits or underscores, and "Ana" and "ana" count as the same name. The password must be at least 8 characters.
+2. **The password is scrambled, never kept.** `server/passwords.js` runs it through `scrypt`, a function that comes with Node.js, together with a random "salt", so two players with the same password get different results. What is stored cannot be turned back into the password. It is slow on purpose, about a tenth of a second, so that someone who stole the database could not try millions of guesses.
+3. **Staying signed in.** After a correct password the server makes up a long random "ticket" (32 random bytes) and gives it to the browser in a cookie. The browser sends the cookie back with every later request, and that is how the server knows who is asking. The database holds only a scrambled copy of the ticket, so someone who could read the database still could not use it.
+4. **Signing out** removes the ticket on the server, so a copy of the cookie stops working too. A ticket also stops working after seven days.
+5. **Deleting your account** asks for the password again and removes your sessions and results with it.
+
+The cookie is marked in three ways. `HttpOnly`: the page's own code cannot read it, so a script that somehow got into a page could not steal it. `SameSite=Lax`: the browser does not send it with requests that another website starts. `Secure`: on the live site it only travels over the protected connection (https).
+
+What the server refuses, each with a test in `tests/api.test.js` or `tests/accounts.test.js`:
+
+- A name or password that breaks the rules, also when it is not text at all, and a name that is taken. Two sign-ups for the same new name at the same moment: the database lets exactly one in.
+- A wrong password. A name nobody has gets exactly the same answer, after the same amount of work, so trying names does not reveal which exist.
+- A sign-in while the account is locked. After five wrong passwords in a row an account is locked for ten minutes, and then even the right password is refused.
+- A ticket that is made up, damaged, already signed out or older than seven days.
+- Deleting an account without being signed in or without the right password. The request has no way to name another player: the server only ever uses the player the ticket belongs to.
+- A request to change something that comes from a page on another website. A browser always says which site started such a request, and the server refuses any that is not our own. It also refuses anything that is not in our format (JSON), which a plain form on another site cannot send.
+- A message longer than a couple of lines, or one that is not one object.
+- Too many tries in a minute from one computer, and too much password work in total. Scrambling is slow on purpose, so without a limit a flood of sign-in tries could keep the server too busy to run races.
+- A name that looks like a database command is just an odd name. Values are never glued into the text of a database question (`server/store.js`), and a test checks that for every question.
+
+When the server runs without a database, which is the normal case on a teammate's laptop, every one of these addresses answers "not available" and the menu says so. The game itself still works.
+
+## How does a time get onto the shared leaderboard, and can it be faked?
+
+Only the server can put a time there, and only a time from a race it ran itself.
+
+1. When a browser opens the online page, it sends its cookie along with the request for the live connection. `server/online.js` looks up whose ticket that is and remembers it for that connection. No ticket, or one that does not work, means a guest. The page is told which ("Signed in as Ana" or "You are playing as a guest").
+2. The host starts a race. The room (`server/room.js`) moves every kart with the shared rules and notices the step on which each racer completes the last lap. It keeps the finishing order: position, race time in steps, fastest lap. Two racers who cross the line in the very same step share a position.
+3. For each finisher who is signed in, the server writes one row to `race_results`: the player, the track of that room, the two times and the position. Then it tells that browser "saved", and the page shows the place and the time.
+4. The Leaderboard in the menu asks `/api/leaderboard?track=...` and gets, for that track, the ten fastest races and the ten fastest laps, one row per player, plus the signed-in player's own best and rank. Only user names and times are sent.
+
+Why it cannot be faked from a browser:
+
+- There is no address that accepts a result, and no message a browser may send that contains one. A browser that sends a made-up "saved" or "result" message is sent away. A made-up finish added to a real "keys" message is dropped. Both have tests.
+- The time, the track and the player all come from the server: the room's own count of steps, the room the connection is in, and the cookie.
+- Laps driven while the room is open, without a race, are not saved. Neither is anything a guest drives, or a race a player left before the line.
+- Practice races never count. They run in the browser, and their best times stay in that browser.
+
+What a player can still do: drive well. And two friends can agree that one of them wins, as in any game.
+
+The leaderboard is read from the database at most once every 30 seconds per track, however many people open it, and at once after a new result or a deleted account.
 
 ## How does an online race start, and who may start it?
 
@@ -198,17 +246,28 @@ Our first version of this rule had a mistake: a kart driving the wrong way round
 
 In a Postgres database kept by a company called Neon, in Frankfurt, on its free plan. Everything else the server knows, such as the karts in the online room, lives only in its memory and is gone when it restarts.
 
-**What is stored today:** one table, `server_starts`. It has two columns: a number, and the date and time. The server adds one row each time it starts and keeps only the newest 50. No personal data. The table exists to prove that the server can write to the database and read from it.
+**What is stored today:** four tables.
 
-**Stored in each player's own browser, not by us:** the camera view chosen in Settings, and that player's best race time and best lap on each track. They never reach our server. Clearing the browser's data deletes them.
+| Table | One row for | What is in a row |
+|---|---|---|
+| `server_starts` | each time the server started (the newest 50 are kept) | a number, and the date and time. It exists to prove that the server can write to the database and read from it |
+| `players` | each account | the user name as typed, the same name in small letters (so "Ana" and "ana" cannot both exist), the scrambled password, how many wrong passwords in a row, locked until when, and the date joined |
+| `sessions` | each browser that is signed in | a scrambled copy of the ticket, whose it is, and when it stops working |
+| `race_results` | each finished online race of a signed-in player | the player, the track, the mode ("online"), the race time and the fastest lap in steps, the finishing position, and the date |
 
-**What will be stored later:** players, sessions, progress and race results (section 6 of `PROJECT_BRIEF.md`).
+The only personal data is the user name a player chose. There is no email, no real name and no readable password. Deleting an account deletes that player's rows in all three tables: the database does that by itself, because sessions and results are tied to their player.
+
+**Stored in each player's own browser, not by us:** the camera view chosen in Settings, and that player's best practice race time and best lap on each track. They never reach our server. Clearing the browser's data deletes them. The cookie that keeps a player signed in is also in the browser, but the page's code cannot read it.
+
+**What will be stored later:** progress such as trophies and unlocked characters (section 6 of `PROJECT_BRIEF.md`).
 
 **How the server reaches it:** through a secret address that includes a password, the setting `DATABASE_URL`. It is in two places only: Render's Environment page, and a file called `.env` on Catarina's laptop, which git ignores. It is not in the code, and the code never prints it. On the first day the address was once pasted into a chat with the coding agent by mistake. The password was changed in Neon straight away, before anything used it.
 
 **How to see it working:** the address `/database-check` on our site answers with the number of starts recorded and the time of the latest. Without a database it answers "The database is not set up on this computer", and when the database cannot be reached, "The database could not be reached".
 
-**The code talks to the database safely.** Values are never glued into the text of a question. They are handed over separately, which is what stops the classic attack on databases (SQL injection). The one name that is written into a question, the table's, is checked to be small letters and underscores only.
+**The code talks to the database safely.** Values are never glued into the text of a question. They are handed over separately, which is what stops the classic attack on databases (SQL injection). The one name that is written into a question, the table's, is checked to be small letters and underscores only. All the questions about players, sessions and results are in one file, `server/store.js`.
+
+**Tests never touch the real players.** The tests that use the real database work in tables whose names start with `test_` and remove them at the end. The code that removes tables refuses to run without such a prefix.
 
 ## What do the tests cover, and what do they miss?
 
@@ -278,7 +337,9 @@ These are the limits we expect from the free hosting plans:
 - Render's free plan gives 750 running hours a month, which is enough for one server that is always on.
 - Neon's free database pauses after 5 minutes without use and wakes on the next request.
 
-**The database is asleep, slow or cannot be reached.** The game keeps working: the pages, the practice race and online play do not use the database. The server does not wait for the database when it starts. `/database-check` answers "The database could not be reached. Try again in a moment." An unreachable database takes ten seconds to give up on, so after a failure the server does not ask again for three seconds, and visitors in that time get the same answer at once. This was tried for real on 10 November, when the university Wi-Fi blocked the database: the server started, sent the game, and answered the check with that message.
+**The database is asleep, slow or cannot be reached.** The game keeps working: the pages, the practice race and the driving in online play do not use the database. What stops for that moment is accounts. Signing in, signing up and the shared leaderboard answer "Accounts could not be reached just now. Try again in a moment." A browser that connects to an online race is let in as a guest. A signed-in racer who finishes is told "Your last result could not be saved", and the race goes on for everyone. That one result is lost: the server does not try again later. The tables for accounts are created the first time they are needed, so a database that was asleep when the server started is not a problem. The details of a database error only ever go to the server's own log. Each of these has a test with a pretend database that fails.
+
+The server does not wait for the database when it starts. `/database-check` answers "The database could not be reached. Try again in a moment." An unreachable database takes ten seconds to give up on, so after a failure the server does not ask again for three seconds, and visitors in that time get the same answer at once. This was tried for real on 10 November, when the university Wi-Fi blocked the database: the server started, sent the game, and answered the check with that message.
 
 ## Why did we build it this way?
 
@@ -293,6 +354,11 @@ These are the limits we expect from the free hosting plans:
 - **A second outside library, `pg`, to talk to the database.** Node.js cannot talk to a database by itself. `pg` is the standard choice and works with any Postgres database, not only Neon's. The alternative is Neon's own library. It sends everything over the normal web channel, which would also work on the university Wi-Fi, but it ties the code to Neon. Which to use is an open question for the team.
 - **The game does not depend on the database.** The server starts without it and runs without it. That is why a teammate needs no secret to work on the game, and why a sleeping database cannot stop a race.
 - **The database check is public but cannot be used to wear the database out.** Its answer is reused for ten seconds, and it only reads. The one thing that writes is the server starting.
+- **Signing in uses a cookie the page cannot read, not something kept by the page's own code.** The other common way is to hand the page a token to keep in the browser's storage. Any script running in the page could then read it. With our cookie, even a mistake that let someone's text run as code in a page could not steal a sign-in.
+- **The account rules, the database questions and the internet side are three files.** `server/accounts.js` decides, `server/store.js` asks the database, `server/api.js` reads requests and sets the cookie. The rules can then be tested in a fraction of a second with a pretend store kept in memory and a pretend clock that jumps ten minutes or seven days. So that the pretend store cannot drift away from the real one, one list of checks (`tests/store-contract.js`) is run on both.
+- **Passwords are scrambled with `scrypt`, which comes with Node.js.** No library to add, and it is one of the functions recommended for passwords: slow, and heavy on memory, on purpose.
+- **Results are written by the server at the moment a racer crosses the line.** There is nothing for a browser to send, so there is nothing to fake.
+- **The browser is told to run only our own files.** With every answer the server sends a rule (a "Content-Security-Policy") that allows scripts and styles only from files on our own site. It is a second lock. The first is that our pages put every text on the screen as text, never as HTML. A test reads every page and script in `client/` and fails if one breaks either rule.
 - **The room knows nothing about the internet.** `server/room.js` only keeps the karts and moves them. `server/online.js` does the connections. The room can then be tested without any network, and the rules for "who may do what" sit in one small file.
 - **Online, the browser shows the past.** Showing other karts a tenth of a second late lets them glide smoothly between updates. The alternative, guessing where they are now, makes them jump back when the guess is wrong.
 - **A browser that sends anything unexpected is sent away at once.** Our own page never sends such a message, so there is no reason to be patient with one. Its kart leaves the track immediately, and the server cuts the connection itself after two seconds instead of waiting for the browser to agree.
@@ -304,9 +370,15 @@ These are the limits we expect from the free hosting plans:
 ## What are the known limits, and what would we change next?
 
 - On the university's student Wi-Fi a laptop cannot reach the database. The connection opens and then nothing comes back. The live server is not on that network. For database work on a laptop we need a phone hotspot or home Wi-Fi, or we switch to Neon's own library.
-- The database holds nothing useful yet, only a count of server starts.
+- There is no email. An account is a user name and a password, so nothing proves who someone is, anyone can take any free name, and a forgotten password cannot be reset: that account can no longer be used. Email needs an outside service and a new secret key, which the team has not chosen yet.
+- Anyone can make as many accounts as they like. The limits on sign-ups are per minute, to protect the server, not per person.
+- The limit per computer goes by the address our hosting company tells us a visitor came from. Everyone on the campus Wi-Fi shares one address, so the limits are set for a whole classroom, and someone who really wanted to could pretend to come from many addresses. Two things do not depend on it: the lock on one account after five wrong passwords, and the limit on password work in total.
+- A result that could not be saved because the database did not answer at that moment is lost. The player is told.
+- The leaderboard shows the fastest times ever, with no date and no way for us to remove a time except in the database itself. A player who drives online in two tabs appears in a race twice.
+- Guests can drive in online races. Their karts look the same as everyone else's, and the page does not yet show other players' names.
+- There is no profile page and no saved progress yet (trophies, unlocked characters).
 - Online, your own kart reacts a moment late: your key press travels to the server and the result travels back, and then the picture is a tenth of a second behind. On one laptop this is small. Over the internet it will be bigger. The fix is "prediction": the browser moves your own kart at once with the shared rules and corrects it when the server answers. The rules were written to make that possible, but it is not built.
-- Online has one room for everyone, no finishing order, no results screen and no bumping between karts. There are no accounts, so anyone with the link can join.
+- Online has one fixed room for each track, no rooms with codes, no results screen that shows everyone's position and no bumping between karts. Anyone with the link can join, signed in or not.
 - The host is simply whoever has been in the room longest. They can start a new race at any moment, also in the middle of one, and nobody else can stop them. A race with a racer who never finishes only ends when the host starts the next one or that racer leaves.
 - Someone watching always follows the kart with the most laps. They cannot choose which kart to follow. The line under the track still tells them their own kart's colour, although that kart is not on the track.
 - The online race start was checked by hand in two tabs of one browser on one laptop, not yet with real players on different laptops. `docs/two-laptop-checklist.md` has the checks for that.

@@ -2,7 +2,7 @@
 
 Automatic tests: small programs that check the project still works. They cover things that must happen (a kart speeds up when you press the gas) and things that must NOT be allowed (a lap that skipped a checkpoint does not count).
 
-Run them with `npm test`. GitHub also runs them on every pull request.
+Run them with `npm test`. GitHub also runs them on every pull request. They take about 40 seconds, most of it the online races that run in real time.
 
 Each file here ends in `.test.js`.
 
@@ -25,6 +25,19 @@ Each file here ends in `.test.js`.
 | `net.test.js` | `client/net.js`: online karts move smoothly between updates, hold still when updates stop, and are not thrown off by a late update |
 | `db.test.js` | `server/db.js`, with a pretend database: which questions the code asks and in which order, reusing an answer for ten seconds, what happens when the database fails, and refusing an unsafe table name |
 | `db-live.test.js` | `server/db.js` against the real database. Skipped unless run with `npm run test:database`, which needs the database address in `.env` |
+| `account-rules.test.js` | `shared/account-rules.js` (which user names and passwords are allowed) and `client/account-api.js` (how a page asks the server about accounts, with a pretend server: it must never break, whatever comes back) |
+| `passwords.test.js` | `server/passwords.js`: a password is scrambled, the same password scrambles differently each time, only the right password matches, and a damaged scrambled form is refused without breaking |
+| `memory-store.js` | Not a test. A pretend store that keeps players, sessions and results in memory, so the account rules can be tested without a database |
+| `store-contract.js` | Not a test file itself. One list of checks for a store, run on the pretend store and on the real database, so the two cannot drift apart |
+| `store.test.js` | Runs that list on the pretend store. Also checks `server/store.js` with a pretend database connection: no value is ever written into the text of a question, every table carries the test prefix when one is set, and the real tables cannot be removed |
+| `store-live.test.js` | Runs that list on the real database, in tables that start with `test_`, plus a whole visit (sign up, sign in, race, leaderboard, sign out, delete) with the real password scrambler. Skipped unless run with `npm run test:database` |
+| `accounts.test.js` | `server/accounts.js`, with the pretend store and a pretend clock: signing up, signing in, the lock after five wrong passwords, sessions that run out after seven days, deleting an account, which results may be saved, and the leaderboard |
+| `api.test.js` | `server/api.js`, with real requests to a real copy of the server: every account address, the cookie, and everything that must be refused (another website's request, the wrong format, too long, too many tries, another player's account, no database) |
+| `sprint-track.js` | Not a test. A short straight track on which holding the gas finishes a race in about a second, so tests of a whole online race stay short |
+| `room-finishes.test.js` | The finishing order in `server/room.js`, without any network: position and times of each finisher, two racers on the same step sharing a position, and what must never be listed (free driving, watchers, racers who left) |
+| `online-accounts.test.js` | Accounts and rooms in `server/online.js`, with real live connections: who a connection belongs to, a signed-in racer's result being saved, nothing saved for a guest or outside a race, a browser that tries to send a result, and one room per track. Takes about half a minute, because the races run in real time |
+| `online-page.test.js` | What the online page does with accounts and the track choice: the messages it accepts, the line about your account, and the short name it puts in the address of its connection |
+| `page-safety.test.js` | The rule the server hands browsers (run only our own scripts and styles), and that every page and script in `client/` works under it and never turns text into HTML |
 | `camera.test.js` | `client/camera.js`: where the camera points in the view from above (looks ahead, stops at the edges, always keeps the kart on screen, glides), and where ground lands on the screen in the tilted view |
 | `client.test.js` | The parts of the browser code that need no browser: `client/format.js` (a race time as text) and `client/keyboard.js` (arrow keys into gas, brake, left, right, plus R and V) and `client/hud.js` (lap times as text). The drawing is checked by eye instead |
 | `menu.test.js` | The main menu in `client/index.html`, asked from a real copy of the server: it is the first page, its choices lead to the right pages, the Cup cannot be clicked yet, and the race and online pages lead back to the menu |
