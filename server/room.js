@@ -17,7 +17,8 @@
 // There are none while the room is open and none during 3, 2, 1. Where they
 // appear is decided here on the server, from a number (the "seed") the room
 // picks when the race starts. No message from a browser can place or remove
-// a banana, or choose the seed.
+// a banana, or choose the seed. (A room that was given no way to pick a
+// seed has no bananas at all. Every online room is given one, by online.js.)
 //
 // A room is always in one of four phases:
 //   "open"       nobody has started a race. Everyone drives around freely,
