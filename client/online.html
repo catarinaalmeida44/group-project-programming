@@ -37,6 +37,9 @@
           <h2>Results</h2>
           <ol id="results-list"></ol>
         </div>
+        <!-- The big results board, shown when the race is over for everyone:
+             the winner on top, then everyone else. results-board.js fills it in, as text. -->
+        <div id="finish-board" class="finish-board" role="status" hidden></div>
       </div>
 
       <p id="status" class="status" role="status">Connecting to the server...</p>
@@ -55,8 +58,8 @@
         Everyone who opens this page is in the same room on <span id="track-name">the test track</span>,
         and our server moves all the karts. The host is whoever has been here longest. If you arrive
         during a race, you watch it and join at the next start. Karts bump into each other.
-        A race that has started is driven to its end: it is over when everyone has finished, or one
-        minute after the first kart has finished.
+        A race that has started is driven to its end: it is over when everyone has finished, or two
+        minutes after the first kart has finished.
         If you are signed in, the server saves your time when you finish a race, and it appears
         on the leaderboard in the menu.
       </p>

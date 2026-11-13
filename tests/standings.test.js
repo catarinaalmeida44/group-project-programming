@@ -3,7 +3,7 @@
 // leaderboard is decided by the server (tests/online-accounts.test.js).
 
 import { describe, it, expect } from "vitest";
-import { distanceToCheckpoint, standings, placeLine, resultLines } from "../client/standings.js";
+import { distanceToCheckpoint, standings, placeLine, resultLines, boardLines } from "../client/standings.js";
 import { TEST_OVAL } from "../shared/tracks/test-oval.js";
 
 /** A kart as it appears in an update, standing in the middle of a checkpoint unless told otherwise. */
@@ -78,6 +78,78 @@ describe("the player's own place", () => {
     expect(placeLine([kart(1)], TEST_OVAL, 1)).toBe("");
     expect(placeLine([kart(1), kart(2)], TEST_OVAL, 9)).toBe("");
     expect(placeLine([], TEST_OVAL, 1)).toBe("");
+  });
+});
+
+// The big board that comes up when the race is over for everyone.
+describe("the results board at the end of a race", () => {
+  const laps = TEST_OVAL.laps;
+  const count = TEST_OVAL.checkpoints.length;
+  const names = new Map([[2, "Rui"], [3, "Bea_22"]]);
+  /** A kart that ran out of time, having passed this many checkpoints, standing this far before its next one. */
+  function outOfTime(id, passed, before) {
+    const next = middleOf((passed + 1) % count);
+    return kart(id, { passed, lapsDone: Math.floor(passed / count), steps: 9000, x: next.x - before, y: next.y });
+  }
+
+  it("lists the finishers in the order of arrival, the winner first, with how far behind the others were", () => {
+    const karts = [
+      kart(1, { finished: true, steps: 3000, passed: count * laps, lapsDone: laps }),
+      kart(2, { finished: true, steps: 2700, passed: count * laps, lapsDone: laps }),
+    ];
+    expect(boardLines(karts, TEST_OVAL, names, 1)).toEqual([
+      { id: 2, position: 1, place: "1st", who: "Rui", time: "0:45.00", detail: "", finished: true, mine: false },
+      { id: 1, position: 2, place: "2nd", who: "Guest 1", time: "0:50.00", detail: "+0:05.00", finished: true, mine: true },
+    ]);
+  });
+
+  it("puts the karts that ran out of time after the finishers, the one closest to the finish first", () => {
+    const karts = [
+      outOfTime(4, count + 1, 50), //           second lap
+      outOfTime(5, 2 * count + 1, 200), //      last lap, 200 units before its next checkpoint
+      kart(1, { finished: true, steps: 3000, passed: count * laps, lapsDone: laps }),
+      outOfTime(3, 2 * count + 1, 40), //       last lap, same checkpoints as 5 but nearer to the next one
+    ];
+    const lines = boardLines(karts, TEST_OVAL, names, 5);
+    expect(lines.map((line) => line.id)).toEqual([1, 3, 5, 4]);
+    expect(lines.map((line) => line.place)).toEqual(["1st", "2nd", "3rd", "4th"]);
+    expect(lines.map((line) => line.time)).toEqual(["0:50.00", "did not finish", "did not finish", "did not finish"]);
+    expect(lines.map((line) => line.detail)).toEqual(["", `lap 3 of ${laps}`, `lap 3 of ${laps}`, `lap 2 of ${laps}`]);
+    expect(lines.map((line) => line.finished)).toEqual([true, false, false, false]);
+    expect(lines.map((line) => line.mine)).toEqual([false, false, true, false]);
+  });
+
+  it("still gives an order when nobody finished: whoever was closest to the finish is on top", () => {
+    const lines = boardLines([outOfTime(1, 2, 30), outOfTime(2, 6, 30)], TEST_OVAL, names, 1);
+    expect(lines.map((line) => line.id)).toEqual([2, 1]);
+    expect(lines[0]).toMatchObject({ position: 1, time: "did not finish", finished: false, who: "Rui" });
+  });
+
+  it("gives two karts with the same race time the same place, and neither is behind the other", () => {
+    const tie = [
+      kart(1, { finished: true, steps: 3000 }),
+      kart(2, { finished: true, steps: 3000 }),
+      kart(3, { finished: true, steps: 3120 }),
+      outOfTime(4, 1, 10),
+    ];
+    const lines = boardLines(tie, TEST_OVAL, new Map(), 0);
+    expect(lines.map((line) => line.place)).toEqual(["1st", "1st", "3rd", "4th"]);
+    expect(lines.map((line) => line.detail)).toEqual(["", "", "+0:02.00", `lap 1 of ${laps}`]);
+  });
+
+  it("never says a lap beyond the last one, and never breaks on strange numbers", () => {
+    const odd = kart(1, { passed: 99, lapsDone: 99 });
+    expect(boardLines([odd], TEST_OVAL, names, 0)[0].detail).toBe(`lap ${laps} of ${laps}`);
+    const noLaps = kart(2, { lapsDone: "two" });
+    expect(boardLines([noLaps], TEST_OVAL, names, 0)[0].detail).toBe(`lap 1 of ${laps}`);
+  });
+
+  it("leaves out anything in the list that is not a kart, and gives nothing for something that is not a list", () => {
+    const lines = boardLines([null, 42, "kart", kart(7, { finished: true, steps: 600 }), undefined], TEST_OVAL, null, 7);
+    expect(lines).toEqual([{ id: 7, position: 1, place: "1st", who: "Guest 7", time: "0:10.00", detail: "", finished: true, mine: true }]);
+    for (const strange of [null, undefined, "karts", 5, {}]) {
+      expect(boardLines(strange, TEST_OVAL, names, 1)).toEqual([]);
+    }
   });
 });
 

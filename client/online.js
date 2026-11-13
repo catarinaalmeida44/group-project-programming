@@ -36,7 +36,9 @@ import { COLOURS, lookFromChoice, readChoice } from "./kart-choice.js";
 import { lookOfTrack } from "./track-looks.js";
 import { routePoints, watchForWrongWay, WRONG_WAY_MESSAGE } from "./route.js";
 import { nextCheckpointNumber, watchForMissedCheckpoint, missedCheckpointMessage } from "./checkpoints.js";
-import { placeLine, resultLines } from "./standings.js";
+import { placeLine, resultLines, boardLines } from "./standings.js";
+import { createResultsBoard } from "./results-board.js";
+import { lookOf } from "./kart-shape.js";
 import { SPIN_STEPS } from "../shared/hazards.js";
 import { readRace, readEndsIn, timeLeftNotice, raceView, kartToWatch } from "./race-view.js";
 import { followTarget, easeTowards, nextView } from "./camera.js";
@@ -65,12 +67,14 @@ const placeBox = document.getElementById("place-box");
 const placeText = document.getElementById("place");
 const resultsBox = document.getElementById("results");
 const resultsList = document.getElementById("results-list");
+const board = createResultsBoard(document); // the big results board when a race is over (results-board.js)
 
 // ---- What we know from the server ----
 const playback = createPlayback(); // the latest updates, for smooth drawing
 let race = readRace(null); //          the race as of the latest update: phase, countdown, host, who is watching
 let endsIn = null; //                  how many steps until the race is over for everyone, or null
 let resultsShown = ""; //              the results list as it is on the page now
+let latestKarts = []; //               the karts exactly as the newest update has them, for the results board
 let myId = null; //                    our player number, from the "welcome" message
 let status = "Connecting to the server...";
 let connected = false;
@@ -123,6 +127,7 @@ connection.addEventListener("message", (event) => {
     status = `Connected. You are the ${colour} kart.`;
   } else if (message.type === "state") {
     playback.add(message, performance.now());
+    latestKarts = message.karts;
     bananas = bananasOf(message);
     const raceBefore = race;
     race = readRace(message);
@@ -278,6 +283,20 @@ function frame(now) {
   const goingWrongWay = keysWork && race.phase === "racing" && wrongWay(mine, now / 1000);
   const warning = missed !== null ? missedCheckpointMessage(track, missed) : goingWrongWay ? WRONG_WAY_MESSAGE : null;
 
+  // When the race is over for everyone, the results board comes up: the
+  // winner on top, then everyone else in the order of arrival. It is made
+  // once, from the newest update, and stays until the next race starts.
+  // The sentence about the next race moves from the middle of the track to
+  // the bottom of the board.
+  if (race.phase === "finished" && !board.isShown()) {
+    const looks = new Map(latestKarts.filter((kart) => kart !== null && typeof kart === "object").map((kart) => [kart.id, lookOf(dressed(kart))]));
+    board.show(boardLines(latestKarts, track, names, myId), looks);
+  } else if (race.phase !== "finished" && board.isShown()) {
+    board.hide();
+  }
+  board.say(mine !== undefined ? about.message : about.line);
+  board.paint(now);
+
   messageBox.classList.toggle("countdown", about.big && warning === null);
   showHud({
     lap: Math.min(shown.lapsDone + 1, track.laps),
@@ -285,7 +304,7 @@ function frame(now) {
     steps: shown.steps,
     lapSteps: shown.lapSteps,
     view,
-    message: warning ?? about.message,
+    message: board.isShown() ? "" : (warning ?? about.message),
   });
 
   // In a race: our place ("2nd of 4") above the track, and a short notice
@@ -296,10 +315,10 @@ function frame(now) {
   placeText.textContent = place;
   noticeText.textContent = timeLeftNotice(race, endsIn);
 
-  // The results: shown to everyone once the race is over, and to a racer
-  // who has finished while the others are still driving.
-  const showResults = race.phase === "finished" || (race.phase === "racing" && mine?.finished === true);
-  showResultsList(showResults ? resultLines(karts, track, names, myId, race.phase === "finished") : []);
+  // The small list in the corner: for a racer who has finished while the
+  // others are still driving. Once the race is over, the big board replaces it.
+  const showResults = race.phase === "racing" && mine?.finished === true;
+  showResultsList(showResults ? resultLines(karts, track, names, myId, false) : []);
 
   requestAnimationFrame(frame);
 }

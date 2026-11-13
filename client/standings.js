@@ -64,6 +64,53 @@ export function placeLine(karts, track, myId) {
 }
 
 /**
+ * The lines of the results board that is shown when an online race is over,
+ * the winner first:
+ *   [{ id, position, place, who, time, detail, finished, mine }]
+ *
+ * Karts that finished come first, in the order they crossed the line. Then
+ * the karts that ran out of time, the one that was closest to the finish
+ * first: more checkpoints passed, and of two with the same count, the one
+ * nearer to its next checkpoint (see standings above).
+ *
+ *   position  1, 2, 3, ... Two karts with the same race time share one, as
+ *             on the server. Karts that did not finish are numbered on
+ *             from the last finisher
+ *   place     the same as words: "1st", "2nd"
+ *   who       the user name of a signed-in player, or "Guest" with the
+ *             player's number
+ *   time      the race time, or "did not finish"
+ *   detail    for the winner "", for another finisher how far behind the
+ *             winner they were ("+0:03.50"), and for a kart that did not
+ *             finish the lap it was on ("lap 2 of 3")
+ *
+ * Anything in the list that is not a kart is left out: the page must not
+ * break on a strange message.
+ */
+export function boardLines(karts, track, names, myId) {
+  const usable = Array.isArray(karts) ? karts.filter((kart) => kart !== null && typeof kart === "object") : [];
+  const ordered = standings(usable, track);
+  const finishers = ordered.filter((kart) => kart.finished === true);
+  const winner = finishers[0];
+  return ordered.map((kart, index) => {
+    const finished = kart.finished === true;
+    const position = finished ? 1 + finishers.filter((other) => other.steps < kart.steps).length : index + 1;
+    const name = names instanceof Map ? names.get(kart.id) : undefined;
+    const lap = Math.min((Number.isInteger(kart.lapsDone) ? kart.lapsDone : 0) + 1, track.laps);
+    return {
+      id: kart.id,
+      position,
+      place: placeText(position),
+      who: typeof name === "string" ? name : `Guest ${kart.id}`,
+      time: finished ? formatTime(kart.steps * STEP_SECONDS) : "did not finish",
+      detail: !finished ? `lap ${lap} of ${track.laps}` : kart.steps > winner.steps ? `+${formatTime((kart.steps - winner.steps) * STEP_SECONDS)}` : "",
+      finished,
+      mine: kart.id === myId,
+    };
+  });
+}
+
+/**
  * The lines of the results list, the winner first:
  *   [{ place, who, time, mine }]
  *   place  "1st", "2nd", ... or "-" for a kart that did not finish
