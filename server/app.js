@@ -106,9 +106,36 @@ function pagePolicy(request) {
   ].join("; ");
 }
 
+/**
+ * How long a browser is told to remember that this site must only be opened
+ * over the secure kind of connection (https): half a year, in seconds.
+ */
+const SECURE_ONLY_SECONDS = 180 * 24 * 60 * 60;
+
+/**
+ * Two more rules that go out with every answer.
+ *
+ *   Referrer-Policy: same-origin   when a visitor follows a link from our
+ *       site to another one, the browser does not tell that site which of
+ *       our pages they came from.
+ *   Strict-Transport-Security      "from now on, only ever open this site
+ *       over https". It is sent only when the visitor already came over
+ *       https, which the hosting company tells us in a header. On a laptop
+ *       (http://localhost) it is not sent, or the browser would refuse to
+ *       open the local copy afterwards.
+ */
+function setSafetyHeaders(request, response) {
+  response.setHeader("Referrer-Policy", "same-origin");
+  const cameSecurely = String(request.headers["x-forwarded-proto"] ?? "").split(",")[0].trim() === "https";
+  if (cameSecurely) {
+    response.setHeader("Strict-Transport-Security", `max-age=${SECURE_ONLY_SECONDS}`);
+  }
+}
+
 /** Decides what to send back for one request. */
 async function answer(request, response, database, api) {
   response.setHeader("Content-Security-Policy", pagePolicy(request));
+  setSafetyHeaders(request, response);
   const address = readAddress(request.url);
 
   // Accounts and the leaderboard have their own addresses, all under /api/.

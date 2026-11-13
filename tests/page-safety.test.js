@@ -83,6 +83,44 @@ describe("the rules the server hands the browser", () => {
       expect(policy).not.toContain("unsafe-inline");
     }
   });
+
+  // Added on 13 November 2026: two more rules that go out with every answer.
+
+  /** Asks for an address and gives back all the headers of the answer. "more" are headers to send along. */
+  function headersOf(address, more = {}) {
+    return new Promise((resolve, reject) => {
+      const request = http.request({ host: "127.0.0.1", port, path: address, headers: more, agent: false }, (response) => {
+        response.resume();
+        response.on("end", () => resolve(response.headers));
+      });
+      request.on("error", reject);
+      request.end();
+    });
+  }
+
+  it("tell the browser not to say to other sites which of our pages a visitor came from", async () => {
+    for (const address of ["/", "/online.html", "/style.css", "/no-such-page", "/api/me"]) {
+      expect((await headersOf(address))["referrer-policy"], address).toBe("same-origin");
+    }
+  });
+
+  it("tell a browser that came over https to always use https, for half a year", async () => {
+    for (const address of ["/", "/online.html", "/api/me"]) {
+      const headers = await headersOf(address, { "X-Forwarded-Proto": "https" });
+      expect(headers["strict-transport-security"], address).toBe("max-age=15552000");
+    }
+    // The hosting company may list more than one: the first is the visitor's own connection.
+    const listed = await headersOf("/", { "X-Forwarded-Proto": "https, http" });
+    expect(listed["strict-transport-security"]).toBe("max-age=15552000");
+  });
+
+  it("do NOT say so on a plain connection, such as a laptop's http://localhost", async () => {
+    expect((await headersOf("/"))["strict-transport-security"]).toBe(undefined);
+    for (const proto of ["http", "http, https", "HTTPS-ish", ""]) {
+      const headers = await headersOf("/", { "X-Forwarded-Proto": proto });
+      expect(headers["strict-transport-security"], proto).toBe(undefined);
+    }
+  });
 });
 
 describe("our pages work under those rules", () => {
