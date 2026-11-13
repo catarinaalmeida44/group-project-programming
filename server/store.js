@@ -163,6 +163,12 @@ export function createStore(pool, { prefix = "" } = {}) {
       await pool.query(`UPDATE ${players} SET failed_logins = 0, locked_until = NULL WHERE id = $1`, [id]);
     },
 
+    /** Replaces a player's scrambled password. Says true if there was such a player. */
+    async setPasswordHash(id, passwordHash) {
+      const answer = await pool.query(`UPDATE ${players} SET password_hash = $2 WHERE id = $1`, [id, passwordHash]);
+      return answer.rowCount === 1;
+    },
+
     /** Deletes a player. Their sessions and results go with them. */
     async deletePlayer(id) {
       await pool.query(`DELETE FROM ${players} WHERE id = $1`, [id]);
@@ -190,6 +196,19 @@ export function createStore(pool, { prefix = "" } = {}) {
 
     async deleteSession(tokenHash) {
       await pool.query(`DELETE FROM ${sessions} WHERE token_hash = $1`, [tokenHash]);
+    },
+
+    /**
+     * Removes every session of one player except the one with this
+     * scrambled ticket. With null instead of a ticket, all of them go.
+     * Other players' sessions are never touched. ("IS DISTINCT FROM" means
+     * "is not the same as", and also works when the ticket is null.)
+     */
+    async deleteOtherSessions(playerId, keepTokenHash) {
+      await pool.query(`DELETE FROM ${sessions} WHERE player_id = $1 AND token_hash IS DISTINCT FROM $2::text`, [
+        playerId,
+        keepTokenHash,
+      ]);
     },
 
     /** Removes the sessions that stopped working before "nowMs". */

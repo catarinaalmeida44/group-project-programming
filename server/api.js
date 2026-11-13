@@ -6,6 +6,7 @@
 //   POST /api/signup          make an account and sign in
 //   POST /api/login           sign in
 //   POST /api/logout          sign out
+//   POST /api/change-password change the signed-in player's password
 //   POST /api/delete-account  delete the signed-in player's account
 //   GET  /api/leaderboard     the shared leaderboard of one track (?track=campus-loop)
 //
@@ -42,6 +43,7 @@ export const TRIES_PER_MINUTE = {
   "/api/signup": 20,
   "/api/login": 30,
   "/api/delete-account": 10,
+  "/api/change-password": 10,
   "/api/logout": 30,
   "/api/me": 300,
   "/api/leaderboard": 300,
@@ -53,7 +55,7 @@ export const TRIES_PER_MINUTE = {
  * allowed this many times a minute. A flood of sign-in tries can then never
  * keep the server too busy to run the races.
  */
-export const PASSWORD_ADDRESSES = ["/api/signup", "/api/login", "/api/delete-account"];
+export const PASSWORD_ADDRESSES = ["/api/signup", "/api/login", "/api/delete-account", "/api/change-password"];
 export const PASSWORD_WORK_PER_MINUTE = 60;
 
 /** The limiter remembers at most this many computers at a time. */
@@ -73,6 +75,7 @@ const STATUS_FOR = {
   invalid_username: 400,
   invalid_password: 400,
   username_taken: 409,
+  same_password: 400,
   wrong_login: 401,
   not_signed_in: 401,
   locked: 429,
@@ -168,6 +171,36 @@ export function createApi({ accounts = null, now = Date.now } = {}) {
       async run({ request, response }) {
         await accounts.endSession(ticketOf(request));
         sendJson(response, 200, { ok: true }, { "Set-Cookie": cookieGone(request) });
+      },
+    },
+
+    "/api/change-password": {
+      method: "POST",
+      async run({ request, response, body }) {
+        // Whose password? Only ever that of the player the ticket belongs
+        // to. Nothing in the message can name another player.
+        const ticket = ticketOf(request);
+        const player = await accounts.playerForSession(ticket);
+        if (player === null) {
+          return sendRefusal(response, { ok: false, code: "not_signed_in", message: "You are not signed in." });
+        }
+        // This address does password work twice: it checks the old password
+        // and scrambles the new one. So it is counted a second time here.
+        if (!mayDoPasswordWork()) {
+          response.setHeader("Retry-After", "60");
+          return sendJson(response, 429, {
+            ok: false,
+            code: "too_many_attempts",
+            message: "The server is very busy with sign-ins right now. Wait a minute and try again.",
+          });
+        }
+        const answer = await accounts.changePassword(player.id, ticket, body.currentPassword, body.newPassword);
+        if (!answer.ok) {
+          return sendRefusal(response, answer);
+        }
+        // This browser stays signed in, with the ticket it has. Every other
+        // browser of this player was signed out by the rules (accounts.js).
+        sendJson(response, 200, { ok: true });
       },
     },
 

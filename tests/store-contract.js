@@ -106,6 +106,48 @@ export function describeAStore(name, makeStore, timeout = 5000) {
       await store.deleteSession("new");
     }, timeout);
 
+    // Added on 13 November 2026, for changing a password.
+    it("replaces one player's scrambled password and nobody else's", async () => {
+      expect(await store.setPasswordHash(rui.id, "new-hash-of-rui")).toBe(true);
+      expect((await store.findPlayerById(rui.id)).passwordHash).toBe("new-hash-of-rui");
+      expect((await store.findPlayerById(ana.id)).passwordHash).toBe("hash-of-ana");
+      expect(await store.setPasswordHash(999999, "x")).toBe(false); // nobody there: nothing changed
+      // A scrambled password that looks like a database command is kept as plain text.
+      const nasty = "x', failed_logins = 99 --";
+      expect(await store.setPasswordHash(rui.id, nasty)).toBe(true);
+      const found = await store.findPlayerById(rui.id);
+      expect(found.passwordHash).toBe(nasty);
+      expect(found.failedLogins).toBe(0);
+      await store.setPasswordHash(rui.id, "hash-of-rui");
+    }, timeout);
+
+    it("removes a player's other sessions and keeps the one named, and never touches another player's", async () => {
+      const later = 1_900_000_000_000;
+      await store.addSession({ tokenHash: "ana-laptop", playerId: ana.id, expiresAt: later });
+      await store.addSession({ tokenHash: "ana-phone", playerId: ana.id, expiresAt: later });
+      await store.addSession({ tokenHash: "ana-tablet", playerId: ana.id, expiresAt: later });
+      await store.addSession({ tokenHash: "rui-laptop", playerId: rui.id, expiresAt: later });
+
+      await store.deleteOtherSessions(ana.id, "ana-laptop");
+      expect(await store.findSession("ana-laptop")).not.toBe(null);
+      expect(await store.findSession("ana-phone")).toBe(null);
+      expect(await store.findSession("ana-tablet")).toBe(null);
+      expect(await store.findSession("rui-laptop")).not.toBe(null);
+
+      // Naming another player's session keeps nothing of one's own, and does not remove theirs.
+      await store.addSession({ tokenHash: "ana-phone", playerId: ana.id, expiresAt: later });
+      await store.deleteOtherSessions(ana.id, "rui-laptop");
+      expect(await store.findSession("ana-laptop")).toBe(null);
+      expect(await store.findSession("ana-phone")).toBe(null);
+      expect(await store.findSession("rui-laptop")).not.toBe(null);
+
+      // With no session named, all of that player's sessions go.
+      await store.addSession({ tokenHash: "rui-phone", playerId: rui.id, expiresAt: later });
+      await store.deleteOtherSessions(rui.id, null);
+      expect(await store.findSession("rui-laptop")).toBe(null);
+      expect(await store.findSession("rui-phone")).toBe(null);
+    }, timeout);
+
     it("lists each player once on a leaderboard, with their best time, fastest first", async () => {
       const add = (player, raceSteps, bestLapSteps, track = "campus-loop") =>
         store.addResult({ playerId: player.id, track, mode: "online", raceSteps, bestLapSteps, position: 1 });

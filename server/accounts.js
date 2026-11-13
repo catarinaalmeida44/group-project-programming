@@ -219,6 +219,48 @@ export function createAccounts(
     },
 
     /**
+     * Changes a signed-in player's password.
+     *   ticket           the ticket of the browser that asks, which stays signed in
+     *   currentPassword  checked again, with the same lock after too many
+     *                    wrong tries. Being signed in is not enough: someone
+     *                    who finds a laptop open must not be able to take
+     *                    the account over
+     *   newPassword      has to keep the rules for passwords, and has to be
+     *                    a different one
+     *
+     * Afterwards every OTHER browser where this player was signed in is
+     * signed out. If someone else knew the old password, they are out now.
+     * Gives { ok: true } or { ok: false, code, message }.
+     */
+    async changePassword(playerId, ticket, currentPassword, newPassword) {
+      await ready();
+      const player = await store.findPlayerById(playerId);
+      if (player === null) {
+        return no("not_signed_in", "You are not signed in.");
+      }
+      // The new password is looked at first: that costs nothing, and a new
+      // password that breaks the rules can never be accepted anyway.
+      const problem = checkPassword(newPassword);
+      if (problem !== null) {
+        return no("invalid_password", problem);
+      }
+      const notYours = no("wrong_login", "That is not your current password.");
+      if (typeof currentPassword !== "string" || currentPassword.length === 0 || currentPassword.length > PASSWORD_MAX) {
+        return notYours;
+      }
+      const refusal = await refuseUnlessPasswordIsRight(player, currentPassword);
+      if (refusal !== null) {
+        return refusal.code === "wrong_login" ? notYours : refusal;
+      }
+      if (newPassword === currentPassword) {
+        return no("same_password", "That is the password you already have. Choose a different one.");
+      }
+      await store.setPasswordHash(player.id, await passwords.hash(newPassword));
+      await store.deleteOtherSessions(player.id, looksLikeATicket(ticket) ? scrambleTicket(ticket) : null);
+      return { ok: true };
+    },
+
+    /**
      * Deletes a player's account with all their sessions and results. The
      * password is checked again, with the same lock after too many wrong tries.
      */

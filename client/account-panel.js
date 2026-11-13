@@ -1,5 +1,6 @@
 // Accounts in the menu, on the page: the account corner at the top, and the
-// three panels "Sign in", "Create account" and "Your account".
+// three panels "Sign in", "Create account" and "Your account". In "Your
+// account" a player can change their password or delete the account.
 //
 // The words come from account-view.js, and account.js talks to the server.
 // This file only connects them to the page, so it is checked by eye in a
@@ -15,6 +16,8 @@ import {
   NO_ERRORS,
   USERNAME_HINT,
   PASSWORD_HINT,
+  NEW_PASSWORD_HINT,
+  PASSWORD_CHANGED_NOTICE,
   SIGNED_IN_NOTICE,
   SIGNED_UP_NOTICE,
   SIGNED_OUT_NOTICE,
@@ -38,6 +41,7 @@ export function showAccountCorner(page, corner) {
   page.getElementById("your-account-name").textContent = name;
   // "defaultValue" is what the box holds when its form is emptied.
   page.getElementById("delete-username").defaultValue = name;
+  page.getElementById("change-username").defaultValue = name;
 }
 
 /** Says something in the account corner, such as "You are signed in." Screen readers read it out. */
@@ -78,17 +82,27 @@ export function showFormWaiting(form, waiting) {
 }
 
 /**
- * Empties the form in an account panel and takes away everything that was
- * said about it, so that no password stays behind in a box.
+ * Empties every form in an account panel and takes away everything that
+ * was said about it, so that no password stays behind in a box.
  */
 function tidyPanel(panel) {
-  const form = panel.querySelector(".account-form");
-  form.reset();
-  showFormErrors(form, NO_ERRORS);
-  form.elements.password.type = "password"; // in case "show the password" was ticked
-  const folded = panel.querySelector("details");
-  if (folded) {
-    folded.open = false; // fold "Delete my account" away again
+  for (const form of panel.querySelectorAll(".account-form")) {
+    form.reset();
+    showFormErrors(form, NO_ERRORS);
+    showPasswords(form, false); // in case "show the password" was ticked
+  }
+  for (const folded of panel.querySelectorAll("details")) {
+    folded.open = false; // fold "Change my password" and "Delete my account" away again
+  }
+}
+
+/** A password box hides what is typed, a text box shows it. This switches every password box of a form. */
+function showPasswords(form, shown) {
+  for (const name of ["password", "newPassword"]) {
+    const box = form.elements[name];
+    if (box) {
+      box.type = shown ? "text" : "password";
+    }
   }
 }
 
@@ -144,9 +158,11 @@ export function connectAccount(page, { api, onChange = () => {} }) {
   const signInForm = page.getElementById("sign-in-form");
   const signUpForm = page.getElementById("sign-up-form");
   const deleteForm = page.getElementById("delete-account-form");
+  const changeForm = page.getElementById("change-password-form");
 
   page.getElementById("sign-up-username-hint").textContent = USERNAME_HINT;
   page.getElementById("sign-up-password-hint").textContent = PASSWORD_HINT;
+  page.getElementById("change-new-password-hint").textContent = NEW_PASSWORD_HINT;
 
   // ---- Opening the panels ----
   page.getElementById("open-sign-in").addEventListener("click", () => signInPanel.showModal());
@@ -170,10 +186,10 @@ export function connectAccount(page, { api, onChange = () => {} }) {
     panel.addEventListener("close", () => tidyPanel(panel));
   }
 
-  // "Show the password while I type": a password box hides what is typed, a text box shows it.
-  signUpForm.elements.show.addEventListener("change", () => {
-    signUpForm.elements.password.type = signUpForm.elements.show.checked ? "text" : "password";
-  });
+  // "Show the password while I type", in the two forms where a new password is chosen.
+  for (const form of [signUpForm, changeForm]) {
+    form.elements.show.addEventListener("change", () => showPasswords(form, form.elements.show.checked));
+  }
 
   // ---- Sending the forms ----
   connectForm(
@@ -192,6 +208,16 @@ export function connectAccount(page, { api, onChange = () => {} }) {
     () => {
       closePanel(signUpPanel);
       showAccountNotice(page, SIGNED_UP_NOTICE);
+      page.getElementById("open-account").focus();
+    },
+  );
+
+  connectForm(
+    changeForm,
+    () => account.changePassword(changeForm.elements.password.value, changeForm.elements.newPassword.value),
+    () => {
+      closePanel(accountPanel);
+      showAccountNotice(page, PASSWORD_CHANGED_NOTICE);
       page.getElementById("open-account").focus();
     },
   );

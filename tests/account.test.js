@@ -23,6 +23,10 @@ import {
   STILL_WAITING_TEXT,
   USERNAME_HINT,
   PASSWORD_HINT,
+  NEW_PASSWORD_HINT,
+  SAME_PASSWORD_TEXT,
+  changeFormErrors,
+  changeRefusalErrors,
 } from "../client/account-view.js";
 import { createAccount } from "../client/account.js";
 import { USERNAME_MIN, USERNAME_MAX, PASSWORD_MIN } from "../shared/account-rules.js";
@@ -174,6 +178,38 @@ describe("where a 'no' from the server is shown", () => {
   });
 });
 
+// Added on 13 November 2026.
+describe("the 'change my password' form", () => {
+  it("finds nothing wrong with a current password and a different new one that keeps the rules", () => {
+    expect(changeFormErrors(PASSWORD, "another long password")).toEqual({ ...NO_ERRORS, newPassword: null });
+    expect(hasErrors(changeFormErrors(PASSWORD, "another long password"))).toBe(false);
+  });
+
+  it("says what is wrong under the box it is about", () => {
+    expect(changeFormErrors("", "another long password").password).toContain(`at least ${PASSWORD_MIN}`);
+    expect(changeFormErrors(PASSWORD, "short").newPassword).toContain(`at least ${PASSWORD_MIN}`);
+    expect(changeFormErrors(PASSWORD, "x".repeat(201)).newPassword).toContain("at most");
+    expect(changeFormErrors(PASSWORD, PASSWORD).newPassword).toBe(SAME_PASSWORD_TEXT);
+    for (const strange of [undefined, null, 12345678, {}]) {
+      expect(hasErrors(changeFormErrors(strange, strange))).toBe(true);
+    }
+  });
+
+  it("puts the hint for the new password together from the rules", () => {
+    expect(NEW_PASSWORD_HINT).toContain(String(PASSWORD_MIN));
+  });
+
+  it("shows a 'no' about the new password under its box, and any other for the form as a whole", () => {
+    const text = "A password needs at least 8 characters.";
+    expect(changeRefusalErrors({ ok: false, code: "invalid_password", message: text })).toEqual({ ...NO_ERRORS, newPassword: text });
+    expect(changeRefusalErrors({ ok: false, code: "same_password", message: text })).toEqual({ ...NO_ERRORS, newPassword: text });
+    for (const code of ["wrong_login", "locked", "too_many_attempts", "not_signed_in", "unavailable", "offline", "something_new"]) {
+      expect(changeRefusalErrors({ ok: false, code, message: "No." }), code).toEqual({ ...NO_ERRORS, form: "No." });
+    }
+    expect(changeRefusalErrors(null).form).toBe(NO_REASON);
+  });
+});
+
 describe("accounts, with a pretend server", () => {
   /**
    * An account with a pretend api. "answers" says what each function of the
@@ -184,7 +220,7 @@ describe("accounts, with a pretend server", () => {
     const asked = [];
     const changes = [];
     const api = {};
-    for (const name of ["getMe", "signUp", "logIn", "logOut", "deleteAccount"]) {
+    for (const name of ["getMe", "signUp", "logIn", "logOut", "deleteAccount", "changePassword"]) {
       api[name] = async (...sent) => {
         asked.push({ name, sent });
         const prepared = answers[name];
@@ -416,6 +452,87 @@ describe("accounts, with a pretend server", () => {
       const result = await account.deleteAccount(PASSWORD, true);
       expect(result).toEqual({ ok: false, errors: { ...NO_ERRORS, form: "Sign in first." } });
       expect(last()).toEqual(SIGNED_OUT);
+    });
+  });
+
+  // Added on 13 November 2026.
+  describe("changing the password", () => {
+    const NEW_PASSWORD = "a different long password";
+
+    it("sends the current and the new password, and the player stays signed in", async () => {
+      const { account, asked, changes } = setUp({ changePassword: { ok: true } });
+      const result = await account.changePassword(PASSWORD, NEW_PASSWORD);
+      expect(result).toEqual({ ok: true, errors: NO_ERRORS });
+      expect(asked).toEqual([{ name: "changePassword", sent: [PASSWORD, NEW_PASSWORD] }]);
+      expect(changes).toEqual([]); // nothing about who is signed in changed
+    });
+
+    it("sends nothing when a box is empty, the new password is too short, or it is the same as the old one", async () => {
+      const { account, asked } = setUp({ changePassword: { ok: true } });
+      const noCurrent = await account.changePassword("", NEW_PASSWORD);
+      expect(noCurrent.ok).toBe(false);
+      expect(noCurrent.errors.password).toContain(`at least ${PASSWORD_MIN}`);
+      const tooShort = await account.changePassword(PASSWORD, "short");
+      expect(tooShort.errors.newPassword).toContain(`at least ${PASSWORD_MIN}`);
+      expect(tooShort.errors.password).toBe(null);
+      const same = await account.changePassword(PASSWORD, PASSWORD);
+      expect(same).toEqual({ ok: false, errors: { ...NO_ERRORS, newPassword: SAME_PASSWORD_TEXT } });
+      expect(asked).toEqual([]);
+    });
+
+    it("shows a wrong current password for the form as a whole, and the player stays signed in", async () => {
+      const wrong = { ok: false, code: "wrong_login", message: "That is not your current password." };
+      const { account, changes } = setUp({ changePassword: wrong });
+      const result = await account.changePassword(PASSWORD, NEW_PASSWORD);
+      expect(result).toEqual({ ok: false, errors: { ...NO_ERRORS, form: "That is not your current password." } });
+      expect(changes).toEqual([]);
+    });
+
+    it("shows what the server says about the new password under the box for the new password", async () => {
+      for (const code of ["invalid_password", "same_password"]) {
+        const { account } = setUp({ changePassword: { ok: false, code, message: "Choose another one." } });
+        const result = await account.changePassword(PASSWORD, NEW_PASSWORD);
+        expect(result, code).toEqual({ ok: false, errors: { ...NO_ERRORS, newPassword: "Choose another one." } });
+      }
+    });
+
+    it("shows nobody as signed in when the server says we are not signed in any more", async () => {
+      const expired = { ok: false, code: "not_signed_in", message: "You are not signed in." };
+      const { account, last } = setUp({ changePassword: expired });
+      const result = await account.changePassword(PASSWORD, NEW_PASSWORD);
+      expect(result.errors.form).toBe("You are not signed in.");
+      expect(last()).toEqual(SIGNED_OUT);
+    });
+
+    it("shows a calm sentence when the server cannot be reached or answers nonsense", async () => {
+      for (const broken of [null, undefined, "no", { ok: "yes" }, () => Promise.reject(new Error("offline"))]) {
+        const { account } = setUp({ changePassword: broken });
+        const result = await account.changePassword(PASSWORD, NEW_PASSWORD);
+        expect(result.ok).toBe(false);
+        expect(result.errors.form).toBe(NO_REASON);
+      }
+    });
+
+    it("never gives either password back, in anything it returns or tells the page", async () => {
+      const oldSecret = "my-old-secret-password";
+      const newSecret = "my-new-secret-password";
+      const answersToTry = [
+        { ok: true },
+        { ok: false, code: "wrong_login", message: "That is not your current password." },
+        { ok: false, code: "same_password", message: "Choose a different one." },
+        null,
+      ];
+      for (const prepared of answersToTry) {
+        const { account, changes } = setUp({ changePassword: prepared });
+        const results = [
+          await account.changePassword(oldSecret, newSecret),
+          await account.changePassword(oldSecret, oldSecret),
+          await account.changePassword(oldSecret, "short"),
+        ];
+        expect(JSON.stringify(results)).not.toContain(oldSecret);
+        expect(JSON.stringify(results)).not.toContain(newSecret);
+        expect(JSON.stringify(changes)).not.toContain("secret");
+      }
     });
   });
 

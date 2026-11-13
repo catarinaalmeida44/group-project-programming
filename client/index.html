@@ -583,7 +583,44 @@
         </p>
 
         <!-- <details> is a part of the page that stays folded until its
-             first line is clicked. Deleting is kept out of the way in it. -->
+             first line is clicked. -->
+        <details class="account-option">
+          <summary>Change my password</summary>
+          <p>
+            You stay signed in on this device. On every other phone or computer where you
+            were signed in, you are signed out and need the new password.
+          </p>
+          <form id="change-password-form" class="account-form" method="post" novalidate>
+            <div class="field">
+              <!-- Filled in by account-panel.js and not editable. It shows whose
+                   password changes, and tells a password manager the same. -->
+              <label for="change-username">Account</label>
+              <input id="change-username" name="username" type="text" autocomplete="username" readonly>
+            </div>
+            <div class="field">
+              <label for="change-current-password">Your password now</label>
+              <input id="change-current-password" name="password" type="password" autocomplete="current-password"
+                     aria-describedby="change-current-password-error">
+              <p id="change-current-password-error" class="field-error" data-error-for="password"></p>
+            </div>
+            <div class="field">
+              <label for="change-new-password">Your new password</label>
+              <input id="change-new-password" name="newPassword" type="password" autocomplete="new-password"
+                     aria-describedby="change-new-password-hint change-new-password-error">
+              <!-- account-panel.js writes the hint, from the rules in shared/account-rules.js. -->
+              <p id="change-new-password-hint" class="field-hint"></p>
+              <p id="change-new-password-error" class="field-error" data-error-for="newPassword"></p>
+            </div>
+            <div class="field field-check">
+              <input id="change-show-passwords" name="show" type="checkbox">
+              <label for="change-show-passwords">Show the passwords while I type</label>
+            </div>
+            <p class="form-message" data-error-for="form" role="status"></p>
+            <button type="submit" class="button button-primary button-wide" data-waiting="Changing your password…">Change my password</button>
+          </form>
+        </details>
+
+        <!-- Deleting is kept out of the way, folded in the same manner. -->
         <details class="danger-zone">
           <summary>Delete my account</summary>
           <p>
