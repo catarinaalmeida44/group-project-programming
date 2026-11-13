@@ -20,6 +20,8 @@
       <div class="hud">
         <span>Lap <strong id="lap">1</strong> of <strong id="laps">3</strong></span>
         <span>Time <strong id="time">0:00.00</strong></span>
+        <!-- Your place in the race, such as "2nd of 4". Only shown in a race with others. -->
+        <span id="place-box" hidden>Place <strong id="place"></strong></span>
         <span>Camera <strong id="view"></strong></span>
         <span id="lap-times" class="lap-times"></span>
       </div>
@@ -28,6 +30,13 @@
       <div class="screen">
         <canvas id="track" width="960" height="576">Your browser cannot show the game.</canvas>
         <p id="message" class="message" role="status"></p>
+        <!-- A short notice at the top of the picture, when a race is about to end. -->
+        <p id="notice" class="notice" role="status"></p>
+        <!-- The results of the race. online.js fills in the list, as text. -->
+        <div id="results" class="results" hidden>
+          <h2>Results</h2>
+          <ol id="results-list"></ol>
+        </div>
       </div>
 
       <p id="status" class="status" role="status">Connecting to the server...</p>
@@ -40,11 +49,14 @@
         <kbd>V</kbd> changes the camera. Drive clockwise.
         <kbd>Enter</kbd> starts a race for everyone, for the host only.
         Before a race, <kbd>R</kbd> puts your kart back at the start.
+        The yellow light on the road is the checkpoint to drive through next.
       </p>
       <p class="note">
         Everyone who opens this page is in the same room on <span id="track-name">the test track</span>,
         and our server moves all the karts. The host is whoever has been here longest. If you arrive
-        during a race, you watch it and join at the next start. Karts pass through each other.
+        during a race, you watch it and join at the next start. Karts bump into each other.
+        A race that has started is driven to its end: it is over when everyone has finished, or one
+        minute after the first kart has finished.
         If you are signed in, the server saves your time when you finish a race, and it appears
         on the leaderboard in the menu.
       </p>

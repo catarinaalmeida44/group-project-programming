@@ -35,8 +35,10 @@ import { introShare, startLights, spinTurnOf } from "./scene.js";
 import { COLOURS, lookFromChoice, readChoice } from "./kart-choice.js";
 import { lookOfTrack } from "./track-looks.js";
 import { routePoints, watchForWrongWay, WRONG_WAY_MESSAGE } from "./route.js";
+import { nextCheckpointNumber, watchForMissedCheckpoint, missedCheckpointMessage } from "./checkpoints.js";
+import { placeLine, resultLines } from "./standings.js";
 import { SPIN_STEPS } from "../shared/hazards.js";
-import { readRace, raceView, kartToWatch } from "./race-view.js";
+import { readRace, readEndsIn, timeLeftNotice, raceView, kartToWatch } from "./race-view.js";
 import { followTarget, easeTowards, nextView } from "./camera.js";
 import { storageOf } from "./storage.js";
 import { readSettings } from "./settings.js";
@@ -58,10 +60,17 @@ const statusText = document.getElementById("status");
 const accountText = document.getElementById("account-line");
 const othersText = document.getElementById("others-line");
 const messageBox = document.getElementById("message");
+const noticeText = document.getElementById("notice");
+const placeBox = document.getElementById("place-box");
+const placeText = document.getElementById("place");
+const resultsBox = document.getElementById("results");
+const resultsList = document.getElementById("results-list");
 
 // ---- What we know from the server ----
 const playback = createPlayback(); // the latest updates, for smooth drawing
 let race = readRace(null); //          the race as of the latest update: phase, countdown, host, who is watching
+let endsIn = null; //                  how many steps until the race is over for everyone, or null
+let resultsShown = ""; //              the results list as it is on the page now
 let myId = null; //                    our player number, from the "welcome" message
 let status = "Connecting to the server...";
 let connected = false;
@@ -79,6 +88,8 @@ const myChoice = readChoice(storage); // the colours of their kart, as three num
 
 // The way round the track, for the "wrong way" warning (route.js).
 const wrongWay = watchForWrongWay(routePoints(track, lookOfTrack(track).route));
+// Notices when our kart has left a checkpoint out, so the page can say so (checkpoints.js).
+const missedCheckpoint = watchForMissedCheckpoint(track);
 
 // ---- The camera ----
 let view = readSettings(storage).startView; // the view chosen in the menu's settings, or the first one
@@ -115,6 +126,7 @@ connection.addEventListener("message", (event) => {
     bananas = bananasOf(message);
     const raceBefore = race;
     race = readRace(message);
+    endsIn = readEndsIn(message);
     if (race.phase === "countdown" && raceBefore.phase !== "countdown") {
       camera = null; // a race has just started: jump to the grid, do not glide there
     }
@@ -149,10 +161,11 @@ function send(message) {
 // ---- The keyboard ----
 const keyboard = createKeyboard(window, {
   onRestart: () => send({ type: "restart" }),
-  // Anyone can press Enter, but the server only obeys the host. This page
-  // sends it only for the host, to spare the server pointless messages.
+  // Anyone can press Enter, but the server only obeys the host, and only
+  // when no race is on: a race that has begun is driven to its end. This
+  // page sends it only then, to spare the server pointless messages.
   onStart: () => {
-    if (race.host === myId) {
+    if (race.host === myId && (race.phase === "open" || race.phase === "finished")) {
       send({ type: "start" });
     }
   },
@@ -247,28 +260,75 @@ function frame(now) {
   // above the grid during 3, 2, 1, the start lights, the banana peels, and
   // the names of the signed-in players above their karts.
   const counting = race.phase === "countdown";
+  // While our own kart is being driven, its next checkpoint is lit up in yellow.
+  const driving = keysWork && Number.isInteger(mine.passed) && !about.big;
   const scene = {
     intro: introShare(counting, race.countdownSteps),
     lights: startLights(counting || race.phase === "racing", race.countdownSteps),
     bananas,
     names,
+    nextCheckpoint: driving ? nextCheckpointNumber(mine.passed, track) : undefined,
   };
   draw(view, dressed(shown), camera, steer, others, scene);
 
-  // Driving against the arrows for a moment brings up a warning.
+  // A checkpoint that was left out, or driving against the arrows for a
+  // moment, brings up a warning. A missed checkpoint comes first: going
+  // back for it means driving against the arrows.
+  const missed = driving ? missedCheckpoint(mine, mine.passed) : null;
   const goingWrongWay = keysWork && race.phase === "racing" && wrongWay(mine, now / 1000);
+  const warning = missed !== null ? missedCheckpointMessage(track, missed) : goingWrongWay ? WRONG_WAY_MESSAGE : null;
 
-  messageBox.classList.toggle("countdown", about.big && !goingWrongWay);
+  messageBox.classList.toggle("countdown", about.big && warning === null);
   showHud({
     lap: Math.min(shown.lapsDone + 1, track.laps),
     laps: track.laps,
     steps: shown.steps,
     lapSteps: shown.lapSteps,
     view,
-    message: goingWrongWay ? WRONG_WAY_MESSAGE : about.message,
+    message: warning ?? about.message,
   });
 
+  // In a race: our place ("2nd of 4") above the track, and a short notice
+  // at the top of the picture when the race is about to end.
+  const inRace = race.phase === "racing" || race.phase === "finished";
+  const place = inRace && mine !== undefined ? placeLine(karts, track, myId) : "";
+  placeBox.hidden = place === "";
+  placeText.textContent = place;
+  noticeText.textContent = timeLeftNotice(race, endsIn);
+
+  // The results: shown to everyone once the race is over, and to a racer
+  // who has finished while the others are still driving.
+  const showResults = race.phase === "finished" || (race.phase === "racing" && mine?.finished === true);
+  showResultsList(showResults ? resultLines(karts, track, names, myId, race.phase === "finished") : []);
+
   requestAnimationFrame(frame);
+}
+
+/**
+ * Puts the results list on the page: one line for each kart, the winner
+ * first. The page is only touched when the list has changed. Every word is
+ * written as text, never as HTML.
+ */
+function showResultsList(lines) {
+  const asText = JSON.stringify(lines);
+  if (asText === resultsShown) {
+    return;
+  }
+  resultsShown = asText;
+  resultsBox.hidden = lines.length === 0;
+  resultsList.replaceChildren(
+    ...lines.map((line) => {
+      const item = document.createElement("li");
+      item.classList.toggle("mine", line.mine);
+      for (const [part, text] of [["place", line.place], ["who", line.mine ? `${line.who} (you)` : line.who], ["time", line.time]]) {
+        const span = document.createElement("span");
+        span.className = part;
+        span.textContent = text;
+        item.append(span);
+      }
+      return item;
+    }),
+  );
 }
 
 // A way to look at the online session from the browser's console.

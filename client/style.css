@@ -415,6 +415,77 @@ main:has(.status) canvas {
   display: none;
 }
 
+/* A short notice at the top of the picture, such as "The race ends in 42 s".
+   It is small and out of the way, so the road stays in view. */
+.notice {
+  position: absolute;
+  left: 50%;
+  top: 0.6rem;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 0.25rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(16, 32, 43, 0.88);
+  color: var(--yellow);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.notice:empty {
+  display: none;
+}
+
+/* The results of an online race, in the top left corner of the picture. */
+.results {
+  position: absolute;
+  left: 0.6rem;
+  top: 0.6rem;
+  min-width: 15rem;
+  max-width: 45%;
+  padding: 0.5rem 0.8rem 0.6rem;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: rgba(16, 32, 43, 0.92);
+}
+
+.results[hidden] {
+  display: none;
+}
+
+.results h2 {
+  margin: 0 0 0.3rem;
+  color: var(--yellow);
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.results ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* One line for each kart: place, name, time. */
+.results li {
+  display: grid;
+  grid-template-columns: 2.6rem 1fr auto;
+  gap: 0.6rem;
+  padding: 0.12rem 0;
+}
+
+.results li.mine {
+  color: var(--yellow);
+  font-weight: 800;
+}
+
+.results .who {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* On a narrow screen the links go under the game's name. */
 @media (max-width: 40rem) {
   main > h1,

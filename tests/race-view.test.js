@@ -2,7 +2,7 @@
 // the race) and for the Enter key in client/keyboard.js.
 
 import { describe, it, expect } from "vitest";
-import { readRace, isWatching, kartToWatch, raceView } from "../client/race-view.js";
+import { readRace, readEndsIn, timeLeftNotice, isWatching, kartToWatch, raceView } from "../client/race-view.js";
 import { createKeyboard } from "../client/keyboard.js";
 import { COUNTDOWN_STEPS, GO_STEPS } from "../shared/countdown.js";
 
@@ -56,6 +56,41 @@ describe("reading the race part of an update", () => {
     ]) {
       expect(readRace({ race: strange }), JSON.stringify(strange)).toEqual(OPEN);
     }
+  });
+});
+
+describe("the time a race still lasts", () => {
+  it("reads the steps left from an update", () => {
+    expect(readEndsIn({ type: "state", endsIn: 3600 })).toBe(3600);
+    expect(readEndsIn({ endsIn: 0 })).toBe(0);
+  });
+
+  it("gives null when no race is being driven, or when the number is strange", () => {
+    for (const strange of [null, undefined, -1, 1.5, "60", NaN, Infinity, {}, []]) {
+      expect(readEndsIn({ endsIn: strange }), String(strange)).toBe(null);
+    }
+    expect(readEndsIn({})).toBe(null);
+    expect(readEndsIn(null)).toBe(null);
+    expect(readEndsIn(undefined)).toBe(null);
+  });
+
+  it("shows a notice in the last minute of a race, in whole seconds, rounded up", () => {
+    const racing = race({ phase: "racing", countdownSteps: 2000 });
+    expect(timeLeftNotice(racing, 3600)).toBe("The race ends in 60 s");
+    expect(timeLeftNotice(racing, 2520)).toBe("The race ends in 42 s");
+    expect(timeLeftNotice(racing, 61)).toBe("The race ends in 2 s");
+    expect(timeLeftNotice(racing, 1)).toBe("The race ends in 1 s");
+    expect(timeLeftNotice(racing, 0)).toBe("The race ends in 0 s");
+  });
+
+  it("shows no notice while there is more than a minute left, or when no race is being driven", () => {
+    const racing = race({ phase: "racing", countdownSteps: 2000 });
+    expect(timeLeftNotice(racing, 3601)).toBe("");
+    expect(timeLeftNotice(racing, 36000)).toBe("");
+    expect(timeLeftNotice(racing, null)).toBe("");
+    expect(timeLeftNotice(race({ phase: "open" }), 100)).toBe("");
+    expect(timeLeftNotice(race({ phase: "countdown" }), 100)).toBe("");
+    expect(timeLeftNotice(race({ phase: "finished" }), 100)).toBe("");
   });
 });
 
@@ -130,10 +165,36 @@ describe("what the page says during the countdown and the race", () => {
     expect(finished.message).toContain("Waiting for the host");
   });
 
-  it("tells a finished host how to start the next race", () => {
+  // Changed on 13 November 2026, at Catarina's request. Before, a host who
+  // had finished was told to press Enter while the others were still
+  // racing, and doing so threw their race away. Now Enter only works once
+  // the race is over, and the page says so.
+  it("tells a finished host how to start the next race, but only once the race is over", () => {
+    const mine = kart(1, { finished: true, steps: 600 });
     const racing = race({ phase: "racing", countdownSteps: 1000, host: 1 });
-    const view = raceView({ race: racing, myId: 1, mine: kart(1, { finished: true, steps: 600 }) });
-    expect(view.message).toContain("Press Enter to start the next race.");
+    const during = raceView({ race: racing, myId: 1, mine });
+    expect(during.message).toContain("Finished in 0:10.00.");
+    expect(during.message).not.toContain("Press Enter");
+    expect(during.message).toContain("when this one is over");
+
+    const over = race({ phase: "finished", countdownSteps: 5000, host: 1 });
+    expect(raceView({ race: over, myId: 1, mine }).message).toContain("Press Enter to start the next race.");
+  });
+
+  it("tells a racer who ran out of time that the race is over", () => {
+    const over = race({ phase: "finished", countdownSteps: 5000, host: 1 });
+    const unfinished = kart(2, { finished: false, steps: 4000 });
+    const view = raceView({ race: over, myId: 2, mine: unfinished });
+    expect(view.message).toContain("Time is up");
+    expect(view.message).toContain("Waiting for the host");
+    expect(view.message).not.toContain("Enter");
+    // The host, out of time too, is told how to start the next race.
+    expect(raceView({ race: over, myId: 1, mine: kart(1) }).message).toContain("Press Enter to start the next race.");
+  });
+
+  it("says nothing in the middle of the picture while a racer is still driving", () => {
+    const racing = race({ phase: "racing", countdownSteps: 1000, host: 1 });
+    expect(raceView({ race: racing, myId: 1, mine: kart(1) })).toEqual({ message: "", big: false, line: "" });
   });
 
   it("tells someone who joined during a race that they are watching", () => {
