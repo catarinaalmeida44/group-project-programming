@@ -19,7 +19,7 @@ Everything the browser shows and does: the web page, the drawing of the track an
 | `leaderboard-panel.js` | Puts the leaderboard on the page and listens to its buttons |
 | `account-view.js` | The words for the account corner, and what is wrong with a form before it is sent, by the rules in `shared/account-rules.js`. No browser needed, so it has tests |
 | `account.js` | Creating an account, signing in and out, deleting the account: checks the form, asks the server, remembers who is signed in. It never keeps a password |
-| `account-panel.js` | Puts accounts on the page: the account corner and the panels "Sign in", "Create account" and "Your account" |
+| `account-panel.js` | Puts accounts on the page: the account corner and the panels "Sign in", "Create account" and "Your account", where a player can change their password or delete the account |
 | `settings-panel.js` | The Settings panel on the page: the camera view a race starts in |
 | `favicon.svg` | The small picture on the browser's tab: our own drawing of a finish flag |
 | `race.html` | The single race page: the title, the lap counter and clock, the canvas the track is drawn on, and the help text. The track is chosen in the address: `race.html?track=campus-loop` |
@@ -32,8 +32,9 @@ Everything the browser shows and does: the web page, the drawing of the track an
 | `main.js` | Runs the practice race. Many times a second it asks the keyboard which keys are held, asks the rules in `shared/` where the kart is now, moves the camera, and draws the picture |
 | `online.js` | Runs the online page. It moves no kart itself: it tells the server which keys are held and draws what the server says is happening. It never sends a time: the server saves a signed-in player's result by itself and tells the page |
 | `net.js` | Makes online karts move smoothly. The server sends updates 20 times a second, and this file works out where each kart is in between. It also checks every message from the server, and writes the lines about your account and about who is in the room |
-| `race-view.js` | Turns what the server says about the race into words for the online page: the big countdown number, who may press Enter to start (only when no race is on), whether you are racing or watching, "Time is up", and the notice "The race ends in 42 s" |
-| `standings.js` | Who is in front in an online race ("2nd of 4") and the lines of the results list at its end. For showing only: what is saved is the server's own count |
+| `race-view.js` | Turns what the server says about the race into words for the online page: the big countdown number, who may press Enter to start (only when no race is on), whether you are racing or watching, "Time is up", and the notice "The race ends in 1:42" |
+| `standings.js` | Who is in front in an online race ("2nd of 4"), and the lines of the results at its end: finishers in the order of arrival, then the karts that ran out of time by who was closest to the finish. For showing only: what is saved is the server's own count |
+| `results-board.js` | The results board that comes up over the track when an online race is over: the winner on top with their kart turning round, everyone else below. It only puts the lines of `standings.js` on the page and paints the karts. How it moves is in `style.css` |
 | `hud.js` | Fills in the lap counter, the clock, the lap times, the camera name and the message. Used by both pages |
 | `keyboard.js` | Turns the arrow keys into the four answers the rules expect: gas, brake, left, right. Also listens for R (start again), V (change the camera) and Enter (online: the host starts a race) |
 | `camera.js` | The arithmetic of the camera: which part of the track is on the screen, and where things land on it. Two cameras for the view behind the kart: high above the grid, and low behind the kart with the horizon on the screen. No painting |

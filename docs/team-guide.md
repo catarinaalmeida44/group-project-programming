@@ -18,7 +18,7 @@ The game is online at https://novasbe-kart.onrender.com
 | The race view: sky, buildings with windows, trees, karts as 3D models, a start grid with lights | Works since 12 November. Looked at as single pictures only: nobody has judged it in motion yet |
 | Karts bumping into each other, banana peels that make a kart spin, arrows and a "wrong way" warning | Works since 12 November. Tried by robots, not yet by people |
 | Choosing the colours of your kart | Works since 12 November. Other players see them online |
-| Accounts: sign up, sign in, sign out, delete your account | Works since 12 November. A user name and a password, no email yet |
+| Accounts: sign up, sign in, sign out, change your password, delete your account | Works since 12 November (changing the password since 13 November). A user name and a password, no email yet, so a forgotten password cannot be reset |
 | The shared leaderboard | Works since 12 November. The server saves the time when a signed-in player finishes an online race |
 | Online races are driven to the end: no restart in the middle, a time limit, your place and a results list | Works since 13 November. Tried in the tests and in one browser, not yet by people |
 | A yellow light on the next checkpoint, and a warning when one was missed | Works since 13 November. This is why a lap sometimes did not count on the campus loop: see `WALKTHROUGH.md`, "How does a player know which way to go?" |
@@ -127,7 +127,7 @@ Ask the owner before changing a file they look after. That is the main way we av
 - **Everything in the race is drawn by our own code, with no image files.** A kart is a small 3D shape (`client/kart-shape.js`), a tree is a few circles (`client/props.js`), and how a track looks is in `client/track-looks.js`. To change how something looks, change it there. None of it changes how a kart drives: that is in `shared/`.
 - **A changed rule needs its tests changed too, and that has to be said out loud.** On 12 November the start moved behind the line, and five older tests that pinned the old rule were changed to pin the new one. On 13 November eight more were changed, when the host lost the power to restart a race in the middle. They are listed in Catarina's diary. Never change a test quietly to make it pass.
 - **On the campus loop, follow the yellow light.** A lap only counts if you drove through every checkpoint. One of them, round the end of the CTT Student Hall, can be driven past. The game now tells you when that happened.
-- **Online, the host cannot stop a race.** Enter only works before a race and after it. A race is over when everyone has finished, one minute after the first finish, or ten minutes after GO.
+- **Online, the host cannot stop a race.** Enter only works before a race and after it. A race is over when everyone has finished, two minutes after the first finish, or ten minutes after GO. Then a results board comes up, with the winner on top.
 
 ## 9. Where everything is
 

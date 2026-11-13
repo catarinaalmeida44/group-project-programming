@@ -4,6 +4,72 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 13 November 2026, evening: two minutes, a results board, changing your password
+
+**What Catarina asked for, after reading the report of the day**
+
+1. Give the others about three minutes after the first kart finishes, or two if three is too long.
+2. At the end of a race with several players, show the order of arrival with some sort of animation: the winner highlighted, the others below. If the time ran out before everyone finished, order the rest by who was closest to the finish line.
+3. Start on a way to change your password.
+
+**What was done**
+
+1. **Two minutes.** The agent chose two of her two offers and said why: a whole race takes between one and two and a half minutes, so with three the winner would wait longer than the race took. The number is in a new small file, `shared/race-time.js`, which the server and the page both read. The notice at the top of the picture now starts at the first finish: "The race ends in 2:00", and in the last minute "The race ends in 42 s".
+2. **The results board.** When the race is over for everyone, a board comes up over the track. The winner is on top, large, with their kart turning round in their own colours and a yellow "Winner" ribbon. Below are the others in the order they crossed the line, each with a small picture of their kart, their time and how far behind the winner they were ("+0:06.83"). Karts that ran out of time come last, the one closest to the finish first, marked "did not finish" with the lap they were on. Your own line is yellow. The board pops up, the rows slide in one after the other, and confetti falls. For a player whose computer asks for less motion, nothing moves. The board stays until the host starts the next race. If nobody finished at all, the title is "Time is up" and the kart on top is "Closest to the finish".
+3. **Changing your password.** In the menu, click your name, then "Change my password". It asks for the password you have now and a new one. The server checks the current password again (with the same lock after five wrong tries), so someone who finds your laptop open cannot take the account over. Afterwards you are signed out on every other phone or computer, and stay signed in on the one you used. "Forgot my password" is still not possible: that needs email, which the team has not decided on.
+
+| Where | What it is for |
+|---|---|
+| `shared/race-time.js` (new) | The two time limits of a race, for the server and the page |
+| `client/results-board.js` (new) | Puts the board on the page and paints the karts |
+| `client/standings.js` | Changed: works out the lines of the board and their order |
+| `client/style.css` | Changed: how the board looks and moves ("The results board") |
+| `client/online.js`, `client/online.html`, `client/race-view.js` | Changed: the board comes up when the race is over; the notice counts from two minutes |
+| `server/accounts.js` | Changed: the rule for changing a password |
+| `server/api.js` | Changed: the new address `/api/change-password` |
+| `server/store.js`, `tests/memory-store.js` | Changed: two new database questions (replace a password; remove a player's other sessions) |
+| `client/account-api.js`, `client/account.js`, `client/account-view.js`, `client/account-panel.js`, `client/index.html` | Changed: the form in "Your account" |
+| `tests/` | 41 new tests, in `standings`, `accounts`, `api`, `account` and the store checks |
+
+**Tests that were changed**
+
+No test from before today was changed. Four tests that the agent itself wrote this morning, on this same branch, were changed with the rule: two pinned "one minute" (`room-race.test.js`), two pinned the notice only in the last minute (`race-view.test.js`). A page test (`menu-page.test.js`, "gives every box of a form a label of its own") failed on the first version of the new form, which had a hidden box without a label. The form was fixed, not the test.
+
+**Decisions made by the agent, please confirm**
+
+- Two minutes, not three (Catarina offered both).
+- After a password change, every other device is signed out, and the one that made the change stays signed in.
+- A new password must be different from the old one.
+- At most ten tries at changing a password per minute from one computer.
+
+**What was checked**
+
+- `npm test`: 1,275 tests pass, 5 are skipped. This morning there were 1,234.
+- `npm run test:database`: 23 pass, 2 are skipped. This is the real database, in tables that start with `test_`, never the players' tables. It includes the two new database questions.
+- The new code was broken on purpose in 21 ways. 20 made a test fail at once. One did not ("no limit per computer on changing passwords"): there was no test for it. One was written, and then it failed too.
+- In the agent's browser, on a laptop, with pretend accounts (`npm run start:pretend`):
+  - A robot drove a whole online race in the real page against a second kart that stood still. "1st of 2" showed during the race. At the finish: "The race ends in 2:00", the small list in the corner, and "You can start the next race when this one is over." When the race was over, the board came up by itself with the winner and the time, the time was saved to the leaderboard, and Enter started the next race and took the board away.
+  - A board with five made-up lines was looked at as one picture: winner, own line in yellow, two karts that did not finish.
+  - The password was changed through the real form, with the real, slow scrambling: the same password again was refused on the page, a wrong current password by the server, and after the change the old password was refused and the new one accepted.
+
+**What was NOT checked**
+
+- Nobody has seen the board move. The agent's browser does not play animations while it is not on the screen, so only the finished picture was seen.
+- A board with several real players. The race in the browser ended with one racer on the board, because the second kart left instead of waiting two minutes.
+- Signing out the other devices was checked in the tests, not with two real devices.
+- None of this is on the live server yet. The password change has not touched the real players' tables.
+
+**How to check it yourself**
+
+1. `npm run start:pretend`, open http://localhost:3000, create an account, click your name, "Change my password".
+2. Open Online in two browser windows, start a race in the first, and finish it in both. The board should come up.
+3. Checks 54 to 65 in `docs/two-laptop-checklist.md` are for two laptops on the live server, after the merge.
+
+**Git steps, done by the agent at Catarina's request**
+
+- Four more commits on the branch `race-fixes`: the two-minute limit, the results board, changing a password, the notes.
+- Pushed to GitHub. Still one pull request for the whole day, for Catarina to open and a teammate to approve.
+
 ### 13 November 2026: laps that did not count, buildings cut off, Enter restarting a race
 
 **What Catarina reported, after playing**
@@ -55,7 +121,7 @@ The test helper `robotsDrive` in `room-race.test.js` got one more optional setti
 
 **Decisions made by the agent, please confirm**
 
-- The others get **one minute** after the first finish. A first guess. The number is at the top of `server/room.js`.
+- The others get **one minute** after the first finish. A first guess. (Changed to two minutes the same evening, at Catarina's request: see the entry above. The number is now in `shared/race-time.js`.)
 - No race lasts longer than **ten minutes** after GO.
 - A racer who runs out of time gets **no result**, and nothing is saved for them.
 - The fix for the laps is guidance, not a change to the track. The better fix is for Rodrigo: close the short cut past the CTT Student Hall with a hedge, or take the hairpin out.

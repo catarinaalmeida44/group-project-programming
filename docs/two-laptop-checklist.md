@@ -103,11 +103,23 @@ Use the campus loop for these: in the menu, choose Online and the Campus loop on
 | 51 | Both, during the race: look above the track | "Place 1st of 2" or "Place 2nd of 2", and it changes when one overtakes the other | |
 | 52 | A: on the west side, do NOT follow the arrows round the end of the CTT Student Hall. Drive straight on, up to the finish line | On the finish line: "You missed a checkpoint: round the end of the CTT Student Hall. This lap does not count until you drive through the yellow light." The lap counter does not go up | |
 | 53 | A: drive back to the yellow light, through it, and on to the finish line | The warning goes away at the light, and this time the lap counts | |
-| 54 | B: finish the three laps. A: stop driving | B sees its time and a list "Results" with "still racing" for A. On both laptops, at the top of the picture: "The race ends in 60 s", counting down | |
-| 55 | Both: wait for the minute to pass | On A: "Time is up: the race is over." The list says "did not finish" for A. A's keys do nothing any more. A (the host) is told to press Enter for the next race | |
+| 54 | B: finish the three laps. A: stop driving | B sees its time and a small list "Results" in the corner with "still racing" for A. On both laptops, at the top of the picture: "The race ends in 2:00", counting down, and "42 s" in the last minute | |
+| 55 | Both: wait for the two minutes to pass | On both laptops a results board comes up over the track: B on top as the winner, with B's kart turning round in B's colours, and A below with "did not finish" and the lap A was on. A's keys do nothing any more. At the bottom of the board A (the host) is told to press Enter for the next race, B to wait for the host | |
 | 56 | B, signed in: look at the line under the track and at the leaderboard in the menu | B's time was saved. Nothing was saved for A | |
 | 57 | A: press Enter | A new countdown, with both karts on the grid | |
 | 58 | Both: drive close along a building, and turn round right in front of one | The building beside you is whole, up to the edge of the picture. A building straight behind your kart may disappear so that you can see your kart. No loose pieces of wall flicker in and out | |
+| 59 | Both: drive a whole race and both finish | The results board comes up at once when the second kart finishes: the winner on top, the other below with the time and how far behind ("+0:03.50"). Your own line is yellow. The board pops up, the rows slide in, confetti falls | |
+| 60 | A: press Enter | The board goes away and a new countdown starts | |
+
+## Changing your password (added 13 November 2026)
+
+| # | What to do | What should happen | OK? |
+|---|---|---|---|
+| 61 | A, signed in on the laptop and also on a phone: in the menu on the laptop, click your name, then "Change my password". Type a wrong password in "Your password now" | "That is not your current password." Nothing changes | |
+| 62 | A: type the right password now, and the same one as the new password | "That is the password you already have. Choose a different one.", before anything is sent | |
+| 63 | A: type the right password now and a new one of at least 8 characters, and click "Change my password" | The panel closes. The top of the menu says "Your password is changed. You were signed out on your other devices." A is still signed in on the laptop | |
+| 64 | A: reload the menu on the phone | The phone is signed out | |
+| 65 | A: sign out on the laptop and sign in again, first with the old password, then with the new one | The old one is refused, the new one works | |
 
 Write down as well:
 
@@ -116,7 +128,8 @@ Write down as well:
 - Is a bump too hard, too soft or about right? Does a spin last too long?
 - Are there too many bananas, too few, or about right?
 - On the campus loop: what looks like the real campus, and what does not?
-- Is one minute after the first finish too short, too long or about right?
+- Are two minutes after the first finish too short, too long or about right?
+- How does the results board feel? Is anything on it hard to read, or in the way?
 - Did a lap ever not count without the page saying why? Where on the track were you?
 - Do buildings beside you still look "cut off" anywhere? Where, and in which direction were you driving?
 
