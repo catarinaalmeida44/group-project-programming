@@ -615,6 +615,19 @@ describe("the time limits of a race", () => {
     expect(later.passed).toBe(atTheEnd.passed);
     expect(speedOf(later)).toBe(0); // the kart rolled to a stop
     expect(room.takeFinishes()).toEqual([]); // nothing to save for them
+
+    // It stopped exactly where it would have if its driver had let go of the
+    // gas at that moment. The same race in a second room with plenty of
+    // time, where the driver does let go then, shows where that is.
+    const twin = quickRoom({ finishWindowSteps: 5000 });
+    const { slow: twinSlow } = hostHasFinished(twin);
+    twin.setKeys(twinSlow.id, GAS);
+    run(twin, 120);
+    twin.setKeys(twinSlow.id, NO_KEYS);
+    run(twin, 600);
+    expect(twin.phase()).toBe("racing");
+    expect(later.x).toBe(kartOf(twin, twinSlow.id).x);
+    expect(later.y).toBe(kartOf(twin, twinSlow.id).y);
   });
 
   it("is over ten minutes after GO at the latest, even if nobody finishes", () => {

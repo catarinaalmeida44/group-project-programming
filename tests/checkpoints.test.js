@@ -70,13 +70,19 @@ describe("where the light of a checkpoint stands", () => {
   });
 
   it("leaves out the squares of wall under a checkpoint", () => {
-    // The finish line reaches from row 10 to row 19, but row 11 of its column is not all road.
-    const rows = CAMPUS_LOOP.checkpoints[0];
-    const squares = Math.round((rows.bottom - rows.top) / size);
-    const walls = Array.from({ length: squares }, (unused, i) => CAMPUS_LOOP.map[rows.top / size + i][rows.left / size]).filter(
-      (letter) => letter === "#",
-    ).length;
-    expect(checkpointPieces(CAMPUS_LOOP, 0)).toHaveLength(squares - walls);
+    // A made-up strip of map with a wall in the middle of the checkpoint.
+    //   column:                      01234
+    const strip = { tileSize: 10, map: ["#####", "#.#.#", "#####"], checkpoints: [{ name: "across", left: 10, top: 10, right: 40, bottom: 20 }] };
+    expect(checkpointPieces(strip, 0)).toEqual([
+      { from: { x: 10, y: 15 }, to: { x: 20, y: 15 }, column: 1, row: 1 },
+      { from: { x: 30, y: 15 }, to: { x: 40, y: 15 }, column: 3, row: 1 },
+    ]);
+    // The same the other way up: a checkpoint that is taller than wide.
+    const upright = { tileSize: 10, map: ["###", "#.#", "###", "#.#", "###"], checkpoints: [{ name: "down", left: 10, top: 10, right: 20, bottom: 40 }] };
+    expect(checkpointPieces(upright, 0).map((piece) => piece.row)).toEqual([1, 3]);
+    // A checkpoint that sticks out of the map gives no piece out there.
+    const over = { tileSize: 10, map: ["..."], checkpoints: [{ name: "wide", left: -20, top: 0, right: 50, bottom: 10 }] };
+    expect(checkpointPieces(over, 0).map((piece) => piece.column)).toEqual([0, 1, 2]);
   });
 
   it("gives nothing for a number that is not a checkpoint", () => {
