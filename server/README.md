@@ -53,9 +53,10 @@ The same goes for what happens between karts and on the road. The server decides
 
 Twenty times a second, every browser in a room gets one update (`snapshot()` in `room.js`):
 
-- `karts`: for each kart on the track its player number, grid place, position, direction, speed, laps, clock, whether it has finished, and `spin`, the number of steps it will still spin (0 when it is not spinning)
+- `karts`: for each kart on the track its player number, grid place, position, direction, speed, laps, clock, whether it has finished, `spin`, the number of steps it will still spin (0 when it is not spinning), and `passed`, its count of checkpoints, from which the page shows who is in front and which checkpoint comes next
 - `race`: the phase (`open`, `countdown`, `racing` or `finished`), how far the countdown is, who the host is and who is watching
 - `bananas`: the banana peels on the road, each with a number and a position. Empty while the room is open and during 3, 2, 1
+- `endsIn`: how many steps are left until the race is over for everyone, while a race is being driven. Otherwise it is empty (`null`). A race is over one minute after the first finish, and ten minutes after GO at the latest (`FINISH_WINDOW_STEPS` and `RACE_LIMIT_STEPS` in `room.js`)
 
 ## What the server refuses
 
@@ -87,7 +88,8 @@ For online play:
 - any message that is not exactly one of the four allowed kinds: the browser is sent away
 - kart colours that are not three whole numbers from the allowed ranges, such as a colour written out or a name: the browser is sent away
 - painting another player's kart: a choice of colours only ever changes the kart of the connection that sent it
-- a race start from anyone but the host, or while a countdown is already running: it is ignored
+- a race start from anyone but the host, or while a countdown is running or a race is being driven: it is ignored. A race that has begun is driven to its end (since 13 November 2026)
+- a finish after the time of a race has run out: that racer's laps and clock stay as they were, and no result is saved
 - a restart during a countdown or a race: it is ignored, so nobody can give themselves a fresh clock
 - keys from a player who joined during a race and is watching: they move nothing
 - more than 60 messages in a second from one browser: it is sent away

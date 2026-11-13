@@ -92,6 +92,23 @@ Added on 12 November 2026. Not run yet by people: these were only tried by robot
 | 47 | Both, signed in: look at the other kart from close by | The other player's user name is shown above their kart | |
 | 48 | Both: press V | The view from above and the view of the whole track still work, with the same karts, trees and bananas | |
 
+## A race driven to its end, the yellow light and the results (added 13 November 2026)
+
+Use the campus loop for these: in the menu, choose Online and the Campus loop on both laptops.
+
+| # | What to do | What should happen | OK? |
+|---|---|---|---|
+| 49 | A (the host): press Enter. After GO, both drive off. Then A: press Enter again, in the middle of the race | Nothing happens. Nobody is sent back to the grid and both clocks run on | |
+| 50 | Both: look at the road ahead and at the small map | A low curtain of yellow light stands across the road at the next checkpoint, and a yellow line marks it on the small map. After you drive through it, the light moves to the next checkpoint | |
+| 51 | Both, during the race: look above the track | "Place 1st of 2" or "Place 2nd of 2", and it changes when one overtakes the other | |
+| 52 | A: on the west side, do NOT follow the arrows round the end of the CTT Student Hall. Drive straight on, up to the finish line | On the finish line: "You missed a checkpoint: round the end of the CTT Student Hall. This lap does not count until you drive through the yellow light." The lap counter does not go up | |
+| 53 | A: drive back to the yellow light, through it, and on to the finish line | The warning goes away at the light, and this time the lap counts | |
+| 54 | B: finish the three laps. A: stop driving | B sees its time and a list "Results" with "still racing" for A. On both laptops, at the top of the picture: "The race ends in 60 s", counting down | |
+| 55 | Both: wait for the minute to pass | On A: "Time is up: the race is over." The list says "did not finish" for A. A's keys do nothing any more. A (the host) is told to press Enter for the next race | |
+| 56 | B, signed in: look at the line under the track and at the leaderboard in the menu | B's time was saved. Nothing was saved for A | |
+| 57 | A: press Enter | A new countdown, with both karts on the grid | |
+| 58 | Both: drive close along a building, and turn round right in front of one | The building beside you is whole, up to the edge of the picture. A building straight behind your kart may disappear so that you can see your kart. No loose pieces of wall flicker in and out | |
+
 Write down as well:
 
 - Does the race view run smoothly on each laptop? "Smooth", "a little jerky" or "jerky", and which laptop.
@@ -99,6 +116,9 @@ Write down as well:
 - Is a bump too hard, too soft or about right? Does a spin last too long?
 - Are there too many bananas, too few, or about right?
 - On the campus loop: what looks like the real campus, and what does not?
+- Is one minute after the first finish too short, too long or about right?
+- Did a lap ever not count without the page saying why? Where on the track were you?
+- Do buildings beside you still look "cut off" anywhere? Where, and in which direction were you driving?
 
 ## One more check, when a new version goes online
 

@@ -4,6 +4,91 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 13 November 2026: laps that did not count, buildings cut off, Enter restarting a race
+
+**What Catarina reported, after playing**
+
+1. On the campus loop, crossing the finish line sometimes did not count a lap, and the race did not end.
+2. Buildings beside the kart were "cut off" and looked buggy.
+3. When the host pressed Enter by accident during a race, the race was thrown away and a new one started. A race should be played to its end.
+
+She also asked for a step back: what does the grading value, what is missing, what about accounts and security. And she said not to rework the campus layout, because the videos from campus are not here yet. The agent worked alone and did not use helper agents, to save her usage.
+
+**What was found, and what was done**
+
+1. **The laps.** The lap rule was right. The game did not explain itself. On the west side of the campus loop the road makes a hairpin round the end of the CTT Student Hall, and checkpoint 5 is at the end of that hairpin. The square is open, so a kart can drive straight on and never touch checkpoint 5. From then on the finish line counts for nothing until the kart has gone through checkpoint 5, and nothing on the screen said so. The other five checkpoints go from wall to wall. The track was not changed (it is Rodrigo's, and the videos will change it anyway). Now:
+   - the checkpoint to drive through next is **lit up in yellow**: a low curtain of light across the road, and a yellow line on the small map and in the views from above;
+   - when a checkpoint was left out, the page says **"You missed a checkpoint: round the end of the CTT Student Hall. This lap does not count until you drive through the yellow light."**
+2. **The buildings.** Two mistakes in `client/buildings.js` and `client/draw.js`. Every wall was cut where its foot left the bottom of the screen, but a tall wall beside the camera is in the picture much longer, so there was a gap up to the edge of the screen. And the rule that removes a wall standing between the camera and the kart also removed squares of a wall that the kart was only driving close to. Now a wall is cut where its top leaves the screen, and only a wall that really stands in the line from the camera to the middle of the kart is left out, together with the rest of that straight wall behind the kart. Trees and lamps now fade away as they pass the kart, instead of vanishing in one go.
+3. **Enter during a race.** The server now refuses a start from the countdown until the race is over, from the host too. Because nobody can restart any more, a race needs to end by itself: it is over **one minute after the first kart has finished**, and **ten minutes after GO** at the latest. A racer who has not finished by then gets no result. The page shows "The race ends in 42 s" at the top of the picture in the last minute.
+4. **New, because the grading asks for results that are clearly shown:** during an online race the page shows your place ("2nd of 4"), and at the end a **results list** with place, name and time for every kart.
+5. **Security.** The server now tells a browser that came over https to always use https for this site, and tells browsers not to say to other websites which of our pages a visitor came from. `npm audit` finds no known vulnerabilities in our three libraries.
+
+| Where | What it is for |
+|---|---|
+| `client/checkpoints.js` (new) | Which checkpoint is next, where its light stands, and noticing a missed one |
+| `client/standings.js` (new) | The order of an online race, your place, the lines of the results list |
+| `client/buildings.js`, `client/draw.js` | Changed: walls beside and behind the kart; painting the yellow light; fading trees |
+| `client/race-view.js` | Changed: Enter is only offered when the race is over; "Time is up"; the time left |
+| `client/main.js`, `client/online.js`, `client/online.html`, `client/style.css` | Changed: both race pages show the light and the warning; the online page shows place, time left and results |
+| `server/room.js` | Changed: no start during a race, the two time limits, and two more things in the update (`passed` for every kart, `endsIn`) |
+| `server/app.js` | Changed: two more safety rules with every answer |
+| `tests/checkpoints.test.js`, `tests/standings.test.js` (new) | 25 tests |
+| `tests/room-race.test.js`, `tests/race-view.test.js`, `tests/buildings.test.js`, `tests/page-safety.test.js` | 31 more tests |
+
+**Eight older tests were changed. Please check them.**
+
+Our rule is never to change a test to make it pass. These eight pinned a rule that was changed on purpose, at Catarina's request (no restart in the middle of a race), or something that follows from it (a race now ends by itself). Each has a comment in the test file that says what it said before.
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `room-race.test.js`, "can be started again by the host..." | The host could start again after everyone had finished "or while a race is on" | Only once the race is over. A new test checks the refusal during a race | This is the rule Catarina asked to change |
+| `room-race.test.js`, "puts the people who were watching into the next race" | The host started the next race in the middle of the first | The start is refused first, the host drives to the end, then starts | Same rule |
+| `room-race.test.js`, "is not finished while one racer is still driving" | The robot drove for two minutes and the race stayed "racing" for ever | The robot stops when the host has finished, and the race is checked then | A race now ends one minute after the first finish |
+| `room-race.test.js`, "is finished when the only racer still driving leaves" | Same two minutes | Same change | Same reason |
+| `room-bananas.test.js`, "picks a seed once for each race..." | A second start during the race was accepted and picked a new seed | It is refused and picks none. The next race starts after the time is up | Same rule |
+| `room-bananas.test.js`, "happens when the next race starts, and nobody is still spinning then" | The host restarted while a kart was spinning | The race is given a time limit that runs out during the spin, and then the host starts | Same rule. What the test protects (no spin carried into the next race) is still checked |
+| `room.test.js`, the exact list of what is sent about a kart | 12 words | 13: "passed" was added | The page needs the count of checkpoints for the light, the warning and the places |
+| `race-view.test.js`, "tells a finished host how to start the next race" | Told to press Enter while the others were still racing | Told "when this one is over" during the race, and to press Enter once it is over | Enter does nothing during a race now, so the page must not offer it |
+
+The test helper `robotsDrive` in `room-race.test.js` got one more optional setting ("stop when..."). One existing building test ("cuts a building that reaches behind the bottom of the screen") was NOT changed and still passes: the outline that is filled still never goes below the screen.
+
+**Decisions made by the agent, please confirm**
+
+- The others get **one minute** after the first finish. A first guess. The number is at the top of `server/room.js`.
+- No race lasts longer than **ten minutes** after GO.
+- A racer who runs out of time gets **no result**, and nothing is saved for them.
+- The fix for the laps is guidance, not a change to the track. The better fix is for Rodrigo: close the short cut past the CTT Student Hall with a hedge, or take the hairpin out.
+
+**What was checked**
+
+- `npm test`: 1,234 tests pass, 5 are skipped (they need the database address). Before this work there were 1,178.
+- The new code was broken on purpose in 30 ways, one at a time. 28 made a test fail at once. Two did not ("a racer who is out of time can still drive", "the light stands on walls too"). Those two tests were made stricter, and then all 30 were caught.
+- In the agent's browser, on a laptop: the campus loop painted at several spots close to buildings (the wall beside the kart now reaches the edge of the picture), the yellow light on the road and on the small map, and the real online page: the host started a race, drove, pressed Enter in the middle, and nothing happened. The results list was looked at with made-up lines.
+- The live server, from outside, without an account: it sends the browser rule, refuses a sign-in that comes from another website (403) and one in the wrong format (415), and the leaderboard answers.
+- `npm audit`: no known vulnerabilities.
+
+**What was NOT checked**
+
+- Nobody has driven any of this by hand. The agent's browser shows single pictures, not movement. Whether the buildings look right in motion is for Catarina to say.
+- A whole online race to the results list, the minute after the first finish with real players, and the missed-checkpoint warning set off by a person in the page. They are checks 49 to 58 in `docs/two-laptop-checklist.md`.
+- Nothing of this is on the live server until the pull request is merged. The always-https rule can only be seen there.
+- The tests against the real database were not run (nothing about the database changed).
+
+**How to check it yourself**
+
+1. `npm start`, open http://localhost:3000, Single race, Campus loop. Drive, and look for the yellow light on the road ahead and on the small map.
+2. On the west side, drive straight past the CTT Student Hall instead of round its end, up to the finish line. The warning should come, and the lap should not count.
+3. Drive close along a building. It should be whole up to the edge of the picture.
+4. Online, as host: press Enter, drive off, press Enter again. Nothing should happen.
+
+**Git steps, done by the agent at Catarina's request**
+
+- Fetched from GitHub: pull request 16 was merged, and the live server runs it.
+- Made the branch `race-fixes` from the up-to-date `main`.
+- Six commits, one per step: the race rules, the buildings, the checkpoint light with places and results, the safety rules, stricter tests, the notes.
+- Pushed the branch to GitHub as a backup. The pull request is for Catarina to open and for a teammate to approve.
+
 ### 12 November 2026, later: the race view, karts as 3D models, bumping, bananas, kart colours
 
 **What was done**

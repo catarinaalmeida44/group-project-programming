@@ -20,7 +20,9 @@ The game is online at https://novasbe-kart.onrender.com
 | Choosing the colours of your kart | Works since 12 November. Other players see them online |
 | Accounts: sign up, sign in, sign out, delete your account | Works since 12 November. A user name and a password, no email yet |
 | The shared leaderboard | Works since 12 November. The server saves the time when a signed-in player finishes an online race |
-| Automatic tests | More than 1,100. GitHub runs them on every pull request |
+| Online races are driven to the end: no restart in the middle, a time limit, your place and a results list | Works since 13 November. Tried in the tests and in one browser, not yet by people |
+| A yellow light on the next checkpoint, and a warning when one was missed | Works since 13 November. This is why a lap sometimes did not count on the campus loop: see `WALKTHROUGH.md`, "How does a player know which way to go?" |
+| Automatic tests | More than 1,200. GitHub runs them on every pull request |
 | The server on the internet | Works. It updates itself a few minutes after every merge into `main` |
 | The database | Works. It holds the accounts, the sign-ins and the race results. See section 8 for a catch on the university Wi-Fi |
 | Characters, items, computer karts, cup, more campus tracks, email for accounts | Not started. This is the work ahead |
@@ -123,7 +125,9 @@ Ask the owner before changing a file they look after. That is the main way we av
 - **An agent's own browser can be slow.** The built-in browser of the Claude app redraws about once a second when it is not on screen, so the game looks jerky there. Judge how the game feels in a normal browser.
 - **Online, your own kart reacts a moment late.** That is known and written down. It is not a mistake in your code.
 - **Everything in the race is drawn by our own code, with no image files.** A kart is a small 3D shape (`client/kart-shape.js`), a tree is a few circles (`client/props.js`), and how a track looks is in `client/track-looks.js`. To change how something looks, change it there. None of it changes how a kart drives: that is in `shared/`.
-- **A changed rule needs its tests changed too, and that has to be said out loud.** On 12 November the start moved behind the line, and five older tests that pinned the old rule were changed to pin the new one. They are listed in Catarina's diary. Never change a test quietly to make it pass.
+- **A changed rule needs its tests changed too, and that has to be said out loud.** On 12 November the start moved behind the line, and five older tests that pinned the old rule were changed to pin the new one. On 13 November eight more were changed, when the host lost the power to restart a race in the middle. They are listed in Catarina's diary. Never change a test quietly to make it pass.
+- **On the campus loop, follow the yellow light.** A lap only counts if you drove through every checkpoint. One of them, round the end of the CTT Student Hall, can be driven past. The game now tells you when that happened.
+- **Online, the host cannot stop a race.** Enter only works before a race and after it. A race is over when everyone has finished, one minute after the first finish, or ten minutes after GO.
 
 ## 9. Where everything is
 
