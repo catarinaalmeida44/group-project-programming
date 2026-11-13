@@ -8,6 +8,7 @@
 
 import { countdownAt } from "../shared/countdown.js";
 import { STEP_SECONDS } from "../shared/physics.js";
+import { FINISH_WINDOW_STEPS } from "../shared/race-time.js";
 import { formatTime } from "./format.js";
 
 const PHASES = ["open", "countdown", "racing", "finished"];
@@ -47,19 +48,19 @@ export function readEndsIn(update) {
   return Number.isInteger(endsIn) && endsIn >= 0 ? endsIn : null;
 }
 
-/** The server shows the time left to everyone once it is this short: one minute, in steps. */
-const SHOW_TIME_LEFT_FROM = 60 * 60;
-
 /**
  * The short notice at the top of the picture while a race is running out:
- * "The race ends in 42 s". Gives "" while there is plenty of time, which
- * is until the first kart has finished.
+ * "The race ends in 1:42", and in the last minute "The race ends in 42 s".
+ * Gives "" while there is plenty of time, which is until the first kart has
+ * finished: from then on the others have FINISH_WINDOW_STEPS left.
  */
 export function timeLeftNotice(race, endsIn) {
-  if (race.phase !== "racing" || endsIn === null || endsIn > SHOW_TIME_LEFT_FROM) {
+  if (race.phase !== "racing" || endsIn === null || endsIn > FINISH_WINDOW_STEPS) {
     return "";
   }
-  return `The race ends in ${Math.ceil(endsIn * STEP_SECONDS)} s`;
+  const seconds = Math.ceil(endsIn * STEP_SECONDS);
+  const left = seconds > 60 ? `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}` : `${seconds} s`;
+  return `The race ends in ${left}`;
 }
 
 /** Is this player watching the race instead of driving in it? */

@@ -5,6 +5,7 @@ import { describe, it, expect } from "vitest";
 import { readRace, readEndsIn, timeLeftNotice, isWatching, kartToWatch, raceView } from "../client/race-view.js";
 import { createKeyboard } from "../client/keyboard.js";
 import { COUNTDOWN_STEPS, GO_STEPS } from "../shared/countdown.js";
+import { FINISH_WINDOW_STEPS } from "../shared/race-time.js";
 
 const OPEN = { phase: "open", countdownSteps: 0, host: null, watching: [] };
 
@@ -74,8 +75,12 @@ describe("the time a race still lasts", () => {
     expect(readEndsIn(undefined)).toBe(null);
   });
 
-  it("shows a notice in the last minute of a race, in whole seconds, rounded up", () => {
+  it("shows a notice once the first kart has finished: minutes and seconds, then whole seconds in the last minute", () => {
     const racing = race({ phase: "racing", countdownSteps: 2000 });
+    expect(timeLeftNotice(racing, FINISH_WINDOW_STEPS)).toBe("The race ends in 2:00");
+    expect(timeLeftNotice(racing, 6120)).toBe("The race ends in 1:42");
+    expect(timeLeftNotice(racing, 3660)).toBe("The race ends in 1:01");
+    expect(timeLeftNotice(racing, 3601)).toBe("The race ends in 1:01"); // rounded up
     expect(timeLeftNotice(racing, 3600)).toBe("The race ends in 60 s");
     expect(timeLeftNotice(racing, 2520)).toBe("The race ends in 42 s");
     expect(timeLeftNotice(racing, 61)).toBe("The race ends in 2 s");
@@ -83,9 +88,9 @@ describe("the time a race still lasts", () => {
     expect(timeLeftNotice(racing, 0)).toBe("The race ends in 0 s");
   });
 
-  it("shows no notice while there is more than a minute left, or when no race is being driven", () => {
+  it("shows no notice before the first kart has finished, or when no race is being driven", () => {
     const racing = race({ phase: "racing", countdownSteps: 2000 });
-    expect(timeLeftNotice(racing, 3601)).toBe("");
+    expect(timeLeftNotice(racing, FINISH_WINDOW_STEPS + 1)).toBe("");
     expect(timeLeftNotice(racing, 36000)).toBe("");
     expect(timeLeftNotice(racing, null)).toBe("");
     expect(timeLeftNotice(race({ phase: "open" }), 100)).toBe("");

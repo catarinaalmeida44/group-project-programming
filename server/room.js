@@ -42,6 +42,7 @@
 import { fastestLapSteps } from "../shared/laps.js";
 import { createRacer, stepRacer, rollRacer } from "../shared/race.js";
 import { countdownAt, COUNTDOWN_STEPS } from "../shared/countdown.js";
+import { FINISH_WINDOW_STEPS, RACE_LIMIT_STEPS } from "../shared/race-time.js";
 import { GRID_PLACES } from "../shared/grid.js";
 import { bumpKarts } from "../shared/bumps.js";
 import { createBananaMaker, stepBananas, SEED_COUNT } from "../shared/hazards.js";
@@ -53,11 +54,10 @@ export const MAX_PLAYERS = GRID_PLACES;
 /** The server sends everyone an update once every this many steps: 60 / 3 = 20 times a second. */
 export const STEPS_PER_UPDATE = 3;
 
-/** Once the first racer has finished, the others have this many steps left to finish: one minute. */
-export const FINISH_WINDOW_STEPS = 60 * 60;
-
-/** No race lasts longer than this many steps after GO: ten minutes. */
-export const RACE_LIMIT_STEPS = 10 * 60 * 60;
+// The two time limits of a race: two minutes after the first finish, ten
+// minutes after GO. They live in shared/race-time.js, because the page
+// shows the time that is left. They are handed on here for the tests.
+export { FINISH_WINDOW_STEPS, RACE_LIMIT_STEPS };
 
 const NO_KEYS = { gas: false, brake: false, left: false, right: false };
 
@@ -304,7 +304,7 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
      * race, from GO on, the bananas come last.
      *
      * A race is over when every racer has finished, or when its time has
-     * run out: one minute after the first racer finished, and never more
+     * run out: two minutes after the first racer finished, and never more
      * than ten minutes after GO. From then on a racer who has not finished
      * cannot finish any more: their keys do nothing, their kart rolls to a
      * stop, and their laps and clock stay as they were.
@@ -365,7 +365,7 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
           player.racer = after.racers[index];
         });
 
-        // The first racer has just finished: the others have one more minute.
+        // The first racer has just finished: the others have two more minutes.
         if (finishedBeforeThisStep === 0 && finishedSoFar > 0) {
           closesAt = Math.min(closesAt, countdownSteps + 1 + finishWindowSteps);
         }

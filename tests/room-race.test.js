@@ -498,7 +498,7 @@ describe("the end of a race", () => {
 
     // Changed on 13 November 2026: the robot now stops when the host has
     // finished. Before, it went on for two minutes, and the race stayed
-    // "racing" for ever. Now a race is over one minute after the first
+    // "racing" for ever. Now a race is over two minutes after the first
     // finish (see "the time limits of a race" below).
     robotsDrive(room, [host.id], 120, () => kartOf(room, host.id).finished);
 
@@ -534,7 +534,7 @@ describe("the end of a race", () => {
     room.startRace(host.id);
     run(room, COUNTDOWN_STEPS);
     // Changed on 13 November 2026: the robot stops when the host has finished,
-    // because the race would otherwise be over a minute later by itself.
+    // because the race would otherwise be over two minutes later by itself.
     robotsDrive(room, [host.id], 120, () => kartOf(room, host.id).finished);
     expect(room.phase()).toBe("racing");
 
@@ -564,12 +564,14 @@ describe("the time limits of a race", () => {
     return { host, slow };
   }
 
-  it("uses one minute after the first finish, and ten minutes after GO", () => {
-    expect(FINISH_WINDOW_STEPS).toBe(60 * 60);
+  // Two minutes since the evening of 13 November 2026, at Catarina's
+  // request. It was one minute for a few hours, before anyone had played.
+  it("uses two minutes after the first finish, and ten minutes after GO", () => {
+    expect(FINISH_WINDOW_STEPS).toBe(2 * 60 * 60);
     expect(RACE_LIMIT_STEPS).toBe(10 * 60 * 60);
   });
 
-  it("is over exactly one minute after the first racer has finished", () => {
+  it("is over exactly two minutes after the first racer has finished", () => {
     const room = newRoom();
     hostHasFinished(room);
     run(room, FINISH_WINDOW_STEPS - 1);
@@ -672,7 +674,7 @@ describe("the time limits of a race", () => {
     expect(room.snapshot().endsIn).toBe(RACE_LIMIT_STEPS - 10);
 
     robotsDrive(room, [host.id], 120, () => kartOf(room, host.id).finished);
-    expect(room.snapshot().endsIn).toBe(FINISH_WINDOW_STEPS); // the first finish: one minute left
+    expect(room.snapshot().endsIn).toBe(FINISH_WINDOW_STEPS); // the first finish: two minutes left
     run(room, FINISH_WINDOW_STEPS);
     expect(room.phase()).toBe("finished");
     expect(room.snapshot().endsIn).toBe(null);
