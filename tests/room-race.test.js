@@ -3,7 +3,7 @@
 // No network is used here. (The older room tests are in room.test.js.)
 
 import { describe, it, expect } from "vitest";
-import { createRoom } from "../server/room.js";
+import { createRoom, FINISH_WINDOW_STEPS, RACE_LIMIT_STEPS } from "../server/room.js";
 import { readClientMessage } from "../server/messages.js";
 import { COUNTDOWN_STEPS } from "../shared/countdown.js";
 import { stepRacer } from "../shared/race.js";
@@ -56,12 +56,14 @@ function robotKeys(kart, target) {
 /**
  * Lets robots drive the karts of the given players until the room's phase
  * is "finished", or for at most a number of seconds. Gives back the number
- * of steps it ran.
+ * of steps it ran. ("until" was added on 13 November 2026, when races got a
+ * time limit: a test can now stop the robots at a moment of its choosing,
+ * for example when the first kart has finished.)
  */
-function robotsDrive(room, ids, seconds) {
+function robotsDrive(room, ids, seconds, until = () => false) {
   const cornerOf = new Map(ids.map((id) => [id, 0]));
   let steps = 0;
-  while (steps < seconds * 60 && room.phase() !== "finished") {
+  while (steps < seconds * 60 && room.phase() !== "finished" && !until()) {
     for (const id of ids) {
       const kart = kartOf(room, id);
       if (kart === undefined) {
@@ -160,12 +162,18 @@ describe("starting a race", () => {
     expect(kartOf(room, other.id)).toEqual(otherStart);
   });
 
-  it("can be started again by the host after everyone has finished or while a race is on", () => {
+  // Changed on 13 November 2026, at Catarina's request. Before, this test
+  // said the host could also start again "while a race is on", which threw
+  // away the race everyone was driving when Enter was pressed by accident.
+  // Now a race that has begun is driven to its end. The refusal during a
+  // race is tested below, under "who may NOT start a race".
+  it("can be started again by the host once the race is over", () => {
     const room = newRoom();
     const host = room.addPlayer();
     room.startRace(host.id);
-    run(room, COUNTDOWN_STEPS + 60);
-    expect(room.phase()).toBe("racing");
+    run(room, COUNTDOWN_STEPS);
+    robotsDrive(room, [host.id], 120);
+    expect(room.phase()).toBe("finished");
 
     expect(room.startRace(host.id)).toBe(true);
     expect(room.phase()).toBe("countdown");
@@ -217,6 +225,26 @@ describe("who may NOT start a race", () => {
     run(room, 100);
     expect(room.startRace(host.id)).toBe(false);
     expect(room.snapshot().race.countdownSteps).toBe(100);
+  });
+
+  it("refuses the host while a race is being driven, and changes nothing: the race goes on", () => {
+    const room = newRoom();
+    const host = room.addPlayer();
+    const other = room.addPlayer();
+    room.startRace(host.id);
+    room.setKeys(other.id, GAS);
+    run(room, COUNTDOWN_STEPS + 60);
+    expect(room.phase()).toBe("racing");
+    const before = room.snapshot();
+
+    expect(room.startRace(host.id)).toBe(false);
+    expect(room.snapshot()).toEqual(before);
+    expect(room.phase()).toBe("racing");
+
+    // Nobody was sent back to the grid: the clocks run on from where they were.
+    run(room, 1);
+    expect(kartOf(room, other.id).steps).toBe(61);
+    expect(kartOf(room, other.id).x).toBeGreaterThan(before.karts.find((kart) => kart.id === other.id).x);
   });
 });
 
@@ -392,6 +420,13 @@ describe("joining while a race is on", () => {
     const { room, host } = roomWithRace();
     const newcomer = room.addPlayer();
 
+    // Changed on 13 November 2026: the next race can only start once this
+    // one is over, so the host first drives it to the end. (Before, the
+    // host started the next race in the middle of this one.)
+    expect(room.startRace(host.id)).toBe(false);
+    robotsDrive(room, [host.id], 120);
+    expect(room.phase()).toBe("finished");
+
     expect(room.startRace(host.id)).toBe(true);
     const update = room.snapshot();
     expect(update.race.watching).toEqual([]);
@@ -461,7 +496,11 @@ describe("the end of a race", () => {
     room.startRace(host.id);
     run(room, COUNTDOWN_STEPS);
 
-    robotsDrive(room, [host.id], 120);
+    // Changed on 13 November 2026: the robot now stops when the host has
+    // finished. Before, it went on for two minutes, and the race stayed
+    // "racing" for ever. Now a race is over one minute after the first
+    // finish (see "the time limits of a race" below).
+    robotsDrive(room, [host.id], 120, () => kartOf(room, host.id).finished);
 
     expect(kartOf(room, host.id).finished).toBe(true);
     expect(kartOf(room, slow.id).finished).toBe(false);
@@ -494,11 +533,156 @@ describe("the end of a race", () => {
     const slow = room.addPlayer();
     room.startRace(host.id);
     run(room, COUNTDOWN_STEPS);
-    robotsDrive(room, [host.id], 120);
+    // Changed on 13 November 2026: the robot stops when the host has finished,
+    // because the race would otherwise be over a minute later by itself.
+    robotsDrive(room, [host.id], 120, () => kartOf(room, host.id).finished);
     expect(room.phase()).toBe("racing");
 
     room.removePlayer(slow.id);
     run(room, 1);
     expect(room.phase()).toBe("finished");
+  });
+});
+
+// Added on 13 November 2026. Since the host can no longer start over in the
+// middle of a race, a race has to end by itself, or one racer who walks away
+// from the keyboard would hold the room for ever.
+describe("the time limits of a race", () => {
+  /** A room whose races have short time limits, to reach the end of the time quickly. */
+  function quickRoom(limits) {
+    return createRoom(TEST_OVAL, TEST_DRIVER, undefined, null, limits);
+  }
+
+  /** A race where the host has just finished and "slow" has never touched a key. */
+  function hostHasFinished(room) {
+    const host = room.addPlayer();
+    const slow = room.addPlayer();
+    room.startRace(host.id);
+    run(room, COUNTDOWN_STEPS);
+    robotsDrive(room, [host.id], 120, () => kartOf(room, host.id).finished);
+    expect(kartOf(room, host.id).finished).toBe(true);
+    return { host, slow };
+  }
+
+  it("uses one minute after the first finish, and ten minutes after GO", () => {
+    expect(FINISH_WINDOW_STEPS).toBe(60 * 60);
+    expect(RACE_LIMIT_STEPS).toBe(10 * 60 * 60);
+  });
+
+  it("is over exactly one minute after the first racer has finished", () => {
+    const room = newRoom();
+    hostHasFinished(room);
+    run(room, FINISH_WINDOW_STEPS - 1);
+    expect(room.phase()).toBe("racing");
+    run(room, 1);
+    expect(room.phase()).toBe("finished");
+  });
+
+  it("does not give more time when a second racer finishes", () => {
+    const room = quickRoom({ finishWindowSteps: 100 });
+    const host = room.addPlayer();
+    const second = room.addPlayer();
+    const slow = room.addPlayer();
+    room.startRace(host.id);
+    run(room, COUNTDOWN_STEPS);
+    // Two robots race. They do not finish in the same step, and the third kart never moves.
+    robotsDrive(room, [host.id, second.id], 120);
+    const [first, last] = [kartOf(room, host.id), kartOf(room, second.id)].sort((a, b) => a.steps - b.steps);
+    expect(first.finished).toBe(true);
+    expect(kartOf(room, slow.id).finished).toBe(false);
+    // The race was over 100 steps after the FIRST finish, whether or not the second robot made it.
+    expect(room.snapshot().race.countdownSteps).toBe(COUNTDOWN_STEPS + first.steps + 100);
+    expect(last.finished ? last.steps : Infinity).toBeGreaterThan(first.steps);
+  });
+
+  it("gives a racer who is out of time no finish: keys do nothing, and laps and clock stay", () => {
+    const room = quickRoom({ finishWindowSteps: 120 });
+    const { slow } = hostHasFinished(room);
+    room.takeFinishes(); // the host's own finish
+    room.setKeys(slow.id, GAS);
+    run(room, 119);
+    expect(room.phase()).toBe("racing");
+    expect(speedOf(kartOf(room, slow.id))).toBeGreaterThan(100); // still allowed to drive
+    run(room, 1);
+    expect(room.phase()).toBe("finished");
+
+    const atTheEnd = kartOf(room, slow.id);
+    run(room, 600); // the gas is still held
+    const later = kartOf(room, slow.id);
+    expect(later.finished).toBe(false);
+    expect(later.steps).toBe(atTheEnd.steps); // the clock stopped
+    expect(later.lapsDone).toBe(atTheEnd.lapsDone);
+    expect(later.passed).toBe(atTheEnd.passed);
+    expect(speedOf(later)).toBe(0); // the kart rolled to a stop
+    expect(room.takeFinishes()).toEqual([]); // nothing to save for them
+  });
+
+  it("is over ten minutes after GO at the latest, even if nobody finishes", () => {
+    const room = quickRoom({ raceLimitSteps: 500 });
+    const host = room.addPlayer();
+    room.startRace(host.id);
+    run(room, COUNTDOWN_STEPS + 499);
+    expect(room.phase()).toBe("racing");
+    run(room, 1);
+    expect(room.phase()).toBe("finished");
+    expect(kartOf(room, host.id).finished).toBe(false);
+    expect(room.takeFinishes()).toEqual([]);
+  });
+
+  it("lets the host start the next race after the time is up, with everyone in it", () => {
+    const room = quickRoom({ raceLimitSteps: 300 });
+    const host = room.addPlayer();
+    const other = room.addPlayer();
+    room.startRace(host.id);
+    run(room, COUNTDOWN_STEPS + 300);
+    expect(room.phase()).toBe("finished");
+    expect(room.startRace(other.id)).toBe(false); // still only the host
+    expect(room.startRace(host.id)).toBe(true);
+    run(room, COUNTDOWN_STEPS);
+    room.setKeys(other.id, GAS);
+    run(room, 30);
+    expect(room.phase()).toBe("racing");
+    expect(kartOf(room, other.id).steps).toBe(30); // the new race has its own clock and its own time limit
+  });
+
+  it("tells the browsers how many steps the race still lasts, only while it is driven", () => {
+    const room = newRoom();
+    const host = room.addPlayer();
+    room.addPlayer();
+    expect(room.snapshot().endsIn).toBe(null); // open
+    room.startRace(host.id);
+    run(room, COUNTDOWN_STEPS - 1);
+    expect(room.snapshot().endsIn).toBe(null); // 3, 2, 1
+    run(room, 1);
+    expect(room.snapshot().endsIn).toBe(RACE_LIMIT_STEPS); // GO
+    run(room, 10);
+    expect(room.snapshot().endsIn).toBe(RACE_LIMIT_STEPS - 10);
+
+    robotsDrive(room, [host.id], 120, () => kartOf(room, host.id).finished);
+    expect(room.snapshot().endsIn).toBe(FINISH_WINDOW_STEPS); // the first finish: one minute left
+    run(room, FINISH_WINDOW_STEPS);
+    expect(room.phase()).toBe("finished");
+    expect(room.snapshot().endsIn).toBe(null);
+  });
+
+  it("refuses time limits that are not whole numbers of steps above zero", () => {
+    for (const bad of [0, -1, 1.5, "60", null, NaN, Infinity]) {
+      expect(() => quickRoom({ finishWindowSteps: bad })).toThrow(RangeError);
+      expect(() => quickRoom({ raceLimitSteps: bad })).toThrow(RangeError);
+    }
+  });
+});
+
+describe("the count of checkpoints in the update", () => {
+  it("starts at -1 on the oval, whose grid is behind the line, and has gone up by every checkpoint of every lap at the finish", () => {
+    const room = newRoom();
+    const host = room.addPlayer();
+    room.startRace(host.id);
+    expect(TEST_OVAL.startsBehindLine).toBe(true);
+    expect(kartOf(room, host.id).passed).toBe(-1);
+    run(room, COUNTDOWN_STEPS);
+    robotsDrive(room, [host.id], 120);
+    expect(kartOf(room, host.id).finished).toBe(true);
+    expect(kartOf(room, host.id).passed).toBe(TEST_OVAL.checkpoints.length * TEST_OVAL.laps);
   });
 });

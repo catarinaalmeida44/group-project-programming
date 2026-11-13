@@ -26,15 +26,22 @@
 //   "countdown"  the host started a race. Every kart is on the starting grid
 //                and 3, 2, 1 is being counted. Keys do nothing.
 //   "racing"     GO! Everyone who was in the room at the start is racing.
-//   "finished"   every racer has finished. The room waits for the next start.
+//   "finished"   the race is over: every racer has finished, or the time
+//                ran out. The room waits for the next start.
 //
 // The host is the player who has been in the room longest. Only the host
-// can start a race. Someone who joins while a race is on does not get a kart
-// on the track: they watch, and join in at the next start.
+// can start a race, and only when no race is on: a race that has begun is
+// driven to its end. Someone who joins while a race is on does not get a
+// kart on the track: they watch, and join in at the next start.
+//
+// So that a race always does end, it has two time limits. Once the first
+// racer has finished, the others have FINISH_WINDOW_STEPS left. And no race
+// lasts longer than RACE_LIMIT_STEPS after GO. A racer who has not finished
+// when the time runs out gets no result.
 
 import { fastestLapSteps } from "../shared/laps.js";
 import { createRacer, stepRacer, rollRacer } from "../shared/race.js";
-import { countdownAt } from "../shared/countdown.js";
+import { countdownAt, COUNTDOWN_STEPS } from "../shared/countdown.js";
 import { GRID_PLACES } from "../shared/grid.js";
 import { bumpKarts } from "../shared/bumps.js";
 import { createBananaMaker, stepBananas, SEED_COUNT } from "../shared/hazards.js";
@@ -45,6 +52,12 @@ export const MAX_PLAYERS = GRID_PLACES;
 
 /** The server sends everyone an update once every this many steps: 60 / 3 = 20 times a second. */
 export const STEPS_PER_UPDATE = 3;
+
+/** Once the first racer has finished, the others have this many steps left to finish: one minute. */
+export const FINISH_WINDOW_STEPS = 60 * 60;
+
+/** No race lasts longer than this many steps after GO: ten minutes. */
+export const RACE_LIMIT_STEPS = 10 * 60 * 60;
 
 const NO_KEYS = { gas: false, brake: false, left: false, right: false };
 
@@ -64,16 +77,25 @@ export function randomSeed() {
  *              A test gives a function that always answers the same number,
  *              to get the same bananas every time. Left out, the races of
  *              this room have no bananas.
+ *   limits     the two time limits of a race, in steps: { finishWindowSteps,
+ *              raceLimitSteps }. Left out, they are FINISH_WINDOW_STEPS and
+ *              RACE_LIMIT_STEPS, as in every online room. A test gives
+ *              shorter ones, to reach the end of the time quickly.
  */
-export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed = null) {
+export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed = null, limits = {}) {
   if (pickSeed !== null && typeof pickSeed !== "function") {
     throw new TypeError("createRoom: pickSeed must be a function that gives a seed, or left out");
+  }
+  const { finishWindowSteps = FINISH_WINDOW_STEPS, raceLimitSteps = RACE_LIMIT_STEPS } = limits ?? {};
+  if (![finishWindowSteps, raceLimitSteps].every((steps) => Number.isInteger(steps) && steps > 0)) {
+    throw new RangeError("createRoom: the time limits of a race must be whole numbers of steps above zero");
   }
   const players = new Map(); // player number -> { id, place, racer, keys, racing }
   let nextId = 1;
   let step = 0;
   let phase = "open"; //      "open", "countdown", "racing" or "finished"
   let countdownSteps = 0; //  steps since the host started the race
+  let closesAt = 0; //        when countdownSteps reaches this, the race is over, whoever is still driving
   let finishedSoFar = 0; //   how many racers have finished the race that is on
   let newFinishes = []; //    the finishes that takeFinishes() has not handed out yet
   let bananas = []; //        the banana peels on the road: [{ id, x, y }]. Only ever during a race
@@ -178,14 +200,16 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
      * back to its starting place with its laps and clock at zero, the
      * bananas of the race before are cleared away, and the countdown
      * begins. Says false, and changes nothing, unless the player asking is
-     * the host. Also says false while a countdown is running, so that
-     * pressing the key twice does not start the countdown over.
+     * the host. Also says false while a race is on, from the countdown
+     * until the race is over: pressing the key by accident must not throw
+     * away the race everyone is driving. (Until 13 November 2026 the host
+     * could start over in the middle of a race.)
      *
      * This is also the moment the room picks the seed of the race's bananas.
      * Nothing given to startRace can choose it.
      */
     startRace(id) {
-      if (!players.has(id) || id !== hostId() || phase === "countdown") {
+      if (!players.has(id) || id !== hostId() || phase === "countdown" || phase === "racing") {
         return false;
       }
       // (A seed that is not a whole number is refused here with an error, before anything changes.)
@@ -193,6 +217,7 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
       bananas = [];
       phase = "countdown";
       countdownSteps = 0;
+      closesAt = COUNTDOWN_STEPS + raceLimitSteps;
       finishedSoFar = 0;
       for (const player of players.values()) {
         player.racing = true;
@@ -277,6 +302,12 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
      *
      * In both cases the karts on the track then bump into each other. In a
      * race, from GO on, the bananas come last.
+     *
+     * A race is over when every racer has finished, or when its time has
+     * run out: one minute after the first racer finished, and never more
+     * than ten minutes after GO. From then on a racer who has not finished
+     * cannot finish any more: their keys do nothing, their kart rolls to a
+     * stop, and their laps and clock stay as they were.
      */
     step() {
       step++;
@@ -295,10 +326,18 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
       }
 
       const inTheRace = racers();
+      const raceIsOver = phase === "finished";
       if (countdownAt(countdownSteps).racing) {
         const finishedBeforeThisStep = finishedSoFar;
         for (const player of inTheRace) {
           const wasFinished = player.racer.progress.finished;
+          if (raceIsOver && !wasFinished) {
+            // Out of time. The kart rolls to a stop (and a spin runs out),
+            // but the laps and the clock are put back as they were.
+            const rolled = stepRacer(track, player.racer, NO_KEYS, character);
+            player.racer = { ...rolled, progress: player.racer.progress };
+            continue;
+          }
           player.racer = stepRacer(track, player.racer, player.keys, character);
           const { finished, steps, lapSteps } = player.racer.progress;
           if (finished && !wasFinished) {
@@ -325,10 +364,15 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
         inTheRace.forEach((player, index) => {
           player.racer = after.racers[index];
         });
+
+        // The first racer has just finished: the others have one more minute.
+        if (finishedBeforeThisStep === 0 && finishedSoFar > 0) {
+          closesAt = Math.min(closesAt, countdownSteps + 1 + finishWindowSteps);
+        }
       }
       countdownSteps++;
 
-      if (inTheRace.every((player) => player.racer.progress.finished)) {
+      if (inTheRace.every((player) => player.racer.progress.finished) || countdownSteps >= closesAt) {
         phase = "finished";
       } else if (countdownAt(countdownSteps).racing) {
         phase = "racing";
@@ -354,6 +398,10 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
      * phase the room is in, how far the countdown is, who the host is, and
      * who is watching without a kart. "bananas" lists the banana peels on
      * the road: none while the room is open or during the countdown.
+     * "endsIn" is how many steps are left until the race is over for
+     * everyone, while one is being driven, and null at any other time.
+     * "passed" is a kart's count of checkpoints (shared/laps.js): the page
+     * uses it to show who is in front and which checkpoint comes next.
      */
     snapshot() {
       const everyone = [...players.values()];
@@ -378,6 +426,7 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
           angle: round(racer.kart.angle, 3),
           vx: round(racer.kart.vx, 1),
           vy: round(racer.kart.vy, 1),
+          passed: racer.progress.passed,
           lapsDone: racer.progress.lapsDone,
           steps: racer.progress.steps,
           lapSteps: racer.progress.lapSteps,
@@ -385,6 +434,7 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
           spin: racer.spinSteps,
         })),
         bananas: bananas.map(({ id, x, y }) => ({ id, x: round(x, 1), y: round(y, 1) })),
+        endsIn: phase === "racing" ? Math.max(0, closesAt - countdownSteps) : null,
       };
     },
   };
