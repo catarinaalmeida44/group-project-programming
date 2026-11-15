@@ -18,7 +18,7 @@
 
 import { createCountdownRace, stepCountdownRace, countdownAt } from "../shared/countdown.js";
 import { STEP_SECONDS } from "../shared/physics.js";
-import { currentLap } from "../shared/laps.js";
+import { currentLap, nextCheckpoint } from "../shared/laps.js";
 import { TEST_DRIVER } from "../shared/characters.js";
 import { chooseTrack } from "./track-choice.js";
 import { storeysOf } from "../shared/tracks/index.js";
@@ -28,6 +28,7 @@ import { introShare, startLights, spinTurnOf } from "./scene.js";
 import { lookFromChoice, readChoice } from "./kart-choice.js";
 import { lookOfTrack } from "./track-looks.js";
 import { routePoints, watchForWrongWay, WRONG_WAY_MESSAGE } from "./route.js";
+import { watchForMissedCheckpoint, missedCheckpointMessage } from "./checkpoints.js";
 import { SEED_COUNT, SPIN_STEPS } from "../shared/hazards.js";
 import { createHud } from "./hud.js";
 import { followTarget, easeTowards, nextView } from "./camera.js";
@@ -59,6 +60,8 @@ function newSeed() {
 
 // The way round the track, for the "wrong way" warning (route.js).
 const wrongWay = watchForWrongWay(routePoints(track, lookOfTrack(track).route));
+// Notices when the kart has left a checkpoint out, so the page can say so (checkpoints.js).
+const missedCheckpoint = watchForMissedCheckpoint(track);
 
 // ---- The state of the race ----
 let race = createCountdownRace(track, newSeed()); // the racer, how far the countdown is, and the bananas
@@ -148,14 +151,23 @@ function frame(now) {
   // round and round while it spins after a banana. (The rules do not turn
   // it: after the spin it points where it pointed before.)
   const shownKart = { ...racer.kart, look: myLook, spinTurn: spinTurnOf(racer.spinSteps, SPIN_STEPS) };
-  draw(view, shownKart, camera, steer, [], { ...sceneFor(race.countdownSteps, started), bananas: race.bananas });
+  draw(view, shownKart, camera, steer, [], {
+    ...sceneFor(race.countdownSteps, started),
+    bananas: race.bananas,
+    // While the race is on, the next checkpoint is lit up in yellow.
+    nextCheckpoint: keysWork ? nextCheckpoint(progress, track) : undefined,
+  });
+
+  // A checkpoint that was left out, or driving against the arrows for a
+  // moment, brings up a warning. A missed checkpoint comes first: going
+  // back for it means driving against the arrows.
+  const missed = keysWork ? missedCheckpoint(racer.kart, progress.passed) : null;
+  const goingWrongWay = keysWork && !spinning && wrongWay(racer.kart, now / 1000);
+  const warning = missed !== null ? missedCheckpointMessage(track, missed) : goingWrongWay ? WRONG_WAY_MESSAGE : null;
 
   // The countdown is shown as one big number in the middle of the track.
   const showingCountdown = started && countdown.label !== "" && !progress.finished;
-  messageBox.classList.toggle("countdown", showingCountdown);
-
-  // Driving against the arrows for a moment brings up a warning.
-  const goingWrongWay = keysWork && !spinning && wrongWay(racer.kart, now / 1000);
+  messageBox.classList.toggle("countdown", showingCountdown && warning === null);
 
   showHud({
     lap: currentLap(progress, track),
@@ -163,7 +175,7 @@ function frame(now) {
     steps: progress.steps,
     lapSteps: progress.lapSteps,
     view,
-    message: goingWrongWay ? WRONG_WAY_MESSAGE : messageFor(progress, countdown),
+    message: warning ?? messageFor(progress, countdown),
   });
   requestAnimationFrame(frame);
 }

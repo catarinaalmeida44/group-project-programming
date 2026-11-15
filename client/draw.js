@@ -29,6 +29,7 @@ import { paintProp, paintPropFromAbove, PROP_HEIGHT } from "./props.js";
 import { paintKart, viewerBehind, viewerAbove } from "./kart-paint.js";
 import { lookOf, shade } from "./kart-shape.js";
 import { lookOfTrack, propsOfTrack } from "./track-looks.js";
+import { checkpointPieces } from "./checkpoints.js";
 import { tileKindAt } from "../shared/track.js";
 import { gridSpot, GRID_PLACES } from "../shared/grid.js";
 
@@ -44,6 +45,11 @@ const CAMERA_SWING = 6.5;
 const STEER_QUICKNESS = 14;
 /** The start gantry: how high its beam hangs over the road, how tall the beam is, how thick a post is and how wide the whole thing may be, in units. */
 const GANTRY = { clear: 40, tall: 13, post: 3, widest: 150 };
+/** A tree, lamp or flag at least this tall (in units) fades away over this many units as it passes the kart. */
+const TALL_FROM = 30;
+const FADE_OVER = 45;
+/** The curtain of yellow light on the next checkpoint: how tall it is in units, and its colour as red, green, blue. */
+const LIGHT = { tall: 15, colour: "255, 210, 40" };
 /** Further ahead than this, a building is painted as plain walls, without windows. */
 const WINDOWS_TO = 900;
 /** At most this many puffs of smoke and dust at once. */
@@ -73,6 +79,9 @@ const MINIMAP_MARGIN = 10;
  *                      it is down behind the kart. Counted up during 3, 2, 1
  *             lights   the start lights: { red: how many are on, green: true or false }
  *             names    a Map from a kart's number to the name shown above it
+ *             nextCheckpoint  the number of the checkpoint the player has to
+ *                      reach next. It is lit up with a low curtain of yellow
+ *                      light, and marked on the small map (checkpoints.js)
  *
  * A kart may carry "spinTurn": extra turning, in radians, for the picture
  * only. A kart that slipped on a banana is drawn spinning with it.
@@ -88,6 +97,8 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
   const props = propsOfTrack(track, look, storeys);
   const gantry = gantryOf(track);
   const mini = paintMiniPicture(ground.picture, track);
+  // Every checkpoint as a line across the road, one piece per square of the map.
+  const checkpointLights = track.checkpoints.map((checkpoint, number) => checkpointPieces(track, number));
 
   // What the painter remembers from one picture to the next.
   let lastTime = null; //   when the last picture was drawn
@@ -103,6 +114,8 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
     const wanted = Math.min(Math.max(Number(steer) || 0, -1), 1);
     steerShown += (wanted - steerShown) * (1 - Math.exp(-STEER_QUICKNESS * frameSeconds));
     const bananas = Array.isArray(scene.bananas) ? scene.bananas : [];
+    // The pieces of the next checkpoint, to light up. None when the page names no checkpoint.
+    const light = Number.isInteger(scene.nextCheckpoint) ? (checkpointLights[scene.nextCheckpoint] ?? []) : [];
 
     movePuffs(puffs, frameSeconds);
     for (const each of [kart, ...others]) {
@@ -115,21 +128,38 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
     context.fillRect(0, 0, SCREEN.width, SCREEN.height);
 
     if (view === "chase") {
-      drawRaceView(kart, others, bananas, scene, frameSeconds, seconds);
+      drawRaceView(kart, others, bananas, scene, frameSeconds, seconds, light);
     } else {
       swing = null; // when the race view comes back, it starts straight behind the kart
-      drawFromAbove(view, kart, camera, others, bananas);
+      drawFromAbove(view, kart, camera, others, bananas, light, seconds);
     }
 
     // The views that show only part of the track get a small map in the corner.
     if (view !== "map") {
-      drawMinimap(kart, others, bananas);
+      drawMinimap(kart, others, bananas, light, seconds);
     }
   };
 
+  /** How strongly the light on the next checkpoint glows at this moment: it pulses gently, from 0 to 1. */
+  function glowAt(seconds) {
+    return 0.5 + 0.5 * Math.sin(seconds * 5);
+  }
+
+  /** The next checkpoint in a view from above: a glowing yellow line across the road. */
+  function strokeLight(light, seconds, width) {
+    context.strokeStyle = `rgba(${LIGHT.colour}, ${0.55 + 0.35 * glowAt(seconds)})`;
+    context.lineWidth = width;
+    context.beginPath();
+    for (const piece of light) {
+      context.moveTo(piece.from.x, piece.from.y);
+      context.lineTo(piece.to.x, piece.to.y);
+    }
+    context.stroke();
+  }
+
   // ---- The race view ----
 
-  function drawRaceView(kart, others, bananas, scene, frameSeconds, seconds) {
+  function drawRaceView(kart, others, bananas, scene, frameSeconds, seconds, light) {
     // The camera comes down from high above the grid while 3, 2, 1 is counted.
     const intro = typeof scene.intro === "number" ? Math.min(Math.max(scene.intro, 0), 1) : 1;
     const eased = intro * intro * (3 - 2 * intro); // slow at both ends, quick in the middle
@@ -151,15 +181,10 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
     const near = chaseRow(SCREEN.height, settings).ahead;
     const things = [];
 
-    for (const shape of buildingsInView(buildings, spot, settings, SCREEN)) {
-      // A wall between the camera and the kart would fill the screen. It is
-      // left out, as if the camera could see through it.
-      const beside = shape.points.every(([x]) => x < SCREEN.width / 2 - 170) || shape.points.every(([x]) => x > SCREEN.width / 2 + 170);
-      if (shape.kind === "side" && shape.ahead < 6 && !beside) {
-        continue;
-      }
-      things.push(shape);
-    }
+    // The buildings. buildings.js leaves out a wall that stands between the
+    // camera and the kart, and shows a wall beside the camera for as long
+    // as any of it can be seen.
+    things.push(...buildingsInView(buildings, spot, settings, SCREEN));
 
     const standing = (kind, x, y, scale, more = {}) => {
       const seen = seenFromKart(spot, x, y);
@@ -175,9 +200,15 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
       if (place.x < -reach || place.x > SCREEN.width + reach || place.y - tall > SCREEN.height) {
         return;
       }
+      // A tall thing beside the road (a tree, a lamp) fades away while it
+      // passes the kart. Without this it would vanish in one go, with its
+      // top still on the screen.
+      const isTall = (PROP_HEIGHT[kind] ?? 20) >= TALL_FROM;
+      const fade = isTall ? Math.min(1, (seen.ahead - (near + 6)) / FADE_OVER) : 1;
       things.push({
         kind,
         scale,
+        fade,
         x: place.x,
         y: place.y,
         unit: place.scale,
@@ -218,6 +249,29 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
         row: Math.floor(gantry.middle.y / size),
       });
     }
+    // The light on the next checkpoint: one low curtain for each square it crosses.
+    for (const piece of light) {
+      let a = seenFromKart(spot, piece.from.x, piece.from.y);
+      let b = seenFromKart(spot, piece.to.x, piece.to.y);
+      const nearest = near + 2;
+      if ((a.ahead < nearest && b.ahead < nearest) || Math.min(a.ahead, b.ahead) > settings.viewAhead) {
+        continue;
+      }
+      // A piece that reaches behind the bottom of the screen is cut there.
+      const cut = (behind, ahead) => {
+        const share = (nearest - behind.ahead) / (ahead.ahead - behind.ahead);
+        return { ahead: nearest, sideways: behind.sideways + share * (ahead.sideways - behind.sideways) };
+      };
+      if (a.ahead < nearest) {
+        a = cut(a, b);
+      } else if (b.ahead < nearest) {
+        b = cut(b, a);
+      }
+      const ends = [chasePoint(a.ahead, a.sideways, settings), chasePoint(b.ahead, b.sideways, settings)];
+      if (ends[0] !== null && ends[1] !== null) {
+        things.push({ kind: "light", ends, ahead: (a.ahead + b.ahead) / 2, column: piece.column, row: piece.row });
+      }
+    }
 
     // Furthest first. The squares of the map make this easy to get right:
     // seen from the camera's own square, a thing in a row of squares
@@ -244,8 +298,12 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
         paintNameAbove(thing, scene.names);
       } else if (thing.kind === "gantry") {
         paintGantry(spot, settings, near, scene.lights);
+      } else if (thing.kind === "light") {
+        paintLight(thing, seconds);
       } else {
+        context.globalAlpha = thing.fade;
         paintProp(context, thing.kind, thing.x, thing.y, thing.unit, thing.scale, seconds, thing.label);
+        context.globalAlpha = 1;
       }
     }
 
@@ -282,7 +340,7 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
       }
       // The side of a low bank, in two blocks of two colours for every
       // square of the map, like the painted blocks that line a circuit.
-      const [footA, footB, topB, topA] = points;
+      const [footA, footB, topB, topA] = piece.corners;
       const halfway = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
       const footMiddle = halfway(footA, footB);
       const topMiddle = halfway(topA, topB);
@@ -307,12 +365,13 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
 
     // Windows: a long band of glass on every storey, as on the campus
     // buildings. Each band is cut from the side at the right heights.
-    const onScreen = Math.abs(points[0][1] - points[3][1]);
+    // (The four true corners of the side: its feet may lie below the screen.)
+    const [footA, footB, topB, topA] = piece.corners;
+    const onScreen = Math.abs(footA[1] - topA[1]);
     if (ahead > WINDOWS_TO || onScreen < 12 || !(buildings.unitsPerStorey > 0)) {
       return;
     }
     const storey = buildings.unitsPerStorey;
-    const [footA, footB, topB, topA] = points;
     const atHeight = (foot, top, height) => {
       const share = (height - piece.bottom) / (piece.top - piece.bottom);
       return [foot[0] + (top[0] - foot[0]) * share, foot[1] + (top[1] - foot[1]) * share];
@@ -344,6 +403,32 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
       context.lineTo(middleTop[0], middleTop[1]);
       context.stroke();
     }
+  }
+
+  /**
+   * One piece of the curtain of light on the next checkpoint: see-through
+   * yellow from the road up, with a bright line along its top. It shows
+   * the player where to drive through. It is only light: karts pass it.
+   */
+  function paintLight(thing, seconds) {
+    const [a, b] = thing.ends;
+    const glow = glowAt(seconds);
+    const topA = a.y - LIGHT.tall * a.scale;
+    const topB = b.y - LIGHT.tall * b.scale;
+    context.beginPath();
+    context.moveTo(a.x, a.y);
+    context.lineTo(b.x, b.y);
+    context.lineTo(b.x, topB);
+    context.lineTo(a.x, topA);
+    context.closePath();
+    context.fillStyle = `rgba(${LIGHT.colour}, ${0.2 + 0.14 * glow})`;
+    context.fill();
+    context.strokeStyle = `rgba(${LIGHT.colour}, ${0.7 + 0.3 * glow})`;
+    context.lineWidth = Math.min(6, Math.max(1.5, ((a.scale + b.scale) / 2) * 0.6));
+    context.beginPath();
+    context.moveTo(a.x, topA);
+    context.lineTo(b.x, topB);
+    context.stroke();
   }
 
   /** The name of a player above their kart, if we know it and the kart is near enough to read it. */
@@ -428,7 +513,7 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
 
   // ---- The two views from above ----
 
-  function drawFromAbove(view, kart, camera, others, bananas) {
+  function drawFromAbove(view, kart, camera, others, bananas, light, seconds) {
     context.save();
     if (view === "follow") {
       // Put the camera's spot in the middle of the screen and zoom in around it.
@@ -450,6 +535,7 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
       context.lineTo(gantry.right.x, gantry.right.y);
       context.stroke();
     }
+    strokeLight(light, seconds, view === "follow" ? 5 : 9);
     for (const banana of bananas) {
       paintPropFromAbove(context, "banana", banana.x, banana.y);
     }
@@ -467,7 +553,7 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
 
   // ---- The small map in the corner ----
 
-  function drawMinimap(kart, others, bananas) {
+  function drawMinimap(kart, others, bananas, light, seconds) {
     const scale = mini.width / track.width;
     const left = SCREEN.width - mini.width - MINIMAP_MARGIN;
     const top = MINIMAP_MARGIN;
@@ -481,6 +567,16 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
     context.globalAlpha = 0.92;
     context.drawImage(mini, left, top);
     context.globalAlpha = 1;
+
+    // The next checkpoint, as a glowing yellow line on the small map.
+    if (light.length > 0) {
+      context.save();
+      context.translate(left, top);
+      context.scale(scale, scale);
+      context.lineCap = "round";
+      strokeLight(light, seconds, 3.5 / scale);
+      context.restore();
+    }
 
     for (const banana of bananas) {
       context.fillStyle = "#ffd23f";

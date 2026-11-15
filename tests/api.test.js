@@ -338,6 +338,154 @@ describe("signing out", () => {
   });
 });
 
+// Added on 13 November 2026.
+describe("changing a password", () => {
+  const change = (cookie, body) => ask("POST", "/api/change-password", { body, cookie });
+
+  it("changes the signed-in player's password and keeps this browser signed in", async () => {
+    const cookie = await signUp("Ana", "12345678");
+    const answer = await change(cookie, { currentPassword: "12345678", newPassword: "a-new-password" });
+    expect(answer.status, answer.body).toBe(200);
+    expect(answer.json).toEqual({ ok: true });
+    expect(answer.setCookie).toBe(null); // the ticket this browser has goes on working
+    expect((await ask("GET", "/api/me", { cookie })).json).toMatchObject({ signedIn: true, username: "Ana" });
+
+    expect((await ask("POST", "/api/login", { body: { username: "Ana", password: "a-new-password" } })).status).toBe(200);
+    expect((await ask("POST", "/api/login", { body: { username: "Ana", password: "12345678" } })).status).toBe(401);
+  });
+
+  it("signs the player out on their other browsers", async () => {
+    const laptop = await signUp("Ana", "12345678");
+    const phone = (await ask("POST", "/api/login", { body: { username: "Ana", password: "12345678" } })).cookie;
+    await change(laptop, { currentPassword: "12345678", newPassword: "a-new-password" });
+    expect((await ask("GET", "/api/me", { cookie: laptop })).json.signedIn).toBe(true);
+    expect((await ask("GET", "/api/me", { cookie: phone })).json.signedIn).toBe(false);
+  });
+
+  it("never sends a password or its scrambled form back", async () => {
+    const cookie = await signUp("Ana", "12345678");
+    const answer = await change(cookie, { currentPassword: "12345678", newPassword: "a-new-password" });
+    expect(answer.body).not.toContain("a-new-password");
+    expect(answer.body).not.toContain("12345678");
+    expect(answer.body).not.toContain("scrambled");
+  });
+
+  it("refuses when nobody is signed in, also with a made-up ticket", async () => {
+    await signUp("Ana", "12345678");
+    for (const cookie of [undefined, `session=${"A".repeat(43)}`, "session=abc"]) {
+      const answer = await change(cookie, { currentPassword: "12345678", newPassword: "a-new-password" });
+      expect(answer.status).toBe(401);
+      expect(answer.json.code).toBe("not_signed_in");
+    }
+    expect((await ask("POST", "/api/login", { body: { username: "Ana", password: "12345678" } })).status).toBe(200);
+  });
+
+  it("refuses a wrong or missing current password", async () => {
+    const cookie = await signUp("Ana", "12345678");
+    for (const currentPassword of ["wrong-password", undefined, null, ["12345678"]]) {
+      const answer = await change(cookie, { currentPassword, newPassword: "a-new-password" });
+      expect(answer.status, String(currentPassword)).toBe(401);
+      expect(answer.json.code).toBe("wrong_login");
+    }
+    expect((await store.findPlayerByKey("ana")).passwordHash).toBe("scrambled(12345678)");
+  });
+
+  it("refuses a new password that breaks the rules, or is the one the player already has", async () => {
+    const cookie = await signUp("Ana", "12345678");
+    for (const newPassword of ["short", undefined, 12345678, "x".repeat(201)]) {
+      const answer = await change(cookie, { currentPassword: "12345678", newPassword });
+      expect(answer.status, String(newPassword).slice(0, 20)).toBe(400);
+      expect(answer.json.code).toBe("invalid_password");
+    }
+    const same = await change(cookie, { currentPassword: "12345678", newPassword: "12345678" });
+    expect(same.status).toBe(400);
+    expect(same.json.code).toBe("same_password");
+    expect((await store.findPlayerByKey("ana")).passwordHash).toBe("scrambled(12345678)");
+  });
+
+  it("can only ever change the password of the account the ticket belongs to", async () => {
+    const anaCookie = await signUp("Ana", "12345678");
+    await signUp("Rui", "rui-password");
+    const rui = await store.findPlayerByKey("rui");
+    // Ana is signed in and names Rui in every way she can think of, with Rui's real password.
+    const answer = await change(anaCookie, {
+      currentPassword: "rui-password",
+      newPassword: "anas-choice-for-rui",
+      username: "Rui",
+      playerId: rui.id,
+      id: rui.id,
+    });
+    expect(answer.status).toBe(401); // it is not ANA's password
+    expect((await store.findPlayerByKey("rui")).passwordHash).toBe("scrambled(rui-password)");
+    expect((await store.findPlayerByKey("ana")).passwordHash).toBe("scrambled(12345678)");
+  });
+
+  it("refuses a request started by a page on another website, a GET, and a form", async () => {
+    const cookie = await signUp("Ana", "12345678");
+    const body = { currentPassword: "12345678", newPassword: "a-new-password" };
+    const foreign = await ask("POST", "/api/change-password", { body, cookie, headers: { Origin: "https://evil.example" } });
+    expect(foreign.status).toBe(403);
+    const link = await ask("GET", "/api/change-password", { cookie });
+    expect(link.status).toBe(405);
+    const form = await ask("POST", "/api/change-password", {
+      body: "currentPassword=12345678&newPassword=a-new-password",
+      cookie,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
+    expect(form.status).toBe(415);
+    expect((await store.findPlayerByKey("ana")).passwordHash).toBe("scrambled(12345678)");
+  });
+
+  it("counts as password work twice: once for checking the old password, once for scrambling the new", async () => {
+    const cookie = await signUp("Ana", "12345678"); // 1 piece of password work
+    // Change back and forth until the whole server has done its 60 pieces for this minute.
+    let current = "12345678";
+    let answer;
+    let changes = 0;
+    do {
+      const next = current === "12345678" ? "a-new-password" : "12345678";
+      answer = await ask("POST", "/api/change-password", {
+        body: { currentPassword: current, newPassword: next },
+        cookie,
+        headers: { "X-Forwarded-For": `10.0.0.${changes}` }, // a different computer each time
+      });
+      if (answer.status === 200) {
+        current = next;
+        changes++;
+      }
+    } while (answer.status === 200 && changes < 100);
+    expect(answer.status).toBe(429);
+    // 1 for the sign-up and 2 for each change makes 59 after 29 changes.
+    // The 30th is refused half-way: its second piece would be number 61.
+    expect(changes).toBe(29);
+    expect(PASSWORD_WORK_PER_MINUTE).toBe(60);
+  });
+
+  it("refuses more than ten tries a minute from one computer, then allows them again", async () => {
+    const cookie = await signUp("Ana", "12345678");
+    const body = { currentPassword: "12345678", newPassword: "short" }; // refused by the rules each time, so nothing changes
+    for (let attempt = 0; attempt < TRIES_PER_MINUTE["/api/change-password"]; attempt++) {
+      expect((await change(cookie, body)).status).toBe(400);
+    }
+    const tooMany = await change(cookie, body);
+    expect(tooMany.status).toBe(429);
+    expect(tooMany.json.code).toBe("too_many_attempts");
+    expect(tooMany.headers["retry-after"]).toBe("60");
+    expect(TRIES_PER_MINUTE["/api/change-password"]).toBe(10);
+
+    time += MINUTE;
+    expect((await change(cookie, body)).status).toBe(400);
+  });
+
+  it("answers a calm 'not available' on a server without a database", async () => {
+    await new Promise((resolve) => app.close(resolve));
+    await startServer({ withAccounts: false });
+    const answer = await ask("POST", "/api/change-password", { body: { currentPassword: "12345678", newPassword: "a-new-password" } });
+    expect(answer.status).toBe(503);
+    expect(answer.json.code).toBe("unavailable");
+  });
+});
+
 describe("deleting an account", () => {
   it("deletes the signed-in player's account, their sessions and their results", async () => {
     const cookie = await signUp("Ana");

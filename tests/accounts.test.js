@@ -284,6 +284,113 @@ describe("staying signed in", () => {
   });
 });
 
+// Added on 13 November 2026.
+describe("changing a password", () => {
+  let ana;
+  let laptop; // the ticket of the browser that changes the password
+  beforeEach(async () => {
+    ana = await signUp("Ana", "12345678");
+    laptop = await accounts.startSession(ana.id);
+  });
+
+  it("changes it: the new password signs in and the old one no longer does", async () => {
+    expect(await accounts.changePassword(ana.id, laptop, "12345678", "a-new-password")).toEqual({ ok: true });
+    expect((await accounts.logIn("Ana", "a-new-password")).ok).toBe(true);
+    expect((await accounts.logIn("Ana", "12345678")).code).toBe("wrong_login");
+  });
+
+  it("keeps the new password scrambled, never the password itself", async () => {
+    await accounts.changePassword(ana.id, laptop, "12345678", "a-new-password");
+    expect((await store.findPlayerById(ana.id)).passwordHash).toBe("scrambled(a-new-password)");
+    const real = createAccounts(store); // with the real scrambler, once
+    const bea = (await real.signUp("Bea", "first password 1")).player;
+    expect(await real.changePassword(bea.id, null, "first password 1", "second password 2")).toEqual({ ok: true });
+    const kept = (await store.findPlayerById(bea.id)).passwordHash;
+    expect(kept).not.toContain("second password 2");
+    expect(kept.startsWith("scrypt$")).toBe(true);
+    expect((await real.logIn("Bea", "second password 2")).ok).toBe(true);
+  });
+
+  it("signs the player out everywhere else, and keeps the browser that made the change signed in", async () => {
+    const phone = await accounts.startSession(ana.id);
+    const tablet = await accounts.startSession(ana.id);
+    const rui = await signUp("Rui", "rui-password");
+    const ruisTicket = await accounts.startSession(rui.id);
+
+    await accounts.changePassword(ana.id, laptop, "12345678", "a-new-password");
+
+    expect(await accounts.playerForSession(laptop)).toEqual({ id: ana.id, username: "Ana" });
+    expect(await accounts.playerForSession(phone)).toBe(null);
+    expect(await accounts.playerForSession(tablet)).toBe(null);
+    expect(await accounts.playerForSession(ruisTicket)).toEqual({ id: rui.id, username: "Rui" }); // another player: untouched
+  });
+
+  it("signs out every browser when it is not told which one asked", async () => {
+    for (const ticket of [undefined, null, "", "abc", "C".repeat(43)]) {
+      await accounts.changePassword(ana.id, ticket, "12345678", "a-new-password");
+      await accounts.changePassword(ana.id, ticket, "a-new-password", "12345678"); // back again for the next round
+    }
+    expect(store.countSessions()).toBe(0);
+  });
+
+  it("refuses a wrong current password, and changes nothing", async () => {
+    const answer = await accounts.changePassword(ana.id, laptop, "wrong-password", "a-new-password");
+    expect(answer).toEqual({ ok: false, code: "wrong_login", message: "That is not your current password." });
+    expect((await accounts.logIn("Ana", "12345678")).ok).toBe(true);
+    expect((await accounts.logIn("Ana", "a-new-password")).ok).toBe(false);
+  });
+
+  it("refuses a current password that is missing or not a text", async () => {
+    for (const current of [undefined, null, "", 12345678, ["12345678"], {}, "x".repeat(201)]) {
+      const answer = await accounts.changePassword(ana.id, laptop, current, "a-new-password");
+      expect(answer.code, String(current)).toBe("wrong_login");
+    }
+    expect((await store.findPlayerById(ana.id)).passwordHash).toBe("scrambled(12345678)");
+  });
+
+  it("refuses a new password that breaks the rules, without even looking at the current one", async () => {
+    for (const next of ["short", "", undefined, null, 12345678, "x".repeat(201)]) {
+      const answer = await accounts.changePassword(ana.id, laptop, "wrong-password", next);
+      expect(answer.code, String(next)).toBe("invalid_password");
+    }
+    // None of those counted as a wrong password: the account is not locked.
+    expect((await store.findPlayerById(ana.id)).failedLogins).toBe(0);
+    expect((await accounts.logIn("Ana", "12345678")).ok).toBe(true);
+  });
+
+  it("refuses the password the player already has", async () => {
+    const answer = await accounts.changePassword(ana.id, laptop, "12345678", "12345678");
+    expect(answer.code).toBe("same_password");
+    expect(await accounts.playerForSession(laptop)).not.toBe(null);
+  });
+
+  it("locks the account after too many wrong current passwords, like a sign-in, and then even the right one is refused", async () => {
+    let answer;
+    for (let attempt = 0; attempt < WRONG_PASSWORDS_ALLOWED; attempt++) {
+      answer = await accounts.changePassword(ana.id, laptop, "wrong-password", "a-new-password");
+    }
+    expect(answer.code).toBe("locked");
+    expect((await accounts.changePassword(ana.id, laptop, "12345678", "a-new-password")).code).toBe("locked");
+    expect((await store.findPlayerById(ana.id)).passwordHash).toBe("scrambled(12345678)");
+
+    time += LOCK_MINUTES * MINUTE;
+    expect(await accounts.changePassword(ana.id, laptop, "12345678", "a-new-password")).toEqual({ ok: true });
+  });
+
+  it("refuses a player who does not exist", async () => {
+    expect((await accounts.changePassword(999999, laptop, "12345678", "a-new-password")).code).toBe("not_signed_in");
+  });
+
+  it("can never change another player's password, whatever ticket is handed in", async () => {
+    const rui = await signUp("Rui", "rui-password");
+    const ruisTicket = await accounts.startSession(rui.id);
+    // Ana's number with Rui's ticket and Rui's password: it is not ANA's password.
+    expect((await accounts.changePassword(ana.id, ruisTicket, "rui-password", "a-new-password")).code).toBe("wrong_login");
+    expect((await accounts.logIn("Rui", "rui-password")).ok).toBe(true);
+    expect((await accounts.logIn("Ana", "12345678")).ok).toBe(true);
+  });
+});
+
 describe("deleting an account", () => {
   let ana;
   beforeEach(async () => {

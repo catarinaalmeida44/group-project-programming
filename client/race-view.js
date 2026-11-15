@@ -8,6 +8,7 @@
 
 import { countdownAt } from "../shared/countdown.js";
 import { STEP_SECONDS } from "../shared/physics.js";
+import { FINISH_WINDOW_STEPS } from "../shared/race-time.js";
 import { formatTime } from "./format.js";
 
 const PHASES = ["open", "countdown", "racing", "finished"];
@@ -35,6 +36,31 @@ export function readRace(update) {
     Array.isArray(watching) &&
     watching.every((id) => Number.isInteger(id));
   return usable ? { phase, countdownSteps, host, watching: [...watching] } : NO_RACE;
+}
+
+/**
+ * How many steps are left until the race is over for everyone, from an
+ * update of the server ("endsIn"), checked. Gives null when no race is
+ * being driven, or when the update says nothing usable.
+ */
+export function readEndsIn(update) {
+  const endsIn = update?.endsIn;
+  return Number.isInteger(endsIn) && endsIn >= 0 ? endsIn : null;
+}
+
+/**
+ * The short notice at the top of the picture while a race is running out:
+ * "The race ends in 1:42", and in the last minute "The race ends in 42 s".
+ * Gives "" while there is plenty of time, which is until the first kart has
+ * finished: from then on the others have FINISH_WINDOW_STEPS left.
+ */
+export function timeLeftNotice(race, endsIn) {
+  if (race.phase !== "racing" || endsIn === null || endsIn > FINISH_WINDOW_STEPS) {
+    return "";
+  }
+  const seconds = Math.ceil(endsIn * STEP_SECONDS);
+  const left = seconds > 60 ? `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}` : `${seconds} s`;
+  return `The race ends in ${left}`;
 }
 
 /** Is this player watching the race instead of driving in it? */
@@ -100,12 +126,19 @@ export function raceView({ race, myId, mine }) {
     };
   }
 
-  // In a race, past the countdown.
+  // In a race, past the countdown. A race that has begun is driven to its
+  // end: the host can only start the next one once this one is over.
+  const over = race.phase === "finished";
   const nextRace = host ? "Press Enter to start the next race." : "Waiting for the host to start the next race.";
   if (mine?.finished === true) {
-    return { message: `${finishedIn(mine)} ${nextRace}`, big: false, line: "" };
+    const whatNow = over || !host ? nextRace : "You can start the next race when this one is over.";
+    return { message: `${finishedIn(mine)} ${whatNow}`, big: false, line: "" };
   }
-  return { message: "", big: false, line: race.phase === "finished" ? nextRace : "" };
+  if (over) {
+    // The time ran out before this player finished.
+    return { message: `Time is up: the race is over. ${nextRace}`, big: false, line: "" };
+  }
+  return { message: "", big: false, line: "" };
 }
 
 const WATCHING_LINE = "A race is on. You are watching the kart in front, and you will join at the next start.";

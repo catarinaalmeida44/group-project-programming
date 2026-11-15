@@ -5,7 +5,7 @@ Our game server: the program that runs on Render. It sends the game's files to t
 | File | What it does |
 |---|---|
 | `app.js` | Builds the web server and decides what to answer for each request. It sends files from the `client/` folder and, under addresses that start with `/shared/`, from the `shared/` folder. It answers `/health` with "I am alive", hands addresses that start with `/api/` to `api.js`, and refuses everything else. With every answer it tells the browser to run only our own scripts and styles |
-| `api.js` | The addresses a page uses for accounts and the leaderboard: sign up, sign in, sign out, "who am I", delete my account, and the leaderboard of a track. It reads what a browser sent, refuses what is not allowed, and sets the cookie |
+| `api.js` | The addresses a page uses for accounts and the leaderboard: sign up, sign in, sign out, "who am I", change my password, delete my account, and the leaderboard of a track. It reads what a browser sent, refuses what is not allowed, and sets the cookie |
 | `accounts.js` | The rules for accounts: who may sign in, when an account is locked, how long a sign-in lasts, which results may be saved, what the leaderboard shows. Knows nothing about the internet or about database questions, which makes it easy to test |
 | `passwords.js` | Scrambles passwords so they are never kept in a readable form, and checks a password against its scrambled form |
 | `store.js` | Every question the game asks the database about players, sessions and race results |
@@ -53,9 +53,10 @@ The same goes for what happens between karts and on the road. The server decides
 
 Twenty times a second, every browser in a room gets one update (`snapshot()` in `room.js`):
 
-- `karts`: for each kart on the track its player number, grid place, position, direction, speed, laps, clock, whether it has finished, and `spin`, the number of steps it will still spin (0 when it is not spinning)
+- `karts`: for each kart on the track its player number, grid place, position, direction, speed, laps, clock, whether it has finished, `spin`, the number of steps it will still spin (0 when it is not spinning), and `passed`, its count of checkpoints, from which the page shows who is in front and which checkpoint comes next
 - `race`: the phase (`open`, `countdown`, `racing` or `finished`), how far the countdown is, who the host is and who is watching
 - `bananas`: the banana peels on the road, each with a number and a position. Empty while the room is open and during 3, 2, 1
+- `endsIn`: how many steps are left until the race is over for everyone, while a race is being driven. Otherwise it is empty (`null`). A race is over two minutes after the first finish, and ten minutes after GO at the latest (`FINISH_WINDOW_STEPS` and `RACE_LIMIT_STEPS` in `shared/race-time.js`)
 
 ## What the server refuses
 
@@ -87,7 +88,8 @@ For online play:
 - any message that is not exactly one of the four allowed kinds: the browser is sent away
 - kart colours that are not three whole numbers from the allowed ranges, such as a colour written out or a name: the browser is sent away
 - painting another player's kart: a choice of colours only ever changes the kart of the connection that sent it
-- a race start from anyone but the host, or while a countdown is already running: it is ignored
+- a race start from anyone but the host, or while a countdown is running or a race is being driven: it is ignored. A race that has begun is driven to its end (since 13 November 2026)
+- a finish after the time of a race has run out: that racer's laps and clock stay as they were, and no result is saved
 - a restart during a countdown or a race: it is ignored, so nobody can give themselves a fresh clock
 - keys from a player who joined during a race and is watching: they move nothing
 - more than 60 messages in a second from one browser: it is sent away
@@ -96,5 +98,6 @@ For online play:
 - anything about bananas from a browser: placing or removing one, spinning a kart, choosing the seed. There is no such message, and anything of the kind added to a real message is dropped
 - the keys of a kart that is spinning out: they do nothing until the spin is over
 - saving a result for a guest, for laps driven outside a race, or for a racer who left before the line
+- changing a password without being signed in, with a wrong current password, to one that breaks the rules or to the same one again; changing anyone's password but your own; and more than ten tries a minute from one computer
 
 "Sent away" means three things, in this order: its kart leaves the track at once, the server tells it why, and two seconds later the server cuts the connection if the browser has not closed it. The server does not wait for the browser to agree.

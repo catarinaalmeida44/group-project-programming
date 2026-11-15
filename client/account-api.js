@@ -17,6 +17,7 @@
 //     invalid_username   the user name breaks the rules
 //     invalid_password   the password breaks the rules
 //     username_taken     someone already has that user name
+//     same_password      the new password is the one the player already has
 //     wrong_login        wrong user name or password
 //     locked             too many wrong passwords: wait, the message says how long
 //     too_many_attempts  too many tries from this computer: wait a minute
@@ -96,6 +97,17 @@ export function createAccountApi(fetchFunction) {
     /** Signs out on this browser. Gives { ok: true } or { ok: false, code, message }. */
     logOut() {
       return ask("POST", "/api/logout", {});
+    },
+
+    /**
+     * Changes the signed-in player's password. The current password is
+     * asked again, so that someone who finds the browser open cannot do it.
+     * This browser stays signed in. Every other browser where the player
+     * was signed in is signed out. Gives { ok: true } or { ok: false, code,
+     * message }.
+     */
+    changePassword(currentPassword, newPassword) {
+      return ask("POST", "/api/change-password", { currentPassword, newPassword });
     },
 
     /**

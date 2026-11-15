@@ -6,7 +6,8 @@
 // be seen from the kart, and that bad storeys are refused.
 
 import { describe, it, expect } from "vitest";
-import { createBuildings, buildingsInView } from "../client/buildings.js";
+import { createBuildings, buildingsInView, nearestInSightLine } from "../client/buildings.js";
+import { RACE, eyeOf } from "../client/camera.js";
 import { createTrack } from "../shared/track.js";
 import { storeysOf } from "../shared/tracks/index.js";
 import { CAMPUS_LOOP } from "../shared/tracks/campus-loop.js";
@@ -194,6 +195,146 @@ describe("the buildings seen from behind the kart", () => {
         expect(y).toBeLessThanOrEqual(576.5); // the screen is 576 pixels tall
       }
     }
+  });
+});
+
+// Added on 13 November 2026. With the low race camera, buildings beside the
+// kart were cut off early, and squares of wall near the kart went missing.
+describe("buildings beside and behind the kart, with the low race camera", () => {
+  // Like longTrack, but the blocks are 90 units tall: far taller than the
+  // eye of the race camera, which is about 36 units above the ground.
+  function tallBlocks(blockColumns, digit = "9") {
+    const wallRow = "#".repeat(60);
+    const blockRow = [...".".repeat(60)].map((letter, column) => (blockColumns.includes(column) ? "#" : letter)).join("");
+    const track = createTrack({
+      name: "Tall test track",
+      tileSize: 10,
+      laps: 1,
+      map: [wallRow, blockRow, ".".repeat(60), ".".repeat(60), wallRow],
+      start: { column: 0, row: 2, angle: 0 },
+      checkpoints: [
+        { name: "a", column: 5, row: 2, columns: 1, rows: 2 },
+        { name: "b", column: 25, row: 2, columns: 1, rows: 2 },
+        { name: "c", column: 50, row: 2, columns: 1, rows: 2 },
+      ],
+    });
+    const storeyRow = [..."0".repeat(60)].map((zero, column) => (blockColumns.includes(column) ? digit : zero)).join("");
+    const rows = ["0".repeat(60), storeyRow, "0".repeat(60), "0".repeat(60), "0".repeat(60)];
+    return createBuildings(track, { storeyMetres: 10, squareMetres: 10, rows });
+  }
+  const everyColumn = Array.from({ length: 60 }, (unused, column) => column);
+  const eye = eyeOf(RACE);
+
+  it("has the eye of the race camera lower than the tall blocks, and well behind the kart", () => {
+    expect(eye.height).toBeLessThan(90);
+    expect(eye.behind).toBeGreaterThan(60);
+  });
+
+  it("shows a tall wall beside the kart all the way back to the camera, so it reaches the edge of the screen", () => {
+    // A wall along the whole road, 15 units to the left of the kart.
+    const buildings = tallBlocks(everyColumn);
+    const kart = { x: 300, y: 35, angle: 0 };
+    const sides = buildingsInView(buildings, kart, RACE).filter((shape) => shape.kind === "side");
+    // The ground at the bottom of the screen is only about 24 units behind
+    // the kart. The wall is shown much further back than that.
+    expect(Math.min(...sides.map((side) => side.ahead))).toBeLessThan(-60);
+    expect(Math.min(...sides.map((side) => side.ahead))).toBeGreaterThan(-eye.behind);
+    // So it runs off the left edge of the screen, with no gap beside it.
+    expect(sides.some((side) => side.points.some(([x]) => x <= 0))).toBe(true);
+    // And the wall right beside the kart is all there.
+    expect(sides.some((side) => Math.abs(side.ahead) < 10)).toBe(true);
+  });
+
+  it("fills nothing below the screen, though the feet of a wall may stand below it", () => {
+    const buildings = tallBlocks(everyColumn);
+    const sides = buildingsInView(buildings, { x: 300, y: 35, angle: 0 }, RACE).filter((shape) => shape.kind === "side");
+    let feetBelowTheScreen = 0;
+    for (const side of sides) {
+      expect(side.corners).toHaveLength(4);
+      const [footA, footB, topB, topA] = side.corners;
+      expect(topA[1]).toBeLessThan(footA[1]);
+      expect(topB[1]).toBeLessThan(footB[1]);
+      feetBelowTheScreen += footA[1] > 576 || footB[1] > 576 ? 1 : 0;
+      for (const [x, y] of side.points) {
+        expect(Number.isFinite(x) && Number.isFinite(y)).toBe(true);
+        expect(y).toBeLessThanOrEqual(576.5);
+      }
+    }
+    expect(feetBelowTheScreen).toBeGreaterThan(0);
+  });
+
+  it("leaves out a tall block that stands between the camera and the kart", () => {
+    // The kart is on the row of the blocks, 20 units in front of block 27.
+    const buildings = tallBlocks([27, 40]);
+    const kart = { x: 300, y: 15, angle: 0 };
+    const shapes = buildingsInView(buildings, kart, RACE);
+    expect(shapes.filter((shape) => shape.column === 27)).toEqual([]);
+    // The block ahead of the kart is shown as always.
+    expect(shapes.some((shape) => shape.column === 40 && shape.facing === "west")).toBe(true);
+  });
+
+  it("leaves out the rest of the same straight wall behind the kart, but not a separate building next to it", () => {
+    // The kart looks south, away from a wall of four blocks right behind
+    // it. One more block stands in the same line, after a gap.
+    const buildings = tallBlocks([25, 26, 27, 28, 30]);
+    const kart = { x: 275, y: 28, angle: Math.PI / 2 };
+    const shapes = buildingsInView(buildings, kart, RACE);
+    expect(shapes.filter((shape) => shape.column >= 25 && shape.column <= 28)).toEqual([]);
+    expect(shapes.some((shape) => shape.column === 30 && shape.facing === "north")).toBe(true);
+  });
+
+  it("never takes a wall that the kart touches for one that stands in the way", () => {
+    // The kart drives along the wall with its side against it: its middle is 10 units from the wall.
+    const buildings = tallBlocks(everyColumn);
+    const sides = buildingsInView(buildings, { x: 300, y: 30, angle: 0 }, RACE).filter((shape) => shape.kind === "side");
+    const columnsShown = new Set(sides.map((side) => side.column));
+    for (let column = 23; column <= 40; column++) {
+      expect(columnsShown.has(column), `column ${column}`).toBe(true);
+    }
+  });
+
+  it("keeps a low block in the same spot: it does not hide the kart", () => {
+    const buildings = tallBlocks([27], "1"); // 10 units tall
+    const shapes = buildingsInView(buildings, { x: 300, y: 15, angle: 0 }, RACE);
+    const seen = shapes.filter((shape) => shape.column === 27).map((shape) => `${shape.kind} ${shape.facing}`);
+    expect(seen.sort()).toEqual(["roof up", "side west"]);
+  });
+
+  it("keeps a tall block that is behind the kart but off to the side", () => {
+    // The same block, seen from the road two rows down: it is not in the line from the camera to the kart.
+    const buildings = tallBlocks([27]);
+    const shapes = buildingsInView(buildings, { x: 300, y: 38, angle: 0 }, RACE);
+    expect(shapes.some((shape) => shape.column === 27 && shape.kind === "side")).toBe(true);
+  });
+});
+
+describe("what stands in the line from the camera to the kart", () => {
+  const BEHIND = 80; // the eye is 80 units behind the kart
+  const HALF = 14; //   the kart is 28 units wide
+  const at = (ahead, sideways) => ({ ahead, sideways });
+
+  it("finds a line that crosses straight behind the kart, and says how far behind", () => {
+    expect(nearestInSightLine(at(-30, -50), at(-30, 50), BEHIND, HALF)).toBeCloseTo(-30);
+    expect(nearestInSightLine(at(-30, 50), at(-30, -50), BEHIND, HALF)).toBeCloseTo(-30);
+  });
+
+  it("gives the spot nearest to the kart when the line runs along the way", () => {
+    // From the eye's end towards the kart, down the middle.
+    expect(nearestInSightLine(at(-70, 0), at(-10, 0), BEHIND, HALF)).toBeCloseTo(-10);
+    expect(nearestInSightLine(at(-70, 0), at(40, 0), BEHIND, HALF)).toBeCloseTo(0); // never ahead of the kart
+  });
+
+  it("gives null for a line beside the kart, ahead of it, or behind the camera", () => {
+    expect(nearestInSightLine(at(-70, 20), at(10, 20), BEHIND, HALF)).toBe(null); // beside
+    expect(nearestInSightLine(at(-70, -20), at(10, -20), BEHIND, HALF)).toBe(null);
+    expect(nearestInSightLine(at(5, -50), at(5, 50), BEHIND, HALF)).toBe(null); // ahead of the kart
+    expect(nearestInSightLine(at(-100, -50), at(-100, 50), BEHIND, HALF)).toBe(null); // behind the eye
+  });
+
+  it("knows the space is narrow near the camera and as wide as the kart at the kart", () => {
+    // 10 units to the side: inside right behind the kart, outside near the eye.
+    expect(nearestInSightLine(at(-5, 10), at(-5, 30), BEHIND, HALF)).not.toBe(null);
+    expect(nearestInSightLine(at(-70, 10), at(-70, 30), BEHIND, HALF)).toBe(null);
   });
 });
 

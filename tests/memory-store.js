@@ -90,6 +90,15 @@ export function createMemoryStore() {
       }
     },
 
+    async setPasswordHash(id, passwordHash) {
+      const player = players.find((each) => each.id === id);
+      if (player === undefined) {
+        return false;
+      }
+      player.passwordHash = passwordHash;
+      return true;
+    },
+
     async deletePlayer(id) {
       players = players.filter((player) => player.id !== id);
       sessions = sessions.filter((session) => session.playerId !== id);
@@ -107,6 +116,10 @@ export function createMemoryStore() {
 
     async deleteSession(tokenHash) {
       sessions = sessions.filter((session) => session.tokenHash !== tokenHash);
+    },
+
+    async deleteOtherSessions(playerId, keepTokenHash) {
+      sessions = sessions.filter((session) => session.playerId !== playerId || session.tokenHash === keepTokenHash);
     },
 
     async deleteExpiredSessions(nowMs) {

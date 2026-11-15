@@ -7,7 +7,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import WebSocket from "ws";
-import { createRoom, randomSeed, MAX_PLAYERS } from "../server/room.js";
+import { createRoom, randomSeed, MAX_PLAYERS, RACE_LIMIT_STEPS } from "../server/room.js";
 import { readClientMessage } from "../server/messages.js";
 import { createApp } from "../server/app.js";
 import { attachOnlinePlay, ONLINE_ADDRESS } from "../server/online.js";
@@ -37,8 +37,8 @@ const HIT_DISTANCE = KART_RADIUS + BANANA_RADIUS;
 const SEED = 21;
 
 /** A room whose races have bananas, always from the same seed. */
-function roomWithBananas(seed = SEED, track = TEST_OVAL) {
-  return createRoom(track, TEST_DRIVER, MAX_PLAYERS, () => seed);
+function roomWithBananas(seed = SEED, track = TEST_OVAL, limits = {}) {
+  return createRoom(track, TEST_DRIVER, MAX_PLAYERS, () => seed, limits);
 }
 
 const kartOf = (room, id) => room.snapshot().karts.find((kart) => kart.id === id);
@@ -51,8 +51,8 @@ function run(room, steps, everyStep = () => {}) {
 }
 
 /** A room with bananas where the host has started a race and GO has just been given. Gives { room, host }. */
-function raceAtGo(seed = SEED) {
-  const room = roomWithBananas(seed);
+function raceAtGo(seed = SEED, limits = {}) {
+  const room = roomWithBananas(seed, TEST_OVAL, limits);
   const host = room.addPlayer().id;
   room.startRace(host);
   run(room, COUNTDOWN_STEPS);
@@ -121,8 +121,8 @@ function seedWithFirstBananaAhead() {
 }
 
 /** Waits on the grid for the first banana, then drives the host's kart into it. Gives { room, host, banana }. */
-function driveIntoFirstBanana() {
-  const { room, host } = raceAtGo(seedWithFirstBananaAhead());
+function driveIntoFirstBanana(limits = {}) {
+  const { room, host } = raceAtGo(seedWithFirstBananaAhead(), limits);
   run(room, FIRST_BANANA_STEPS);
   const [banana] = room.snapshot().bananas;
   for (let step = 0; step < 600 && kartOf(room, host).spin === 0; step++) {
@@ -165,7 +165,14 @@ describe("when a room has bananas", () => {
     expect(room.startRace(host)).toBe(false); // the countdown is already running
     expect(asked).toBe(1);
 
+    // Changed on 13 November 2026: a start in the middle of a race is now
+    // refused too, and asks for no seed. The next race can start once this
+    // one is over. Nobody drives here, so that is when its time is up.
     run(room, COUNTDOWN_STEPS + 10);
+    expect(room.startRace(host)).toBe(false); // a race is on
+    expect(asked).toBe(1);
+    run(room, RACE_LIMIT_STEPS);
+    expect(room.phase()).toBe("finished");
     expect(room.startRace(host)).toBe(true); // the next race
     expect(asked).toBe(2);
   });
@@ -355,11 +362,21 @@ describe("when the bananas of a race are cleared away", () => {
     run(room, 60 * 6); // more bananas appear meanwhile
     expect(room.snapshot().bananas.length).toBeGreaterThan(0);
 
-    const { room: spinningRoom, host: spinningHost } = driveIntoFirstBanana();
+    // Changed on 13 November 2026: the next race can only start once this
+    // one is over. So the race of the spinning kart is given a time limit
+    // that runs out ten steps after the kart was hit, in the middle of its
+    // spin. (Before, the host simply started the next race during this one.)
+    const hitAfter = room.snapshot().race.countdownSteps - 60 * 6 - COUNTDOWN_STEPS; // steps after GO
+    const { room: spinningRoom, host: spinningHost } = driveIntoFirstBanana({ raceLimitSteps: hitAfter + 10 });
+    expect(kartOf(spinningRoom, spinningHost).spin).toBeGreaterThan(0);
+    expect(spinningRoom.startRace(spinningHost)).toBe(false); // the race is still on
+    run(spinningRoom, 10);
+    expect(spinningRoom.phase()).toBe("finished");
     expect(kartOf(spinningRoom, spinningHost).spin).toBeGreaterThan(0);
     expect(spinningRoom.startRace(spinningHost)).toBe(true);
     expect(kartOf(spinningRoom, spinningHost).spin).toBe(0);
 
+    run(room, RACE_LIMIT_STEPS); // nobody finishes: the race is over when its time is up
     expect(room.startRace(host)).toBe(true);
     expect(room.snapshot().bananas).toEqual([]);
     run(room, COUNTDOWN_STEPS, () => {

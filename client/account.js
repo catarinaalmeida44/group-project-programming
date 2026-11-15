@@ -1,5 +1,5 @@
-// Who is signed in, and the four things a player can do about it: create an
-// account, sign in, sign out, and delete the account.
+// Who is signed in, and the five things a player can do about it: create an
+// account, sign in, sign out, change the password, and delete the account.
 //
 // This file asks the server through "api" (see account-api.js) and remembers
 // who is signed in. It never touches the page: account-panel.js does that.
@@ -12,6 +12,8 @@ import {
   readMe,
   accountFormErrors,
   deleteFormErrors,
+  changeFormErrors,
+  changeRefusalErrors,
   hasErrors,
   refusalErrors,
   NO_ERRORS,
@@ -57,8 +59,9 @@ export function createAccount({ api, onChange = () => {} }) {
    *   errors    what is wrong with the form; if anything is, nothing is sent
    *   question  asks the api
    *   afterYes  what to do when the server said yes
+   *   placeNo   where a "no" from the server is shown in the form
    */
-  async function attempt(errors, question, afterYes) {
+  async function attempt(errors, question, afterYes, placeNo = refusalErrors) {
     if (waiting) {
       return { ok: false, errors: { ...NO_ERRORS, form: STILL_WAITING_TEXT } };
     }
@@ -76,7 +79,7 @@ export function createAccount({ api, onChange = () => {} }) {
     if (reasonCode(answer) === "not_signed_in") {
       onChange(SIGNED_OUT); // the server no longer knows us: show that
     }
-    return { ok: false, errors: refusalErrors(answer) };
+    return { ok: false, errors: placeNo(answer) };
   }
 
   /** The server signed us in. It sends the name back the way its owner first typed it. */
@@ -119,6 +122,20 @@ export function createAccount({ api, onChange = () => {} }) {
         NO_ERRORS,
         () => api.logOut(),
         () => onChange(SIGNED_OUT),
+      );
+    },
+
+    /**
+     * Changes the signed-in player's password. Needs the current password
+     * again. The player stays signed in on this browser, so nothing about
+     * who is signed in changes here.
+     */
+    changePassword(currentPassword, newPassword) {
+      return attempt(
+        changeFormErrors(currentPassword, newPassword),
+        () => api.changePassword(currentPassword, newPassword),
+        () => {},
+        changeRefusalErrors,
       );
     },
 

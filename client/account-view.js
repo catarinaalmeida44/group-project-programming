@@ -23,6 +23,11 @@ export const SIGNED_IN_NOTICE = "You are signed in.";
 export const SIGNED_UP_NOTICE = "Your account is made, and you are signed in.";
 export const SIGNED_OUT_NOTICE = "You are signed out.";
 export const DELETED_NOTICE = "Your account and all your saved results are deleted.";
+export const PASSWORD_CHANGED_NOTICE = "Your password is changed. You were signed out on your other devices.";
+
+// The "Change my password" form.
+export const NEW_PASSWORD_HINT = `At least ${PASSWORD_MIN} characters, and not the one you have now.`;
+export const SAME_PASSWORD_TEXT = "That is the password you already have. Choose a different one.";
 
 /**
  * What accountApi.getMe() answered, checked: { available, signedIn, username }.
@@ -93,6 +98,35 @@ export function deleteFormErrors(password, confirmed) {
     password: checkPassword(password),
     confirm: confirmed === true ? null : CONFIRM_TEXT,
   };
+}
+
+/**
+ * What is wrong with the "change my password" form, before anything is
+ * sent. This form has one more place for a sentence, "newPassword", under
+ * the box for the new password. "password" is the box for the current one.
+ */
+export function changeFormErrors(currentPassword, newPassword) {
+  const newProblem = checkPassword(newPassword);
+  const same = typeof newPassword === "string" && newPassword === currentPassword;
+  return {
+    ...NO_ERRORS,
+    password: checkPassword(currentPassword),
+    newPassword: newProblem ?? (same ? SAME_PASSWORD_TEXT : null),
+  };
+}
+
+/**
+ * Where a "no" from the server is shown in the "change my password" form.
+ * When the server says a password breaks the rules, or is the same as the
+ * old one, it means the NEW password. Everything else, such as a wrong
+ * current password, is for the form as a whole.
+ */
+export function changeRefusalErrors(answer) {
+  const code = reasonCode(answer);
+  if (code === "invalid_password" || code === "same_password") {
+    return { ...NO_ERRORS, newPassword: reasonText(answer) };
+  }
+  return { ...NO_ERRORS, form: reasonText(answer) };
 }
 
 /**
