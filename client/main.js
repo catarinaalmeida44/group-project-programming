@@ -36,6 +36,8 @@ import { formatTime } from "./format.js";
 import { storageOf } from "./storage.js";
 import { readSettings } from "./settings.js";
 import { recordFinishedRace } from "./records.js";
+import { createRaceSound } from "./sound.js";
+import { tileKindAt } from "../shared/track.js";
 
 const track = chooseTrack(window.location.search);
 const character = TEST_DRIVER;
@@ -78,10 +80,19 @@ const myLook = lookFromChoice(readChoice(storage));
 let view = readSettings(storage).startView; // the view chosen in the menu's settings, or the first one
 let camera = followTarget(race.racer.kart, track); // the spot in the middle of the screen, in the follow view
 
+// The sound of the race: engine, bumps, beeps (sound.js). It starts at the
+// player's first key press, and M switches it off and on.
+const sound = createRaceSound(window, storage);
+const soundText = document.getElementById("sound");
+soundText.textContent = sound.isOn() ? "on" : "off";
+
 const keyboard = createKeyboard(window, {
   onDrive: start,
   onRestart: startAgain,
   onView: changeView,
+  onSound: () => {
+    soundText.textContent = sound.toggle() ? "on" : "off";
+  },
 });
 
 function start() {
@@ -177,6 +188,24 @@ function frame(now) {
     view,
     message: warning ?? messageFor(progress, countdown),
   });
+
+  // The facts of this picture, for the sound: sound-cues.js decides from
+  // them which beep, bump or jingle is due and how the engine sounds.
+  sound.frame(
+    {
+      label: showingCountdown ? countdown.label : "",
+      kart: racer.kart,
+      gas: keysWork && input.gas,
+      onGrass: tileKindAt(track, racer.kart.x, racer.kart.y) === "grass",
+      spinning,
+      lapsDone: progress.lapsDone,
+      laps: track.laps,
+      finished: progress.finished,
+      warning: warning !== null,
+      others: [],
+    },
+    frameSeconds,
+  );
   requestAnimationFrame(frame);
 }
 

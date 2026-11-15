@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nova SBE kart racer: sound check</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <main>
+      <h1>Nova SBE kart racer</h1>
+      <nav class="modes">
+        <a href="/">← Menu</a>
+      </nav>
+
+      <!-- A page for the team: every sound of the game on a button, to judge
+           and tune them by ear. It is not linked from the menu. sound-test.js
+           fills in the buttons. -->
+      <section class="sound-check" aria-labelledby="sound-check-title">
+        <h2 id="sound-check-title">Sound check</h2>
+        <p class="note">Every sound of the game, made by our own code. Click a button to hear it. Nothing plays by itself.</p>
+
+        <h3>Short sounds</h3>
+        <div id="sound-buttons" class="sound-buttons"></div>
+
+        <h3>Engine and tyres</h3>
+        <p>
+          <button type="button" id="engine-toggle" class="button button-primary">Start the engine</button>
+        </p>
+        <div class="field">
+          <label for="engine-speed">Speed: <strong id="engine-speed-text">0%</strong> of top speed</label>
+          <input id="engine-speed" type="range" min="0" max="100" value="0">
+        </div>
+        <div class="field field-check">
+          <input id="engine-gas" type="checkbox">
+          <label for="engine-gas">Gas held</label>
+        </div>
+        <div class="field field-check">
+          <input id="engine-grass" type="checkbox">
+          <label for="engine-grass">Driving on grass</label>
+        </div>
+        <div class="field field-check">
+          <input id="engine-skid" type="checkbox">
+          <label for="engine-skid">Tyres squealing (sliding or spinning)</label>
+        </div>
+        <p id="sound-check-status" class="note" role="status"></p>
+      </section>
+    </main>
+
+    <script type="module" src="/sound-test.js"></script>
+  </body>
+</html>

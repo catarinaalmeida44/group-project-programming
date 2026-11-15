@@ -2,8 +2,9 @@
 //
 // The driving rules do not know about keyboards. They only want four
 // yes-or-no answers: gas, brake, left, right. This file turns the arrow
-// keys into those four answers. It also listens for three other keys:
-// R (start again), V (change the camera view) and Enter (online: start a race).
+// keys into those four answers. It also listens for four other keys:
+// R (start again), V (change the camera view), M (sound off or on) and
+// Enter (online: start a race).
 
 const DRIVING_KEYS = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
 
@@ -25,6 +26,7 @@ const doNothing = () => {};
  *   actions  what the game wants done when certain keys go down:
  *     onRestart  R was pressed
  *     onView     V was pressed
+ *     onSound    M was pressed: switch the sound off or on
  *     onStart    Enter was pressed. The online page uses it to ask the
  *                server for a race start
  *     onDrive    a driving key went down. The game uses it to start the
@@ -34,7 +36,7 @@ const doNothing = () => {};
  *   isDriving()  is at least one driving key held
  */
 export function createKeyboard(target, actions = {}) {
-  const { onRestart = doNothing, onView = doNothing, onDrive = doNothing, onStart = doNothing } = actions;
+  const { onRestart = doNothing, onView = doNothing, onDrive = doNothing, onStart = doNothing, onSound = doNothing } = actions;
   const heldKeys = new Set();
 
   target.addEventListener("keydown", (event) => {
@@ -55,6 +57,8 @@ export function createKeyboard(target, actions = {}) {
       onRestart();
     } else if (letter === "v") {
       onView();
+    } else if (letter === "m") {
+      onSound();
     } else if (event.key === "Enter") {
       onStart();
     }

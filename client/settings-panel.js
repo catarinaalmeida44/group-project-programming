@@ -6,6 +6,7 @@
 // in a browser.
 
 import { readSettings, saveStartView } from "./settings.js";
+import { readSoundOn, saveSoundOn } from "./sound-cues.js";
 import { VIEWS } from "./camera.js";
 import { VIEW_NAMES } from "./hud.js";
 import { makePart } from "./page-parts.js";
@@ -45,6 +46,23 @@ export function connectSettings(page, storage) {
       ? ""
       : "This browser does not let the game keep settings, so races will start in the first view.";
   }
+
+  // Sound on or off. The choice is kept in this browser (sound-cues.js), and
+  // the race pages read it when they open.
+  const soundBox = page.getElementById("sound-on");
+  const soundStatus = page.getElementById("sound-status");
+  page.getElementById("open-settings").addEventListener("click", () => {
+    soundBox.checked = readSoundOn(storage);
+    soundStatus.textContent = "";
+  });
+  soundBox.addEventListener("change", () => {
+    const saved = saveSoundOn(storage, soundBox.checked);
+    soundStatus.textContent = !saved
+      ? "This browser did not let the game save your choice."
+      : soundBox.checked
+        ? "Saved. Races have sound."
+        : "Saved. Races are silent.";
+  });
 
   function chooseView(view) {
     const saved = saveStartView(storage, view);

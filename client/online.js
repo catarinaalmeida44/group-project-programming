@@ -39,6 +39,8 @@ import { nextCheckpointNumber, watchForMissedCheckpoint, missedCheckpointMessage
 import { placeLine, resultLines, boardLines } from "./standings.js";
 import { createResultsBoard } from "./results-board.js";
 import { lookOf } from "./kart-shape.js";
+import { createRaceSound } from "./sound.js";
+import { tileKindAt } from "../shared/track.js";
 import { SPIN_STEPS } from "../shared/hazards.js";
 import { readRace, readEndsIn, timeLeftNotice, raceView, kartToWatch } from "./race-view.js";
 import { followTarget, easeTowards, nextView } from "./camera.js";
@@ -163,8 +165,19 @@ function send(message) {
   }
 }
 
+// ---- The sound ----
+// Engine, bumps, beeps (sound.js). It starts at the player's first key
+// press, and M switches it off and on. It is made in this browser from what
+// the server says is happening: sound decides nothing about the race.
+const sound = createRaceSound(window, storage);
+const soundText = document.getElementById("sound");
+soundText.textContent = sound.isOn() ? "on" : "off";
+
 // ---- The keyboard ----
 const keyboard = createKeyboard(window, {
+  onSound: () => {
+    soundText.textContent = sound.toggle() ? "on" : "off";
+  },
   onRestart: () => send({ type: "restart" }),
   // Anyone can press Enter, but the server only obeys the host, and only
   // when no race is on: a race that has begun is driven to its end. This
@@ -246,6 +259,7 @@ function frame(now) {
   const shown = mine ?? (karts === null ? undefined : kartToWatch(karts));
   if (shown === undefined) {
     // Nothing to draw yet: we are still connecting, or we were disconnected.
+    sound.frame({ kart: null }, frameSeconds); // and nothing to hear
     requestAnimationFrame(frame);
     return;
   }
@@ -306,6 +320,25 @@ function frame(now) {
     view,
     message: board.isShown() ? "" : (warning ?? about.message),
   });
+
+  // The facts of this picture, for the sound: sound-cues.js decides from
+  // them which beep, bump or jingle is due and how the engine sounds. A
+  // player who is watching hears the kart they are watching.
+  sound.frame(
+    {
+      label: about.big ? about.message : "",
+      kart: shown,
+      gas: keysWork && input.gas,
+      onGrass: tileKindAt(track, shown.x, shown.y) === "grass",
+      spinning: shown.spin > 0,
+      lapsDone: shown.lapsDone,
+      laps: track.laps,
+      finished: shown.finished === true,
+      warning: warning !== null,
+      others,
+    },
+    frameSeconds,
+  );
 
   // In a race: our place ("2nd of 4") above the track, and a short notice
   // at the top of the picture when the race is about to end.

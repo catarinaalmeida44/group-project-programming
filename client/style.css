@@ -2045,6 +2045,40 @@ main:has(.status) canvas {
   color: var(--text);
 }
 
+/* The sound check page (sound-test.html): a card with a button for every
+   sound, for the team to judge them by ear. */
+.sound-check {
+  justify-self: center;
+  width: min(40rem, 100%);
+  margin-top: 1.2rem;
+  padding: 1.1rem 1.25rem 1.25rem;
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--yellow);
+  border-radius: 12px;
+  background: var(--navy-raised);
+}
+
+.sound-check h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.25rem;
+}
+
+.sound-check h3 {
+  margin: 1.2rem 0 0.6rem;
+  font-size: 1.05rem;
+}
+
+.sound-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sound-check input[type="range"] {
+  width: 100%;
+  accent-color: var(--yellow);
+}
+
 /* ---- 7. Motion ---- */
 
 /* A panel slides up a little as it opens. */
