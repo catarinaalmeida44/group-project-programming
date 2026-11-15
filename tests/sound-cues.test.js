@@ -8,6 +8,7 @@
 
 import { describe, it, expect } from "vitest";
 import { watchForSounds, engineOf, knockBetween, readSoundOn, saveSoundOn, NO_ENGINE } from "../client/sound-cues.js";
+import { createKeyboard } from "../client/keyboard.js";
 
 const FRAME = 1 / 60;
 
@@ -247,6 +248,52 @@ describe("strange facts", () => {
     const watch = watchForSounds();
     expect(watch(facts({ kart: null }), FRAME).engine).toEqual(NO_ENGINE);
     expect(watch(facts({ kart: kart(200) }), FRAME).engine.running).toBe(true);
+  });
+});
+
+describe("the M key", () => {
+  /** A stand-in for the browser window with a keyboard listening to it. */
+  function setUp() {
+    const fakeWindow = new EventTarget();
+    const counts = { sound: 0, view: 0, restart: 0, drive: 0 };
+    const keyboard = createKeyboard(fakeWindow, {
+      onSound: () => counts.sound++,
+      onView: () => counts.view++,
+      onRestart: () => counts.restart++,
+      onDrive: () => counts.drive++,
+    });
+    const press = (key, extra = {}) => fakeWindow.dispatchEvent(Object.assign(new Event("keydown", { cancelable: true }), { key, ...extra }));
+    return { keyboard, press, counts };
+  }
+
+  it("switches the sound when M is pressed, in capitals or not, and does nothing else", () => {
+    const { keyboard, press, counts } = setUp();
+    press("m");
+    press("M");
+    expect(counts).toEqual({ sound: 2, view: 0, restart: 0, drive: 0 });
+    expect(keyboard.isDriving()).toBe(false);
+  });
+
+  it("switches only once while M is held down", () => {
+    const { press, counts } = setUp();
+    press("m");
+    press("m", { repeat: true });
+    press("m", { repeat: true });
+    expect(counts.sound).toBe(1);
+  });
+
+  it("is not set off by any other key", () => {
+    const { press, counts } = setUp();
+    for (const key of ["n", "v", "r", "Enter", "ArrowUp", " ", "Meta", "MediaPlayPause"]) {
+      press(key);
+    }
+    expect(counts.sound).toBe(0);
+  });
+
+  it("does not break a page that has no use for it", () => {
+    const fakeWindow = new EventTarget();
+    createKeyboard(fakeWindow, {});
+    expect(() => fakeWindow.dispatchEvent(Object.assign(new Event("keydown"), { key: "m" }))).not.toThrow();
   });
 });
 
