@@ -1915,6 +1915,7 @@ main:has(.status) canvas {
 }
 
 .field input[type="text"],
+.field input[type="email"],
 .field input[type="password"] {
   width: 100%;
   min-height: 2.75rem;
@@ -1927,6 +1928,7 @@ main:has(.status) canvas {
 }
 
 .field input[type="text"]:focus-visible,
+.field input[type="email"]:focus-visible,
 .field input[type="password"]:focus-visible {
   border-color: var(--yellow);
   outline-offset: 1px;
@@ -2005,8 +2007,35 @@ main:has(.status) canvas {
   overflow-wrap: anywhere;
 }
 
-/* Two things are folded away in "Your account": changing the password, with
-   a blue edge, and deleting the account, with a red one. */
+/* The page a link in one of our emails leads to (link.html): one card in
+   the middle, with a sentence and, for a new password, a short form. */
+.link-card {
+  justify-self: center;
+  width: min(30rem, 100%);
+  margin-top: 1.5rem;
+  padding: 1.1rem 1.25rem 1.25rem;
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--yellow);
+  border-radius: 12px;
+  background: var(--navy-raised);
+}
+
+.link-card h2 {
+  margin: 0 0 0.6rem;
+  font-size: 1.25rem;
+}
+
+.link-card .link-status {
+  margin: 0 0 1rem;
+  font-weight: 600;
+}
+
+.link-card [hidden] {
+  display: none;
+}
+
+/* Things folded away in "Your account": changing the password and the email
+   address, with a blue edge, and deleting the account, with a red one. */
 .account-option,
 .danger-zone {
   margin-top: 1.25rem;

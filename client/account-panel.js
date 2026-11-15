@@ -23,6 +23,7 @@ import {
   SIGNED_OUT_NOTICE,
   DELETED_NOTICE,
 } from "./account-view.js";
+import { EMAIL_HINT, EMAIL_SENT_TEXT, EMAIL_REMOVED_TEXT, FORGOT_SENT_TEXT, emailStatusText } from "./email-view.js";
 import { NO_REASON } from "./answers.js";
 
 /**
@@ -42,6 +43,7 @@ export function showAccountCorner(page, corner) {
   // "defaultValue" is what the box holds when its form is emptied.
   page.getElementById("delete-username").defaultValue = name;
   page.getElementById("change-username").defaultValue = name;
+  page.getElementById("email-username").defaultValue = name;
 }
 
 /** Says something in the account corner, such as "You are signed in." Screen readers read it out. */
@@ -130,11 +132,19 @@ function connectForm(form, send, onYes) {
     }
     showFormErrors(form, result.errors);
     // Put the keyboard where something has to be fixed: the first box that
-    // is wrong, or the password when the form as a whole was refused.
-    const box = form.querySelector('[aria-invalid="true"]') ?? form.elements.password;
+    // is wrong, or the password when the form as a whole was refused. (A
+    // form without a password box: its first box that can be typed in.)
+    const box = form.querySelector('[aria-invalid="true"]') ?? form.elements.password ?? form.querySelector("input:not([readonly])");
     box.focus();
     box.select();
   });
+}
+
+/** Says something calm about a whole form, such as "We sent a link": not as an error. */
+function showFormNote(form, text) {
+  const place = form.querySelector('[data-error-for="form"]');
+  place.textContent = text;
+  place.classList.remove("is-error");
 }
 
 /**
@@ -159,16 +169,54 @@ export function connectAccount(page, { api, onChange = () => {} }) {
   const signUpForm = page.getElementById("sign-up-form");
   const deleteForm = page.getElementById("delete-account-form");
   const changeForm = page.getElementById("change-password-form");
+  const forgotPanel = page.getElementById("forgot-password");
+  const forgotForm = page.getElementById("forgot-form");
+  const emailForm = page.getElementById("email-form");
+  const emailStatus = page.getElementById("email-status");
+  const removeEmailButton = page.getElementById("remove-email");
 
   page.getElementById("sign-up-username-hint").textContent = USERNAME_HINT;
   page.getElementById("sign-up-password-hint").textContent = PASSWORD_HINT;
   page.getElementById("change-new-password-hint").textContent = NEW_PASSWORD_HINT;
+  page.getElementById("email-address-hint").textContent = EMAIL_HINT;
+
+  /**
+   * Asks the server what it knows about the player's email address and
+   * shows it in "Your account": the address, or that there is none, or
+   * that this server cannot send email. The form is only offered when
+   * email is set up, and "take it off" only when there is an address.
+   */
+  async function showEmail() {
+    emailStatus.textContent = "";
+    let email;
+    try {
+      email = await api.getEmail();
+    } catch {
+      email = null;
+    }
+    emailStatus.textContent = emailStatusText(email); // as text, never as HTML
+    emailForm.hidden = email?.available !== true;
+    page.getElementById("remove-email-line").hidden = typeof email?.email !== "string";
+  }
 
   // ---- Opening the panels ----
   page.getElementById("open-sign-in").addEventListener("click", () => signInPanel.showModal());
   page.getElementById("open-sign-up").addEventListener("click", () => signUpPanel.showModal());
-  page.getElementById("open-account").addEventListener("click", () => accountPanel.showModal());
+  page.getElementById("open-account").addEventListener("click", () => {
+    accountPanel.showModal();
+    showEmail();
+  });
   page.getElementById("account-check-again").addEventListener("click", () => account.check());
+
+  // From "Sign in" to "Forgot your password?" and back.
+  page.getElementById("sign-in-to-forgot").addEventListener("click", () => {
+    closePanel(signInPanel);
+    forgotPanel.showModal();
+  });
+  page.getElementById("forgot-to-sign-in").addEventListener("click", () => {
+    closePanel(forgotPanel);
+    signInPanel.showModal();
+  });
 
   // From one panel to the other.
   page.getElementById("sign-in-to-sign-up").addEventListener("click", () => {
@@ -182,7 +230,7 @@ export function connectAccount(page, { api, onChange = () => {} }) {
 
   // The player can also close a panel with its own button or with Escape.
   // The browser then tells us ("close"), and the form is emptied as well.
-  for (const panel of [signInPanel, signUpPanel, accountPanel]) {
+  for (const panel of [signInPanel, signUpPanel, accountPanel, forgotPanel]) {
     panel.addEventListener("close", () => tidyPanel(panel));
   }
 
@@ -219,6 +267,44 @@ export function connectAccount(page, { api, onChange = () => {} }) {
       closePanel(accountPanel);
       showAccountNotice(page, PASSWORD_CHANGED_NOTICE);
       page.getElementById("open-account").focus();
+    },
+  );
+
+  // Adding an email address. The panel stays open and says that a link was
+  // sent: the address only counts once that link is opened.
+  connectForm(
+    emailForm,
+    () => account.setEmail(emailForm.elements.password.value, emailForm.elements.email.value),
+    () => {
+      emailForm.reset();
+      showFormNote(emailForm, EMAIL_SENT_TEXT);
+    },
+  );
+
+  // Taking the address off again, with the password typed in the same form.
+  removeEmailButton.addEventListener("click", async () => {
+    showFormErrors(emailForm, NO_ERRORS);
+    removeEmailButton.disabled = true;
+    const result = await account.removeEmail(emailForm.elements.password.value);
+    removeEmailButton.disabled = false;
+    if (result.ok) {
+      emailForm.reset();
+      await showEmail();
+      showFormNote(emailForm, EMAIL_REMOVED_TEXT);
+    } else {
+      showFormErrors(emailForm, result.errors);
+      emailForm.elements.password.focus();
+    }
+  });
+
+  // "Forgot your password?" The answer is the same sentence whether or not
+  // an account has the address, so the panel can stay open and say it.
+  connectForm(
+    forgotForm,
+    () => account.forgotPassword(forgotForm.elements.email.value),
+    () => {
+      forgotForm.reset();
+      showFormNote(forgotForm, FORGOT_SENT_TEXT);
     },
   );
 

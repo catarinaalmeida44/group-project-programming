@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nova SBE kart racer: your account</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <main>
+      <h1>Nova SBE kart racer</h1>
+      <nav class="modes">
+        <a href="/">← Menu</a>
+      </nav>
+
+      <!-- This page is opened by a link in one of our emails: to confirm an
+           email address, or to choose a new password. link.js reads which
+           one from the end of the address and fills the page in, as text. -->
+      <section class="link-card" aria-labelledby="link-title">
+        <h2 id="link-title">Your account</h2>
+        <p id="link-status" class="link-status" role="status">One moment…</p>
+
+        <!-- Only shown for a "choose a new password" link. "method=post" and
+             "novalidate" for the same reasons as in the menu's forms. -->
+        <form id="reset-form" class="account-form" method="post" novalidate hidden>
+          <div class="field">
+            <label for="reset-new-password">Your new password</label>
+            <input id="reset-new-password" name="newPassword" type="password" autocomplete="new-password"
+                   aria-describedby="reset-new-password-hint reset-new-password-error">
+            <p id="reset-new-password-hint" class="field-hint"></p>
+            <p id="reset-new-password-error" class="field-error" data-error-for="newPassword"></p>
+          </div>
+          <div class="field field-check">
+            <input id="reset-show-password" name="show" type="checkbox">
+            <label for="reset-show-password">Show the password while I type</label>
+          </div>
+          <p class="form-message" data-error-for="form" role="status"></p>
+          <button type="submit" class="button button-primary button-wide" data-waiting="Saving your new password…">Save my new password</button>
+        </form>
+
+        <p id="link-next" hidden><a href="/">Go to the menu</a></p>
+      </section>
+    </main>
+
+    <script type="module" src="/link.js"></script>
+  </body>
+</html>

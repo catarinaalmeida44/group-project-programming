@@ -515,6 +515,42 @@
         <p class="panel-foot">
           No account yet?
           <button type="button" id="sign-in-to-sign-up" class="link-button">Create an account</button>
+          <br>
+          <button type="button" id="sign-in-to-forgot" class="link-button">Forgot your password?</button>
+        </p>
+      </div>
+    </dialog>
+
+    <!-- A forgotten password. It only helps a player who added an email
+         address to their account before. -->
+    <dialog id="forgot-password" class="panel" aria-labelledby="forgot-password-title">
+      <div class="panel-head">
+        <h2 id="forgot-password-title">Forgot your password?</h2>
+        <form method="dialog">
+          <button class="close-button" aria-label="Close">
+            <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 3l10 10M13 3L3 13"/></svg>
+          </button>
+        </form>
+      </div>
+      <div class="panel-body">
+        <p class="note">
+          Type the email address you added to your account. We send it a link to choose a new
+          password. If you never added an email address, the password cannot be reset.
+        </p>
+        <form id="forgot-form" class="account-form" method="post" novalidate>
+          <div class="field">
+            <label for="forgot-email">Your email address</label>
+            <input id="forgot-email" name="email" type="email" autocomplete="email"
+                   autocapitalize="none" spellcheck="false" autofocus
+                   aria-describedby="forgot-email-error">
+            <p id="forgot-email-error" class="field-error" data-error-for="email"></p>
+          </div>
+          <p class="form-message" data-error-for="form" role="status"></p>
+          <button type="submit" class="button button-primary button-wide" data-waiting="Asking the server…">Send me a link</button>
+        </form>
+        <p class="panel-foot">
+          Remembered it?
+          <button type="button" id="forgot-to-sign-in" class="link-button">Sign in</button>
         </p>
       </div>
     </dialog>
@@ -618,6 +654,40 @@
             <p class="form-message" data-error-for="form" role="status"></p>
             <button type="submit" class="button button-primary button-wide" data-waiting="Changing your password…">Change my password</button>
           </form>
+        </details>
+
+        <!-- An email address, for a forgotten password. It is optional. -->
+        <details class="account-option">
+          <summary>Email, for a forgotten password</summary>
+          <!-- account-panel.js writes what the server knows: the address, or that there is none. -->
+          <p id="email-status" role="status"></p>
+          <form id="email-form" class="account-form" method="post" novalidate>
+            <div class="field">
+              <!-- Filled in by account-panel.js and not editable, as in the forms around it. -->
+              <label for="email-username">Account</label>
+              <input id="email-username" name="username" type="text" autocomplete="username" readonly>
+            </div>
+            <div class="field">
+              <label for="email-address">Email address</label>
+              <input id="email-address" name="email" type="email" autocomplete="email"
+                     autocapitalize="none" spellcheck="false"
+                     aria-describedby="email-address-hint email-address-error">
+              <p id="email-address-hint" class="field-hint"></p>
+              <p id="email-address-error" class="field-error" data-error-for="email"></p>
+            </div>
+            <div class="field">
+              <label for="email-password">Your password</label>
+              <input id="email-password" name="password" type="password" autocomplete="current-password"
+                     aria-describedby="email-password-error">
+              <p id="email-password-error" class="field-error" data-error-for="password"></p>
+            </div>
+            <p class="form-message" data-error-for="form" role="status"></p>
+            <button type="submit" class="button button-primary button-wide" data-waiting="Asking the server…">Send me a link to confirm</button>
+          </form>
+          <!-- Shown only when the account has an address. It uses the password typed above. -->
+          <p id="remove-email-line" hidden>
+            <button type="button" id="remove-email" class="link-button">Take my email address off my account</button>
+          </p>
         </details>
 
         <!-- Deleting is kept out of the way, folded in the same manner. -->

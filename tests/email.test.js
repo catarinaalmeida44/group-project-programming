@@ -209,6 +209,16 @@ describe("adding an email address to an account", () => {
     expect(sent).toHaveLength(1);
   });
 
+  it("stops a 'new password' link that was sent to the old address, once a new address is confirmed", async () => {
+    await giveEmail(ana, "old@example.com");
+    await accounts.requestPasswordReset("old@example.com");
+    const sentToOld = secretIn(sent[sent.length - 1], "reset");
+    await giveEmail(ana, "new@example.com");
+    // Whoever reads the old mailbox can no longer get into the account.
+    expect((await accounts.resetPassword(sentToOld, "a-new-password")).code).toBe("bad_link");
+    expect((await accounts.logIn("Ana", "12345678")).ok).toBe(true);
+  });
+
   it("refuses a link that is made up, damaged, or of the other kind", async () => {
     await giveEmail(ana, "ana@example.com");
     await accounts.requestPasswordReset("ana@example.com");
@@ -448,6 +458,19 @@ describe("when email is not set up, or the email service fails", () => {
     expect(accounts.emailAvailable()).toBe(true);
     expect(sent).toEqual([]);
     expect(store.countEmailLinks()).toBe(0);
+  });
+
+  it("does not even try to send on a server without email, also for a player who has an address", async () => {
+    const complaints = vi.spyOn(console, "error").mockImplementation(() => {});
+    const ana = await signUp("Ana", "12345678");
+    await giveEmail(ana, "ana@example.com"); // added while email was set up
+    sent = [];
+
+    const withoutEmail = makeAccounts({ mailer: null });
+    expect(await withoutEmail.changePassword(ana.id, null, "12345678", "a-new-password")).toEqual({ ok: true });
+    expect(sent).toEqual([]);
+    expect(complaints).not.toHaveBeenCalled(); // nothing went wrong on the way, quietly or not
+    complaints.mockRestore();
   });
 
   it("still answers when the email service fails: the player is not made to wait or shown an error", async () => {

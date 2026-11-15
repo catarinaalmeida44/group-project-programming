@@ -1,5 +1,6 @@
-// Who is signed in, and the five things a player can do about it: create an
-// account, sign in, sign out, change the password, and delete the account.
+// Who is signed in, and what a player can do about it: create an account,
+// sign in, sign out, change the password, add or remove an email address,
+// ask for a link when the password is forgotten, and delete the account.
 //
 // This file asks the server through "api" (see account-api.js) and remembers
 // who is signed in. It never touches the page: account-panel.js does that.
@@ -19,6 +20,7 @@ import {
   NO_ERRORS,
   STILL_WAITING_TEXT,
 } from "./account-view.js";
+import { emailFormErrors, removeEmailErrors, forgotFormErrors, emailRefusalErrors } from "./email-view.js";
 import { saidYes, reasonCode } from "./answers.js";
 
 const SIGNED_OUT = Object.freeze({ available: true, signedIn: false, username: null });
@@ -136,6 +138,46 @@ export function createAccount({ api, onChange = () => {} }) {
         () => api.changePassword(currentPassword, newPassword),
         () => {},
         changeRefusalErrors,
+      );
+    },
+
+    /**
+     * Asks to add an email address to the signed-in player's account. Needs
+     * the password again. The server sends a link to the address: nothing
+     * about the account changes until that link is opened.
+     */
+    setEmail(password, email) {
+      const address = tidyName(email);
+      return attempt(
+        emailFormErrors(password, address),
+        () => api.setEmail(password, address),
+        () => {},
+        emailRefusalErrors,
+      );
+    },
+
+    /** Takes the email address off the signed-in player's account. Needs the password again. */
+    removeEmail(password) {
+      return attempt(
+        removeEmailErrors(password),
+        () => api.removeEmail(password),
+        () => {},
+        emailRefusalErrors,
+      );
+    },
+
+    /**
+     * "Forgot your password?" Asks the server to send a link to an address,
+     * if an account has it. Nobody needs to be signed in, and "yes" only
+     * means the question was taken: it never says whether the address is known.
+     */
+    forgotPassword(email) {
+      const address = tidyName(email);
+      return attempt(
+        forgotFormErrors(address),
+        () => api.forgotPassword(address),
+        () => {},
+        emailRefusalErrors,
       );
     },
 

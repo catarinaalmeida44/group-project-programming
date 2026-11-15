@@ -191,12 +191,42 @@ describe("the account forms on the menu page", () => {
     }
   });
 
-  it("asks for a user name and a password only: no email, nothing else to type", () => {
-    expect(pageWithoutComments).not.toMatch(/type="email"/);
+  // Changed on 15 November 2026, at Catarina's request. Before, this test
+  // said the whole page had no email box at all ("no email, nothing else to
+  // type"). Email is now optional: it is asked for in two forms of its own,
+  // "Forgot your password?" and "Email" in "Your account". What stays
+  // pinned: signing in, creating an account and deleting one ask for a
+  // user name and a password, and never for an email address.
+  it("asks for a user name and a password only to sign in, sign up or delete: an email address has two forms of its own", () => {
+    const emailBoxes = tags("input").filter((box) => attribute(box, "type") === "email");
+    expect(emailBoxes.map((box) => attribute(box, "id")).sort()).toEqual(["email-address", "forgot-email"]);
+    for (const form of Object.values(forms)) {
+      expect(form).not.toMatch(/type="email"/);
+    }
     for (const [id, form] of Object.entries(forms)) {
       const typed = (form.match(/<input\b[^>]*>/g) ?? []).filter((box) => attribute(box, "type") !== "checkbox");
       expect(typed.map((box) => attribute(box, "name")), id).toEqual(["username", "password"]);
     }
+  });
+
+  // Added on 15 November 2026, for the forms that came after the first three.
+  it("keeps the newer forms just as careful: they post, hide passwords, and say what each box is", () => {
+    for (const id of ["change-password-form", "email-form", "forgot-form"]) {
+      const tag = tags("form").find((form) => attribute(form, "id") === id);
+      expect(attribute(tag, "method"), id).toBe("post");
+      const form = partWithId(id, "form");
+      for (const box of form.match(/<input\b[^>]*>/g) ?? []) {
+        const name = attribute(box, "name");
+        if (name === "password" || name === "newPassword") {
+          expect(attribute(box, "type"), `${id} ${name}`).toBe("password");
+        }
+        if (attribute(box, "type") !== "checkbox") {
+          expect(attribute(box, "autocomplete"), `${id} ${name}`).not.toBe(null);
+        }
+      }
+    }
+    // The email boxes are told to be email boxes, so a phone shows the right keyboard.
+    expect(attribute(partWithId("forgot-form", "form").match(/<input\b[^>]*name="email"[^>]*>/)[0], "autocomplete")).toBe("email");
   });
 
   it("hides every password as it is typed", () => {
