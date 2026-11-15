@@ -16,6 +16,7 @@ const BUTTONS = [
   ["A lap is done", { name: "lap", strength: 1 }],
   ["The last lap begins", { name: "lastLap", strength: 1 }],
   ["Finish", { name: "finish", strength: 1 }],
+  ["Only the crowd cheering", { name: "cheer", strength: 1 }],
   ["Slipping on a banana", { name: "spin", strength: 1 }],
   ["Bump into a kart, gently", { name: "bumpKart", strength: 0.35 }],
   ["Bump into a kart, hard", { name: "bumpKart", strength: 1 }],

@@ -28,8 +28,16 @@ import { watchForSounds, readSoundOn, saveSoundOn, NO_ENGINE } from "./sound-cue
 // same note one octave higher.
 // ---------------------------------------------------------------------------
 
-/** How loud everything is together. */
+/** How loud everything is together, before the limiter. */
 export const MASTER_VOLUME = 0.5;
+/**
+ * A last turn-down after the limiter. A limiter is quick but not instant,
+ * so the very first moment of a loud sound slips through it. With this, even
+ * every sound of the game played in the same moment, on top of the engine at
+ * full speed, stays below the point where loudspeakers crackle (measured on
+ * 15 November 2026: 1.1 without it, where 1 is the limit).
+ */
+const HEADROOM = 0.8;
 
 // The engine is kept in the background on purpose. (On 15 November 2026
 // Catarina listened to the first version: the engine was too loud and too
@@ -63,8 +71,11 @@ export function createSoundMachine(context, destination = context.destination) {
   const master = context.createGain();
   master.gain.value = MASTER_VOLUME;
   const limiter = context.createDynamicsCompressor();
+  const headroom = context.createGain();
+  headroom.gain.value = HEADROOM;
   master.connect(limiter);
-  limiter.connect(destination);
+  limiter.connect(headroom);
+  headroom.connect(destination);
 
   // Two seconds of hiss, used for tyres, grass and the crunch of a bump.
   const hiss = context.createBuffer(1, context.sampleRate * 2, context.sampleRate);
@@ -150,22 +161,58 @@ export function createSoundMachine(context, destination = context.destination) {
     oscillator.stop(at + lasts + 0.03);
   }
 
-  /** A short burst of hiss through a filter: the crunch in a bump, the squeal in a slip. */
-  function crunch({ kind, around, sharp = 1, at, lasts, loud }) {
+  /**
+   * A burst of hiss through a filter: the crunch in a bump, the squeal in a
+   * slip. Normally it starts at full loudness and dies away. With "rise"
+   * (in seconds) it swells up first, like a crowd starting to cheer.
+   */
+  function crunch({ kind, around, sharp = 1, at, lasts, loud, rise = 0 }) {
     const source = context.createBufferSource();
     source.buffer = hiss;
+    source.loop = true; // the hiss is two seconds long: a longer burst goes round again
     const filter = context.createBiquadFilter();
     filter.type = kind;
     filter.frequency.value = around;
     filter.Q.value = sharp;
     const loudness = context.createGain();
-    loudness.gain.setValueAtTime(Math.max(loud, 0.0002), at);
+    if (rise > 0) {
+      loudness.gain.setValueAtTime(0.0001, at);
+      loudness.gain.exponentialRampToValueAtTime(Math.max(loud, 0.0002), at + rise);
+    } else {
+      loudness.gain.setValueAtTime(Math.max(loud, 0.0002), at);
+    }
     loudness.gain.exponentialRampToValueAtTime(0.0001, at + lasts);
     source.connect(filter);
     filter.connect(loudness);
     loudness.connect(master);
     source.start(at, Math.random()); // begin somewhere in the hiss, so no two bursts are alike
     source.stop(at + lasts + 0.03);
+  }
+
+  /**
+   * A crowd cheering: a roar that swells up and dies away, whistles going
+   * "wheee", and a lot of clapping. Each time it is a little different.
+   *
+   * It has no voices in it on purpose. Catarina asked for children shouting
+   * "yaaay", like a well-known sound effect. That recording is not ours to
+   * use. A first try at making voices by code (a buzzing wave through
+   * filters that move like a mouth) came out, in her words, "demonic". A
+   * crowd from a distance is mostly hiss, and code is good at hiss. For a
+   * real "yay", the team would have to record their own.
+   */
+  function cheer(at) {
+    // The roar: the hiss, kept to the three bands where a crowd is loudest.
+    crunch({ kind: "bandpass", around: 750, sharp: 0.9, at, rise: 0.22, lasts: 2.2, loud: 1.0 });
+    crunch({ kind: "bandpass", around: 1500, sharp: 0.9, at, rise: 0.28, lasts: 2.1, loud: 0.8 });
+    crunch({ kind: "bandpass", around: 2800, sharp: 1.2, at, rise: 0.3, lasts: 1.8, loud: 0.4 });
+    // Three whistles, each sliding up.
+    note({ from: 1500, to: 2900, at: at + 0.15, lasts: 0.45, loud: 0.26, wobble: { rate: 11, depth: 60 } });
+    note({ from: 1900, to: 3300, at: at + 0.6, lasts: 0.5, loud: 0.22, wobble: { rate: 13, depth: 70 } });
+    note({ from: 1300, to: 2500, at: at + 1.05, lasts: 0.4, loud: 0.2, wobble: { rate: 10, depth: 50 } });
+    // Clapping: many short claps, never at the same moments twice.
+    for (let clap = 0; clap < 48; clap++) {
+      crunch({ kind: "bandpass", around: 1500 + Math.random() * 1500, sharp: 1.6, at: at + 0.1 + Math.random() * 1.9, lasts: 0.03, loud: 0.5 });
+    }
   }
 
   // The short sounds. "at" is the moment to start, "strength" from 0 to 1.
@@ -219,30 +266,56 @@ export function createSoundMachine(context, destination = context.destination) {
       note({ wave: "square", from: 523, at: at + 0.76, lasts: 1.4, loud: 0.18 });
       note({ from: 131, to: 62, at: at + 0.76, lasts: 0.55, loud: 0.7 });
       crunch({ kind: "highpass", around: 5000, at: at + 0.76, lasts: 1.2, loud: 0.22 });
+      // And then the crowd goes wild.
+      cheer(at + 1.0);
     },
-    // Slipping on a banana: a wobbling whistle sliding all the way down, squealing tyres, and a "boing" at the end.
+    // Slipping on a banana, like in a cartoon: a squish, a whistle sliding all
+    // the way down, a tone that whirls round and round for as long as the kart
+    // spins, squealing tyres, and "boing-oing-oing" at the end.
     spin: (at) => {
-      note({ from: 1500, to: 160, at, lasts: 0.6, loud: 0.42, wobble: { rate: 18, depth: 60 } });
-      note({ wave: "triangle", from: 180, to: 520, at: at + 0.6, lasts: 0.22, loud: 0.38 });
-      crunch({ kind: "bandpass", around: 1700, sharp: 5, at, lasts: 0.75, loud: 0.5 });
+      crunch({ kind: "lowpass", around: 500, at, lasts: 0.12, loud: 0.7 });
+      note({ from: 1700, to: 140, at, lasts: 0.55, loud: 0.45, wobble: { rate: 20, depth: 80 } });
+      note({ wave: "triangle", from: 520, at: at + 0.1, lasts: 1.1, loud: 0.34, wobble: { rate: 4.2, depth: 260 } });
+      note({ wave: "square", from: 260, at: at + 0.1, lasts: 1.1, loud: 0.12, wobble: { rate: 4.2, depth: 130 } });
+      crunch({ kind: "bandpass", around: 1800, sharp: 6, at, lasts: 1.15, loud: 0.5 });
+      note({ wave: "triangle", from: 240, to: 620, at: at + 1.15, lasts: 0.16, loud: 0.42 });
+      note({ wave: "triangle", from: 300, to: 700, at: at + 1.33, lasts: 0.14, loud: 0.3 });
+      note({ wave: "triangle", from: 360, to: 780, at: at + 1.49, lasts: 0.12, loud: 0.2 });
     },
-    // Kart against kart: a hollow knock with a clank on top.
+    // Kart against kart: BONK, a clang of metal that rings on, and, when it
+    // was a hard hit, an angry double honk.
     bumpKart: (at, strength) => {
-      note({ from: 220, to: 50, at, lasts: 0.2, loud: 0.9 * strength });
-      note({ wave: "square", from: 330, to: 110, at, lasts: 0.09, loud: 0.3 * strength });
-      crunch({ kind: "highpass", around: 1300, at, lasts: 0.09, loud: 0.6 * strength });
+      note({ from: 260, to: 45, at, lasts: 0.28, loud: 1.0 * strength });
+      note({ wave: "square", from: 420, to: 120, at, lasts: 0.1, loud: 0.35 * strength });
+      crunch({ kind: "highpass", around: 1500, at, lasts: 0.12, loud: 0.7 * strength });
+      [587, 911, 1433, 2100].forEach((pitch, i) => note({ from: pitch, at, lasts: 0.38 - i * 0.05, loud: (0.3 - i * 0.05) * strength }));
+      if (strength > 0.55) {
+        for (const [late, lasts] of [[0.12, 0.13], [0.3, 0.24]]) {
+          note({ wave: "square", from: 466, at: at + late, lasts, loud: 0.26 * strength });
+          note({ wave: "square", from: 370, at: at + late, lasts, loud: 0.26 * strength });
+        }
+      }
     },
-    // Kart against wall: a deep thud, a dull crunch and a sharp crack.
+    // Kart against wall: a boom, a long crash and a crack, and, when it was a
+    // hard hit, bits tinkling down and a sad slide down afterwards.
     bumpWall: (at, strength) => {
-      note({ from: 130, to: 36, at, lasts: 0.32, loud: 1.0 * strength });
-      crunch({ kind: "lowpass", around: 900, at, lasts: 0.25, loud: 0.8 * strength });
-      crunch({ kind: "highpass", around: 2500, at, lasts: 0.05, loud: 0.3 * strength });
+      note({ from: 160, to: 28, at, lasts: 0.55, loud: 1.0 * strength });
+      note({ wave: "sawtooth", from: 90, to: 40, at, lasts: 0.3, loud: 0.4 * strength });
+      crunch({ kind: "lowpass", around: 1100, at, lasts: 0.5, loud: 0.9 * strength });
+      crunch({ kind: "highpass", around: 2800, at, lasts: 0.16, loud: 0.5 * strength });
+      if (strength > 0.55) {
+        [0.18, 0.27, 0.33, 0.42, 0.5].forEach((late, i) => note({ from: 2400 - i * 250, at: at + late, lasts: 0.07, loud: 0.22 * strength }));
+        note({ wave: "triangle", from: 500, to: 180, at: at + 0.15, lasts: 0.45, loud: 0.3 * strength, wobble: { rate: 9, depth: 25 } });
+      }
     },
     // A warning on the screen: three buzzes, high, low, high, like an alarm.
     warning: (at) => {
       [220, 165, 220].forEach((pitch, i) => note({ wave: "square", from: pitch, at: at + i * 0.16, lasts: 0.13, loud: 0.34 }));
     },
   };
+
+  // The cheer on its own, for the sound check page. In a race it is the end of "finish".
+  SOUNDS.cheer = (at) => cheer(at);
 
   return {
     /** Makes the engine and the tyres sound the way sound-cues.js says they should, from now on. */
