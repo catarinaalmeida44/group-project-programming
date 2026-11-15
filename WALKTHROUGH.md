@@ -27,6 +27,8 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 | The kart and its driver as a 3D shape, and painting it | `client/kart-shape.js`, `client/kart-paint.js` | Yes: one shape, in any colours, from any side |
 | Choosing the colours of your kart | `client/kart-choice.js`, `client/kart-panel.js`, and the rule in `shared/kart-looks.js` | Yes: kart, helmet and suit |
 | Arrows, arrow boards and the "wrong way" warning | `client/route.js` | Yes |
+| Sound: when each one is due, and how the engine should sound | `client/sound-cues.js` | Yes, since 15 November |
+| Sound: making the sounds themselves, with no sound files | `client/sound.js` | Yes, since 15 November. Judged by ear on `sound-test.html` |
 | The yellow light on the next checkpoint, and the warning for a missed one | `client/checkpoints.js` | Yes, since 13 November |
 | Your place in an online race, and the order of the results at its end | `client/standings.js` | Yes, since 13 November |
 | The results board that comes up when an online race is over | `client/results-board.js`, and how it moves in `client/style.css` | Yes, since 13 November |
@@ -269,6 +271,28 @@ None of this counts laps. A lap counts only if the kart went through every check
 
 **How does the page know a checkpoint was missed?** A kart is only ever expected inside three checkpoints: the one it passed last, the next one, and the one before the last. Inside any other checkpoint, it must have left one out on the way. Online, the server sends every kart's count of checkpoints for this ("passed"). The warning is words on the page and decides nothing.
 
+## How is the sound made?
+
+By our own code, with no sound files (since 15 November 2026). It is the same decision as for the pictures: everything in the game is made by us.
+
+**How a browser makes sound.** Every browser has a small sound workshop built in (it is called Web Audio). We ask it for simple waves, for hiss, and for filters that dull or sharpen them, and shape those into what we need. All of it is in `client/sound.js`:
+
+- **The engine** is two buzzing waves an octave apart, through a filter that takes the sharp edge off. The faster the kart, the higher the note and the more the filter opens. Holding the gas makes it a little fuller.
+- **The tyres** are hiss through two filters: a low rumble on grass, and a narrow, high squeal when the kart slides sideways or spins.
+- **The short sounds** are a few notes and bursts of hiss each. The countdown beeps have a drum thump under them. GO is a swoop into a chord. A lap is four notes running up. The last lap is a trumpet call. The finish is a fanfare followed by a crowd: a roar (hiss, swelling up), whistles and clapping. A banana slip is a whistle sliding down and a tone that whirls round for as long as the kart spins. A bump into a kart is a knock with a clang, a wall is a boom with a crash, and both get more on top when the hit was hard.
+
+**Two files, split the same way as everywhere else.** `client/sound-cues.js` decides WHEN a sound is due and how the engine should sound. It is plain arithmetic and has tests. `client/sound.js` is HOW each one sounds. It needs loudspeakers, so it is judged by ear.
+
+**How the page knows a sound is due.** For every picture, the race page hands over a few facts: what the countdown shows, the kart's speed, whether it is on grass, spinning or finished, how many laps are done. `sound-cues.js` compares them with the picture before. A new number on the countdown is a beep. One more lap is a chime. A bump is noticed from the speed alone: a kart cannot speed up or brake harder than about 600 units per second every second by itself, so a change of speed much quicker than that was a knock. If another kart is right there it was a kart, otherwise a wall. Nothing in the rules had to change for sound, and sound changes nothing about a race: online, it is made in each browser from what the server says is happening.
+
+**Why nothing is heard before the first key press.** A browser only lets a page make sound after the player has pressed a key or clicked. So the sound wakes at the first key press, which is also how a race starts.
+
+**Switching it off.** M switches the sound off and on during a race, and Settings in the menu has a box for it. The choice is kept in the browser. A page that is not being looked at (another tab is in front) falls silent by itself.
+
+**How it was tuned.** Catarina listened on a page made for that, `sound-test.html`, which has every sound on a button and an engine to rev with a slider. It is not linked from the menu. Her first verdict: the engine was too loud at top speed and the short sounds too tame. So the engine became about half as loud and duller, and the short sounds bigger. She then asked for a "yaaay" of children cheering at the finish, like a well-known sound effect. That recording is not ours to use. A try at making voices by code came out, in her words, "demonic", and was taken out: a crowd from a distance is mostly hiss, which code does well, and that is what the finish has now.
+
+**So that nothing crackles.** Everything passes through one volume knob and a limiter, which turns the loudest moments down by itself, and then a last small turn-down. We measured it: with every sound of the game played in the same moment on top of the engine at full speed, the loudest point stays at about 0.92 of the limit.
+
 ## How is a track described, and how do walls work?
 
 A track is drawn with letters in a file, one letter for each square of ground: `#` is wall, `.` is road and `,` is grass. Open `shared/tracks/test-oval.js` to see one. When the game starts, `shared/track.js` checks the drawing and stops with a clear error if it is wrong, for example if the start is inside a wall.
@@ -389,9 +413,13 @@ The only personal data is the user name a player chose. There is no email, no re
 
 ## What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 1,275 tests today, plus 23 that only run against the real database. They take about 40 seconds, most of it online races that run in real time.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 1,309 tests today, plus 23 that only run against the real database. They take about 40 seconds, most of it online races that run in real time.
 
 **Covered today**
+
+- Sound, in `tests/sound-cues.test.js`. Thirty-four tests for the deciding, none for how it sounds: one beep for each number of the countdown and a different sound at GO, a chime for a lap, the call for the last lap, the finish instead of a lap chime at the end, the banana slip and the warning once and not for as long as they last, and knocks: a wall, a kart, a shove from behind, harder is louder. What must NOT be taken for a knock: braking, pulling away, coasting, a sharp turn, and a kart that was put back on the grid. Also the M key, and the saved choice of sound on or off, including a saved value that was changed by hand.
+- To check that these tests really guard the deciding, it was broken on purpose in 19 ways, one at a time (for example "braking is taken for a knock", "the countdown beeps in every picture", "sound is off for a player who never chose", "N also switches the sound"). Every one made at least one test fail.
+- How the sounds sound has no test. It was checked in two ways. Catarina listened to every one on `sound-test.html` and asked for changes twice. And every sound was played into a silent recorder inside the browser and measured: none is silent, none has broken numbers in it, an unknown name plays nothing, mute is silent, and all of them at once stay below the point of crackling.
 
 - A race driven to its end, in `tests/room-race.test.js` (ten new tests on 13 November). The host's start is refused while a race is being driven and changes nothing, the race is over exactly two minutes after the first finish, a second finish gives no extra time, a racer who is out of time cannot finish however long they hold the gas, a race nobody finishes ends at the ten-minute limit, the host can start the next race afterwards, and time limits that are not whole numbers above zero are refused.
 - The missed checkpoint, in `tests/checkpoints.test.js`. Thirteen tests. One drives the exact line Catarina drove on the campus loop, with the real lap rules: past the CTT Student Hall, onto the finish line, no lap, a warning that names checkpoint 5, and the lap counting once the kart has gone back through it. Others check that a clean lap never warns, that rolling back into the checkpoint before is not taken for a missed one, and that the light stands only on open squares.
@@ -453,6 +481,9 @@ The server tests start a real copy of the server on the computer running the tes
 To check that the tests really guard the rules, we broke the code on purpose in 57 different ways, one at a time (for example "grass is as fast as road", "driving backwards is not counted" and "other websites may connect"). In the end every one made at least one test fail. One did not at first: accepting an update that arrives late. The test for it was too weak, and it was tightened.
 
 **Not covered today**
+
+- Sound in a real race, by ear. Catarina judged the sounds one by one on the sound check page. In the real race page the agent, which cannot hear, only checked that the sound starts at the first key press, that M switches it, and that driving into a wall causes no error, with the loudspeakers switched away. Whether the engine fits the driving, whether the bumps come at the right moments online (where the picture is a tenth of a second behind), and whether it gets tiring over three laps has to be heard by people.
+- Sound in Firefox, Safari and on a phone. It was only run in one browser.
 
 - The work of 13 November tried by people. The walls beside the kart, the yellow light and the results list were looked at in the agent's browser as single pictures, on a laptop. In the real online page, pressing Enter in the middle of a race did nothing, as it should. Nobody has driven a whole online race to the results list by hand, nobody has waited out the two minutes after the first finish with real players, and the missed-checkpoint warning was only set off in the tests, not by a person in the page. None of it has been on the live server yet.
 - Whether two minutes after the first finish is the right length. It is to be tried with real players.
@@ -560,7 +591,10 @@ The server does not wait for the database when it starts. `/database-check` answ
 - On the results board a guest is named by their player number, "Guest 3", and two guests with the same colours look the same.
 - Someone watching always follows the kart with the most laps. They cannot choose which kart to follow. The line under the track still tells them their own kart's colour, although that kart is not on the track.
 - The online race start was checked by hand in two tabs of one browser on one laptop, not yet with real players on different laptops. `docs/two-laptop-checklist.md` has the checks for that.
-- There is no boost for pressing the gas at the right moment of the countdown, and no sound.
+- There is no boost for pressing the gas at the right moment of the countdown.
+- Sound: you hear your own kart only. Other karts have no engine sound, a banana that someone else hits is silent, and there is no music. Every sound is made by code, so there are no voices: the cheering at the finish is a crowd of hiss, whistles and claps. A real "yay" would have to be recorded by the team.
+- Sound: a bump is noticed from a sudden change of speed. A gentle touch that hardly changes the speed is silent, and online a soft bump can be missed because the picture glides between the server's updates.
+- Sound: the sound check page `sound-test.html` is reachable by anyone who types its address. It only plays sounds.
 - A very short key tap, shorter than one picture on the screen, is not sent to the server.
 - The limit of 60 messages a second is per connection. Nothing yet limits how many connections one computer may open, beyond the room being full at eight.
 - The numbers in the driving rules are first guesses. No person has driven the kart for long yet, so they will change with playtesting.
