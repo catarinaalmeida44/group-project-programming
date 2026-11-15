@@ -8,6 +8,12 @@
 //   POST /api/logout          sign out
 //   POST /api/change-password change the signed-in player's password
 //   POST /api/delete-account  delete the signed-in player's account
+//   GET  /api/email           can this server send email, and the signed-in player's own address
+//   POST /api/set-email       ask to add an email address: a link is sent to it
+//   POST /api/remove-email    take the email address off the account
+//   POST /api/confirm-email   the link in a "confirm your email" message was opened
+//   POST /api/forgot-password ask for a link to choose a new password
+//   POST /api/reset-password  the link in that message was opened: set the new password
 //   GET  /api/leaderboard     the shared leaderboard of one track (?track=campus-loop)
 //
 // This file is about the internet side: reading what a browser sent,
@@ -44,6 +50,12 @@ export const TRIES_PER_MINUTE = {
   "/api/login": 30,
   "/api/delete-account": 10,
   "/api/change-password": 10,
+  "/api/set-email": 10,
+  "/api/remove-email": 10,
+  "/api/confirm-email": 30,
+  "/api/forgot-password": 20,
+  "/api/reset-password": 20,
+  "/api/email": 300,
   "/api/logout": 30,
   "/api/me": 300,
   "/api/leaderboard": 300,
@@ -55,7 +67,15 @@ export const TRIES_PER_MINUTE = {
  * allowed this many times a minute. A flood of sign-in tries can then never
  * keep the server too busy to run the races.
  */
-export const PASSWORD_ADDRESSES = ["/api/signup", "/api/login", "/api/delete-account", "/api/change-password"];
+export const PASSWORD_ADDRESSES = [
+  "/api/signup",
+  "/api/login",
+  "/api/delete-account",
+  "/api/change-password",
+  "/api/set-email", //      checks the password again
+  "/api/remove-email", //   checks the password again
+  "/api/reset-password", // scrambles the new password
+];
 export const PASSWORD_WORK_PER_MINUTE = 60;
 
 /** The limiter remembers at most this many computers at a time. */
@@ -76,6 +96,12 @@ const STATUS_FOR = {
   invalid_password: 400,
   username_taken: 409,
   same_password: 400,
+  invalid_email: 400,
+  same_email: 400,
+  bad_link: 400,
+  email_taken: 409,
+  too_many_emails: 429,
+  email_unavailable: 503,
   wrong_login: 401,
   not_signed_in: 401,
   locked: 429,
@@ -201,6 +227,76 @@ export function createApi({ accounts = null, now = Date.now } = {}) {
         // This browser stays signed in, with the ticket it has. Every other
         // browser of this player was signed out by the rules (accounts.js).
         sendJson(response, 200, { ok: true });
+      },
+    },
+
+    // ---- email, and getting back into an account (since 15 November 2026) ----
+
+    "/api/email": {
+      method: "GET",
+      async run({ request, response }) {
+        // "available" says whether this server can send email at all. A
+        // player is only ever told their OWN address, never anyone else's.
+        const player = await accounts.playerForSession(ticketOf(request));
+        const email = player === null ? null : await accounts.emailOf(player.id);
+        sendJson(response, 200, { ok: true, available: accounts.emailAvailable(), email });
+      },
+    },
+
+    "/api/set-email": {
+      method: "POST",
+      async run({ request, response, body }) {
+        const player = await accounts.playerForSession(ticketOf(request));
+        if (player === null) {
+          return sendRefusal(response, { ok: false, code: "not_signed_in", message: "You are not signed in." });
+        }
+        const answer = await accounts.requestEmail(player.id, body.password, body.email);
+        // The address only counts once the link we sent is opened. Until then nothing is told back but "sent".
+        return answer.ok ? sendJson(response, 200, { ok: true }) : sendRefusal(response, answer);
+      },
+    },
+
+    "/api/remove-email": {
+      method: "POST",
+      async run({ request, response, body }) {
+        const player = await accounts.playerForSession(ticketOf(request));
+        if (player === null) {
+          return sendRefusal(response, { ok: false, code: "not_signed_in", message: "You are not signed in." });
+        }
+        const answer = await accounts.removeEmail(player.id, body.password);
+        return answer.ok ? sendJson(response, 200, { ok: true }) : sendRefusal(response, answer);
+      },
+    },
+
+    "/api/confirm-email": {
+      method: "POST",
+      async run({ response, body }) {
+        // Nobody has to be signed in: the secret part of the link is the proof.
+        const answer = await accounts.confirmEmail(body.link);
+        return answer.ok ? sendJson(response, 200, { ok: true }) : sendRefusal(response, answer);
+      },
+    },
+
+    "/api/forgot-password": {
+      method: "POST",
+      async run({ response, body }) {
+        // The same answer whether or not an account has this address.
+        const answer = await accounts.requestPasswordReset(body.email);
+        return answer.ok ? sendJson(response, 200, { ok: true }) : sendRefusal(response, answer);
+      },
+    },
+
+    "/api/reset-password": {
+      method: "POST",
+      async run({ request, response, body }) {
+        const answer = await accounts.resetPassword(body.link, body.newPassword);
+        if (!answer.ok) {
+          return sendRefusal(response, answer);
+        }
+        // Whoever was signed in on this browser no longer is: the player
+        // signs in afresh with the new password.
+        await accounts.endSession(ticketOf(request));
+        sendJson(response, 200, { ok: true, username: answer.username }, { "Set-Cookie": cookieGone(request) });
       },
     },
 

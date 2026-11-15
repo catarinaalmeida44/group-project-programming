@@ -13,10 +13,28 @@
 // keeps only a scrambled copy of the ticket: someone who could read our
 // database would still not be able to use anyone's ticket. A ticket stops
 // working after seven days, or at once when the player signs out.
+//
+// HOW EMAIL IS USED (since 15 November 2026)
+// An email address is optional. It is there for one thing: getting back
+// into an account when the password is forgotten.
+//   1. A signed-in player types an address and their password. We send a
+//      link to that address. Only when the link is opened does the address
+//      count: that proves the mailbox is theirs, and a typing mistake cannot
+//      hand the account to a stranger.
+//   2. "Forgot your password?": someone types an address. If an account has
+//      it, we send a link to choose a new password. The page says the same
+//      thing either way, so nobody can find out whose address we have.
+//   3. The link is opened and a new password is chosen. The player is
+//      signed out everywhere and told by email that the password changed.
+// A link is a long random text, like a ticket, and is kept the same way:
+// only a scrambled copy. It works once, and only for a short time.
+// Without the settings for email (see mailer.js) none of this is offered,
+// and accounts work as before.
 
 import { createHash, randomBytes } from "node:crypto";
-import { checkUsername, checkPassword, usernameKey, PASSWORD_MAX } from "../shared/account-rules.js";
+import { checkUsername, checkPassword, checkEmail, usernameKey, emailKey, PASSWORD_MAX } from "../shared/account-rules.js";
 import { hashPassword, passwordMatches, pretendToCheck } from "./passwords.js";
+import { siteAddressFrom } from "./mailer.js";
 
 export const SESSION_DAYS = 7;
 /** After this many wrong passwords in a row, the account is locked for a while. */
@@ -31,8 +49,20 @@ export const LEADERBOARD_SIZE = 10;
  */
 export const LEADERBOARD_FRESH_MS = 30_000;
 
+/** A link to choose a new password works for this long. */
+export const RESET_LINK_MINUTES = 30;
+/** A link to confirm an email address works for this long. */
+export const CONFIRM_LINK_MINUTES = 60;
+/** At most this many emails of each kind are sent for one account in an hour. */
+export const EMAILS_PER_HOUR = 3;
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MINUTE_MS = 60 * 1000;
+const HOUR_MS = 60 * MINUTE_MS;
+
+// The two kinds of link we send by email.
+const CONFIRM = "confirm_email";
+const RESET = "reset_password";
 
 const no = (code, message) => ({ ok: false, code, message });
 // The same answer for a name that does not exist and for a wrong password,
@@ -61,13 +91,97 @@ function isSteps(value) {
  *   passwords  how passwords are scrambled and checked. Only the tests change
  *              it, for a quick pretend scrambler: the real one is slow on
  *              purpose, and has tests of its own
+ *   mailer     what sends email (mailer.js), or null: no email on this server
+ *   siteAddress  the address of our own site, for the links in emails, such
+ *              as "https://novasbe-kart.onrender.com". Without it, no email
  */
 export function createAccounts(
   store,
-  { now = Date.now, passwords = { hash: hashPassword, matches: passwordMatches, pretend: pretendToCheck } } = {},
+  {
+    now = Date.now,
+    passwords = { hash: hashPassword, matches: passwordMatches, pretend: pretendToCheck },
+    mailer = null,
+    siteAddress = null,
+  } = {},
 ) {
   const boards = new Map(); // track -> { at, races, laps }: the leaderboards read a moment ago
   let tablesReady = null; //   a promise, so the tables are only created once
+  const site = siteAddressFrom(siteAddress); // checked: null unless it is a plain web address
+  const emailReady = mailer !== null && site !== null;
+
+  const EMAIL_OFF = no("email_unavailable", "Email is not set up on this server, so this is not possible right now.");
+  const BAD_LINK = no("bad_link", "This link does not work any more. It was used already, or it is too old. Ask for a new one.");
+
+  /**
+   * Hands a message to the mailer and does not wait for it: nobody's
+   * request should take longer, or fail, because the email service is slow
+   * or down. If it could not be sent, that goes to our own log, without
+   * the address it was for.
+   */
+  function sendWithoutWaiting(message) {
+    try {
+      Promise.resolve(mailer.send(message)).catch((error) => console.error("Email: a message could not be sent:", error.message));
+    } catch (error) {
+      console.error("Email: a message could not be sent:", error.message);
+    }
+  }
+
+  /**
+   * Makes a one-time link for a player and gives back its secret part.
+   * Only a scrambled copy is kept, as with tickets.
+   */
+  async function makeLink(playerId, kind, email, minutes) {
+    const secret = randomBytes(32).toString("base64url");
+    await store.deleteOldEmailLinks(now() - HOUR_MS); // tidy up while we are here
+    await store.addEmailLink({
+      tokenHash: scrambleTicket(secret),
+      playerId,
+      kind,
+      email,
+      expiresAt: now() + minutes * MINUTE_MS,
+      createdAt: now(),
+    });
+    return secret;
+  }
+
+  /** Has this account been sent as many emails of one kind as we allow in an hour? */
+  async function sentEnough(playerId, kind) {
+    return (await store.countEmailLinksSince(playerId, kind, now() - HOUR_MS)) >= EMAILS_PER_HOUR;
+  }
+
+  /** Tells a player by email that their password was changed, if they have an address and email is set up. */
+  async function tellPasswordChanged(player) {
+    if (!emailReady) {
+      return;
+    }
+    const to = await store.emailOf(player.id);
+    if (to !== null) {
+      sendWithoutWaiting({
+        to,
+        subject: "Nova SBE kart racer: your password was changed",
+        text:
+          `Hello ${player.username},\n\n` +
+          `The password of your account "${player.username}" was changed just now.\n\n` +
+          `If that was you, all is well.\n\n` +
+          `If it was not you, choose a new password at once. Open the game, click "Sign in" and then "Forgot your password?":\n${site}/`,
+      });
+    }
+  }
+
+  /**
+   * Checks the password of a signed-in player once more, before something
+   * that only the owner of the account may do. Counts wrong tries and locks
+   * like a sign-in. Gives null if the password is right, or the answer to
+   * send back.
+   */
+  async function refuseUnlessOwnPassword(player, password) {
+    const notYours = no("wrong_login", "That is not your password.");
+    if (typeof password !== "string" || password.length === 0 || password.length > PASSWORD_MAX) {
+      return notYours;
+    }
+    const refusal = await refuseUnlessPasswordIsRight(player, password);
+    return refusal === null ? null : refusal.code === "wrong_login" ? notYours : refusal;
+  }
 
   /**
    * Makes sure the database tables exist before the first question. If the
@@ -257,7 +371,186 @@ export function createAccounts(
       }
       await store.setPasswordHash(player.id, await passwords.hash(newPassword));
       await store.deleteOtherSessions(player.id, looksLikeATicket(ticket) ? scrambleTicket(ticket) : null);
+      await store.deleteEmailLinks(player.id, RESET); // a "new password" link that is still out stops working
+      await tellPasswordChanged(player);
       return { ok: true };
+    },
+
+    // ---- email, and getting back into an account ----
+
+    /** Is email set up on this server? Without it nothing below sends anything. */
+    emailAvailable: () => emailReady,
+
+    /** A player's own confirmed email address, or null. */
+    async emailOf(playerId) {
+      await ready();
+      return store.emailOf(playerId);
+    },
+
+    /**
+     * A signed-in player asks to add an email address to their account, or
+     * to replace the one they have. The password is checked again: whoever
+     * controls the address can later choose a new password, so a laptop
+     * left open must not be enough to add one.
+     *
+     * Nothing about the account changes yet. We send a link to the address,
+     * and the address only counts once that link is opened (confirmEmail).
+     *
+     * If the address already belongs to ANOTHER account, the answer is the
+     * same "we sent a link" and nothing is sent. Otherwise a signed-in
+     * player could find out whose addresses we have by trying them.
+     */
+    async requestEmail(playerId, password, email) {
+      if (!emailReady) {
+        return EMAIL_OFF;
+      }
+      const problem = checkEmail(email);
+      if (problem !== null) {
+        return no("invalid_email", problem);
+      }
+      await ready();
+      const player = await store.findPlayerById(playerId);
+      if (player === null) {
+        return no("not_signed_in", "You are not signed in.");
+      }
+      const refusal = await refuseUnlessOwnPassword(player, password);
+      if (refusal !== null) {
+        return refusal;
+      }
+      const address = email.trim();
+      const owner = await store.findPlayerByEmailKey(emailKey(address));
+      if (owner !== null && owner.id === player.id) {
+        return no("same_email", "That is already the email address of your account.");
+      }
+      if (await sentEnough(player.id, CONFIRM)) {
+        return no("too_many_emails", "We already sent you several emails this hour. Try again later.");
+      }
+      if (owner === null) {
+        const secret = await makeLink(player.id, CONFIRM, address, CONFIRM_LINK_MINUTES);
+        sendWithoutWaiting({
+          to: address,
+          subject: "Nova SBE kart racer: confirm your email address",
+          text:
+            `Hello ${player.username},\n\n` +
+            `Someone asked to use this email address for the account "${player.username}" on Nova SBE kart racer, ` +
+            `so that a forgotten password can be reset.\n\n` +
+            `If that was you, open this link to confirm. It works once, for ${CONFIRM_LINK_MINUTES} minutes:\n` +
+            `${site}/link.html#confirm=${secret}\n\n` +
+            `If it was not you, do nothing. The address is then not used.`,
+        });
+      }
+      return { ok: true };
+    },
+
+    /**
+     * The link in a "confirm your email address" message was opened. From
+     * now on the address belongs to that account. Nobody needs to be signed
+     * in for this: the link may be opened on another device.
+     * Gives { ok: true, email } or { ok: false, code, message }.
+     */
+    async confirmEmail(secret) {
+      if (!looksLikeATicket(secret)) {
+        return BAD_LINK;
+      }
+      await ready();
+      const link = await store.takeEmailLink(scrambleTicket(secret));
+      if (link === null || link.kind !== CONFIRM || link.expiresAt <= now() || checkEmail(link.email) !== null) {
+        return BAD_LINK;
+      }
+      // The database refuses an address that another account confirmed in the meantime.
+      if (!(await store.setEmail(link.playerId, link.email, emailKey(link.email)))) {
+        return no("email_taken", "That email address already belongs to another account.");
+      }
+      // Links to an address the player had before must not open the account any more.
+      await store.deleteEmailLinks(link.playerId, RESET);
+      return { ok: true, email: link.email };
+    },
+
+    /**
+     * Takes the email address off a signed-in player's account, with their
+     * password. This works on a server without email too: a player must
+     * always be able to take their address back.
+     */
+    async removeEmail(playerId, password) {
+      await ready();
+      const player = await store.findPlayerById(playerId);
+      if (player === null) {
+        return no("not_signed_in", "You are not signed in.");
+      }
+      const refusal = await refuseUnlessOwnPassword(player, password);
+      if (refusal !== null) {
+        return refusal;
+      }
+      await store.clearEmail(player.id);
+      await store.deleteEmailLinks(player.id, RESET);
+      await store.deleteEmailLinks(player.id, CONFIRM);
+      return { ok: true };
+    },
+
+    /**
+     * "Forgot your password?" Someone typed an email address. If an account
+     * has it, a link to choose a new password is sent there. The answer is
+     * { ok: true } either way, also when that account has been sent enough
+     * emails for this hour: nobody learns from it whose address we have.
+     */
+    async requestPasswordReset(email) {
+      if (!emailReady) {
+        return EMAIL_OFF;
+      }
+      const problem = checkEmail(email);
+      if (problem !== null) {
+        return no("invalid_email", problem); // says nothing about accounts: only that it is not an address
+      }
+      await ready();
+      const player = await store.findPlayerByEmailKey(emailKey(email));
+      if (player !== null && !(await sentEnough(player.id, RESET))) {
+        const secret = await makeLink(player.id, RESET, null, RESET_LINK_MINUTES);
+        sendWithoutWaiting({
+          to: await store.emailOf(player.id),
+          subject: "Nova SBE kart racer: choose a new password",
+          text:
+            `Hello ${player.username},\n\n` +
+            `Someone asked for a new password for your account "${player.username}" on Nova SBE kart racer.\n\n` +
+            `If that was you, open this link to choose a new password. It works once, for ${RESET_LINK_MINUTES} minutes:\n` +
+            `${site}/link.html#reset=${secret}\n\n` +
+            `If it was not you, do nothing. Your password stays as it is.`,
+        });
+      }
+      return { ok: true };
+    },
+
+    /**
+     * The link in a "choose a new password" message was opened and a new
+     * password typed. The link is the proof here, so the old password is
+     * not asked for. Afterwards the player is signed out on every device,
+     * a lock from wrong passwords is lifted, and other links are thrown away.
+     * Gives { ok: true, username } or { ok: false, code, message }.
+     */
+    async resetPassword(secret, newPassword) {
+      // The password is looked at first, so that a password that breaks the
+      // rules does not use the link up.
+      const problem = checkPassword(newPassword);
+      if (problem !== null) {
+        return no("invalid_password", problem);
+      }
+      if (!looksLikeATicket(secret)) {
+        return BAD_LINK;
+      }
+      await ready();
+      const link = await store.takeEmailLink(scrambleTicket(secret));
+      if (link === null || link.kind !== RESET || link.expiresAt <= now()) {
+        return BAD_LINK;
+      }
+      const player = await store.findPlayerById(link.playerId);
+      if (player === null) {
+        return BAD_LINK;
+      }
+      await store.setPasswordHash(player.id, await passwords.hash(newPassword));
+      await store.clearFailedLogins(player.id);
+      await store.deleteOtherSessions(player.id, null);
+      await store.deleteEmailLinks(player.id, RESET);
+      await tellPasswordChanged(player);
+      return { ok: true, username: player.username };
     },
 
     /**

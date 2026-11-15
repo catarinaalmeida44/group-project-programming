@@ -18,6 +18,12 @@
 //     invalid_password   the password breaks the rules
 //     username_taken     someone already has that user name
 //     same_password      the new password is the one the player already has
+//     invalid_email      that is not an email address
+//     same_email         that is already the address of this account
+//     email_taken        the address belongs to another account
+//     bad_link           a link from an email was used already, or is too old
+//     too_many_emails    this account was sent several emails this hour: wait
+//     email_unavailable  this server cannot send email
 //     wrong_login        wrong user name or password
 //     locked             too many wrong passwords: wait, the message says how long
 //     too_many_attempts  too many tries from this computer: wait a minute
@@ -108,6 +114,59 @@ export function createAccountApi(fetchFunction) {
      */
     changePassword(currentPassword, newPassword) {
       return ask("POST", "/api/change-password", { currentPassword, newPassword });
+    },
+
+    // ---- email, and a forgotten password ----
+
+    /**
+     * What the server knows about email for this browser.
+     * Gives { available, email }:
+     *   available  can this server send email at all?
+     *   email      the signed-in player's own confirmed address, or null
+     */
+    async getEmail() {
+      const answer = await ask("GET", "/api/email");
+      if (!answer.ok) {
+        return { available: false, email: null };
+      }
+      return { available: answer.available === true, email: typeof answer.email === "string" ? answer.email : null };
+    },
+
+    /**
+     * Asks to add an email address to the signed-in player's account (or to
+     * replace the one it has). The password is asked again. The server
+     * sends a link to the address, and the address only counts once that
+     * link is opened. Gives { ok: true } or { ok: false, code, message }.
+     */
+    setEmail(password, email) {
+      return ask("POST", "/api/set-email", { password, email });
+    },
+
+    /** Takes the email address off the signed-in player's account. Needs the password. */
+    removeEmail(password) {
+      return ask("POST", "/api/remove-email", { password });
+    },
+
+    /** The link in a "confirm your email address" message was opened. "link" is its secret part. */
+    confirmEmail(link) {
+      return ask("POST", "/api/confirm-email", { link });
+    },
+
+    /**
+     * "Forgot your password?" If an account has this address, the server
+     * sends it a link to choose a new password. The answer is { ok: true }
+     * either way: it never says whether an account has the address.
+     */
+    forgotPassword(email) {
+      return ask("POST", "/api/forgot-password", { email });
+    },
+
+    /**
+     * The link in a "choose a new password" message was opened. "link" is
+     * its secret part. Gives { ok: true, username } or { ok: false, code, message }.
+     */
+    resetPassword(link, newPassword) {
+      return ask("POST", "/api/reset-password", { link, newPassword });
     },
 
     /**
