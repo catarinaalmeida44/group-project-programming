@@ -1,4 +1,4 @@
-// The rules for user names and passwords.
+// The rules for user names, passwords and email addresses.
 //
 // The browser uses them to tell a player at once what is wrong, before
 // anything is sent. The server uses the very same rules and checks again,
@@ -38,6 +38,42 @@ export function checkPassword(password) {
     return `A password can have at most ${PASSWORD_MAX} characters.`;
   }
   return null;
+}
+
+/** No email address is longer than this. */
+export const EMAIL_MAX = 254;
+
+/**
+ * Checks an email address. Gives null if it looks like one, or a sentence
+ * saying what is wrong. A space typed by accident before or after it is
+ * forgiven.
+ *
+ * This only checks the shape: something, an @, a name with a dot in it,
+ * and no characters that have no business in an address. Whether the
+ * address really exists, and whose it is, is found out by sending a link
+ * to it (server/accounts.js).
+ */
+export function checkEmail(email) {
+  if (typeof email !== "string" || email.trim() === "") {
+    return "Type an email address.";
+  }
+  const address = email.trim();
+  if (address.length > EMAIL_MAX) {
+    return `An email address can have at most ${EMAIL_MAX} characters.`;
+  }
+  if (!/^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/.test(address)) {
+    return "That does not look like an email address. It should look like name@example.com.";
+  }
+  return null;
+}
+
+/**
+ * The form of an email address used to decide whether two addresses are
+ * the same: "Ana@Example.com" and "ana@example.com " both give
+ * "ana@example.com".
+ */
+export function emailKey(email) {
+  return email.trim().toLowerCase();
 }
 
 /**

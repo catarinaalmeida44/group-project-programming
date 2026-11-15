@@ -7,16 +7,20 @@
 // a pretend store kept in memory (tests/memory-store.js), and test this
 // file separately against the real database.
 //
-// THE THREE TABLES
+// THE FOUR TABLES
 //   players       one row per account: the name as typed, the name in small
 //                 letters (to stop "Ana" and "ana" both existing), the
-//                 scrambled password, wrong-password count, locked until
+//                 scrambled password, wrong-password count, locked until,
+//                 and, if the player gave and confirmed one, an email address
 //   sessions      one row per signed-in browser: a scrambled ticket, whose
 //                 ticket it is, and when it stops working
 //   race_results  one row per finished online race of a signed-in player
+//   email_links   one row per link we sent by email and that was not used
+//                 yet: a scrambled copy of its secret part, whose it is,
+//                 what it is for, and when it stops working
 //
-// Deleting a player also deletes their sessions and results: the database
-// does that by itself ("ON DELETE CASCADE").
+// Deleting a player also deletes their sessions, results and links: the
+// database does that by itself ("ON DELETE CASCADE").
 //
 // SAFETY: a value is never written into the text of a question. Values are
 // handed to the database separately, as $1, $2, ... The only thing written
@@ -35,6 +39,7 @@ export function createStore(pool, { prefix = "" } = {}) {
   const players = `${prefix}players`;
   const sessions = `${prefix}sessions`;
   const results = `${prefix}race_results`;
+  const links = `${prefix}email_links`;
 
   /** A row of the players table as the rest of the code sees it. */
   function playerFrom(row) {
@@ -110,6 +115,26 @@ export function createStore(pool, { prefix = "" } = {}) {
          )`,
       );
       await pool.query(`CREATE INDEX IF NOT EXISTS ${results}_by_track ON ${results} (track, player_id)`);
+
+      // Email, added on 15 November 2026. The players table already exists
+      // on the live server, so the two new columns are added to it if they
+      // are missing. That changes nothing about the rows that are there.
+      // "email_key" is the address in small letters. The index makes the
+      // database itself refuse the same address for two players. Players
+      // without an address (empty, "NULL") do not clash with each other.
+      await pool.query(`ALTER TABLE ${players} ADD COLUMN IF NOT EXISTS email text`);
+      await pool.query(`ALTER TABLE ${players} ADD COLUMN IF NOT EXISTS email_key text`);
+      await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS ${players}_email_key ON ${players} (email_key)`);
+      await pool.query(
+        `CREATE TABLE IF NOT EXISTS ${links} (
+           token_hash text PRIMARY KEY,
+           player_id integer NOT NULL REFERENCES ${players}(id) ON DELETE CASCADE,
+           kind text NOT NULL,
+           email text,
+           expires_at timestamptz NOT NULL,
+           created_at timestamptz NOT NULL
+         )`,
+      );
     },
 
     // ---- players ----
@@ -167,6 +192,93 @@ export function createStore(pool, { prefix = "" } = {}) {
     async setPasswordHash(id, passwordHash) {
       const answer = await pool.query(`UPDATE ${players} SET password_hash = $2 WHERE id = $1`, [id, passwordHash]);
       return answer.rowCount === 1;
+    },
+
+    // ---- email ----
+
+    /** A player's confirmed email address, or null when they have none or do not exist. */
+    async emailOf(id) {
+      const answer = await pool.query(`SELECT email FROM ${players} WHERE id = $1`, [id]);
+      return answer.rows.length === 0 ? null : answer.rows[0].email;
+    },
+
+    /** The player who has this email address (given in small letters), or null. */
+    async findPlayerByEmailKey(emailKey) {
+      const answer = await pool.query(`SELECT ${PLAYER_COLUMNS} FROM ${players} WHERE email_key = $1`, [emailKey]);
+      return answer.rows.length === 0 ? null : playerFrom(answer.rows[0]);
+    },
+
+    /**
+     * Gives a player an email address. Says false, and changes nothing, if
+     * another player already has that address or there is no such player.
+     */
+    async setEmail(id, email, emailKey) {
+      try {
+        const answer = await pool.query(`UPDATE ${players} SET email = $2, email_key = $3 WHERE id = $1`, [id, email, emailKey]);
+        return answer.rowCount === 1;
+      } catch (error) {
+        if (error.code === ALREADY_EXISTS) {
+          return false;
+        }
+        throw error;
+      }
+    },
+
+    async clearEmail(id) {
+      await pool.query(`UPDATE ${players} SET email = NULL, email_key = NULL WHERE id = $1`, [id]);
+    },
+
+    // ---- one-time links, sent by email ----
+    // A link is kept like a session: only a scrambled copy of its secret
+    // part. "kind" says what the link is for. "email" is the address a
+    // "confirm" link is about.
+
+    async addEmailLink({ tokenHash, playerId, kind, email, expiresAt, createdAt }) {
+      await pool.query(
+        `INSERT INTO ${links} (token_hash, player_id, kind, email, expires_at, created_at)
+         VALUES ($1, $2, $3, $4, to_timestamp($5::double precision / 1000), to_timestamp($6::double precision / 1000))`,
+        [tokenHash, playerId, kind, email, expiresAt, createdAt],
+      );
+    },
+
+    /**
+     * Takes a link out of the table and gives it back: { playerId, kind,
+     * email, expiresAt }, or null if there is none. Taking it out is what
+     * makes a link work only once. If two people use the same link at the
+     * same moment, the database gives it to exactly one of them. It is the
+     * caller's job to check the kind and the time.
+     */
+    async takeEmailLink(tokenHash) {
+      const answer = await pool.query(
+        `DELETE FROM ${links} WHERE token_hash = $1
+         RETURNING player_id, kind, email, (extract(epoch from expires_at) * 1000)::bigint AS expires_at_ms`,
+        [tokenHash],
+      );
+      if (answer.rows.length === 0) {
+        return null;
+      }
+      const row = answer.rows[0];
+      return { playerId: row.player_id, kind: row.kind, email: row.email, expiresAt: Number(row.expires_at_ms) };
+    },
+
+    /** How many links of one kind were made for a player after a moment and are still unused. */
+    async countEmailLinksSince(playerId, kind, sinceMs) {
+      const answer = await pool.query(
+        `SELECT count(*)::int AS links FROM ${links}
+          WHERE player_id = $1 AND kind = $2 AND created_at > to_timestamp($3::double precision / 1000)`,
+        [playerId, kind, sinceMs],
+      );
+      return answer.rows[0].links;
+    },
+
+    /** Removes all links of one kind of one player. */
+    async deleteEmailLinks(playerId, kind) {
+      await pool.query(`DELETE FROM ${links} WHERE player_id = $1 AND kind = $2`, [playerId, kind]);
+    },
+
+    /** Removes the links that were made before "beforeMs", whoever they belong to. */
+    async deleteOldEmailLinks(beforeMs) {
+      await pool.query(`DELETE FROM ${links} WHERE created_at < to_timestamp($1::double precision / 1000)`, [beforeMs]);
     },
 
     /** Deletes a player. Their sessions and results go with them. */
@@ -243,12 +355,12 @@ export function createStore(pool, { prefix = "" } = {}) {
       };
     },
 
-    /** Removes the three tables. Only the tests use this, on tables with a test prefix. */
+    /** Removes the four tables. Only the tests use this, on tables with a test prefix. */
     async dropTables() {
       if (prefix === "") {
         throw new Error("Store: refusing to remove the real tables");
       }
-      await pool.query(`DROP TABLE IF EXISTS ${results}, ${sessions}, ${players}`);
+      await pool.query(`DROP TABLE IF EXISTS ${links}, ${results}, ${sessions}, ${players}`);
     },
   };
 }

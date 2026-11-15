@@ -11,6 +11,7 @@ export function createMemoryStore() {
   let players = []; // { id, username, usernameKey, passwordHash, failedLogins, lockedUntil }
   let sessions = []; // { tokenHash, playerId, expiresAt }
   let results = []; // { playerId, track, mode, raceSteps, bestLapSteps, position }
+  let links = []; // { tokenHash, playerId, kind, email, expiresAt, createdAt }: one-time links sent by email
   let nextId = 1;
 
   const visible = (player) => ({
@@ -99,10 +100,64 @@ export function createMemoryStore() {
       return true;
     },
 
+    async emailOf(id) {
+      const player = players.find((each) => each.id === id);
+      return player === undefined ? null : (player.email ?? null);
+    },
+
+    async findPlayerByEmailKey(emailKey) {
+      const player = players.find((each) => each.emailKey === emailKey);
+      return player === undefined ? null : visible(player);
+    },
+
+    async setEmail(id, email, emailKey) {
+      const player = players.find((each) => each.id === id);
+      if (player === undefined || players.some((other) => other.id !== id && other.emailKey === emailKey)) {
+        return false;
+      }
+      player.email = email;
+      player.emailKey = emailKey;
+      return true;
+    },
+
+    async clearEmail(id) {
+      const player = players.find((each) => each.id === id);
+      if (player !== undefined) {
+        player.email = null;
+        player.emailKey = null;
+      }
+    },
+
+    async addEmailLink({ tokenHash, playerId, kind, email, expiresAt, createdAt }) {
+      links.push({ tokenHash, playerId, kind, email, expiresAt, createdAt });
+    },
+
+    async takeEmailLink(tokenHash) {
+      const link = links.find((each) => each.tokenHash === tokenHash);
+      if (link === undefined) {
+        return null;
+      }
+      links = links.filter((each) => each !== link);
+      return { playerId: link.playerId, kind: link.kind, email: link.email, expiresAt: link.expiresAt };
+    },
+
+    async countEmailLinksSince(playerId, kind, sinceMs) {
+      return links.filter((link) => link.playerId === playerId && link.kind === kind && link.createdAt > sinceMs).length;
+    },
+
+    async deleteEmailLinks(playerId, kind) {
+      links = links.filter((link) => link.playerId !== playerId || link.kind !== kind);
+    },
+
+    async deleteOldEmailLinks(beforeMs) {
+      links = links.filter((link) => link.createdAt >= beforeMs);
+    },
+
     async deletePlayer(id) {
       players = players.filter((player) => player.id !== id);
       sessions = sessions.filter((session) => session.playerId !== id);
       results = results.filter((result) => result.playerId !== id);
+      links = links.filter((link) => link.playerId !== id);
     },
 
     async addSession({ tokenHash, playerId, expiresAt }) {
@@ -153,10 +208,12 @@ export function createMemoryStore() {
       players = [];
       sessions = [];
       results = [];
+      links = [];
     },
 
-    // Only the pretend store has these two. Tests use them to look inside.
+    // Only the pretend store has these three. Tests use them to look inside.
     countSessions: () => sessions.length,
     countResults: () => results.length,
+    countEmailLinks: () => links.length,
   };
 }

@@ -187,6 +187,98 @@ export function describeAStore(name, makeStore, timeout = 5000) {
       await store.deletePlayer(bea.id);
     }, timeout);
 
+    // Added on 15 November 2026, for email and the links we send by email.
+    it("gives a player an email address, finds the player by it, and takes it away again", async () => {
+      expect(await store.emailOf(ana.id)).toBe(null);
+      expect(await store.findPlayerByEmailKey("ana@example.com")).toBe(null);
+
+      expect(await store.setEmail(ana.id, "Ana@Example.com", "ana@example.com")).toBe(true);
+      expect(await store.emailOf(ana.id)).toBe("Ana@Example.com"); // kept the way it was typed
+      expect((await store.findPlayerByEmailKey("ana@example.com")).id).toBe(ana.id);
+      expect(await store.emailOf(rui.id)).toBe(null); // nobody else got one
+      // What the rest of the code sees of a player has not changed: no email in it.
+      expect(Object.keys(await store.findPlayerById(ana.id)).sort()).toEqual(
+        ["failedLogins", "id", "lockedUntil", "passwordHash", "username"].sort(),
+      );
+
+      await store.clearEmail(ana.id);
+      expect(await store.emailOf(ana.id)).toBe(null);
+      expect(await store.findPlayerByEmailKey("ana@example.com")).toBe(null);
+      expect(await store.emailOf(999999)).toBe(null); // nobody there
+    }, timeout);
+
+    it("refuses the same email address for a second player, and lets many players have none", async () => {
+      expect(await store.setEmail(ana.id, "shared@example.com", "shared@example.com")).toBe(true);
+      expect(await store.setEmail(rui.id, "SHARED@example.com", "shared@example.com")).toBe(false);
+      expect(await store.emailOf(rui.id)).toBe(null);
+      expect((await store.findPlayerByEmailKey("shared@example.com")).id).toBe(ana.id);
+      // Setting one's own address again is fine, and so is a player who does not exist: nothing happens.
+      expect(await store.setEmail(ana.id, "shared@example.com", "shared@example.com")).toBe(true);
+      expect(await store.setEmail(999999, "x@example.com", "x@example.com")).toBe(false);
+      // An address that looks like a database command is kept as plain text.
+      const nasty = "x'; DROP TABLE players; --@example.com";
+      expect(await store.setEmail(rui.id, nasty, nasty)).toBe(true);
+      expect(await store.emailOf(rui.id)).toBe(nasty);
+      await store.clearEmail(rui.id);
+      await store.clearEmail(ana.id);
+      // Two players without an address do not clash.
+      expect(await store.emailOf(ana.id)).toBe(null);
+      expect(await store.emailOf(rui.id)).toBe(null);
+    }, timeout);
+
+    it("keeps a link until it is taken, and gives it out exactly once", async () => {
+      const link = { tokenHash: "link-1", playerId: ana.id, kind: "reset_password", email: null, expiresAt: 1_800_000_900_000, createdAt: 1_800_000_000_000 };
+      await store.addEmailLink(link);
+      await store.addEmailLink({ ...link, tokenHash: "link-2", kind: "confirm_email", email: "ana@example.com" });
+
+      expect(await store.takeEmailLink("no-such-link")).toBe(null);
+      expect(await store.takeEmailLink("link-1")).toEqual({ playerId: ana.id, kind: "reset_password", email: null, expiresAt: 1_800_000_900_000 });
+      expect(await store.takeEmailLink("link-1")).toBe(null); // used up
+      expect(await store.takeEmailLink("link-2")).toEqual({ playerId: ana.id, kind: "confirm_email", email: "ana@example.com", expiresAt: 1_800_000_900_000 });
+
+      // Two people using the same link at the same moment: exactly one gets it.
+      await store.addEmailLink({ ...link, tokenHash: "link-3" });
+      const both = await Promise.all([store.takeEmailLink("link-3"), store.takeEmailLink("link-3")]);
+      expect(both.filter((taken) => taken !== null)).toHaveLength(1);
+    }, timeout);
+
+    it("counts a player's unused links of one kind since a moment, and removes them by kind and by age", async () => {
+      const at = (createdAt, tokenHash, playerId, kind) => ({ tokenHash, playerId, kind, email: null, expiresAt: createdAt + 1_800_000, createdAt });
+      await store.addEmailLink(at(1_800_000_000_000, "old-reset", ana.id, "reset_password"));
+      await store.addEmailLink(at(1_800_003_000_000, "new-reset-1", ana.id, "reset_password"));
+      await store.addEmailLink(at(1_800_003_500_000, "new-reset-2", ana.id, "reset_password"));
+      await store.addEmailLink(at(1_800_003_500_000, "new-confirm", ana.id, "confirm_email"));
+      await store.addEmailLink(at(1_800_003_500_000, "rui-reset", rui.id, "reset_password"));
+
+      expect(await store.countEmailLinksSince(ana.id, "reset_password", 1_800_002_000_000)).toBe(2);
+      expect(await store.countEmailLinksSince(ana.id, "reset_password", 1_799_999_999_999)).toBe(3);
+      expect(await store.countEmailLinksSince(ana.id, "confirm_email", 0)).toBe(1);
+      expect(await store.countEmailLinksSince(rui.id, "reset_password", 0)).toBe(1);
+      expect(await store.countEmailLinksSince(999999, "reset_password", 0)).toBe(0);
+
+      await store.deleteOldEmailLinks(1_800_001_000_000); // older than this go, whoever they belong to
+      expect(await store.takeEmailLink("old-reset")).toBe(null);
+      expect(await store.countEmailLinksSince(ana.id, "reset_password", 0)).toBe(2);
+
+      await store.deleteEmailLinks(ana.id, "reset_password"); // only that kind, only that player
+      expect(await store.countEmailLinksSince(ana.id, "reset_password", 0)).toBe(0);
+      expect(await store.countEmailLinksSince(ana.id, "confirm_email", 0)).toBe(1);
+      expect(await store.countEmailLinksSince(rui.id, "reset_password", 0)).toBe(1);
+      await store.deleteEmailLinks(ana.id, "confirm_email");
+      await store.deleteEmailLinks(rui.id, "reset_password");
+    }, timeout);
+
+    it("takes a deleted player's links away with them, and frees their email address", async () => {
+      const temp = await store.addPlayer({ username: "Temp", usernameKey: "temp", passwordHash: "h" });
+      await store.setEmail(temp.id, "temp@example.com", "temp@example.com");
+      await store.addEmailLink({ tokenHash: "temp-link", playerId: temp.id, kind: "reset_password", email: null, expiresAt: 1_900_000_000_000, createdAt: 1_800_000_000_000 });
+      await store.deletePlayer(temp.id);
+      expect(await store.takeEmailLink("temp-link")).toBe(null);
+      expect(await store.findPlayerByEmailKey("temp@example.com")).toBe(null);
+      expect(await store.setEmail(ana.id, "temp@example.com", "temp@example.com")).toBe(true);
+      await store.clearEmail(ana.id);
+    }, timeout);
+
     it("takes a deleted player's sessions and results away with them", async () => {
       await store.addSession({ tokenHash: "rui-ticket", playerId: rui.id, expiresAt: 1_900_000_000_000 });
       await store.deletePlayer(rui.id);
