@@ -1,6 +1,11 @@
 // Starts the server. Run it with:  npm start
 //
-// Three settings can be given from outside the code (environment variables):
+// These settings can be given from outside the code (environment variables):
+//   BREVO_API_KEY  our secret key at Brevo, the company that delivers our
+//                 email. Optional: without it there is no email.
+//   EMAIL_FROM    the address our emails come from (confirmed at Brevo).
+//   PUBLIC_URL    the address of our own site, for the links in emails. On
+//                 Render it is not needed: Render tells the server its address.
 //   PORT          the "door number" the server listens on. Render chooses it
 //                 online. On a laptop we use 3000.
 //   HOST          who may connect. On a laptop it is 127.0.0.1, which means
@@ -18,16 +23,23 @@ import { attachOnlinePlay } from "./online.js";
 import { openPool, createDatabaseOn } from "./db.js";
 import { createStore } from "./store.js";
 import { createAccounts } from "./accounts.js";
+import { emailFromSettings } from "./mailer.js";
 import { TRACKS, DEFAULT_TRACK } from "../shared/tracks/index.js";
 import { TEST_DRIVER } from "../shared/characters.js";
 
 const port = Number(process.env.PORT) || 3000;
 const host = process.env.HOST || "127.0.0.1";
 
+// Email is optional. With its settings a player can add an email address to
+// their account and reset a forgotten password. Without them the game runs
+// as before, and those two things are simply not offered.
+const email = emailFromSettings(process.env);
+
 // One set of connections to the database, shared by everything that uses it.
 const pool = openPool(process.env.DATABASE_URL);
 const database = pool === null ? null : createDatabaseOn(pool);
-const accounts = pool === null ? null : createAccounts(createStore(pool));
+const accounts =
+  pool === null ? null : createAccounts(createStore(pool), email === null ? {} : { mailer: email.mailer, siteAddress: email.siteAddress });
 
 const app = createApp({ database, accounts });
 // One online room for each track. Results of signed-in players are saved.
@@ -43,6 +55,12 @@ app.listen(port, host, () => {
 // slow or down, so we do not wait for this and a failure here does not stop
 // the server. (The account tables are tried again the first time they are
 // needed.)
+console.log(
+  email === null
+    ? "No settings for email (BREVO_API_KEY, EMAIL_FROM and the address of the site): running without email."
+    : `Email is set up. Links in emails will lead to ${email.siteAddress}`,
+);
+
 if (pool === null) {
   console.log("No DATABASE_URL setting: running without a database, so without accounts.");
 } else {

@@ -18,3 +18,10 @@ services:
     envVars:
       - key: HOST
         value: 0.0.0.0         # accept visitors from the internet (see server/start.js)
+      # Email (optional, see server/mailer.js). "sync: false" means: the value
+      # is NOT in this file. Render asks for it on its own "Environment" page,
+      # where the person who has it types it in. Without them there is no email.
+      - key: BREVO_API_KEY     # our secret key at the company that delivers our email
+        sync: false
+      - key: EMAIL_FROM        # the address our emails come from
+        sync: false
