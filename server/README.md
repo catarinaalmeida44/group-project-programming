@@ -6,9 +6,10 @@ Our game server: the program that runs on Render. It sends the game's files to t
 |---|---|
 | `app.js` | Builds the web server and decides what to answer for each request. It sends files from the `client/` folder and, under addresses that start with `/shared/`, from the `shared/` folder. It answers `/health` with "I am alive", hands addresses that start with `/api/` to `api.js`, and refuses everything else. With every answer it tells the browser to run only our own scripts and styles |
 | `api.js` | The addresses a page uses for accounts and the leaderboard: sign up, sign in, sign out, "who am I", change my password, delete my account, and the leaderboard of a track. It reads what a browser sent, refuses what is not allowed, and sets the cookie |
-| `accounts.js` | The rules for accounts: who may sign in, when an account is locked, how long a sign-in lasts, which results may be saved, what the leaderboard shows. Knows nothing about the internet or about database questions, which makes it easy to test |
+| `accounts.js` | The rules for accounts: who may sign in, when an account is locked, how long a sign-in lasts, which results may be saved, what the leaderboard shows, and email: adding an address, confirming it with a link, and choosing a new password when the old one is forgotten. Knows nothing about the internet or about database questions, which makes it easy to test |
 | `passwords.js` | Scrambles passwords so they are never kept in a readable form, and checks a password against its scrambled form |
-| `store.js` | Every question the game asks the database about players, sessions and race results |
+| `mailer.js` | Sends an email by handing it to Brevo with one web request, using a secret key from the settings. Also a pretend mailer that prints the message instead, and the check of our own site's address for the links in emails. What the emails say and when they are sent is in `accounts.js` |
+| `store.js` | Every question the game asks the database about players, sessions, race results, email addresses and the links sent by email |
 | `online.js` | Online play. Keeps a live connection open to every browser on the online page, passes the keys they hold to the room, sends everyone the state of all karts and bananas 20 times a second, and saves the result when a signed-in player finishes a race. One room for each track. Gives every room real chance to pick the seeds of its bananas with |
 | `room.js` | The karts of everyone driving together, and the race: who the host is, the countdown, who is racing, who is watching, and who finished in which position. Moves the karts with the shared rules, 60 steps a second: it puts them on the starting grid, lets them bump into each other, and looks after the bananas of a race. Knows nothing about the internet, which makes it easy to test |
 | `messages.js` | Checks every message a browser sends before the game looks at it: keys, restart, start, and the colours of its kart |
@@ -98,6 +99,7 @@ For online play:
 - anything about bananas from a browser: placing or removing one, spinning a kart, choosing the seed. There is no such message, and anything of the kind added to a real message is dropped
 - the keys of a kart that is spinning out: they do nothing until the spin is over
 - saving a result for a guest, for laps driven outside a race, or for a racer who left before the line
+- adding or removing an email address without the password; a link from an email that is made up, used before, too old or of the wrong kind; more than three emails of one kind for one account in an hour; and telling anyone an email address but their own
 - changing a password without being signed in, with a wrong current password, to one that breaks the rules or to the same one again; changing anyone's password but your own; and more than ten tries a minute from one computer
 
 "Sent away" means three things, in this order: its kart leaves the track at once, the server tells it why, and two seconds later the server cuts the connection if the browser has not closed it. The server does not wait for the browser to agree.

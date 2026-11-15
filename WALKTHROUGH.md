@@ -12,6 +12,8 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 | Choosing a track in the menu | `client/track-panel.js`, `client/track-list.js`, `client/mini-map.js` | Yes: a card with a small map for each track |
 | The leaderboard in the menu | `client/leaderboard.js`, `client/leaderboard-view.js`, `client/leaderboard-panel.js` | Yes: the shared boards of each track, and your own practice bests |
 | Accounts in the menu | `client/account.js`, `client/account-view.js`, `client/account-panel.js` | Yes: create an account, sign in, sign out, change your password, delete your account |
+| Email in the pages: adding an address, "Forgot your password?", and the page a link in an email opens | `client/email-view.js`, `client/link.html`, `client/link.js` | Yes, since 15 November. Optional |
+| Sending email | `server/mailer.js` | Yes, since 15 November, through Brevo. Only when the settings for it are there |
 | How a page asks the server about accounts | `client/account-api.js`, read carefully by `client/answers.js` | Yes |
 | Accounts on the server | `server/api.js` (the addresses), `server/accounts.js` (the rules), `server/passwords.js` (scrambling), `server/store.js` (the database questions) | Yes: a user name and a password. No email yet |
 | Which user names and passwords are allowed | `shared/account-rules.js` | Yes, used by the page and by the server |
@@ -150,7 +152,7 @@ The server also protects itself, and each of these has a test:
 
 ## How do accounts work, and what do they refuse?
 
-An account is a user name and a password. There is no email yet. The menu has the forms; the server does the deciding.
+An account is a user name and a password. An email address is optional (since 15 November 2026): it is only there to get back into the account when the password is forgotten, and has a section of its own below. The menu has the forms; the server does the deciding.
 
 1. **Signing up.** The page sends the name and the password to `/api/signup`. The server checks both against the rules in `shared/account-rules.js` (the page uses the same file to warn early, but the server never trusts the page). The name must be 3 to 16 letters, digits or underscores, and "Ana" and "ana" count as the same name. The password must be at least 8 characters.
 2. **The password is scrambled, never kept.** `server/passwords.js` runs it through `scrypt`, a function that comes with Node.js, together with a random "salt", so two players with the same password get different results. What is stored cannot be turned back into the password. It is slow on purpose, about a tenth of a second, so that someone who stole the database could not try millions of guesses.
@@ -159,7 +161,7 @@ An account is a user name and a password. There is no email yet. The menu has th
 5. **Changing your password** (since 13 November 2026). In the menu, under "Your account", "Change my password" asks for the password you have now and a new one. The page sends both to `/api/change-password`. The server checks the current password again, with the same lock after five wrong tries: being signed in is not enough, so someone who finds a laptop open cannot take the account over. The new password has to keep the rules and has to be a different one. It is scrambled like any other. Then you are signed out on every other phone or computer, so that someone who knew the old password is out, and you stay signed in on the one you used.
 6. **Deleting your account** asks for the password again and removes your sessions and results with it.
 
-There is still no way to get back into an account when the password is forgotten. That needs email, which the team has not decided on (see the known limits).
+A player who forgot their password can get back in only if they added an email address to the account before. That is the next section.
 
 The cookie is marked in three ways. `HttpOnly`: the page's own code cannot read it, so a script that somehow got into a page could not steal it. `SameSite=Lax`: the browser does not send it with requests that another website starts. `Secure`: on the live site it only travels over the protected connection (https).
 
@@ -177,6 +179,37 @@ What the server refuses, each with a test in `tests/api.test.js` or `tests/accou
 - A name that looks like a database command is just an odd name. Values are never glued into the text of a database question (`server/store.js`), and a test checks that for every question.
 
 When the server runs without a database, which is the normal case on a teammate's laptop, every one of these addresses answers "not available" and the menu says so. The game itself still works.
+
+## How does email work, and how is a forgotten password reset?
+
+Built on 15 November 2026, after Catarina asked for it. Email is optional in two ways. A player does not have to give an address. And the server only offers email when it has the settings for it: without them the game runs exactly as before.
+
+**Adding an address.** In the menu, under "Your account", "Email, for a forgotten password" asks for an address and the player's password. The password is asked again because whoever controls the address can later choose a new password: a laptop left open must not be enough to add one. The server then sends a link to that address. Nothing about the account changes yet. Only when the link is opened does the address count. That proves the mailbox belongs to the player, and it means a typing mistake cannot hand the account to a stranger.
+
+**A forgotten password.** Under "Sign in" there is "Forgot your password?". The player types their address. If an account has it, the server sends a link to choose a new password. The page says the same sentence either way: "If an account has this email address, we sent it a link." Otherwise anyone could find out whose addresses we have by trying them.
+
+**Choosing the new password.** The link opens `link.html`, which asks for a new password. Here the link is the proof, so the old password is not asked for. Afterwards the player is signed out on every device, a lock from wrong passwords is lifted, and an email says "your password was changed", so the owner notices if it was not them. The same email is sent after an ordinary password change.
+
+**What a link is.** A long random text (32 random bytes), like a sign-in ticket, and kept the same way: the database holds only a scrambled copy, so someone who could read the database still could not use a link. A link works once. A link to confirm an address works for 60 minutes, one to choose a new password for 30. The secret part sits after a `#` in the address (`link.html#reset=...`). A browser never sends that part of an address to a server, so the secret is in nobody's list of visited addresses. The page reads it, takes it out of the address bar at once, and sends it inside a message.
+
+**How an email is sent** (`server/mailer.js`). With one ordinary web request to Brevo, the company that delivers it. No library is needed for that. Brevo only accepts messages that come with our secret key, which is a setting outside the code like the database address. The classic way of sending email uses other doors of the internet, and our hosting company keeps those shut on its free plan. Sending does not make the player wait: if Brevo is slow or down, the player's request is answered all the same, and the failure goes to our own log without the player's address.
+
+**Where the link points.** To the address of our own site, taken from a setting (on Render, from what Render tells the server its address is). Never from what a request says our name is: a request can claim any name, and a link built from that would send a player's secret to someone else's site.
+
+What the server refuses, each with a test in `tests/email.test.js`, `tests/api-email.test.js` or `tests/mailer.test.js`:
+
+- Adding or removing an address without being signed in or without the right password, with the same lock after five wrong tries. Nothing in the message can name another player.
+- Something that is not an email address, including two addresses in one and text with line breaks in it.
+- An address that already belongs to another account. The answer is the same "we sent a link", and nothing is sent, so a signed-in player cannot find out whose address it is either. If two accounts ask for the same new address, whoever opens their link first has it, and the database itself refuses the second.
+- A link that is made up, damaged, used before, too old, or of the other kind (a "confirm" link cannot set a password).
+- A new password that breaks the rules. It does not use the link up.
+- A link sent to an address the player has since replaced or removed, and any "new password" link that was still out when the password was changed another way.
+- More than three emails of one kind for one account in an hour. For a forgotten password the page still gives the same sentence, and nothing is sent.
+- More tries a minute from one computer than a classroom would make, a request from another website, and a form instead of our format, as for every other account address.
+- Asking the server for anyone's address but your own. No address of the server takes a name and gives back an email address.
+- Everything that needs email, on a server without the settings for it: "Email is not set up on this server." Taking an address off still works there.
+
+On a laptop, `npm run start:pretend` has pretend email as well: nothing is sent, and each message is printed in the terminal with its link, so the whole thing can be tried by copying the link into the browser.
 
 ## How does a time get onto the shared leaderboard, and can it be faked?
 
@@ -364,22 +397,25 @@ Our first version of this rule had a mistake: a kart driving the wrong way round
 
 In a Postgres database kept by a company called Neon, in Frankfurt, on its free plan. Everything else the server knows, such as the karts in the online room, lives only in its memory and is gone when it restarts.
 
-**What is stored today:** four tables.
+**What is stored today:** five tables.
 
 | Table | One row for | What is in a row |
 |---|---|---|
 | `server_starts` | each time the server started (the newest 50 are kept) | a number, and the date and time. It exists to prove that the server can write to the database and read from it |
-| `players` | each account | the user name as typed, the same name in small letters (so "Ana" and "ana" cannot both exist), the scrambled password, how many wrong passwords in a row, locked until when, and the date joined |
+| `players` | each account | the user name as typed, the same name in small letters (so "Ana" and "ana" cannot both exist), the scrambled password, how many wrong passwords in a row, locked until when, the date joined, and, only if the player gave one and confirmed it, an email address (as typed, and in small letters so that two accounts cannot have the same one) |
+| `email_links` | each link we sent by email that was not used yet | a scrambled copy of its secret part, whose it is, what it is for (confirm an address, or choose a new password), the address it is about, when it stops working, and when it was made. Rows older than an hour are removed |
 | `sessions` | each browser that is signed in | a scrambled copy of the ticket, whose it is, and when it stops working |
 | `race_results` | each finished online race of a signed-in player | the player, the track, the mode ("online"), the race time and the fastest lap in steps, the finishing position, and the date |
 
-The only personal data is the user name a player chose. There is no email, no real name and no readable password. Deleting an account deletes that player's rows in all three tables: the database does that by itself, because sessions and results are tied to their player.
+The personal data is the user name a player chose and, if they gave one, their email address. There is no real name and no readable password. The email address is used for one thing, links for a forgotten password, and nobody but its owner is ever shown it: not other players, not the leaderboard. A player can take it off their account again at any time. Deleting an account deletes that player's rows in all four tables: the database does that by itself, because sessions, results and links are tied to their player. When we send an email, the address and the text of the message also pass through Brevo, the company that delivers it.
+
+The two new columns for email are added to the `players` table the first time the new version starts, with "add this column if it is missing". The rows that are already there are not touched. This was tried on the real database in tables that start with `test_`, not yet on the real `players` table: that happens when the new version first goes online.
 
 **Stored in each player's own browser, not by us:** the camera view chosen in Settings, and that player's best practice race time and best lap on each track. They never reach our server. Clearing the browser's data deletes them. The cookie that keeps a player signed in is also in the browser, but the page's code cannot read it.
 
 **What will be stored later:** progress such as trophies and unlocked characters (section 6 of `PROJECT_BRIEF.md`).
 
-**How the server reaches it:** through a secret address that includes a password, the setting `DATABASE_URL`. It is in two places only: Render's Environment page, and a file called `.env` on Catarina's laptop, which git ignores. It is not in the code, and the code never prints it. On the first day the address was once pasted into a chat with the coding agent by mistake. The password was changed in Neon straight away, before anything used it.
+**How the server reaches it:** through a secret address that includes a password, the setting `DATABASE_URL`. It is in two places only: Render's Environment page, and a file called `.env` on Catarina's laptop, which git ignores. It is not in the code, and the code never prints it. On the first day the address was once pasted into a chat with the coding agent by mistake. The password was changed in Neon straight away, before anything used it. Email has a secret of the same kind, the key of our Brevo account (the setting `BREVO_API_KEY`), kept in the same two places and never in the code or the log.
 
 **How to see it working:** the address `/database-check` on our site answers with the number of starts recorded and the time of the latest. Without a database it answers "The database is not set up on this computer", and when the database cannot be reached, "The database could not be reached".
 
@@ -389,9 +425,18 @@ The only personal data is the user name a player chose. There is no email, no re
 
 ## What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 1,275 tests today, plus 23 that only run against the real database. They take about 40 seconds, most of it online races that run in real time.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 1,376 tests today, plus 28 that only run against the real database. They take about 40 seconds, most of it online races that run in real time.
 
 **Covered today**
+
+- Email, in five files (101 new tests on 15 November). No test ever sends an email: the mailer is a pretend one that writes down what it was asked to send.
+  - `tests/email.test.js` (thirty-nine tests, the rules, with a pretend clock): an address only counts once its link is opened, a link works once and stops after 60 or 30 minutes to the millisecond, the same answer for an address with an account and one without, three emails an hour, a reset signs the player out everywhere and lifts a lock, and what must not happen: adding an address without the password, a link of the wrong kind setting a password, a link sent to an old address still working, a password in an email, a server without email trying to send.
+  - `tests/api-email.test.js` (nineteen, with real requests to a real copy of the server): the same through the server, nobody signed in, a request from another website, a form, a message that names another player, the limit per computer, and that nobody is ever told an address but their own.
+  - `tests/mailer.test.js` (seventeen): the message in the service's format with our key in a header only, a failure that names neither the key nor the reader's address, text that cannot act as HTML in an email, and settings that are missing, made-up or not a web address.
+  - `tests/email-view.test.js` (twenty): what counts as an email address, reading a link from the end of a page's address, and where each refusal is shown.
+  - Five more checks in `tests/store-contract.js`, run on the pretend store and on the real database: an address per player, the same address refused for a second player, a link given out exactly once even when two ask at the same moment, counting and removing links, and a deleted player's links and address going with them.
+- One older test was changed on 15 November, because the rule it pinned was changed on purpose. `tests/menu-page.test.js` said the menu page has no email box at all. It now says email has two forms of its own, and that signing in, creating an account and deleting one still ask for a user name and a password only. It has a comment that says what it said before.
+- To check that the email tests really guard the rules, the code was broken on purpose in 34 ways, one at a time (for example "a 'confirm' link can set a password", "a link works more than once", "the secret of a link is stored unscrambled", "a guest is told a player's email address", "text in an email can act as HTML", "a failure names the reader's address"). Thirty-three made a test fail at once. One did not, "a server without email tries to send anyway": the mistake was caught inside the code and only left a line in the log. A test for it was written, and then it failed too.
 
 - A race driven to its end, in `tests/room-race.test.js` (ten new tests on 13 November). The host's start is refused while a race is being driven and changes nothing, the race is over exactly two minutes after the first finish, a second finish gives no extra time, a racer who is out of time cannot finish however long they hold the gas, a race nobody finishes ends at the ten-minute limit, the host can start the next race afterwards, and time limits that are not whole numbers above zero are refused.
 - The missed checkpoint, in `tests/checkpoints.test.js`. Thirteen tests. One drives the exact line Catarina drove on the campus loop, with the real lap rules: past the CTT Student Hall, onto the finish line, no lap, a warning that names checkpoint 5, and the lap counting once the kart has gone back through it. Others check that a clean lap never warns, that rolling back into the checkpoint before is not taken for a missed one, and that the light stands only on open squares.
@@ -415,7 +460,7 @@ We run them with `npm test`. GitHub also runs them by itself on every pull reque
 - The account rules in `server/accounts.js`, in `tests/accounts.test.js`. Forty-seven tests with a pretend store kept in memory and a pretend clock: signing up, names and passwords that must be refused, signing in whatever capitals the name is typed in, the same refusal for a wrong password and for a name nobody has, the lock after five wrong passwords and its end ten minutes later, sessions that stop after seven days, signing out, deleting an account, results that cannot be real (zero steps, a lap longer than the race), and the leaderboard: ten rows, one per player, own rank outside the ten.
 - The account addresses in `server/api.js`, in `tests/api.test.js`. Fifty-three tests that send real requests to a real copy of the server. More than half are refusals: a request started by another website, a form instead of our format, a message that is too long or not one object, the wrong kind of request, an address that does not exist, a made-up or damaged cookie, deleting someone else's account, too many tries from one computer, too much password work in total, a track that does not exist, and every address on a server without a database. One test goes through a whole visit with the same helper the pages use, and one uses the real, slow password scrambler.
 - Scrambling passwords, in `tests/passwords.test.js`. Nine tests: the password is not in what is stored, the same password scrambles differently each time, only the right one matches, and a damaged stored form is refused without breaking.
-- The database questions in `server/store.js`. One list of checks (`tests/store-contract.js`) is run on the pretend store (`tests/store.test.js`, twenty tests) and on the real database (`tests/store-live.test.js`, eighteen tests, in tables that start with `test_`). It includes two sign-ups for the same name at the same moment, a name that looks like a database command, and a deleted player's sessions and results going with them.
+- The database questions in `server/store.js`. One list of checks (`tests/store-contract.js`) is run on the pretend store (`tests/store.test.js`, twenty-five tests) and on the real database (`tests/store-live.test.js`, twenty-three tests, in tables that start with `test_`). It includes two sign-ups for the same name at the same moment, a name that looks like a database command, and a deleted player's sessions and results going with them.
 - The finishing order in `server/room.js`, in `tests/room-finishes.test.js`. Twelve tests: positions in the order of crossing the line, two racers on the same step sharing a position, each finish handed out once, and what is never listed: laps driven outside a race, watchers, racers who left.
 - Saving results over real connections, in `tests/online-accounts.test.js`. Twenty-two tests, with whole races on a short straight test track: a signed-in racer's time is saved and they are told, two racers are each saved under their own name, nothing is saved for a guest or for free driving, a browser that sends a made-up result is sent away, the player is told when the database fails, the names of signed-in players are sent to their room only, and each track has its own room.
 - What the online page shows about accounts, in `tests/online-page.test.js`. Twenty-three tests: the messages it accepts, the line about your account, the names of the others, and the short name it puts in the address of its connection.
@@ -453,6 +498,10 @@ The server tests start a real copy of the server on the computer running the tes
 To check that the tests really guard the rules, we broke the code on purpose in 57 different ways, one at a time (for example "grass is as fast as road", "driving backwards is not counted" and "other websites may connect"). In the end every one made at least one test fail. One did not at first: accepting an update that arrives late. The test for it was too weak, and it was tightened.
 
 **Not covered today**
+
+- A real email. Until 15 November nobody had made the Brevo account, so not one real message has been sent. What Brevo expects was taken from its own description of its address, and our side of it is tested with a pretend service. Whether a message arrives, how it looks in a mail program, and whether it lands in the spam folder can only be seen once the key is in place. Until then the live server says "Email is not set up".
+- The two new columns on the real `players` table. Adding them was tried on the real database in tables that start with `test_`. On the real table it happens when this version first goes online.
+- Email in the pages by a person. On 15 November the whole way was gone through once in the agent's browser, on a laptop with pretend accounts and pretend email: add an address in "Your account", open the link printed in the terminal, see the address in "Your account", ask for a link under "Forgot your password?" (the same sentence for an unknown address, and only one email printed), open that link, choose a new password, and then the old password was refused and the new one accepted. Nobody has done it by hand, or on a phone, or from a real mail program.
 
 - The work of 13 November tried by people. The walls beside the kart, the yellow light and the results list were looked at in the agent's browser as single pictures, on a laptop. In the real online page, pressing Enter in the middle of a race did nothing, as it should. Nobody has driven a whole online race to the results list by hand, nobody has waited out the two minutes after the first finish with real players, and the missed-checkpoint warning was only set off in the tests, not by a person in the page. None of it has been on the live server yet.
 - Whether two minutes after the first finish is the right length. It is to be tried with real players.
@@ -504,6 +553,8 @@ These are the limits we expect from the free hosting plans:
 
 **The database is asleep, slow or cannot be reached.** The game keeps working: the pages, the practice race and the driving in online play do not use the database. What stops for that moment is accounts. Signing in, signing up and the shared leaderboard answer "Accounts could not be reached just now. Try again in a moment." A browser that connects to an online race is let in as a guest. A signed-in racer who finishes is told "Your last result could not be saved", and the race goes on for everyone. That one result is lost: the server does not try again later. The tables for accounts are created the first time they are needed, so a database that was asleep when the server started is not a problem. The details of a database error only ever go to the server's own log. Each of these has a test with a pretend database that fails.
 
+**The email service is down, slow, or says no.** Nothing else is affected: the game, accounts and signing in do not use it. A player who asks for a link is answered at once, as always, and the link does not arrive. They can ask again later, up to three times an hour. The failure is written to the server's own log with the number the service answered, without the player's address and without the link. The server gives up waiting for the service after ten seconds. **Email is not set up at all** (no key): the menu says so in "Your account", and "Forgot your password?" answers "Email is not set up on this server." Each of these has a test with a pretend email service that fails.
+
 The server does not wait for the database when it starts. `/database-check` answers "The database could not be reached. Try again in a moment." An unreachable database takes ten seconds to give up on, so after a failure the server does not ask again for three seconds, and visitors in that time get the same answer at once. This was tried for real on 10 November, when the university Wi-Fi blocked the database: the server started, sent the game, and answered the check with that message.
 
 ## Why did we build it this way?
@@ -535,7 +586,12 @@ The server does not wait for the database when it starts. `/database-check` answ
 ## What are the known limits, and what would we change next?
 
 - On the university's student Wi-Fi a laptop cannot reach the database. The connection opens and then nothing comes back. The live server is not on that network. For database work on a laptop we need a phone hotspot or home Wi-Fi, or we switch to Neon's own library.
-- There is no email. An account is a user name and a password, so nothing proves who someone is, anyone can take any free name, and a forgotten password cannot be reset: that account can no longer be used. A player who knows their password can change it (since 13 November). Email needs an outside service and a new secret key, which the team has not chosen yet.
+- Email is optional and only for a forgotten password (since 15 November). An account is still a user name and a password, so nothing proves who someone is and anyone can take any free name. A player who never added an address and forgets their password has lost that account. We chose optional because the game should be playable in a minute, and because every address we store is one more thing to look after. The stricter plan in the brief (an address needed before racing online) is not built.
+- Email only works once the team has a Brevo account and has put its key into Render's settings. Without a web address of our own, Brevo sends our messages from an address of its own, and some will land in the spam folder. A web address of our own (a few euros a year) would fix that.
+- Brevo's free plan sends 300 emails a day. We send at most three of each kind per account per hour, but nothing limits the total, so a busy day could use it up, and then links stop arriving until the next day.
+- "Forgot your password?" gives the same sentence for a known and an unknown address, but not in exactly the same time: for a known one the server writes a link into the database first. Someone measuring many tries very carefully could in principle tell the difference. The limit per computer makes that slow.
+- Someone who can read a player's mailbox can take over that player's game account. That is true of every site with "forgot password", and it is why the owner gets an email whenever the password changes.
+- A player signs in with their user name, not with their email address, and a forgotten user name is not sent by email.
 - Anyone can make as many accounts as they like. The limits on sign-ups are per minute, to protect the server, not per person.
 - The limit per computer goes by the address our hosting company tells us a visitor came from. Everyone on the campus Wi-Fi shares one address, so the limits are set for a whole classroom, and someone who really wanted to could pretend to come from many addresses. Two things do not depend on it: the lock on one account after five wrong passwords, and the limit on password work in total.
 - Anyone who knows a user name can lock that account for ten minutes by typing five wrong passwords. That is the price of the lock, which is what stops someone from guessing a password.

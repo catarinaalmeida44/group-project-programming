@@ -19,7 +19,9 @@ Everything the browser shows and does: the web page, the drawing of the track an
 | `leaderboard-panel.js` | Puts the leaderboard on the page and listens to its buttons |
 | `account-view.js` | The words for the account corner, and what is wrong with a form before it is sent, by the rules in `shared/account-rules.js`. No browser needed, so it has tests |
 | `account.js` | Creating an account, signing in and out, deleting the account: checks the form, asks the server, remembers who is signed in. It never keeps a password |
-| `account-panel.js` | Puts accounts on the page: the account corner and the panels "Sign in", "Create account" and "Your account", where a player can change their password or delete the account |
+| `account-panel.js` | Puts accounts on the page: the account corner and the panels "Sign in", "Create account", "Forgot your password?" and "Your account", where a player can change their password, add or remove an email address, or delete the account |
+| `email-view.js` | The words about email, what is wrong with an email form before it is sent, and reading the secret of a link from the end of a page's address. No browser needed, so it has tests |
+| `link.html`, `link.js` | The page a link in one of our emails opens: it confirms an email address, or asks for a new password. It takes the secret out of the address bar at once and sends it to the server inside a message |
 | `settings-panel.js` | The Settings panel on the page: the camera view a race starts in |
 | `favicon.svg` | The small picture on the browser's tab: our own drawing of a finish flag |
 | `race.html` | The single race page: the title, the lap counter and clock, the canvas the track is drawn on, and the help text. The track is chosen in the address: `race.html?track=campus-loop` |

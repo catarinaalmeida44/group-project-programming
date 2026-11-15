@@ -121,6 +121,25 @@ Use the campus loop for these: in the menu, choose Online and the Campus loop on
 | 64 | A: reload the menu on the phone | The phone is signed out | |
 | 65 | A: sign out on the laptop and sign in again, first with the old password, then with the new one | The old one is refused, the new one works | |
 
+## Email and a forgotten password (added 15 November 2026)
+
+These need the live server with the Brevo key in place. Before that, "Your account" says "Email is not set up on this server". Use an email address you can read, and look in the spam folder too.
+
+| # | What to do | What should happen | OK? |
+|---|---|---|---|
+| 66 | A, signed in: click your name, then "Email, for a forgotten password". Type your email address and a wrong password | "That is not your password." No email arrives | |
+| 67 | A: type the address and the right password | "We sent a link to that address." "Your account" still says there is no email address yet | |
+| 68 | A: open the email (write down: inbox or spam, and how long it took) and click the link, on the phone if you like | A page says "Your email address is confirmed." The long text at the end of the address disappears from the address bar | |
+| 69 | A: click the same link again | "This link does not work any more." | |
+| 70 | A: open "Your account" again | "Your email address:" and the address | |
+| 71 | B, signed in as someone else: look for A's address anywhere: "Your account", the leaderboard, the online page | It is nowhere. B's own "Your account" says B has no address | |
+| 72 | A: sign out. Click "Sign in", then "Forgot your password?". Type an address nobody uses | "If an account has this email address, we sent it a link..." No email is sent | |
+| 73 | A: type your own address | Exactly the same sentence. This time an email arrives | |
+| 74 | A: click the link, type a new password of at least 8 characters, and save | "Your new password for (your name) is set." A second email arrives: "your password was changed" | |
+| 75 | A: sign in with the old password, then with the new one | The old one is refused, the new one works | |
+| 76 | A: ask for a link four times within a few minutes | Only three emails arrive. The page says the same sentence every time | |
+| 77 | A: in "Your account", "Email", type your password and click "Take my email address off my account" | "Your email address was taken off your account." Asking for a link for that address now sends nothing | |
+
 Write down as well:
 
 - Does the race view run smoothly on each laptop? "Smooth", "a little jerky" or "jerky", and which laptop.

@@ -4,6 +4,90 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 15 November 2026: email, and "Forgot your password?"
+
+**What Catarina asked for**
+
+On 13 November she asked for a plan for email, so that a forgotten password can be reset. She read the plan and said "Yes, build it": email optional, tested with a pretend sender, and the real sending switched on later with a key that only she can create.
+
+**What was done**
+
+- **An email address on your account, if you want one.** In the menu, click your name, then "Email, for a forgotten password". Type the address and your password. The game sends a link to that address. Only when you open the link does the address count. That proves the mailbox is yours.
+- **"Forgot your password?"** under "Sign in". Type your address. If an account has it, a link is sent to choose a new password. The page says the same sentence whether or not an account has the address, so nobody can find out whose address we have.
+- **The link** opens a new page, `link.html`, where you type the new password. It works once, for 30 minutes. Afterwards you are signed out everywhere and get an email saying your password was changed.
+- **You can take your address off again**, with your password.
+- **Nothing is sent yet on the live server.** Sending needs an account at Brevo, the company that delivers the emails, and its secret key. Until the key is there, the game says "Email is not set up on this server" and everything else works as before.
+- **On a laptop, `npm run start:pretend` has pretend email.** Nothing is sent. Each email is printed in the terminal with its link.
+
+| Where | What it is for |
+|---|---|
+| `server/mailer.js` (new) | Hands an email to Brevo with one web request. Also the pretend mailer |
+| `server/accounts.js` | Changed: the rules. When a link is sent, how long it works, what a reset does |
+| `server/api.js` | Changed: six new addresses, from `/api/email` to `/api/reset-password` |
+| `server/store.js`, `tests/memory-store.js` | Changed: an email address per player, and the table of links |
+| `server/start.js`, `server/start-pretend.js`, `.env.example`, `render.yaml` | Changed: the settings for email |
+| `shared/account-rules.js` | Changed: what counts as an email address |
+| `client/email-view.js` (new) | The words and the checks of the forms |
+| `client/link.html`, `client/link.js` (new) | The page a link in an email opens |
+| `client/account.js`, `client/account-api.js`, `client/account-panel.js`, `client/index.html`, `client/style.css` | Changed: the forms in the menu |
+| `tests/email.test.js`, `tests/api-email.test.js`, `tests/mailer.test.js`, `tests/email-view.test.js` (new) | 95 tests. Plus 5 checks of the database questions and 1 page test |
+
+**One older test was changed. Please check it.**
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `menu-page.test.js`, "asks for a user name and a password only..." | The whole menu page had no email box at all | Email has two forms of its own ("Forgot your password?" and "Email" in "Your account"). Signing in, creating an account and deleting one still ask for a user name and a password only, and never for an email | Email on the page is the thing Catarina asked for |
+
+**Decisions made by the agent, please confirm**
+
+- Email is **optional**. The brief proposes that online races need a verified email. That is still open for the team.
+- An address counts only after its link was opened. That link works for 60 minutes.
+- Adding or removing an address needs your password again.
+- At most 3 emails of each kind per account per hour.
+- You still sign in with your user name, not with your email.
+- A reset signs you out everywhere and lifts a lock from wrong passwords.
+- No new library: the email goes out with one web request. (Our hosting company blocks the usual way of sending email on its free plan.)
+
+**What Catarina has to do before email works on the live server**
+
+1. Tell the team, because the brief still marks email as open and we now store an email address for players who give one.
+2. Make a free account at brevo.com. Brevo may ask you to confirm the account before it sends anything.
+3. In Brevo, under "Senders", add the address our emails should come from, and confirm it with the code Brevo sends there.
+4. In Brevo, under "SMTP & API", make an API key. It is a secret, like the database address: never in a chat, a screenshot or the repository.
+5. In Render, on the "Environment" page of our server, add two settings yourself: `BREVO_API_KEY` (the key) and `EMAIL_FROM` (the address from step 3). Render restarts the server.
+6. Do checks 66 to 77 in `docs/two-laptop-checklist.md`.
+
+To try real sending from your laptop first, put the same two lines into your own `.env` file (not `.env.example`) and run `npm start`.
+
+**What was checked**
+
+- `npm test`: 1,376 tests pass, 5 are skipped. On 13 November there were 1,275.
+- `npm run test:database`: 28 pass, 2 are skipped. This is the real database, in tables that start with `test_`. It includes adding the two new columns and the new table.
+- The new code was broken on purpose in 34 ways. 33 made a test fail at once. For the one that did not ("a server without email tries to send anyway") a test was written, and then it failed too.
+- In the agent's browser, on a laptop, with pretend accounts and pretend email: an address was added in "Your account" (a wrong address and a wrong password were refused first), the link printed in the terminal was opened and the page said "confirmed", "Your account" then showed the address, "Forgot your password?" gave the same sentence for an unknown and a known address and printed only one email, that link opened the page for a new password, and afterwards the old password was refused and the new one accepted. The used link was refused a second time. Both times the long secret disappeared from the address bar.
+- `npm audit`: no known vulnerabilities. No library was added.
+
+**What was NOT checked**
+
+- **No real email was ever sent.** There is no Brevo account yet. Our side was tested against a pretend service built from Brevo's own description. Whether a message arrives, how it looks, and whether it lands in the spam folder is not known.
+- The two new columns on the real `players` table. Adding them worked on the real database in `test_` tables. On the real table it happens when this version first goes online.
+- Nobody has done any of this by hand, on a phone, or from a real mail program.
+- Whether Render really hands the server its own address the way the code expects. If "Your account" still says email is not set up after step 5, add a third setting, `PUBLIC_URL`, with the address of the game.
+
+**How to check it yourself, today, without Brevo**
+
+1. `npm run start:pretend`, open http://localhost:3000, create an account.
+2. Click your name, "Email, for a forgotten password", type any address and your password.
+3. Look at the terminal: the email is printed there. Copy its link into the browser.
+4. Sign out, "Sign in", "Forgot your password?", type the address, and copy the new link from the terminal.
+
+**Git steps, done by the agent at Catarina's request**
+
+- The pull request for `race-fixes` was never opened: the agent can only give a link, and the link has to be clicked and "Create pull request" pressed. Catarina noticed on 15 November and was given the link again.
+- Made the branch `email-reset` on top of `race-fixes`, so that the race fixes can be reviewed and go online without waiting for email.
+- Five commits: the database, sending, the rules and addresses, the pages, the notes.
+- Pushed the branch. Its pull request is for after `race-fixes` is merged.
+
 ### 13 November 2026, evening: two minutes, a results board, changing your password
 
 **What Catarina asked for, after reading the report of the day**

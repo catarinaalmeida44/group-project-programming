@@ -19,6 +19,7 @@ The game is online at https://novasbe-kart.onrender.com
 | Karts bumping into each other, banana peels that make a kart spin, arrows and a "wrong way" warning | Works since 12 November. Tried by robots, not yet by people |
 | Choosing the colours of your kart | Works since 12 November. Other players see them online |
 | Accounts: sign up, sign in, sign out, change your password, delete your account | Works since 12 November (changing the password since 13 November). A user name and a password, no email yet, so a forgotten password cannot be reset |
+| An email address on your account, and "Forgot your password?" | Built on 15 November, optional. It does not work on the live server until the Brevo key is in Render's settings (section 10). On a laptop, `npm run start:pretend` prints the emails in the terminal instead of sending them |
 | The shared leaderboard | Works since 12 November. The server saves the time when a signed-in player finishes an online race |
 | Online races are driven to the end: no restart in the middle, a time limit, your place and a results list | Works since 13 November. Tried in the tests and in one browser, not yet by people |
 | A yellow light on the next checkpoint, and a warning when one was missed | Works since 13 November. This is why a lap sometimes did not count on the campus loop: see `WALKTHROUGH.md`, "How does a player know which way to go?" |
@@ -40,6 +41,7 @@ The full story of how each part was built, and why, is in `docs/build-diary.md`.
 | VS Code | Recommended | For reading files. Do not edit project files in Windows Notepad: it damaged the README once |
 | A Render account | Nobody but Catarina | Render keeps the server online and follows `main` by itself |
 | A Neon account | Nobody but Catarina | Neon keeps the database. The game runs on your laptop without it |
+| A Brevo account | Nobody but Catarina | Brevo delivers our emails. The game runs without it, and then says email is not set up |
 
 You do not need any password, key or secret to work on the game.
 
@@ -119,6 +121,7 @@ Ask the owner before changing a file they look after. That is the main way we av
 - **The university Wi-Fi blocks the database.** On `students.novasbe.pt`, a laptop cannot reach our database: the connection opens and then nothing comes back. This was measured on 10 November: the same laptop, file and code failed on that Wi-Fi and worked on a phone hotspot. The game still runs, and it says "The database could not be reached". For database work, use a phone hotspot or your home Wi-Fi. The tests that use a pretend database run anywhere. The live server is not on that Wi-Fi and is not affected.
 - **Only Catarina has the database address.** It is a secret and is not in the repository. If your part needs the real database on your laptop, ask her in person. Do not send it through a chat.
 - **On your laptop, `npm start` has no accounts.** Accounts live in the database, and without its address the menu says that accounts are not available. That is correct, not a mistake. To try signing up, signing in and the leaderboard on your laptop, run `npm run start:pretend` instead: it is the same game with pretend accounts kept in memory, and it forgets everything when you stop it.
+- **No email is sent from your laptop.** `npm start` has no email unless your `.env` has the Brevo key, which only Catarina has. `npm run start:pretend` never sends anything: it prints each email in the terminal, with its link. Copy the link into the browser to try "confirm your email" and "forgot your password". The tests use a pretend mailer and send nothing either.
 - **Results are only saved for signed-in players, in online races that began with the countdown.** A single race in the browser never reaches the shared leaderboard, and neither does driving around online before the host presses Enter.
 - **The free server sleeps.** After 15 minutes without visitors it takes about a minute to wake up. Open the link a few minutes before you show it to anyone.
 - **Right after installing Node.js, `npm` may be "not found".** Close and reopen the app or terminal you are using.
@@ -138,3 +141,4 @@ The table "Where things are" in `README.md` lists every folder and file. Each of
 - To be added as a collaborator on the GitHub repository.
 - To look at Render's log when the live server misbehaves. Only her account can see it.
 - The database address, in person, if your part needs the real database on your laptop.
+- To look at Brevo when an email does not arrive. Only her account can see what was sent.

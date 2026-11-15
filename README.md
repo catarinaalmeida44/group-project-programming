@@ -54,7 +54,7 @@ npm run start:pretend
 
 It is the same game with pretend accounts kept in memory. They are forgotten when you stop it, and it never touches the real database.
 
-To use the real database, its address has to be in a file called `.env` (copy `.env.example` and fill it in). Then `npm start` has real accounts, `npm run test:database` runs the tests that talk to the database (in tables of their own, which they remove), and http://localhost:3000/database-check shows what the server can read from it. New here? Start with `docs/team-guide.md`.
+To use the real database, its address has to be in a file called `.env` (copy `.env.example` and fill it in). Then `npm start` has real accounts, `npm run test:database` runs the tests that talk to the database (in tables of their own, which they remove), and http://localhost:3000/database-check shows what the server can read from it. Email (for a forgotten password) is optional and needs two more settings in `.env`, `BREVO_API_KEY` and `EMAIL_FROM`: without them the game says email is not set up. With `npm run start:pretend` nothing is ever sent, and each email is printed in the terminal instead. New here? Start with `docs/team-guide.md`.
 
 ## Where things are
 
