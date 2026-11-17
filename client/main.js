@@ -26,6 +26,7 @@ import { createKeyboard } from "./keyboard.js";
 import { createPainter } from "./draw.js";
 import { introShare, startLights, spinTurnOf } from "./scene.js";
 import { lookFromChoice, readChoice } from "./kart-choice.js";
+import { readCharacter, lookOfCharacter } from "./cast-choice.js";
 import { lookOfTrack } from "./track-looks.js";
 import { routePoints, watchForWrongWay, WRONG_WAY_MESSAGE } from "./route.js";
 import { watchForMissedCheckpoint, missedCheckpointMessage } from "./checkpoints.js";
@@ -74,9 +75,10 @@ let record = null; //      once the race is finished: did it beat your best time
 
 // ---- The state of the camera ----
 const storage = storageOf(window); // this browser's storage, for the settings and the best times
-// The colours the player chose for their kart in the menu, or null if they
-// never chose: the kart then gets the first look (kart-choice.js).
-const myLook = lookFromChoice(readChoice(storage));
+// The colours of the character the player chose in the menu (cast-choice.js).
+// Without a character: the colours chosen before characters existed, or
+// null if they never chose any. The kart then gets the first look (kart-choice.js).
+const myLook = lookOfCharacter(readCharacter(storage)?.id) ?? lookFromChoice(readChoice(storage));
 let view = readSettings(storage).startView; // the view chosen in the menu's settings, or the first one
 let camera = followTarget(race.racer.kart, track); // the spot in the middle of the screen, in the follow view
 

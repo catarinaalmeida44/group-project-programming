@@ -33,6 +33,8 @@ import { createHud } from "./hud.js";
 import { createPlayback, readServerMessage, bananasOf, statusLine, accountLine, othersLine, QUIET_AFTER_MS } from "./net.js";
 import { introShare, startLights, spinTurnOf } from "./scene.js";
 import { COLOURS, lookFromChoice, readChoice } from "./kart-choice.js";
+import { readCharacter, characterNote } from "./cast-choice.js";
+import { characterById } from "../shared/cast.js";
 import { lookOfTrack } from "./track-looks.js";
 import { routePoints, watchForWrongWay, WRONG_WAY_MESSAGE } from "./route.js";
 import { nextCheckpointNumber, watchForMissedCheckpoint, missedCheckpointMessage } from "./checkpoints.js";
@@ -92,6 +94,8 @@ let othersShown = ""; //               the "With you: ..." line as it is on the 
 // ---- What the player chose in the menu ----
 const storage = storageOf(window);
 const myChoice = readChoice(storage); // the colours of their kart, as three numbers, or null (kart-choice.js)
+const myCharacter = readCharacter(storage)?.id ?? null; // the character they chose, or null (cast-choice.js)
+let welcomedAt = null; // when the server welcomed us
 
 // The way round the track, for the "wrong way" warning (route.js).
 const wrongWay = watchForWrongWay(routePoints(track, lookOfTrack(track).route));
@@ -124,15 +128,33 @@ connection.addEventListener("message", (event) => {
   lastNewsAt = performance.now();
   if (message.type === "welcome") {
     myId = message.id;
-    // Tell the server the colours chosen in the menu, so the others see
-    // them too. Without a choice the kart has the colours of its place.
-    const colour =
-      myChoice === null ? COLOUR_NAMES[message.place % COLOUR_NAMES.length] : COLOURS.body[myChoice.body].name.toLowerCase();
-    if (myChoice !== null) {
-      send({ type: "look", ...myChoice });
+    welcomedAt = performance.now();
+    if (myCharacter !== null) {
+      // Tell the server the character chosen in the menu. It answers in its
+      // updates: that character, or the first free one if someone here
+      // already is it. The sentence below is then made more precise.
+      send({ type: "character", id: myCharacter });
+      status = `Connected. You are ${characterById(myCharacter).name}.`;
+    } else {
+      // No character: tell the server the colours chosen in the menu before
+      // characters existed, if any. Without them the kart has the colours of its place.
+      const colour =
+        myChoice === null ? COLOUR_NAMES[message.place % COLOUR_NAMES.length] : COLOURS.body[myChoice.body].name.toLowerCase();
+      if (myChoice !== null) {
+        send({ type: "look", ...myChoice });
+      }
+      status = `Connected. You are the ${colour} kart.`;
     }
-    status = `Connected. You are the ${colour} kart.`;
   } else if (message.type === "state") {
+    // Which character the server made us (see characterNote in cast-choice.js).
+    // A kart without a character in the first second may simply mean the
+    // server has not read our message yet, so that is not said at once.
+    const mineNow = message.karts.find((kart) => kart?.id === myId);
+    const note = characterNote(myCharacter, mineNow);
+    const sure = mineNow?.character !== undefined || performance.now() - welcomedAt > 1000;
+    if (note !== null && sure && status.startsWith("Connected.")) {
+      status = `Connected. ${note}`;
+    }
     playback.add(message, performance.now());
     latestKarts = message.karts;
     bananas = bananasOf(message);

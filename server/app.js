@@ -43,6 +43,7 @@ const FILE_TYPES = {
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".png": "image/png",
+  ".jpg": "image/jpeg", // the faces of the characters (client/faces)
   ".svg": "image/svg+xml",
 };
 

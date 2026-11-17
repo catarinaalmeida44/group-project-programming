@@ -25,7 +25,8 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 | The ground, the sky, and the things beside the road | `client/ground.js`, `client/sky.js`, `client/props.js` | Yes: our own drawings, no image files |
 | How each track looks | `client/track-looks.js` | Yes: a circuit in the woods for the oval, the campus for the campus loop |
 | The kart and its driver as a 3D shape, and painting it | `client/kart-shape.js`, `client/kart-paint.js` | Yes: one shape, in any colours, from any side |
-| Choosing the colours of your kart | `client/kart-choice.js`, `client/kart-panel.js`, and the rule in `shared/kart-looks.js` | Yes: kart, helmet and suit |
+| The colours a kart can have | `client/kart-choice.js`, and the rule in `shared/kart-looks.js` | Yes: kart, helmet and suit |
+| The characters: names, colours and faces | `shared/cast.js`, the faces in `client/faces/`, `client/cast-choice.js`, the "Your character" panel in `client/kart-panel.js`, and online `server/cast-keeper.js` | Yes, since 17 November: six characters, chosen by face. They only change the colours: everyone drives the same way |
 | Arrows, arrow boards and the "wrong way" warning | `client/route.js` | Yes |
 | Sound: when each one is due, and how the engine should sound | `client/sound-cues.js` | Yes, since 15 November |
 | Sound: making the sounds themselves, with no sound files | `client/sound.js` | Yes, since 15 November. Judged by ear on `sound-test.html` |
@@ -362,11 +363,23 @@ What must NOT happen, each with a test: karts passing through each other at the 
 
 **A kart is a small model, not a picture** (`client/kart-shape.js`): boxes, wedges and wheels with real positions in space, about 22 units long, 17 wide and 16 high, with a driver who has a body, arms on the steering wheel and a helmet. `client/kart-paint.js` paints it from any direction: it leaves out the faces that point away from the eye, paints the furthest parts first, and makes each face brighter the more squarely it faces the sun. So a kart turns smoothly, its front wheels and its driver turn with the steering, and the same model is used in all three views. Before 12 November a kart was four flat pictures and jumped from one to the next.
 
-**The colours come from a "look"**: the colour of the kart, of the helmet and of the driver's suit. In the menu, "Your kart" lets a player pick each from a short list and shows the kart turning round in the chosen colours. The choice is kept in the browser.
+**The colours come from a "look"**: the colour of the kart, of the helmet and of the driver's suit. Since 17 November a player does not pick these one by one any more: they choose a character, and each character has its own look (see the next question). From 12 to 17 November the menu had a "Your kart" panel to pick each colour from a short list; a choice saved then still counts for a player who has not chosen a character.
 
 **A choice is three small whole numbers, never a colour or a text** (`shared/kart-looks.js`): "kart colour number 6, helmet number 2, suit number 1". That matters online. The browser tells the server its choice, and the server passes it on to the other players. A number from a known range cannot carry anything harmful. A free text could. The server checks each number and drops anything else that came with it, and a browser that sends something that is not three numbers in range is sent away. Each of those has a test. A player who never chose gets the colours of their starting place, as before.
 
 Online, the name of a signed-in player is shown above their kart.
+
+## What are the characters, and how is a character kept to one player?
+
+**Six characters, each a real person who said yes** (`shared/cast.js`): Dean, Professor Ricardo Pereira, Ró Versos, Cici Boss, FranFon and PCP. Each has a short id ("pcp"), a name, and a look: three colour numbers, the same kind of choice as above. PCP, for example, is a red kart with a yellow helmet. Before a photo went in, each person said yes to Pedro to being in the game and in the public repository.
+
+**The faces are only in the menu.** In "Your character" (`client/kart-panel.js`) a player picks a face, and the small kart turns round in that character's colours. The choice is kept in the browser (`client/cast-choice.js`). In the race the driver wears a helmet, so no face is shown. The faces are small square pictures in `client/faces/`, 256 by 256 pixels, cut from the photos with the image tools that come with Windows. Only the pixels were copied, so nothing hidden in a phone photo (where or when it was taken) is in them.
+
+**Online, a character belongs to one player in a room at a time.** The browser says `{"type":"character","id":"pcp"}`. The server checks it is exactly the id of a character, or sends the browser away. Then `server/cast-keeper.js` checks that nobody else in the room is that character. If someone is, the player gets the first free one and the page says so: "Someone in this room is already PCP, so you are Dean." With all six taken, a seventh player drives a plain kart. A character is free again when its player leaves, and cannot be changed during a race. A player who is a character cannot paint the kart differently.
+
+**Why the characters are kept apart from the room** (`server/room.js`): a test checks the exact list of things the room can be asked to do, so that nothing new can touch the bananas. Characters do not change how a kart drives, so they live in their own small file, and `server/online.js` passes the character's colours to the room.
+
+Tested in `tests/cast.test.js` and `tests/room-characters.test.js`.
 
 ## How are laps counted, and can a player cheat?
 
