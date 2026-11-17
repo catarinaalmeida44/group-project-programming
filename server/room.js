@@ -20,6 +20,15 @@
 // a banana, or choose the seed. (A room that was given no way to pick a
 // seed has no bananas at all. Every online room is given one, by online.js.)
 //
+// A track can also have ramps (shared/ramps.js) and people who walk across
+// it (shared/walkers.js). A kart that drives over a ramp fast enough jumps
+// and gets extra speed: that is part of moving a kart, in shared/race.js.
+// The walkers are kept here, one list for the race: they stand still until
+// GO and are put back at each start. Who jumps and who topples a walker is
+// worked out here on the server, from the keys a player holds and nothing
+// else. No message from a browser can move a walker, topple one or make a
+// kart jump.
+//
 // A room is always in one of four phases:
 //   "open"       waiting for the host to start a race. Every kart stands still
 //                on its place on the starting grid, and keys do nothing.
@@ -47,6 +56,7 @@ import { FINISH_WINDOW_STEPS, RACE_LIMIT_STEPS } from "../shared/race-time.js";
 import { GRID_PLACES } from "../shared/grid.js";
 import { bumpKarts } from "../shared/bumps.js";
 import { createBananaMaker, stepBananas, SEED_COUNT } from "../shared/hazards.js";
+import { createWalkers, stepWalkers } from "../shared/walkers.js";
 import { cleanLookChoice } from "../shared/kart-looks.js";
 
 /** How many players fit in a room: one for each place on the starting grid (shared/grid.js). */
@@ -101,6 +111,7 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
   let newFinishes = []; //    the finishes that takeFinishes() has not handed out yet
   let bananas = []; //        the banana peels on the road: [{ id, x, y }]. Only ever during a race
   let bananaMaker = null; //  what decides when and where the next banana appears. null: no bananas
+  let walkers = createWalkers(track); // what is remembered about each walker: [{ time, downSteps }]. Empty on most tracks
 
   /** The players who are in the race that is on. Nobody, while the room is open. */
   function racers() {
@@ -136,12 +147,13 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
     return players.size === 0 ? null : Math.min(...players.keys());
   }
 
-  /** Back to waiting for a start, with every kart on its starting place and no bananas. */
+  /** Back to waiting for a start, with every kart on its starting place, no bananas, and the walkers where they begin. */
   function openTheRoom() {
     phase = "open";
     countdownSteps = 0;
     bananas = [];
     bananaMaker = null;
+    walkers = createWalkers(track);
     for (const player of players.values()) {
       player.racing = false;
       player.racer = createRacer(track, player.place);
@@ -199,8 +211,9 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
     /**
      * Starts a race for everyone who is in the room now: every kart goes
      * back to its starting place with its laps and clock at zero, the
-     * bananas of the race before are cleared away, and the countdown
-     * begins. Says false, and changes nothing, unless the player asking is
+     * bananas of the race before are cleared away, the walkers go back to
+     * where they begin, and the countdown begins.
+     * Says false, and changes nothing, unless the player asking is
      * the host. Also says false while a race is on, from the countdown
      * until the race is over: pressing the key by accident must not throw
      * away the race everyone is driving. (Until 13 November 2026 the host
@@ -216,6 +229,7 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
       // (A seed that is not a whole number is refused here with an error, before anything changes.)
       bananaMaker = pickSeed === null ? null : createBananaMaker(pickSeed());
       bananas = [];
+      walkers = createWalkers(track);
       phase = "countdown";
       countdownSteps = 0;
       closesAt = COUNTDOWN_STEPS + raceLimitSteps;
@@ -299,7 +313,9 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
      * In a race: during 3, 2 and 1 nothing moves. From GO on, every racer
      * is moved, key held or not, so everyone's clock starts at the same
      * step. The karts of people who are watching are never moved. The karts
-     * on the track then bump into each other, and the bananas come last.
+     * on the track then bump into each other, then come the bananas, and
+     * the walkers last. (A kart that jumps from a ramp does so while it is
+     * moved: shared/race.js.)
      *
      * A race is over when every racer has finished, or when its time has
      * run out: two minutes after the first racer finished, and never more
@@ -354,6 +370,18 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
           player.racer = after.racers[index];
         });
 
+        // The walkers: they walk on, and a kart that drives into one fast
+        // topples it and loses speed. Only the karts change, never a lap or a clock.
+        const street = stepWalkers(
+          track,
+          walkers,
+          inTheRace.map((player) => player.racer),
+        );
+        walkers = street.walkers;
+        inTheRace.forEach((player, index) => {
+          player.racer = street.racers[index];
+        });
+
         // The first racer has just finished: the others have two more minutes.
         if (finishedBeforeThisStep === 0 && finishedSoFar > 0) {
           closesAt = Math.min(closesAt, countdownSteps + 1 + finishWindowSteps);
@@ -391,6 +419,18 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
      * everyone, while one is being driven, and null at any other time.
      * "passed" is a kart's count of checkpoints (shared/laps.js): the page
      * uses it to show who is in front and which checkpoint comes next.
+     *
+     * For ramps (shared/ramps.js) a kart also gets "air", how many more
+     * steps it is in the air, and "boost", how many more steps it has extra
+     * speed. Each is sent only while it is above zero. Left out means 0, so
+     * the update stays short: most karts, most of the time, are doing neither.
+     *
+     * "walkers" is what is remembered about each person who crosses the
+     * track (shared/walkers.js), in the order of the track's own list:
+     * "time" is the walker's own clock and "down" how many more steps it
+     * sits on the ground. The page works out where each one is from that,
+     * with the same file the server uses. A track without walkers has no
+     * "walkers" in its update at all.
      */
     snapshot() {
       const everyone = [...players.values()];
@@ -421,8 +461,13 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
           lapSteps: racer.progress.lapSteps,
           finished: racer.progress.finished,
           spin: racer.spinSteps,
+          // In the air, and with extra speed, after a ramp: only while they last.
+          ...(racer.airSteps > 0 ? { air: racer.airSteps } : {}),
+          ...(racer.boostSteps > 0 ? { boost: racer.boostSteps } : {}),
         })),
         bananas: bananas.map(({ id, x, y }) => ({ id, x: round(x, 1), y: round(y, 1) })),
+        // The people who cross the track, on a track that has any.
+        ...(walkers.length === 0 ? {} : { walkers: walkers.map(({ time, downSteps }) => ({ time, down: downSteps })) }),
         endsIn: phase === "racing" ? Math.max(0, closesAt - countdownSteps) : null,
       };
     },
