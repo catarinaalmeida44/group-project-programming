@@ -1839,11 +1839,44 @@ main:has(.status) canvas {
   box-shadow: 0 0 0 2px var(--line);
 }
 
-/* -- Your character: a grid of faces to choose from -- */
+/* -- Choose your character: the chosen pilot big, and a card for each -- */
+
+/* The big picture beside the cards on a wide screen, above them on a narrow one. */
+.character-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 44rem) {
+  .character-stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.character-step .kart-preview {
+  margin: 0;
+}
+
+#character-go {
+  margin: 0.4rem 0 0.8rem;
+  font-weight: 800;
+}
+
+/* The small picture of a pilot in their kart, on each card. */
+.face-kart {
+  display: block;
+  width: 100%;
+  max-width: 10rem;
+  height: auto;
+  border-radius: 10px;
+  background: radial-gradient(ellipse at 50% 70%, #33475a, var(--navy-deep) 75%);
+}
 
 .faces {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
   gap: 0.7rem;
   margin: 0;
   padding: 0;
@@ -1874,15 +1907,6 @@ main:has(.status) canvas {
   width: 1px;
   height: 1px;
   opacity: 0;
-}
-
-.face-picture {
-  display: block;
-  width: 4.8rem;
-  height: 4.8rem;
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--navy-deep);
 }
 
 .face-name {
