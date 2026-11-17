@@ -29,7 +29,7 @@ Francisco reported that after leaving online play for the menu (with "← Menu" 
 - Tried to reproduce the bug before changing anything, with a small script that counts the karts in the room from the server's side. On the laptop: "← Menu" left 0 karts at once, coming back 1, Back 0, Forward 1. On the live server: "← Menu" left 0 karts at once, still 0 every 4 seconds for 35 seconds. **The bug did not happen.** The Claude app's browser used for this never keeps pages in a back/forward cache (checked: a page brought back with Back was always loaded fresh), so the likely cause could not be tested there.
 - After the fix, in the same browser on the laptop: open 1 kart, "← Menu" 0, Back to online 1, Back to the menu 0.
 - The new code was broken on purpose in four ways (every 15 seconds again, a silent browser never removed, the page not saying goodbye, reloading on the wrong occasion). Each made a test fail.
-- `npm test`: 1319 passed, 5 skipped.
+- `npm test`: 1319 passed, 5 skipped. Then Pedro's characters (pull request 20) were merged into `main`, touching the same two online files. `main` was merged into this branch without conflicts, and `npm test` on the combination gave 1368 passed, 5 skipped. The browser check above was done before that merge.
 - **Not checked:** Chrome, Edge or Safari with their back/forward cache, and the live server after this change (it changes only after the merge).
 
 **How to check it yourself**
