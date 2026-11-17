@@ -53,9 +53,10 @@ Everything the browser shows and does: the web page, the drawing of the track an
 | `kart-shape.js` | The kart and its driver as a shape in three dimensions: boxes, wedges and wheels with real positions, in the colours of a "look". No painting, so it has tests |
 | `kart-paint.js` | Paints that shape from any direction: leaves out the faces that point away, paints the furthest parts first, and makes each face brighter the more it faces the sun |
 | `kart-choice.js` | The colours a player can choose for their kart, turning a choice into a look, and keeping the choice in the browser. The rule for what may be chosen is `shared/kart-looks.js` |
-| `kart-panel.js` | The "Your character" panel of the menu on the page: the faces to pick from, and the character's kart turning round in a small picture |
+| `kart-panel.js` | "Choose your character", the step after choosing a track: every character as their pilot in their kart with their face, the chosen one big, and the button that starts the race |
+| `face-head.js` | The sums for a pilot with a real face: a bigger head, where it sits, and how much of the face the eye sees. Only for choosing a character (and later the podium), never in the race |
 | `cast-choice.js` | Your character: remembering it in the browser, where its face is, its colours, and what the online page says when someone else already is it |
-| `faces/` | One small picture of the face of each character, 256 by 256 pixels. Shown only in the menu, never in the race |
+| `faces/` | One small picture of the face of each character, 256 by 256 pixels. Shown only when choosing a character, never in the race |
 | `buildings.js` | Makes the buildings of a track stand up in the view behind the kart: works out their sides and roofs from the storeys of each square, and which of them can be seen from the kart. Walls without storeys that touch open ground become low banks. No painting; `draw.js` paints them |
 | `format.js` | Turns a number of seconds into a race time such as `1:23.45` |
 
