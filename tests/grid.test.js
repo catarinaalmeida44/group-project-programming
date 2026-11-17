@@ -532,14 +532,21 @@ describe("the starting places in a room", () => {
     }
   });
 
+  // Rewritten on 17 November 2026, with Francisco's OK for the team. Before,
+  // the karts drove over the line while the room was open, where nobody can
+  // move any more. Now they drive over it in a first race with a short time
+  // limit, and the host starts the next one.
   it("puts every kart back behind the line when a race starts", () => {
-    const room = createRoom(TEST_OVAL, TEST_DRIVER);
+    const room = createRoom(TEST_OVAL, TEST_DRIVER, undefined, null, { raceLimitSteps: 120 });
     const host = room.addPlayer();
     const other = room.addPlayer();
+    room.startRace(host.id);
+    run(room, COUNTDOWN_STEPS);
     room.setKeys(host.id, GAS);
     room.setKeys(other.id, GAS);
-    run(room, 120); // both drive off, over the line
+    run(room, 120); // both drive off, over the line, until the time runs out
     expect(kartOf(room, host.id).x).toBeGreaterThan(TEST_OVAL.checkpoints[0].right);
+    expect(room.phase()).toBe("finished");
 
     room.startRace(host.id);
     for (const { id, place } of [host, other]) {
@@ -563,15 +570,24 @@ describe("the starting places in a room", () => {
     expect(room.takeFinishes()).toEqual([]);
   });
 
-  it("does not count a lap for a kart that crosses the line, restarts, and crosses again while the room is open", () => {
+  // Replaced on 17 November 2026, with Francisco's OK for the team. The old
+  // test drove over the line again and again while the room was open, to
+  // check no lap was counted. Now a kart cannot leave the grid at all while
+  // the room waits for the host, so it can never reach the line then.
+  it("keeps a kart behind the line while the room waits for the host, whatever keys are held and however often it restarts", () => {
     const room = createRoom(TEST_OVAL, TEST_DRIVER);
     const player = room.addPlayer();
+    const spot = gridSpot(TEST_OVAL, player.place);
+    const passedOnTheGrid = kartOf(room, player.id).passed; // behind the line: not even the line counted yet
     room.setKeys(player.id, GAS);
     for (let time = 0; time < 5; time++) {
       run(room, 90);
-      expect(kartOf(room, player.id).x).toBeGreaterThan(TEST_OVAL.checkpoints[0].right);
-      expect(room.restart(player.id)).toBe(true);
-      expect(kartOf(room, player.id).lapsDone).toBe(0);
+      const kart = kartOf(room, player.id);
+      expect(kart.x).toBeCloseTo(spot.x, 1);
+      expect(kart.x + KART_RADIUS).toBeLessThan(TEST_OVAL.checkpoints[0].left);
+      expect(kart.lapsDone).toBe(0);
+      expect(kart.passed).toBe(passedOnTheGrid);
+      room.restart(player.id);
     }
   });
 

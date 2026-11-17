@@ -12,11 +12,15 @@ import { makePart } from "./page-parts.js";
 
 /**
  * Fills the panel for one kind of race.
- *   kind   "single" or "online" (see RACE_KINDS in track-list.js)
- *   cards  from trackCards() in track-list.js, made for the same kind
- * A card is one big link to the race on that track.
+ *   kind     "single" or "online" (see RACE_KINDS in track-list.js)
+ *   cards    from trackCards() in track-list.js, made for the same kind
+ *   onPick   called with the card when one is clicked, instead of following
+ *            its link: the menu then lets the player choose a character
+ *            (kart-panel.js). Left out, a card simply opens its race.
+ * A card is one big link to the race on that track, so it still works if
+ * the code that opens the next step did not load.
  */
-export function showTrackChoice(page, kind, cards) {
+export function showTrackChoice(page, kind, cards, onPick = null) {
   const words = RACE_KINDS[kind];
   page.getElementById("track-choice-title").textContent = words.title;
   page.getElementById("track-choice-lead").textContent = words.lead;
@@ -26,6 +30,12 @@ export function showTrackChoice(page, kind, cards) {
   for (const card of cards) {
     const link = makePart(page, "a", "track-card");
     link.href = card.address;
+    if (onPick !== null) {
+      link.addEventListener("click", (event) => {
+        event.preventDefault(); // do not follow the link yet: first the character
+        onPick(card);
+      });
+    }
 
     // The small map. It is decoration: the words on the card say everything.
     const mapBox = makePart(page, "div", "track-map-box");
@@ -61,20 +71,25 @@ export function showTrackChoice(page, kind, cards) {
 /**
  * Makes "Single race" and "Online" in the menu open the panel with the track
  * cards.
- *   tracks   the list from shared/tracks/index.js: short name -> track
- *   storage  this browser's storage, or null (see storage.js)
+ *   tracks      the list from shared/tracks/index.js: short name -> track
+ *   storage     this browser's storage, or null (see storage.js)
+ *   characters  the "Choose your character" step (connectCharacterChoice
+ *               in kart-panel.js), opened when a track is picked
  *
  * Both are real links. If this code did not load, they still work and open
  * the first track.
  */
-export function connectTrackChoice(page, tracks, storage) {
+export function connectTrackChoice(page, tracks, storage, characters) {
   const panel = page.getElementById("track-choice");
   let shownKind = "single"; // the kind of race the panel was last opened for
 
   // The cards are built again each time, so the best times on them are fresh.
   function show(kind) {
     shownKind = kind;
-    showTrackChoice(page, kind, trackCards(tracks, storage, kind));
+    showTrackChoice(page, kind, trackCards(tracks, storage, kind), (card) => {
+      panel.close();
+      characters.open(card.address, RACE_KINDS[kind].go, card.name);
+    });
   }
 
   /** Makes the link in one of the big choices open the panel instead of its page. */

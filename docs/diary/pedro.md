@@ -2,6 +2,48 @@
 
 Entries from 10 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 17 November 2026 (second piece): choose your character before the race, as a pilot with a face
+
+**What was done**
+Pedro tried the characters on the live site and wanted two changes. First, the character is now chosen at the moment of the race: Single race or Online, then a track, then "Choose your character", then a button "Race" or "Join the room". The "Your character" button at the top of the menu is gone. Second, each character is shown as their pilot in their kart, with their real face on the pilot's head, instead of a face in a square. The chosen one is shown big, swinging from side to side. In the race every pilot still wears a helmet.
+
+| File | What it is for |
+|---|---|
+| `client/face-head.js` (new) | The sums for a pilot with a face: a head 1.8 times bigger than the helmet (like a bobblehead toy), sitting on the shoulders, and how much of the face the eye sees from each side |
+| `client/kart-paint.js` | `paintKart` can be handed a face picture. It then paints the big head with the photo on its front, squeezed when seen from the side, and the back of the head when seen from behind. Without a face, nothing changes |
+| `client/kart-panel.js` | Now the "Choose your character" step: a card for each pilot, the big picture of the chosen one, and the button that starts the race |
+| `client/track-panel.js`, `client/menu.js` | Clicking a track opens the character step instead of the race. The track cards are still real links, so they still work if the code did not load |
+| `client/index.html`, `client/style.css` | The step on the page. The button at the top of the menu was removed |
+| `tests/face-head.test.js` (new) | 14 tests. No existing test was changed |
+| `WALKTHROUGH.md`, the READMEs, `docs/team-guide.md`, `docs/two-laptop-checklist.md` | Kept true. Checks 76 to 80 follow the new way |
+
+**Why it was done this way**
+- The face is painted on the same kart model as in the race, with the same painter. So the pilot on the card is exactly the kart you drive, only with a face instead of a helmet.
+- The head is bigger than the helmet, because a real-size head is only a few pixels on a small card.
+- Faces are only painted when a picture is handed to the painter. The race pages never hand one in, and a test checks that their code does not even mention the face pictures.
+
+**Decisions**
+- Decided by Pedro: choose the character after choosing the race and the track; faces on the pilots, only when choosing and on the podium.
+- Decision made by the agent, please confirm: the "Your character" button at the top of the menu was removed, since the choice is now made before each race.
+- Decision made by the agent, please confirm: a player who never chose a character starts with the first one (Dean) already chosen, so the button always works. The last choice is remembered for the next race.
+- Decision made by the agent, please confirm: the head with a face is a bobblehead, 1.8 times the size of the helmet, with the helmet's colour round the face and on the back of the head.
+- Not done, possible later: in an online room, showing which characters are already taken before you join. Today you find out after joining, and get the first free one.
+- Git: the agent made the branch `character-select` from an up-to-date `main` and made the commits. Nothing was pushed.
+
+**What was checked, and what was not**
+- `npm test`: 1372 passed, 5 skipped (before: 1358 and 5).
+- In the app's built-in browser: Online, then a track, opens "Choose your character" with "Who do you want to be on Test oval?" and the button "Join the room". Single race, then a track, gives the button "Race" leading to that track's race. The six pilots show their faces on big heads in their kart colours. No errors on the page.
+- NOT checked: driving a race after choosing, by eye. The race pages did not change.
+- NOT checked: a narrow screen. In a narrow window the big picture goes above the cards; that was only glanced at.
+- NOT checked: two real laptops and the live site.
+
+**How to check it yourself**
+Run `npm start`, open http://localhost:3000, click "Online" or "Single race", pick a track, pick a pilot, and press the button. Run `npm test` and look for `face-head.test.js`.
+
+**What comes next**
+- Publish the branch from GitHub Desktop, open the pull request, a teammate approves.
+- Next piece: the podium with the pilots' faces at the end of an online race.
+
 ### 17 November 2026: six characters, chosen by face
 
 **What was done**

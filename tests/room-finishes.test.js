@@ -142,14 +142,23 @@ describe("the finishing order of a race", () => {
     expect(room.takeFinishes().map((finish) => [finish.id, finish.position])).toEqual([[other, 1]]);
   });
 
-  it("does not list laps driven while the room is open: only a race that began with the countdown counts", () => {
+  // Replaced on 17 November 2026, with Francisco's OK for the team. The old
+  // test drove to the line while the room was open and checked that this did
+  // not count as a finish. Now nobody can drive while the room waits for the
+  // host, so there is nothing to finish: the only finishes are from a race
+  // that began with the countdown.
+  it("lists no finish while the room waits for the host, however long the gas is held: only a started race counts", () => {
     const room = createRoom(createSprintTrack(), TEST_DRIVER);
     const { id } = room.addPlayer();
     room.setKeys(id, GAS);
     run(room, 60 * 10);
 
-    expect(kartOf(room, id).finished).toBe(true); // the kart did reach the line
-    expect(room.takeFinishes()).toEqual([]); //      but that was not a race
+    expect(kartOf(room, id).finished).toBe(false); // the kart never left the grid
+    expect(kartOf(room, id).steps).toBe(0);
+    expect(room.takeFinishes()).toEqual([]);
+
+    room.startRace(id); // a real race, with the gas still held
+    expect(runToTheEnd(room).map((finish) => finish.id)).toEqual([id]);
   });
 
   it("does not list a racer who left before the line, and does not hold the others' positions back", () => {

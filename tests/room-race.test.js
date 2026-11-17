@@ -143,19 +143,27 @@ describe("starting a race", () => {
     expect(room.snapshot().race.countdownSteps).toBe(0);
   });
 
+  // Rewritten on 17 November 2026, with Francisco's OK for the team. Before,
+  // the karts drove off the grid while the room was open, where nobody can
+  // move any more. Now they drive off in a first race (with a short time
+  // limit, so it is over quickly), and the host starts the next one.
   it("puts every kart back on its starting place with laps and clock at zero", () => {
-    const room = newRoom();
+    const room = createRoom(TEST_OVAL, TEST_DRIVER, undefined, null, { raceLimitSteps: 120 });
     const host = room.addPlayer();
     const other = room.addPlayer();
     const hostStart = kartOf(room, host.id);
     const otherStart = kartOf(room, other.id);
 
+    room.startRace(host.id);
+    run(room, COUNTDOWN_STEPS);
     room.setKeys(host.id, GAS);
     room.setKeys(other.id, GAS);
-    run(room, 120); // both drive off
+    run(room, 120); // both drive off, until the time runs out
     room.setKeys(host.id, NO_KEYS);
     room.setKeys(other.id, NO_KEYS);
+    expect(room.phase()).toBe("finished");
     expect(kartOf(room, other.id).steps).toBe(120);
+    expect(kartOf(room, other.id).x).not.toBe(otherStart.x);
 
     room.startRace(host.id);
     expect(kartOf(room, host.id)).toEqual(hostStart);
@@ -454,7 +462,11 @@ describe("leaving during a race", () => {
     expect(kartOf(room, other.id).steps).toBe(60);
   });
 
-  it("goes back to free driving when the last racer leaves, so people watching are not stuck", () => {
+  // Replaced on 17 November 2026, with Francisco's OK for the team. The old
+  // test expected the watcher to drive freely once the room was open again.
+  // Now the room goes back to waiting: the watcher becomes the host, has a
+  // kart on the grid, cannot move it, and can start the next race.
+  it("goes back to waiting for a start when the last racer leaves, with the watcher as host, so nobody is stuck", () => {
     const room = newRoom();
     const host = room.addPlayer();
     room.startRace(host.id);
@@ -466,9 +478,11 @@ describe("leaving during a race", () => {
     expect(room.phase()).toBe("open");
     expect(room.hostId()).toBe(watcher.id);
     expect(room.snapshot().race.watching).toEqual([]);
+    const onTheGrid = kartOf(room, watcher.id);
     room.setKeys(watcher.id, GAS);
     run(room, 30);
-    expect(speedOf(kartOf(room, watcher.id))).toBeGreaterThan(0);
+    expect(kartOf(room, watcher.id)).toEqual(onTheGrid); // the keys do nothing while waiting
+    expect(room.startRace(watcher.id)).toBe(true); //       and the new host can start a race
   });
 });
 

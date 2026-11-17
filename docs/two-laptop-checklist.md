@@ -142,15 +142,15 @@ Write down as well: is anything too loud, too long, or annoying after three laps
 
 ## Characters (added 17 November 2026)
 
-Since 17 November the menu has "Your character" instead of "Your kart": checks 37 and 38 above now happen through a character. Not run yet with two laptops: only tried in two tabs of one browser, which share one saved choice.
+Since the second change of 17 November the character is chosen after the track, before each race: checks 37 and 38 above now happen through a character. Not run yet with two laptops: only tried in two tabs of one browser, which share one saved choice.
 
 | # | Do this | You should see | Result |
 |---|---|---|---|
-| 76 | A: on the menu, click "Your character" | Six faces with names: Dean, Professor Ricardo Pereira, Ró Versos, Cici Boss, FranFon, PCP. The small kart turns round | |
-| 77 | A: click PCP | PCP gets a yellow frame, the small kart turns red with a yellow helmet, and it says "Saved. You are PCP in your next race." | |
-| 78 | A: open Single race | Your kart is red with a yellow helmet. No face anywhere in the race | |
-| 79 | B: choose Cici Boss. Both: click "Online", same track | A is told "You are PCP.", B "You are Cici Boss." Each sees the other's kart in that character's colours | |
-| 80 | B: go back to the menu, choose PCP, and open "Online" again | B is told "Someone in this room is already PCP, so you are Dean." B's kart is black with a white helmet | |
+| 76 | A: on the menu, click "Single race", then a track | "Choose your character" opens. Six pilots in their karts, each with their real face on a big head: Dean, Professor Ricardo Pereira, Ró Versos, Cici Boss, FranFon, PCP. The chosen one is shown big, swinging from side to side | |
+| 77 | A: click PCP | PCP gets a yellow frame, and the big picture shows PCP's red kart with a yellow head round the face | |
+| 78 | A: click "Race" | The race on the track you picked. Your kart is red, and your pilot wears a yellow helmet. No face anywhere in the race | |
+| 79 | B: "Online", a track, Cici Boss, "Join the room". A: the same track, PCP, "Join the room" | A is told "You are PCP.", B "You are Cici Boss." Each sees the other's kart in that character's colours | |
+| 80 | B: go back to the menu, "Online", the same track, choose PCP, "Join the room" | B is told "Someone in this room is already PCP, so you are Dean." B's kart is black with a white helmet | |
 | 81 | A: close the online page. B: reload it | B is now told "You are PCP." | |
 | 82 | A (the host) starts a race. C: choose a character and open "Online" during the race | C watches. At the next start C has a kart in that character's colours | |
 

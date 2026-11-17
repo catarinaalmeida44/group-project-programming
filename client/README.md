@@ -53,9 +53,10 @@ Everything the browser shows and does: the web page, the drawing of the track an
 | `kart-shape.js` | The kart and its driver as a shape in three dimensions: boxes, wedges and wheels with real positions, in the colours of a "look". No painting, so it has tests |
 | `kart-paint.js` | Paints that shape from any direction: leaves out the faces that point away, paints the furthest parts first, and makes each face brighter the more it faces the sun |
 | `kart-choice.js` | The colours a player can choose for their kart, turning a choice into a look, and keeping the choice in the browser. The rule for what may be chosen is `shared/kart-looks.js` |
-| `kart-panel.js` | The "Your character" panel of the menu on the page: the faces to pick from, and the character's kart turning round in a small picture |
+| `kart-panel.js` | "Choose your character", the step after choosing a track: every character as their pilot in their kart with their face, the chosen one big, and the button that starts the race |
+| `face-head.js` | The sums for a pilot with a real face: a bigger head, where it sits, and how much of the face the eye sees. Only for choosing a character (and later the podium), never in the race |
 | `cast-choice.js` | Your character: remembering it in the browser, where its face is, its colours, and what the online page says when someone else already is it |
-| `faces/` | One small picture of the face of each character, 256 by 256 pixels. Shown only in the menu, never in the race |
+| `faces/` | One small picture of the face of each character, 256 by 256 pixels. Shown only when choosing a character, never in the race |
 | `buildings.js` | Makes the buildings of a track stand up in the view behind the kart: works out their sides and roofs from the storeys of each square, and which of them can be seen from the kart. Walls without storeys that touch open ground become low banks. No painting; `draw.js` paints them |
 | `format.js` | Turns a number of seconds into a race time such as `1:23.45` |
 
@@ -84,7 +85,7 @@ Nothing in this folder decides how a kart moves. That is the job of the rules in
 | Other players | None | Everyone who has the page of the same track open, up to eight, each in the colours they chose, or in the colour of their starting place. Karts bump into each other |
 | Banana peels | They appear from time to time and make your kart spin | The same, but the server decides where and when |
 | Where your time goes | Your best times stay in this browser. Nobody else sees them | If you are signed in, the server saves the time it measured, and it appears on the shared leaderboard |
-| How a race starts | An arrow key, then 3, 2, 1, GO! | The host presses Enter, then 3, 2, 1, GO! for everyone together. Before that, everyone drives freely |
+| How a race starts | An arrow key, then 3, 2, 1, GO! | The host presses Enter, then 3, 2, 1, GO! for everyone together. Before that, every kart waits on the starting grid and the keys do nothing |
 | Arriving during a race | Does not apply | You watch the kart in front and join at the next start |
 | Works when the server is down | Yes, once the page is loaded | No |
 

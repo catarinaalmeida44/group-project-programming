@@ -1,12 +1,11 @@
 // The main menu (index.html).
 //
-// Online is a plain link to another page, so it needs no code. Everything
-// else on the menu opens a panel, and each panel has its own file. This file
-// only starts them and hands each one what it needs:
+// Everything on the menu opens a panel, and each panel has its own file.
+// This file only starts them and hands each one what it needs:
 //
 //   settings-panel.js     Settings
-//   kart-panel.js         Your kart: choosing its colours
-//   track-panel.js        Single race: choosing a track
+//   track-panel.js        Single race and Online: choosing a track
+//   kart-panel.js         then choosing your character, before the race
 //   leaderboard-panel.js  Leaderboard
 //   account-panel.js      the account corner, and signing in and out
 //
@@ -18,7 +17,7 @@ import { storageOf } from "./storage.js";
 import { accountApi } from "./account-api.js";
 import { TRACKS } from "../shared/tracks/index.js";
 import { connectSettings } from "./settings-panel.js";
-import { connectKartChoice } from "./kart-panel.js";
+import { connectCharacterChoice } from "./kart-panel.js";
 import { connectTrackChoice } from "./track-panel.js";
 import { connectLeaderboard } from "./leaderboard-panel.js";
 import { connectAccount } from "./account-panel.js";
@@ -26,8 +25,9 @@ import { connectAccount } from "./account-panel.js";
 const storage = storageOf(window); // this browser's storage, for the settings and the best times
 
 connectSettings(document, storage);
-connectKartChoice(document, storage);
-connectTrackChoice(document, TRACKS, storage);
+// A track is chosen first, then the character, then the race starts.
+const characters = connectCharacterChoice(document, storage);
+connectTrackChoice(document, TRACKS, storage, characters);
 const leaderboard = connectLeaderboard(document, { api: accountApi, storage, tracks: TRACKS });
 
 // The leaderboard marks the signed-in player's own row, so it is told each
