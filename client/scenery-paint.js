@@ -191,6 +191,10 @@ export function createSceneryPainter(art, scenery, haze) {
       // the foot to the top; any other keeps its own heights above the ground.
       const fromTop = picture.fits ? 0 : Math.max(0, (picture.heightUnits - highest) * pixels);
       const rows = picture.fits ? chosen.canvas.height : Math.min(chosen.canvas.height - fromTop, (highest - base) * pixels);
+      // A picture that "fits" and does not repeat is stretched along the whole
+      // wall as well as up it. (Without this, a letter on a stand wider than
+      // its picture was smeared out to the side: the bug of 17 November.)
+      const stretched = picture.fits && picture.repeatUnits === null && shape.long > 0 ? picture.lengthUnits / shape.long : 1;
       const tallLeft = (highest - base) * left.scale;
       const tallRight = (highest - base) * right.scale;
       const slices = Math.max(1, Math.min(MOST_SLICES, Math.ceil(width), Math.ceil(Math.max(Math.abs(tallRight - tallLeft) / 4, width / 48))));
@@ -202,8 +206,8 @@ export function createSceneryPainter(art, scenery, haze) {
         const uTo = uA + (uB - uA) * share;
         if (to.x >= 0 && from.x <= screen.width) {
           // Which columns of the picture. A repeating picture starts again after each period.
-          let start = Math.min(uFrom, uTo);
-          const span = Math.abs(uTo - uFrom);
+          let start = Math.min(uFrom, uTo) * stretched;
+          const span = Math.abs(uTo - uFrom) * stretched;
           if (picture.repeatUnits !== null) {
             start = ((start % picture.repeatUnits) + picture.repeatUnits) % picture.repeatUnits;
           } else if (picture.fits) {

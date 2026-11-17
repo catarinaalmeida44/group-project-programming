@@ -109,6 +109,7 @@ export function createScenery(track, model) {
       const art = typeof face === "string" ? { art: face } : face;
       const from = side.from(rect);
       const to = side.to(rect);
+      const sideLong = Math.hypot(to[0] - from[0], to[1] - from[1]) * size; // how long the whole side is, in units
       group++;
       for (const piece of cutAtSquares(from, to)) {
         // The square the strip belongs to: the one just inside the box.
@@ -127,6 +128,7 @@ export function createScenery(track, model) {
           // How far along the picture this strip starts and ends, in units.
           uA: ((art.shift ?? 0) + piece.fromStart) * size,
           uB: ((art.shift ?? 0) + piece.toStart) * size,
+          long: sideLong,
           column: Math.floor(middleX),
           row: Math.floor(middleY),
           bothSides: false,
@@ -196,6 +198,7 @@ export function createScenery(track, model) {
         art,
         uA: ((fence.shift ?? 0) + piece.fromStart) * size,
         uB: ((fence.shift ?? 0) + piece.toStart) * size,
+        long: length * size,
         column: Math.floor((piece.a[0] + piece.b[0]) / 2 + (fence.lean?.[0] ?? 0) * 0.01),
         row: Math.floor((piece.a[1] + piece.b[1]) / 2 + (fence.lean?.[1] ?? 0) * 0.01),
         bothSides: true,
@@ -399,6 +402,7 @@ export function sceneryInView(scenery, kart, settings = CHASE, screen = SCREEN) 
       topB,
       base: strip.base,
       highest: strip.highest,
+      long: strip.long,
       art: strip.art,
       facing: strip.facing,
       // Seen from behind (a fence only), the picture is the wrong way round. That is right for a railing or letters.

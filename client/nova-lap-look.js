@@ -48,11 +48,14 @@ export const NOVA_LAP_LOOK = {
     [50, 71.6], //   past the beach tunnel
     [47.6, 72.2],
     [40.6, 79.3], // down the slanting path
-    [37, 79.6],
-    [21, 79.6], //   along the coast road
+    [37.5, 79.5], // over the ramp of the coast road
+    [27, 79.4],
+    [22.5, 78.6], // past the cones and the bins
     [16.6, 78.6],
     [11, 72.6], //   round the corner of the two roads
-    [10.6, 68],
+    [11.5, 69], //   over the first ramp of the west street
+    [11.5, 58],
+    [10.6, 52],
     [10.6, 17], //   up the west street
     [12.6, 11.5], // round the flags, into the avenue
     [20, 10],

@@ -46,7 +46,7 @@ export const PROP_HEIGHT = {
   tunnel: 30,
   bench: 5,
   "christmas-tree": 66,
-  statue: 40,
+  statue: 48,
   "banner-flag": 86,
   olive: 36,
   "table-set": 12,
@@ -54,6 +54,11 @@ export const PROP_HEIGHT = {
   shrub: 13,
   "avenue-tree": 44,
   car: 20,
+  bike: 13,
+  bins: 13,
+  cones: 9,
+  "lounge-bench": 9,
+  walker: 20,
 };
 
 /** The colours a car on the road can have. */
@@ -196,34 +201,55 @@ const STANDING = {
     context.fill();
   },
 
-  // The turquoise statue beside the library: a figure with a cape, on a tall block, all one colour.
+  // The turquoise statue beside the library: a woman standing with her
+  // surfboard, on a block, all in one colour.
   statue(context) {
-    shadow(context, 8);
-    context.fillStyle = "#2fa9a2";
-    context.fillRect(-4.6, -15, 9.2, 15); //  the block
+    shadow(context, 9);
+    const dark = "#2a9891";
+    const middle = "#35b5ad";
+    const light = "#4fd0c7";
+    context.fillStyle = "#2fa9a2"; // the block, with a lit side and a pale top edge
+    context.fillRect(-6.5, -13, 13, 13);
     context.fillStyle = "#3cc0b8";
-    context.fillRect(-4.6, -15, 3.2, 15); //  its lit side
-    context.fillStyle = "#35b5ad";
-    // Legs, body, head.
-    context.fillRect(-2.4, -26, 1.9, 11);
-    context.fillRect(0.5, -26, 1.9, 11);
+    context.fillRect(-6.5, -13, 4.4, 13);
+    context.fillStyle = light;
+    context.fillRect(-6.5, -13.9, 13, 1.1);
+    // The surfboard, standing on its tail beside her, taller than she is.
+    context.fillStyle = dark;
     context.beginPath();
-    context.moveTo(-3.2, -26);
-    context.lineTo(3.2, -26);
-    context.lineTo(3.8, -35);
-    context.lineTo(-3.8, -35);
+    context.moveTo(5.6, -13.9);
+    context.quadraticCurveTo(9.4, -30, 6.3, -46.5);
+    context.quadraticCurveTo(2.8, -30, 4.6, -13.9);
     context.closePath();
     context.fill();
-    blob(context, 0, -37.3, 2.3, "#35b5ad");
-    // The cape, flying out to one side, and an arm on the hip.
-    context.fillStyle = "#2a9891";
+    context.fillStyle = light; // the line down the middle of the board
+    context.fillRect(5.7, -42, 0.5, 26);
+    // The woman: legs, a short dress, shoulders, head, hair tied up.
+    context.fillStyle = middle;
+    context.fillRect(-3.2, -23, 1.9, 9.1);
+    context.fillRect(-0.4, -23, 1.9, 9.1);
     context.beginPath();
-    context.moveTo(3.4, -34.5);
-    context.quadraticCurveTo(11, -33, 12.5, -24);
-    context.lineTo(4, -27);
+    context.moveTo(-4.4, -22.5);
+    context.lineTo(2.9, -22.5);
+    context.lineTo(1.9, -30);
+    context.lineTo(2.6, -34.5);
+    context.lineTo(-3.8, -34.5);
+    context.lineTo(-3.2, -30);
     context.closePath();
     context.fill();
-    context.fillRect(-5.6, -34, 2, 6.5);
+    blob(context, -0.6, -37.4, 2.4, middle);
+    blob(context, -2.6, -39.2, 1.5, dark); // her hair, in a knot
+    // One arm round the board, the other on her hip.
+    context.strokeStyle = middle;
+    context.lineWidth = 1.5;
+    context.lineCap = "round";
+    context.beginPath();
+    context.moveTo(2.4, -33.5);
+    context.lineTo(5.9, -29.5);
+    context.moveTo(-3.6, -33.5);
+    context.lineTo(-6.2, -29.2);
+    context.lineTo(-3.6, -26.2);
+    context.stroke();
   },
 
   // A tall narrow flag on a white pole, as at the corner of the avenue.
@@ -337,6 +363,80 @@ const STANDING = {
     ]) {
       blob(context, x, y, radius, colour);
     }
+  },
+
+  // A parked city bike, blue, leaning on its stand.
+  bike(context) {
+    shadow(context, 12);
+    context.strokeStyle = "#20252a";
+    context.lineWidth = 1.3;
+    for (const x of [-7.5, 7.5]) {
+      context.beginPath();
+      context.arc(x, -4.4, 4.2, 0, TURN);
+      context.stroke();
+    }
+    context.strokeStyle = "#2f7fd6"; // the frame
+    context.lineWidth = 1.5;
+    context.lineJoin = "round";
+    context.beginPath();
+    context.moveTo(-7.5, -4.4);
+    context.lineTo(-2.5, -10.5);
+    context.lineTo(5.2, -10.5);
+    context.lineTo(7.5, -4.4);
+    context.moveTo(-2.5, -10.5);
+    context.lineTo(0.6, -4.4);
+    context.lineTo(-7.5, -4.4);
+    context.moveTo(0.6, -4.4);
+    context.lineTo(5.2, -10.5);
+    context.lineTo(4.4, -12.6);
+    context.stroke();
+    context.fillStyle = "#20252a";
+    context.fillRect(-4.8, -12, 4.4, 1.2); // the saddle
+    context.fillRect(2.4, -13.2, 4.4, 1); //  the handlebar
+    context.fillStyle = "#2f7fd6";
+    context.fillRect(-10.2, -9.4, 5, 3.4); // the basket of a rental bike
+  },
+
+  // Three recycling bins, as beside the library: grey, with a blue, a yellow and a green lid.
+  bins(context) {
+    shadow(context, 12);
+    [["#2f7fd6", -8.2], ["#e9b92c", 0], ["#3fa35a", 8.2]].forEach(([lid, x]) => {
+      context.fillStyle = "#9aa2a8";
+      context.fillRect(x - 3.4, -9.6, 6.8, 9.6);
+      context.fillStyle = "#b9c0c5";
+      context.fillRect(x - 3.4, -9.6, 2, 9.6);
+      context.fillStyle = lid;
+      context.fillRect(x - 3.8, -12, 7.6, 2.6);
+      context.fillStyle = "rgba(20, 24, 29, 0.55)"; // the slot
+      context.fillRect(x - 1.8, -11.2, 3.6, 0.9);
+    });
+  },
+
+  // Three traffic cones in a row.
+  cones(context) {
+    for (const x of [-8.5, 0, 8.5]) {
+      context.save();
+      context.translate(x, 0);
+      context.scale(1.25, 1.25);
+      STANDING.cone(context);
+      context.restore();
+    }
+  },
+
+  // One of the dark grey benches of the promenade: a long block with a raised end at each side.
+  "lounge-bench"(context) {
+    shadow(context, 14);
+    context.fillStyle = "#4a4f55";
+    context.beginPath();
+    [[-13, 0], [-13, -8], [-8.5, -8], [-6, -4.2], [6, -4.2], [8.5, -8], [13, -8], [13, 0]].forEach(([x, y], i) =>
+      i === 0 ? context.moveTo(x, y) : context.lineTo(x, y),
+    );
+    context.closePath();
+    context.fill();
+    context.fillStyle = "#666c73"; // its lit top faces
+    context.fillRect(-13, -8, 4.5, 1.1);
+    context.fillRect(8.5, -8, 4.5, 1.1);
+    context.fillRect(-6, -4.2, 12, 1);
   },
 
   // A car on the road. It is a flat picture, so there are three of them:

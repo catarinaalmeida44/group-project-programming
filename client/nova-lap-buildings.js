@@ -53,6 +53,9 @@ const ENTRANCE_AND_ATRIUM = [
   { name: "atrium skylight", rect: [54, 9, 76, 15], base: 12.4, top: 12.9, soffit: "skylight" },
   { name: "atrium roof, south", rect: [54, 15, 76, 20], base: 12.4, top: 12.9, soffit: "atrium-deck" },
 
+  // The long black base that the letters N O V A stand on, in the middle of the hall.
+  { name: "base of the letters", rect: [64.15, 9, 64.85, 13], top: 0.45, roof: "black", art: "black" },
+
   // The gallery round the hall, with its underside of red-brown wooden beams.
   { name: "gallery, south", rect: [54, 16.5, 72.5, 20], base: 4.4, top: 5.5, soffit: "wood-beams", faces: { north: WHITE } },
   { name: "gallery, east", rect: [72.5, 4, 76, 20], base: 4.4, top: 5.5, soffit: "wood-beams-across", faces: { west: WHITE } },
@@ -147,11 +150,12 @@ export const NOVA_LAP_BLOCKS = [...ENTRANCE_AND_ATRIUM, ...TERRACE_AND_LIBRARY, 
 
 export const NOVA_LAP_FENCES = [
   // The big black letters in the middle of the atrium, read from the
-  // entrance. Each stands on a square of its own, which karts cannot cross.
-  { name: "letter N", from: [64.5, 9.1], to: [64.5, 9.9], top: 2.4, art: "letter-n", lean: [-1, 0] },
-  { name: "letter O", from: [64.5, 10.1], to: [64.5, 10.9], top: 2.4, art: "letter-o", lean: [-1, 0] },
-  { name: "letter V", from: [64.5, 11.1], to: [64.5, 11.9], top: 2.4, art: "letter-v", lean: [-1, 0] },
-  { name: "letter A", from: [64.5, 12.1], to: [64.5, 12.9], top: 2.4, art: "letter-a", lean: [-1, 0] },
+  // entrance. They stand on a long black base (a box, further up in this
+  // file), which is what karts bump into.
+  { name: "letter N", from: [64.5, 9.1], to: [64.5, 9.9], base: 0.45, top: 2.85, art: "letter-n", lean: [-1, 0] },
+  { name: "letter O", from: [64.5, 10.1], to: [64.5, 10.9], base: 0.45, top: 2.85, art: "letter-o", lean: [-1, 0] },
+  { name: "letter V", from: [64.5, 11.1], to: [64.5, 11.9], base: 0.45, top: 2.85, art: "letter-v", lean: [-1, 0] },
+  { name: "letter A", from: [64.5, 12.1], to: [64.5, 12.9], base: 0.45, top: 2.85, art: "letter-a", lean: [-1, 0] },
   // The glass rails of the gallery.
   { name: "gallery rail, south", from: [72.5, 16.5], to: [54, 16.5], base: 5.5, top: 6.6, art: "glass-rail", lean: [0, 1] },
   { name: "gallery rail, east", from: [72.5, 6.5], to: [72.5, 16.5], base: 5.5, top: 6.6, art: "glass-rail", lean: [1, 0] },
@@ -168,7 +172,7 @@ export const NOVA_LAP_FENCES = [
   // behind it are single things (nova-lap-look.js), so they look round.
   { name: "edge of the slanting path", from: [49.66, 74], to: [41.66, 82], top: 0.35, art: "kerb", lean: [1, 1] },
   // The sign on the roof of the cafe, read from the terrace.
-  { name: "cafe sign", from: [73.05, 22.4], to: [73.05, 27.6], base: 4.4, top: 6.2, art: "moon-sign", lean: [1, 0] },
+  { name: "cafe sign", from: [73.05, 22.4], to: [73.05, 27.6], base: 4.4, top: 6.2, art: "cafe-sign", lean: [1, 0] },
   // The low wall round the corner of the two roads.
   { name: "low wall round the corner", from: [9, 73.5], to: [17.5, 82], top: 0.6, art: "low-wall", lean: [-1, 1] },
 ];
@@ -183,6 +187,7 @@ export const NOVA_LAP_FENCES = [
  */
 export const NOVA_LAP_FLAT_STYLES = {
   roof: { colour: "#dfe1e2" },
+  black: { colour: "#1d2024" },
   plain: { colour: "#e9eae8" },
   white: { colour: "#f1f1ee" },
   beige: { colour: "#dccba9" },
@@ -255,14 +260,30 @@ export const NOVA_LAP_FURNITURE = [
   { kind: "table-set", column: 72, row: 25 },
   { kind: "table-set", column: 72, row: 27 },
   { kind: "table-set", column: 71, row: 30 },
-  { kind: "statue", column: 64, row: 32 },
+  { kind: "statue", column: 64, row: 32, size: 1.75 },
+  // On the promenade: two of the grey benches, and the recycling bins by the door of the main building.
+  { kind: "lounge-bench", column: 69, row: 45 },
+  { kind: "lounge-bench", column: 69, row: 57 },
+  { kind: "bins", column: 64, row: 43 },
+  // On the pavements of the coast road and of the west street: things to
+  // steer round. They stand in the outer lanes, and never where a kart that
+  // took a ramp (shared/tracks/nova-lap.js) is still in the air.
+  { kind: "bike", column: 31, row: 81 },
+  { kind: "cones", column: 22, row: 80 },
+  { kind: "bins", column: 22, row: 81 },
+  { kind: "bike", column: 9, row: 61 },
+  { kind: "bins", column: 12, row: 57 },
+  { kind: "cones", column: 12, row: 45 },
+  { kind: "bike", column: 9, row: 36 },
+  { kind: "bins", column: 9, row: 27 },
+  { kind: "bike", column: 12, row: 19 },
   // Along the avenue, in the band of smooth slabs: young trees with red leaves, and stone benches.
   ...[16, 22, 34, 40, 46].map((column) => ({ kind: "avenue-tree", column, row: 14 })),
   ...[19, 37, 43].map((column) => ({ kind: "bench", column, row: 14 })),
 ];
 
-/** Squares that are wall although no box stands on them: under the four standing letters. */
-const MORE_SOLID = [[64, 9, 65, 13]];
+/** Squares that are wall although nothing stands on them. None at the moment. */
+const MORE_SOLID = [];
 
 /**
  * Every rectangle that is wall whatever the ground under it says: each box

@@ -192,14 +192,33 @@ function mural(c, x, y, width, height, seed) {
   c.restore();
 }
 
-/** A crescent moon, open to the right: the mark of the cafe. Our own drawing. */
-function crescent(c, x, y, radius, colour) {
+/** A cup of coffee with steam rising from it: the mark on the cafe. Our own drawing. "size" is its height. */
+function cup(c, x, y, size, colour) {
   c.fillStyle = colour;
+  c.strokeStyle = colour;
+  c.lineWidth = size * 0.1;
+  c.lineCap = "round";
+  // The cup: wide at the top, narrower at the foot.
   c.beginPath();
-  c.arc(x, y, radius, Math.PI * 0.35, Math.PI * 1.65); // the outer edge, round the left
-  c.arc(x + radius * 0.5, y, radius * 0.892, Math.PI * 1.4836, Math.PI * 0.5164, true); // and back along the inner edge
+  c.moveTo(x - size * 0.42, y - size * 0.05);
+  c.lineTo(x + size * 0.42, y - size * 0.05);
+  c.lineTo(x + size * 0.3, y + size * 0.42);
+  c.lineTo(x - size * 0.3, y + size * 0.42);
   c.closePath();
   c.fill();
+  // Its handle, and the saucer under it.
+  c.beginPath();
+  c.arc(x + size * 0.46, y + size * 0.14, size * 0.15, -Math.PI / 2, Math.PI / 2);
+  c.stroke();
+  c.fillRect(x - size * 0.55, y + size * 0.46, size * 1.1, size * 0.08);
+  // Two curls of steam.
+  for (const side of [-0.16, 0.16]) {
+    c.beginPath();
+    c.moveTo(x + size * side, y - size * 0.16);
+    c.quadraticCurveTo(x + size * (side - 0.12), y - size * 0.3, x + size * side, y - size * 0.42);
+    c.quadraticCurveTo(x + size * (side + 0.12), y - size * 0.52, x + size * side, y - size * 0.62);
+    c.stroke();
+  }
 }
 
 /** A way into a building: a white frame, two glass doors, and a thin roof over them. "x" is the left edge of the doors. */
@@ -224,9 +243,22 @@ function entrance(c, x, height, wide = 4.2) {
 export const WALL_ART = {
   // ---- Plain things that fit whatever they are put on ----
 
-  white: {
+  // The black of the base that the letters in the atrium stand on.
+  black: {
     period: 3,
-    height: 4,
+    height: 1,
+    fits: true,
+    inside: true,
+    paint(c, length, height) {
+      c.fillStyle = "#1d2024";
+      c.fillRect(0, 0, length, height);
+      c.fillStyle = "rgba(255, 255, 255, 0.12)";
+      c.fillRect(0, 0, length, height * 0.14);
+    },
+  },
+
+  white: {
+    period: 3,    height: 4,
     fits: true,
     paint(c, length, height) {
       whiteWall(c, 0, 0, length, height);
@@ -1150,14 +1182,14 @@ export const WALL_ART = {
       c.fillStyle = "rgba(60, 45, 35, 0.8)";
       c.fillRect(5.2, up(2.8), 1.2, 2.8);
       c.fillRect(6.5, up(2.8), 1.2, 2.8);
-      crescent(c, 5.8, up(1.7), 0.3, "#ffd23f");
-      crescent(c, 7.1, up(1.7), 0.3, "#ffd23f");
+      cup(c, 5.8, up(1.6), 0.5, "#ffd23f");
+      cup(c, 7.1, up(1.6), 0.5, "#ffd23f");
       // The board with the name, at the height of the eyes.
       c.fillStyle = "#1f2d4f";
       c.fillRect(0.5, up(3.3), 4.0, 2.2);
-      crescent(c, 1.35, up(2.25), 0.55, "#ffd23f");
-      lettering(c, "MOON", 2.15, up(2.45), 0.42, "#ffffff", { weight: 800 });
-      lettering(c, "CAFÉ", 2.15, up(1.75), 0.42, "#ffd23f", { weight: 800 });
+      cup(c, 1.3, up(2.2), 0.95, "#ffd23f");
+      lettering(c, "MON", 2.15, up(2.45), 0.42, "#ffffff", { weight: 800 });
+      lettering(c, "CAFFE", 2.15, up(1.75), 0.42, "#ffd23f", { weight: 800 });
       lettering(c, "coffee · toasties · pastel de nata", 0.75, up(1.3), 0.11, "#ffffff", { weight: 500 });
       // The white edge of the roof.
       c.fillStyle = WHITE;
@@ -1166,7 +1198,7 @@ export const WALL_ART = {
   },
 
   // The sign that stands on the roof of the cafe.
-  "moon-sign": {
+  "cafe-sign": {
     length: 15.6,
     height: 1.8,
     fits: true,
@@ -1176,9 +1208,9 @@ export const WALL_ART = {
       c.fillStyle = "#ffd23f";
       c.fillRect(0, 0, length, 0.1);
       c.fillRect(0, height - 0.1, length, 0.1);
-      crescent(c, 1.6, height / 2, 0.62, "#ffd23f");
-      lettering(c, "MOON CAFÉ", 2.9, height * 0.72, 0.9, "#ffffff", { weight: 800 });
-      // Three small stars after the name.
+      cup(c, 1.5, height / 2 + 0.12, 1.05, "#ffd23f");
+      lettering(c, "MON CAFFE", 2.9, height * 0.72, 0.9, "#ffffff", { weight: 800 });
+      // Three small sparks after the name.
       c.fillStyle = "#ffd23f";
       for (const [x, y, size] of [[13.6, 0.55, 0.16], [14.3, 1.1, 0.11], [14.8, 0.5, 0.09]]) {
         c.beginPath();
