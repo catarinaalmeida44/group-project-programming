@@ -174,10 +174,18 @@ function frame(now) {
   // The kart as it is drawn: in the colours the player chose, and turning
   // round and round while it spins after a banana. (The rules do not turn
   // it: after the spin it points where it pointed before.)
-  const shownKart = { ...racer.kart, look: myLook, spinTurn: spinTurnOf(racer.spinSteps, SPIN_STEPS) };
+  // "air" and "boost": it is drawn in the air after a ramp, and with sparks while it has extra speed (shared/ramps.js).
+  const shownKart = {
+    ...racer.kart,
+    look: myLook,
+    spinTurn: spinTurnOf(racer.spinSteps, SPIN_STEPS),
+    air: racer.airSteps ?? 0,
+    boost: racer.boostSteps ?? 0,
+  };
   draw(view, shownKart, camera, steer, computerKarts(), {
     ...sceneFor(race.countdownSteps, started),
     bananas: race.bananas,
+    walkers: walkersToShow(track, race.walkers), // the people who walk across the track (shared/walkers.js)
     // While the race is on, the next checkpoint is lit up in yellow.
     nextCheckpoint: keysWork ? nextCheckpoint(progress, track) : undefined,
   });
@@ -249,6 +257,8 @@ function computerKarts() {
     ...other.kart,
     look: lookOfCharacter(race.drivers[index].character.id),
     spinTurn: spinTurnOf(other.spinSteps, SPIN_STEPS),
+    air: other.airSteps ?? 0,
+    boost: other.boostSteps ?? 0,
   }));
 }
 

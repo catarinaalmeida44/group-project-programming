@@ -30,7 +30,7 @@ import { chooseTrackName } from "./track-choice.js";
 import { createKeyboard } from "./keyboard.js";
 import { createPainter } from "./draw.js";
 import { createHud } from "./hud.js";
-import { createPlayback, readServerMessage, bananasOf, statusLine, accountLine, othersLine, QUIET_AFTER_MS } from "./net.js";
+import { createPlayback, readServerMessage, bananasOf, walkersOf, statusLine, accountLine, othersLine, QUIET_AFTER_MS } from "./net.js";
 import { introShare, startLights, spinTurnOf } from "./scene.js";
 import { COLOURS, lookFromChoice, readChoice } from "./kart-choice.js";
 import { readCharacter, characterNote } from "./cast-choice.js";
@@ -312,6 +312,8 @@ function frame(now) {
     intro: introShare(counting, race.countdownSteps),
     lights: startLights(counting || race.phase === "racing", race.countdownSteps),
     bananas,
+    // The walkers keep walking between two updates from the server, but only while a race runs.
+    walkers: walkersToShow(track, walkers, race.phase === "racing" ? ((performance.now() - walkersAt) / 1000) * 60 : 0),
     names,
     nextCheckpoint: driving ? nextCheckpointNumber(mine.passed, track) : undefined,
   };

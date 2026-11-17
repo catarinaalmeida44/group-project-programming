@@ -15,6 +15,9 @@ import { createPainter } from "./draw.js";
 import { lookOfTrack } from "./track-looks.js";
 import { routePoints } from "./route.js";
 import { nextView } from "./camera.js";
+import { walkersToShow } from "./street-life.js";
+import { createWalkers, DOWN_STEPS } from "../shared/walkers.js";
+import { rampAt, JUMP_STEPS } from "../shared/ramps.js";
 
 /** How fast the tour glides at first, in units per second, and the limits the arrow keys keep it within. */
 const FIRST_SPEED = 170;
@@ -79,11 +82,28 @@ let view = "chase";
 let lastTime = null;
 
 let fixed = null; // a spot chosen with lookFrom() below, shown instead of the tour until a key is pressed
+let airSteps = 0; // the pretend kart hops when the tour crosses a ramp, to show what a jump looks like
+
+/**
+ * The walkers of the track, to look at: they walk by this page's own clock,
+ * and each sits down for a moment every so often, as if a kart had bumped
+ * into it. (In a race the rules decide that: shared/walkers.js.)
+ */
+function tourWalkers() {
+  const steps = Math.floor((performance.now() / 1000) * 60);
+  return walkersToShow(
+    track,
+    createWalkers(track).map((walker, number) => {
+      const sinceBump = (steps + number * 300) % 1500; // every 25 seconds, each at its own moment
+      return { time: steps, downSteps: sinceBump < DOWN_STEPS ? DOWN_STEPS - sinceBump : 0 };
+    }),
+  );
+}
 
 function show() {
   const place = fixed ?? placeAt(distance);
-  const kart = { ...place, vx: Math.cos(place.angle) * speed, vy: Math.sin(place.angle) * speed, id: 0 };
-  draw(view, kart, { x: kart.x, y: kart.y }, 0, [], {});
+  const kart = { ...place, vx: Math.cos(place.angle) * speed, vy: Math.sin(place.angle) * speed, id: 0, air: airSteps };
+  draw(view, kart, { x: kart.x, y: kart.y }, 0, [], { walkers: tourWalkers() });
   const size = track.tileSize;
   placeText.textContent = `${Math.round(distance)} of ${Math.round(lapLength)} units round the lap, at column ${Math.floor(place.x / size)}, row ${Math.floor(place.y / size)}`;
 }
@@ -94,6 +114,12 @@ function frame(now) {
   if (moving) {
     distance = (distance + speed * seconds) % Math.max(1, lapLength);
   }
+  // Crossing a ramp starts a hop. It counts down in steps of the game: 60 a second.
+  const here = fixed ?? placeAt(distance);
+  if (airSteps <= 0 && moving && rampAt(track, here.x, here.y) !== null) {
+    airSteps = JUMP_STEPS;
+  }
+  airSteps = Math.max(0, airSteps - seconds * 60);
   show();
   window.requestAnimationFrame(frame);
 }

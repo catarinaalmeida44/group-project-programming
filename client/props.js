@@ -365,6 +365,123 @@ const STANDING = {
     }
   },
 
+  // A student walking across the track, or sitting on the ground after a
+  // kart bumped into them (shared/walkers.js). The label says everything,
+  // as four words: which side we see ("back", "front", "left" or "right"),
+  // which jumper (a number), "walk" or "down", and for "down" how far
+  // through the sit-down they are, from 0 (just toppled) to 1 (getting up).
+  walker(context, seconds, label) {
+    const [view, lookText, state, shareText] = label.split(" ");
+    const look = Number(lookText) || 0;
+    const jumper = ["#d8473f", "#2f66b3", "#3fa35a", "#e9b92c", "#8d5aa8", "#f08a3c"][look % 6];
+    const skin = ["#f1c9a5", "#c98f62", "#8d5b3c"][look % 3];
+    const hair = ["#3a2a1e", "#1d1a18", "#7a4a2c", "#c9a24b"][look % 4];
+    const trousers = "#3b4656";
+    shadow(context, 5.5);
+    context.lineCap = "round";
+    const limb = (colour, width, points) => {
+      context.strokeStyle = colour;
+      context.lineWidth = width;
+      context.beginPath();
+      points.forEach(([x, y], i) => (i === 0 ? context.moveTo(x, y) : context.lineTo(x, y)));
+      context.stroke();
+    };
+
+    if (state === "down") {
+      const share = Number(shareText) || 0;
+      // Sitting on the ground: legs straight out, leaning back on both hands.
+      // In the last tenth of the time they are already half up.
+      const rising = share > 0.9 ? (share - 0.9) / 0.1 : 0;
+      context.translate(0, -rising * 3);
+      limb(trousers, 2.3, [[-1.5, -1.8], [6.5, -1.6]]);
+      limb(trousers, 2.3, [[-1.5, -1.2], [7, -0.6]]);
+      limb(jumper, 1.9, [[-2.2, -7.2], [-6.2, -1.2]]);
+      context.fillStyle = jumper;
+      context.beginPath();
+      context.moveTo(-3.6, -1.2);
+      context.lineTo(1.2, -1.2);
+      context.lineTo(0.6, -9);
+      context.lineTo(-4.6, -8.4);
+      context.closePath();
+      context.fill();
+      blob(context, -2.4, -11.4, 2.5, skin);
+      context.fillStyle = hair;
+      context.beginPath();
+      context.arc(-2.4, -11.9, 2.6, Math.PI, 0);
+      context.fill();
+      // What they were carrying: a paper cup on its side, and a sheet of paper.
+      context.fillStyle = "#f4f2ec";
+      context.fillRect(8.4, -1.6, 3.2, 1.7);
+      context.fillStyle = "#7a4a2c";
+      context.fillRect(11.6, -1.3, 2.2, 1);
+      context.fillStyle = "#f4f2ec";
+      context.fillRect(-10.5, -0.8, 3.4, 0.7);
+      // Stars going round their head, until they get up.
+      if (share < 0.9) {
+        for (let star = 0; star < 3; star++) {
+          const turn = seconds * 4 + (star * TURN) / 3;
+          const x = -2.4 + Math.cos(turn) * 4.6;
+          const y = -15.6 + Math.sin(turn) * 1.3;
+          context.fillStyle = Math.sin(turn) > 0 ? "#ffd23f" : "#f0b92a"; // a little darker when it is behind the head
+          context.beginPath();
+          for (let point = 0; point < 10; point++) {
+            const radius = point % 2 === 0 ? 1.25 : 0.5;
+            const angle = (point / 10) * TURN - Math.PI / 2;
+            context.lineTo(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius);
+          }
+          context.closePath();
+          context.fill();
+        }
+      }
+      return;
+    }
+
+    // Walking. The legs and arms swing, and the body bobs up and down a little.
+    const swing = Math.sin(seconds * 9 + look * 1.7);
+    const bob = Math.abs(swing) * 0.5;
+    const sideways = view === "left" || view === "right";
+    if (view === "left") {
+      context.scale(-1, 1); // drawn walking to the right, turned over for the other way
+    }
+    if (sideways) {
+      limb(trousers, 2.2, [[0, -8.5], [swing * 3.6, -0.6]]);
+      limb(trousers, 2.2, [[0, -8.5], [-swing * 3.6, -0.6]]);
+      context.fillStyle = "#4a3f6b"; // a rucksack on their back
+      context.fillRect(-4.6, -15.2 - bob, 2.4, 5.4);
+    } else {
+      limb(trousers, 2.2, [[-1.4, -8.5], [-1.5, -0.6 - Math.max(0, swing) * 1.4]]);
+      limb(trousers, 2.2, [[1.4, -8.5], [1.5, -0.6 - Math.max(0, -swing) * 1.4]]);
+    }
+    context.fillStyle = jumper;
+    context.beginPath();
+    context.roundRect(-3, -16 - bob, 6, 8.2, 1.6);
+    context.fill();
+    if (sideways) {
+      limb(jumper, 1.7, [[0.2, -14.6 - bob], [swing * -2.6, -9.2 - bob]]);
+    } else {
+      limb(jumper, 1.7, [[-3.2, -14.8 - bob], [-4, -9.6 - bob - swing * 0.6]]);
+      limb(jumper, 1.7, [[3.2, -14.8 - bob], [4, -9.6 - bob + swing * 0.6]]);
+      if (view === "back") {
+        context.fillStyle = "#4a3f6b";
+        context.fillRect(-2.2, -15.2 - bob, 4.4, 5.6);
+      }
+    }
+    blob(context, 0, -18.3 - bob, 2.5, skin);
+    context.fillStyle = hair;
+    context.beginPath();
+    if (view === "back") {
+      context.arc(0, -18.3 - bob, 2.6, 0, TURN); //                  seen from behind: all hair
+    } else if (sideways) {
+      context.arc(-0.4, -18.7 - bob, 2.6, Math.PI * 0.75, Math.PI * 1.95); // hair on top and at the back
+    } else {
+      context.arc(0, -18.8 - bob, 2.6, Math.PI, 0); //               seen from the front: a fringe
+    }
+    context.fill();
+    // A paper cup of coffee in one hand.
+    context.fillStyle = "#f4f2ec";
+    context.fillRect(sideways ? swing * -2.6 - 0.2 : 3.6, -10.4 - bob, 1.5, 2);
+  },
+
   // A parked city bike, blue, leaning on its stand.
   bike(context) {
     shadow(context, 12);

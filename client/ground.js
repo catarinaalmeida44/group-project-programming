@@ -64,6 +64,7 @@ export function createGround(track, look, grid, buildings = null) {
     paintEdges(context, track, look);
   }
   paintArrows(context, track, look);
+  paintRamps(context, track);
   paintStartLine(context, track);
   paintGrid(context, grid);
 
@@ -118,6 +119,7 @@ export function createGround(track, look, grid, buildings = null) {
     paintGroundShapes(closeContext, track, look, CLOSE.sharpness, { x: closeAt.x, y: closeAt.y, width: CLOSE.reach, height: CLOSE.reach });
     paintRoofs(closeContext, track, look, buildings);
     paintArrows(closeContext, track, look);
+    paintRamps(closeContext, track);
     paintStartLine(closeContext, track);
     paintGrid(closeContext, grid);
     closePattern = context.createPattern(close, "no-repeat");
@@ -471,6 +473,30 @@ function paintArrows(context, track, look) {
       travelled += gap;
     }
     untilNext = travelled - length;
+  }
+}
+
+/**
+ * The ramps of a track (shared/ramps.js), as they look from above: a
+ * yellow square with dark arrows, and three yellow arrows on the road
+ * before it that point at it, so that a driver sees it coming.
+ */
+function paintRamps(context, track) {
+  for (const ramp of track.ramps ?? []) {
+    const size = ramp.right - ramp.left;
+    context.save();
+    context.translate(ramp.x, ramp.y);
+    context.rotate(ramp.angle); // from here on the ramp is driven towards the right
+    context.fillStyle = "#f2c531";
+    context.fillRect(-size / 2, -size / 2, size, size);
+    context.fillStyle = "#1d2024";
+    paintArrow(context, -size * 0.2, 0, 0);
+    paintArrow(context, size * 0.22, 0, 0);
+    context.fillStyle = "rgba(242, 197, 49, 0.9)";
+    for (let before = 1; before <= 3; before++) {
+      paintArrow(context, -size / 2 - before * size * 0.62, 0, 0);
+    }
+    context.restore();
   }
 }
 

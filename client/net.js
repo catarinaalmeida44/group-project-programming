@@ -253,6 +253,25 @@ export function bananasOf(update) {
     .map((banana) => ({ x: banana.x, y: banana.y }));
 }
 
+const MOST_WALKERS_SHOWN = 40;
+
+/**
+ * The walkers in an update from the server, checked: a list of
+ * { time, downSteps }, in the form shared/walkers.js uses (the server calls
+ * the second number "down"). An update without a usable list gives none,
+ * and an entry that is not two numbers becomes a walker at the start of
+ * its round, so that the others keep their places in the list.
+ */
+export function walkersOf(update) {
+  if (!Array.isArray(update?.walkers)) {
+    return [];
+  }
+  return update.walkers.slice(0, MOST_WALKERS_SHOWN).map((walker) => ({
+    time: Number.isFinite(walker?.time) && walker.time >= 0 ? walker.time : 0,
+    downSteps: Number.isFinite(walker?.down) && walker.down > 0 ? walker.down : 0,
+  }));
+}
+
 /**
  * The line on the online page about the player's account.
  *   account  the last "account" message from the server, or null before it arrived

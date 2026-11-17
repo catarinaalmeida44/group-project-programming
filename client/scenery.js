@@ -140,8 +140,9 @@ export function createScenery(track, model) {
     // The top (seen when it is lower than the camera) and the underside
     // (seen when the box starts above the ground), one piece per square.
     for (const square of squaresUnder(rect)) {
-      if (block.roof !== null && topEnd === top) {
-        addFlat(square, "top", top * unitsPerMetre, block.roof ?? "roof");
+      if (block.roof !== null) {
+        // A flat top has one height. A sloping one has a height of its own at every corner.
+        addFlat(square, "top", topEnd === top ? top * unitsPerMetre : topAt, block.roof ?? "roof");
       }
       if (base > 0 && block.soffit !== null) {
         addFlat(square, "under", base * unitsPerMetre, block.soffit ?? "plain");
@@ -158,8 +159,15 @@ export function createScenery(track, model) {
   function addFlat(square, kind, height, styleName) {
     const style = model.flatStyles?.[styleName] ?? { colour: "#c9ccce" };
     const toUnits = (corners) => corners.map(([x, y]) => [x * size, y * size]);
-    const about = { kind, height, column: square.column, row: square.row };
-    flats.push({ ...about, corners: toUnits(square.corners), colour: style.colour, detail: false });
+    // "height" is a number of units, or, for a sloping top, a function that
+    // gives the height at a spot (in squares). Every piece keeps the height
+    // of each of its corners, and "height" is the highest of them.
+    const heightsOf = (corners) => corners.map(([x, y]) => (typeof height === "function" ? height(x, y) : height));
+    const piece = (corners, colour, detail) => {
+      const heights = heightsOf(corners);
+      flats.push({ kind, height: Math.max(...heights), heights, column: square.column, row: square.row, corners: toUnits(corners), colour, detail });
+    };
+    piece(square.corners, style.colour, false);
     const [[left, top], , [right, bottom]] = square.corners;
     for (const part of style.parts ?? []) {
       const x0 = Math.max(left, square.column + part.rect[0]);
@@ -167,7 +175,7 @@ export function createScenery(track, model) {
       const x1 = Math.min(right, square.column + part.rect[2]);
       const y1 = Math.min(bottom, square.row + part.rect[3]);
       if (x1 - x0 > 1e-9 && y1 - y0 > 1e-9) {
-        flats.push({ ...about, corners: toUnits([[x0, y0], [x1, y0], [x1, y1], [x0, y1]]), colour: part.colour, detail: true });
+        piece([[x0, y0], [x1, y0], [x1, y1], [x0, y1]], part.colour, true);
       }
     }
   }
@@ -208,6 +216,46 @@ export function createScenery(track, model) {
   });
 
   return { strips, flats, unitsPerMetre };
+}
+
+/** How low and how high the two ends of a ramp are, in metres. */
+const RAMP_LOW = 0.05;
+const RAMP_HIGH = 0.85;
+
+/** The colours of a ramp's sloping top: yellow with dark bars across the way it is driven. */
+export const RAMP_FLAT_STYLES = {
+  "ramp-x": {
+    colour: "#f2c531",
+    parts: [0.18, 0.46, 0.74].map((x) => ({ rect: [x, 0, x + 0.1, 1], colour: "#1d2024" })),
+  },
+  "ramp-y": {
+    colour: "#f2c531",
+    parts: [0.18, 0.46, 0.74].map((y) => ({ rect: [0, y, 1, y + 0.1], colour: "#1d2024" })),
+  },
+};
+
+/**
+ * The ramps of a track (shared/ramps.js) as boxes with a sloping top, so
+ * that they stand up in the race view: low where a kart drives on, high
+ * where it takes off. The driving rules do not use these boxes.
+ */
+export function rampBlocks(track) {
+  const size = track.tileSize;
+  return (track.ramps ?? []).map((ramp) => {
+    // Is it driven along x or along y, and towards the larger or the smaller number?
+    const alongX = Math.abs(Math.cos(ramp.angle)) >= Math.abs(Math.sin(ramp.angle));
+    const rising = alongX ? Math.cos(ramp.angle) > 0 : Math.sin(ramp.angle) > 0;
+    return {
+      name: "ramp",
+      rect: [ramp.left / size, ramp.top / size, ramp.right / size, ramp.bottom / size],
+      slope: alongX ? "x" : "y",
+      top: rising ? RAMP_LOW : RAMP_HIGH,
+      topEnd: rising ? RAMP_HIGH : RAMP_LOW,
+      roof: alongX ? "ramp-x" : "ramp-y",
+      art: "ramp-side",
+      solid: false,
+    };
+  });
 }
 
 /**
@@ -417,7 +465,7 @@ export function sceneryInView(scenery, kart, settings = CHASE, screen = SCREEN) 
     if (flat.kind === "top" ? flat.height >= eyeHeight : flat.height <= eyeHeight) {
       continue;
     }
-    const corners = flat.corners.map(([x, y]) => seenFromKart(kart, x, y));
+    const corners = flat.corners.map(([x, y], i) => ({ ...seenFromKart(kart, x, y), height: flat.heights[i] }));
     if (corners.every((corner) => corner.ahead < near) || corners.every((corner) => corner.ahead > far)) {
       continue;
     }
@@ -430,7 +478,7 @@ export function sceneryInView(scenery, kart, settings = CHASE, screen = SCREEN) 
     }
     const points = kept.map((corner) => {
       const scale = scaleAt(corner.ahead);
-      return [middle + corner.sideways * scale, horizonY + scale * (eyeHeight - flat.height)];
+      return [middle + corner.sideways * scale, horizonY + scale * (eyeHeight - corner.height)];
     });
     if (
       points.every(([x]) => x < 0) ||
@@ -465,7 +513,11 @@ function keepAhead(corners, near) {
     }
     if (here.ahead >= near !== next.ahead >= near) {
       const share = (near - here.ahead) / (next.ahead - here.ahead);
-      kept.push({ ahead: near, sideways: here.sideways + share * (next.sideways - here.sideways) });
+      kept.push({
+        ahead: near,
+        sideways: here.sideways + share * (next.sideways - here.sideways),
+        height: here.height + share * (next.height - here.height),
+      });
     }
   }
   return kept;

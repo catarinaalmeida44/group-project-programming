@@ -300,8 +300,14 @@ describe("making the scenery of a track: boxes", () => {
     for (const strip of strips) {
       expect(strip.highest).toBe(30);
     }
-    // A sloping top is not painted as flat pieces.
-    expect(flats.filter((flat) => flat.kind === "top")).toEqual([]);
+    // Changed on 17 November 2026, with the ramps: a sloping top used to be left
+    // unpainted (this test said so). It is now painted, one piece per square,
+    // and each piece keeps the height of each of its four corners.
+    const topPieces = flats.filter((flat) => flat.kind === "top");
+    expect(topPieces).toHaveLength(3);
+    expect(topPieces[0].heights.map(Math.round)).toEqual([30, 25, 25, 30]); // west corners high, east corners lower
+    expect(topPieces[2].heights.map(Math.round)).toEqual([20, 15, 15, 20]);
+    expect(topPieces[0].height).toBeCloseTo(30); // "height" is the highest corner
   });
 
   it("slopes the top of a box along y when asked", () => {

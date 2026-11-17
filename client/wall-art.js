@@ -243,6 +243,27 @@ function entrance(c, x, height, wide = 4.2) {
 export const WALL_ART = {
   // ---- Plain things that fit whatever they are put on ----
 
+  // The side of a ramp: yellow and black slanting stripes, as on anything you should not miss.
+  "ramp-side": {
+    period: 1.5,
+    height: 0.9,
+    fits: true,
+    paint(c, length, height) {
+      c.fillStyle = "#f2c531";
+      c.fillRect(0, 0, length, height);
+      c.fillStyle = "#1d2024";
+      for (let x = -height; x < length + height; x += 0.5) {
+        c.beginPath();
+        c.moveTo(x, height);
+        c.lineTo(x + 0.25, height);
+        c.lineTo(x + 0.25 + height, 0);
+        c.lineTo(x + height, 0);
+        c.closePath();
+        c.fill();
+      }
+    },
+  },
+
   // The black of the base that the letters in the atrium stand on.
   black: {
     period: 3,
