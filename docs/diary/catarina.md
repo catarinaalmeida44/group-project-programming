@@ -50,7 +50,33 @@ One commit of this evening (`a4c1080`) left both race pages broken: a script tha
 
 **What was checked, and what was not**
 
-See the numbers at the end of the entry below this heading, added once the rules were joined in.
+Checked:
+
+- `npm test`: see the number at the end of this list. Before this evening's second round there were 1,605.
+- The new rules have their own tests, written by the helper: a kart takes off only when it drives over a ramp the right way and fast enough, cannot steer in the air, lands after exactly the time the rule says, is still stopped by a wall, and flies over a banana; a walker is toppled by a fast kart and not by a slow one, not when inside a building, not when already sitting, not by a kart in the air; the server sends the walkers only on a track that has them; nothing a browser sends can make a kart jump or move a walker. On the real track: every walker's whole path is on open ground, and the flight after every ramp is clear of walls.
+- The picture side has its own tests too (`tests/street-life.test.js`): a walker is drawn exactly where the rules say it is.
+- A robot drove a whole lap in the real single race page, in the agent's browser: it took the ramp on the coast road, its speed went from about 300 to 409 units a second, and the picture taken at that moment shows the kart in the air above its shadow, with a computer kart ahead of it jumping too.
+- The online room, in the agent's browser: the server sends the five walkers, their clocks stand still during 3, 2, 1 and run from GO. No error on the page.
+- The agent looked at the students walking, at one sitting on the ground with its stars, at the ramps, bikes, bins and cones, at the letters, the café sign and the statue.
+
+Not checked:
+
+- **How it feels.** Whether the jump is fun, whether the students are too many or too few, whether the bikes are fair. The numbers are first guesses. Catarina or a teammate has to play it.
+- Two people online on two laptops, and the live server.
+- The sounds: the agent cannot hear. Catarina asked for the sound to be switched off during the agent's own test drive, which had left an engine humming in the hidden browser.
+- Whether the lag she felt near the café is gone.
+
+**What was done in git**
+
+- Everything is on the one branch `nova-track`, for one pull request, as she asked.
+- The helper worked on the branch `nova-track-rules` in the folder `.worktrees/nova-rules`. Its work was merged into `nova-track` in two steps (ramps first, then walkers and the server). The folder and the branch were removed once it had reported.
+- Small commits, pushed to GitHub as a backup. Nothing was merged into `main`.
+
+**How to check it yourself**
+
+1. `npm start`, then http://localhost:3000/track-tour.html?track=nova-lap: the students walk, the tour hops over each ramp.
+2. Menu, Single race, Nova lap. Drive over the yellow ramp on the coast road. On the west street, try to get the two ramps in the outer lanes. On the promenade, drive into a student.
+3. `npm test`.
 
 ### 17 November 2026, evening: Catarina's first feedback on the Nova lap
 
