@@ -134,9 +134,15 @@ describe("what the page says before a race", () => {
     expect(view.line).not.toContain("Enter");
   });
 
-  it("shows the finish time of a free drive, with R to go again", () => {
-    const view = raceView({ race: race(), myId: 2, mine: kart(2, { finished: true, steps: 600 }) });
-    expect(view.message).toBe("Finished in 0:10.00. Press R to go again.");
+  // Replaced on 17 November 2026, with Francisco's OK for the team. There is
+  // no free drive to finish any more: before the host starts, every kart
+  // waits on the grid. So the page never offers "Press R to go again" then.
+  it("says nothing in the middle of the track while waiting for the host, and never offers R", () => {
+    for (const myId of [1, 2]) {
+      const view = raceView({ race: race({ host: 1 }), myId, mine: kart(myId, { finished: true, steps: 600 }) });
+      expect(view.message).toBe("");
+      expect(view.line).not.toContain("R ");
+    }
   });
 });
 

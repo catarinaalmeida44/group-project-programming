@@ -11,6 +11,7 @@ import { createProgress } from "../shared/laps.js";
 import { tileKindAt } from "../shared/track.js";
 import { TEST_DRIVER } from "../shared/characters.js";
 import { TEST_OVAL } from "../shared/tracks/test-oval.js";
+import { COUNTDOWN_STEPS } from "../shared/countdown.js";
 
 const GAS = { gas: true, brake: false, left: false, right: false };
 const NO_KEYS = { gas: false, brake: false, left: false, right: false };
@@ -28,6 +29,16 @@ function run(room, steps) {
   for (let step = 0; step < steps; step++) {
     room.step();
   }
+}
+
+/**
+ * The host starts a race and the room runs through 3, 2, 1: the next step is
+ * the first one in which karts can move. Since 17 November 2026 nobody can
+ * drive before that.
+ */
+function startAndReachGo(room, hostId) {
+  expect(room.startRace(hostId)).toBe(true);
+  run(room, COUNTDOWN_STEPS);
 }
 
 describe("joining and leaving a room", () => {
@@ -101,6 +112,10 @@ describe("joining and leaving a room", () => {
 });
 
 describe("driving in a room", () => {
+  // Rewritten on 17 November 2026, with Francisco's OK for the team: the
+  // driving now happens in a race, after GO. Before, it happened while the
+  // room was open, where nobody can move any more. What the test checks is
+  // unchanged.
   it("moves only the kart of the player who is holding a key", () => {
     const room = newRoom();
     const driver = room.addPlayer();
@@ -108,13 +123,17 @@ describe("driving in a room", () => {
     const driverBefore = kartOf(room, driver.id);
     const watcherBefore = kartOf(room, watcher.id);
 
+    startAndReachGo(room, driver.id);
     room.setKeys(driver.id, GAS);
     run(room, 60);
 
     expect(kartOf(room, driver.id).x).toBeGreaterThan(driverBefore.x + 20);
-    expect(kartOf(room, watcher.id)).toEqual(watcherBefore);
+    const still = kartOf(room, watcher.id); // its clock runs from GO, but it has not moved
+    expect([still.x, still.y, still.angle]).toEqual([watcherBefore.x, watcherBefore.y, watcherBefore.angle]);
   });
 
+  // Rewritten on 17 November 2026, with Francisco's OK for the team: the
+  // same comparison, in a race after GO instead of while the room is open.
   it("moves a kart exactly as the practice race would", () => {
     // The server and the browser use the same rules file, so the same keys
     // must give the same result in both.
@@ -123,6 +142,7 @@ describe("driving in a room", () => {
     const start = kartOf(room, player.id);
     let practice = { kart: createKart(start.x, start.y, start.angle), progress: createProgress() };
 
+    startAndReachGo(room, player.id);
     const keys = { gas: true, brake: false, left: false, right: true };
     room.setKeys(player.id, keys);
     run(room, 90);
@@ -137,20 +157,29 @@ describe("driving in a room", () => {
     expect(online.steps).toBe(practice.progress.steps);
   });
 
-  it("does not start a player's clock until their first key press", () => {
+  // Replaced on 17 November 2026, with Francisco's OK for the team. The old
+  // test said a player's clock starts at their first key press while the
+  // room is open. Now nobody's clock runs before the host starts a race, and
+  // it starts at GO for everyone.
+  it("does not start a player's clock while waiting for the host, whatever keys are held: it starts at GO", () => {
     const room = newRoom();
     const player = room.addPlayer();
+    room.setKeys(player.id, GAS);
     run(room, 120);
     expect(kartOf(room, player.id).steps).toBe(0);
 
-    room.setKeys(player.id, GAS);
+    startAndReachGo(room, player.id);
+    expect(kartOf(room, player.id).steps).toBe(0); // not during 3, 2, 1 either
     run(room, 30);
     expect(kartOf(room, player.id).steps).toBe(30);
   });
 
-  it("keeps the clock running once started, even with no key held", () => {
+  // Replaced on 17 November 2026, with Francisco's OK for the team. The old
+  // test started the clock with a key press while the room was open.
+  it("keeps everyone's clock running from GO, with a key held or not", () => {
     const room = newRoom();
     const player = room.addPlayer();
+    startAndReachGo(room, player.id);
     room.setKeys(player.id, GAS);
     run(room, 10);
     room.setKeys(player.id, NO_KEYS);
