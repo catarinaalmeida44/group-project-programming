@@ -126,9 +126,16 @@ What this means for you: prefer finished, reliable features over many half-finis
   - *A sunny afternoon, although the film was shot on a grey day.*
   - *A page for the team that flies the camera round a track: `track-tour.html?track=nova-lap`. It is not linked from the menu.*
 
-  *17 Nov 2026, evening, after Catarina drove it: the beach tunnel was rebuilt, the Moon Café got its sign and tables, the atrium got black letters in the middle and tables, the avenue its trees and benches, and cars now drive along the two roads beside the track (a picture only, see `WALKTHROUGH.md`). Decisions made by the agent, please confirm: tables, letters, trees and benches stand on squares that karts cannot cross; the crescent moon on the café is our own drawing.*
+  *17 Nov 2026, evening, after Catarina drove it: the beach tunnel was rebuilt, the Moon Café got its sign and tables, the atrium got black letters in the middle and tables, the avenue its trees and benches, and cars now drive along the two roads beside the track (a picture only, see `WALKTHROUGH.md`). Decisions made by the agent, please confirm: tables, letters, trees and benches stand on squares that karts cannot cross; the coffee cup on the café's sign is our own drawing.*
 
-  ***[OPEN]** How to make the second half of the lap more fun. Ideas from Catarina: people walking in and out of the buildings along the promenade who topple over, in a funny way, when a kart bumps them; obstacles such as a parked bike; a jump with a speed boost. These are new rules: they must run on the server too and need tests. Nothing of this is built. Boost pads were already [PROPOSED] in the list of surfaces above.*
+  ***[DECIDED 17 Nov 2026 by Catarina]** How the Nova lap is made more fun. Built the same evening:*
+  - ***Walkers.** Students walk across the terrace and the promenade, each from one door to another and back. The doors are the ones in the film: the café, the library's sliding doors, the entrance of the main building, the glass entrance opposite. A kart that drives into one loses most of its speed, and the student sits down on the ground, seeing stars, for about two seconds, then gets up and walks on. "In a fun way and not in a grotesque way."*
+  - ***Ramps.** On the two long straights. A kart that drives over one the right way, fast enough, jumps and gets extra speed for a moment. She asked that nobody can get them all by driving straight on: the first ramp of each straight is where everybody drives, the others are in the outer lanes.*
+  - ***Things in the way.** Parked bikes, recycling bins and cones on the straights, the grey benches on the promenade.*
+  - *The café is called MON CAFFE. The statue of the woman with the surfboard is bigger. No jump at the stairs: they go down.*
+  - *She wants one pull request with everything, not several.*
+
+  *Decisions made by the agent on 17 Nov 2026, please confirm: all the numbers of the two rules (how long a jump lasts, how much faster, how fast a student walks, how long they sit: they are named at the top of `shared/ramps.js` and `shared/walkers.js`); a kart in the air cannot steer, flies over bananas and students, but is still stopped by a wall or a parked bike; a student who is inside a building or already sitting cannot be bumped; a kart that only creeps into a student does not topple them; the computer karts try to steer round students as they do round bananas; a jump has a rising "whoop" and a toppled student a silly two-note sound.*
 
 ### Driving physics
 

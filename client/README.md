@@ -67,6 +67,7 @@ Everything the browser shows and does: the web page, the drawing of the track an
 | `nova-lap-buildings.js` | The buildings of the Nova lap: where each box stands, how tall it is in metres, which picture is on each side, and the fences. Also which squares are solid |
 | `nova-lap-look.js` | The look of the Nova lap put together: the way round, sky and horizon, the lines on the roads, and the single things (Christmas tree, statue, flags, palms) |
 | `traffic.js` | The cars that drive along the roads beside a track: where each one is at a given moment. Only a picture: no kart can reach those roads and the server knows nothing of them. No painting, so it has tests |
+| `street-life.js` | The people who walk across a track, as the picture shows them: which are outside, where, walking or sitting on the ground, and how many sit close to the player's kart (for the sound). The rules are in `shared/walkers.js`. No painting, so it has tests |
 | `track-tour.html`, `track-tour.js` | The track tour: the race camera flies round a track by itself, so the buildings can be looked at without driving. For the team. Not linked from the menu: `track-tour.html?track=nova-lap` |
 | `format.js` | Turns a number of seconds into a race time such as `1:23.45` |
 

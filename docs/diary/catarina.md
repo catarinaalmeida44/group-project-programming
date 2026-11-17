@@ -4,6 +4,54 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 17 November 2026, late evening: students who walk, ramps to jump, things in the way
+
+**What she said**
+
+After the first round of fixes: "The nova logo in the atrium is buggy." "It is MON caffe, not moon." Make the statue of the lady with the surfboard bigger. One pull request with everything. And on the ideas for making the lap fun:
+
+1. People walking: yes. They must come in and out of doors that make sense: "look at the video to see entry ways that students could possibly come out of."
+2. Speed boosts: yes, but as ramps you jump, with a new animation, and placed so that a player "cannot just go straight and hit all of them".
+3. Things in the way: yes, "and trashcans and things like that".
+4. A jump at the stairs: no. The stairs go down. Ramps along the boring part instead.
+
+**What was done**
+
+| What | Where |
+|---|---|
+| The letters N O V A were smeared out to the side. Their picture was narrower than the stand it was put on, and the last column of the picture was repeated to fill the gap. A picture that "fits" is now stretched along its whole stand. The letters also got a long black base, which is what a kart bumps into | `client/scenery-paint.js`, `client/scenery.js`, `client/nova-lap-buildings.js` |
+| MON CAFFE on the roof sign and the board by the door, with a coffee cup instead of a moon | `client/wall-art.js` |
+| The statue: redrawn as a woman standing with her surfboard, and one and three quarter times as big | `client/props.js`, `client/nova-lap-buildings.js` |
+| **Walkers.** Five students, each walking between two doors and back. The agent went back to the film for the doors: the library's sliding doors under its bridge (with the red sticker), the entrance of the main building halfway down the promenade, the tall glass entrance opposite in its frame of pale stone, and the café. Two doors the agent had drawn on the main building without having seen them in the film were taken out again | `shared/walkers.js` (the rule), `shared/tracks/nova-lap.js` (the five paths), `client/street-life.js`, `client/props.js` (the drawing) |
+| **Ramps.** Four: one on the coast road, three on the west street. The first of each straight is in the middle, where everybody drives. The other two are in the outer lanes of the west street, with a parked bike or bins some way after them, so whoever wants them has to change lanes at speed | `shared/ramps.js` (the rule), `shared/tracks/nova-lap.js` (where they are), `client/scenery.js` (the wedge), `client/ground.js` (the arrows), `client/draw.js` (the kart in the air, the sparks) |
+| **Things in the way.** Parked blue bikes, recycling bins with blue, yellow and green lids (as beside the library in the film), cones, and two of the grey benches of the promenade | `client/nova-lap-buildings.js` (`NOVA_LAP_FURNITURE`), `client/props.js` |
+| Sounds: a rising whoop for a jump, a silly two-note sound when a student near you topples | `client/sound.js`, `client/sound-cues.js` |
+| The track tour shows the students walking, each sitting down every 25 seconds so the sit-down can be looked at, and hops when it crosses a ramp | `client/track-tour.js` |
+
+**How the two rules work, in short**
+
+- A ramp is one square of road with a direction. Drive over it that way, fast enough, and the kart is in the air for 0.7 seconds: the keys do nothing, it flies over bananas and students, a wall still stops it. Then one second of higher top speed.
+- A walker's place follows from its path and its own clock. A kart that drives into one keeps 40% of its speed. The walker sits for 2.2 seconds, its clock standing still, and nobody can bump it again until it is up. A walker inside a building cannot be bumped. A kart that only creeps into one does nothing.
+- Both run on the server, like the bananas. A browser sends only its keys.
+
+**Why it was done this way**
+
+- **Two agents again.** A helper wrote the rules in `shared/` and `server/` with their tests, in its own folder, while the main agent drew them in `client/`. They agreed first on two small files that say what a ramp and a walker are (`shared/ramps.js`, `shared/walkers.js`), and neither touched the other's folders.
+- **The walkers need almost nothing sent.** Because a walker's place follows from its clock, the server sends two numbers for each, and every browser draws the same place.
+- **Fun, not grotesque.** A toppled student sits up straight, legs out, with stars going round their head and their coffee cup beside them, and gets up again. Karts cannot hit someone who is sitting.
+
+**A mistake of the agent's, found and repaired**
+
+One commit of this evening (`a4c1080`) left both race pages broken: a script that edits files dropped an import and three lines from `client/main.js` and `client/online.js` without saying so, and the pages stopped with an error. The tests did not notice, because no test loads those two pages. The agent found it a few minutes later, repaired it in the next commit and opened both pages to check. Nothing of it was ever on `main`. What it shows: the pages themselves have no automatic test, so every change to them has to be opened in a browser.
+
+**One existing test was changed, and why**
+
+`tests/scenery.test.js`, "slopes the top of a box along x": it said that a sloping top is not painted. Ramps need a sloping top that is painted, so the rule changed, and the test now says that a sloping top is painted with each corner at its own height. The test file is one day old and from this same pull request.
+
+**What was checked, and what was not**
+
+See the numbers at the end of the entry below this heading, added once the rules were joined in.
+
 ### 17 November 2026, evening: Catarina's first feedback on the Nova lap
 
 **What she said**
