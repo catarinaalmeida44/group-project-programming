@@ -11,6 +11,27 @@
 // A racer (race.js) carries two counters for this:
 //   airSteps    how many more steps it is in the air. 0 on the ground
 //   boostSteps  how many more steps it has extra speed. 0 when it has none
+//
+// WHEN A KART TAKES OFF
+// All of these have to be true, just after the kart has moved (takesOff):
+//   - the middle of the kart is on a ramp
+//   - it moves at TAKE_OFF_SPEED or faster
+//   - the direction it MOVES in is close to the direction the ramp points.
+//     What counts is where the kart is going, not where its nose points
+// and race.js adds: it is on the ground and it is not spinning out.
+//
+// WHAT TAKING OFF DOES
+// launchKart() gives the kart its extra speed at once, in the direction it
+// was already going. race.js then sets the two counters. While airSteps is
+// above zero the kart flies (flyKart in physics.js): no steering, no
+// braking, no slowing down. After landing, for as long as boostSteps is
+// above zero, its top speed is BOOST_SHARE times the usual one.
+//
+// A ramp that a kart passes over while it is in the air does nothing. Nor
+// does one it rolls over too slowly, sideways or against its direction.
+// Nothing here is left to chance.
+
+import { speedOf, topSpeedOf } from "./physics.js";
 
 // ---------------------------------------------------------------------------
 // NUMBERS TO TUNE BY PLAYTESTING
@@ -52,4 +73,44 @@ export function rampAt(track, x, y) {
     }
   }
   return null;
+}
+
+/**
+ * Does a kart on the ground take off here? (The three rules about the ramp
+ * from the top of this file. Whether the kart is on the ground at all, and
+ * whether it is spinning, is for race.js to say.)
+ */
+export function takesOff(track, kart) {
+  const ramp = rampAt(track, kart.x, kart.y);
+  if (ramp === null) {
+    return false;
+  }
+  const speed = speedOf(kart);
+  if (!(speed > 0) || speed < TAKE_OFF_SPEED) {
+    return false; // standing still or too slow: it just rolls across
+  }
+  // The direction the kart is going, which can differ from where it points.
+  const going = Math.atan2(kart.vy, kart.vx);
+  return Math.abs(turnBetween(ramp.angle, going)) <= TAKE_OFF_WITHIN;
+}
+
+/**
+ * The kart at the moment it leaves a ramp: it goes on in the direction it
+ * was already going, at its driver's usual top speed on the road times
+ * BOOST_SHARE. A kart that was already faster than that keeps its speed:
+ * a ramp never slows a kart down. The kart given is not changed.
+ */
+export function launchKart(kart, character) {
+  const speed = speedOf(kart);
+  const launchSpeed = topSpeedOf(character) * BOOST_SHARE;
+  if (!(speed > 0) || speed >= launchSpeed) {
+    return kart;
+  }
+  const grown = launchSpeed / speed; // how many times faster it gets
+  return { ...kart, vx: kart.vx * grown, vy: kart.vy * grown };
+}
+
+/** How much to turn from one direction to another, from -pi to pi (half a turn each way). */
+function turnBetween(from, to) {
+  return Math.atan2(Math.sin(to - from), Math.cos(to - from));
 }

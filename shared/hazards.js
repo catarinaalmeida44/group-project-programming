@@ -5,6 +5,8 @@
 // nothing and it slows down quickly, sliding the way it was going. The
 // banana is gone after that. (How a spinning kart moves is in race.js and
 // physics.js. This file decides where the bananas are and who hit one.)
+// A kart that is in the air after a ramp (ramps.js) flies over a banana:
+// the kart does not spin and the banana stays where it is.
 //
 // The browser and the server both use this file, so a practice race and an
 // online race have bananas by exactly the same rules.
@@ -230,9 +232,13 @@ export function addBananas(track, maker, bananas, karts) {
   };
 }
 
-/** Can this racer be spun now? Not while it is spinning, and not for a short moment after. */
+/**
+ * Can this racer be spun now? Not while it is spinning, not for a short
+ * moment after, and not while it is in the air after a ramp (ramps.js): a
+ * kart that flies touches nothing on the road.
+ */
 export function canBeSpun(racer) {
-  return !(racer.spinShieldSteps > 0);
+  return !(racer.spinShieldSteps > 0) && !(racer.airSteps > 0);
 }
 
 /**
@@ -240,8 +246,8 @@ export function canBeSpun(racer) {
  *   racer    where the racer is in the list given (0 is the first)
  *   banana   the id of the banana
  * A racer hits a banana when the circle of its kart touches the circle of
- * the banana. A racer that cannot be spun now hits nothing: it slides over
- * the banana, and the banana stays for the next kart.
+ * the banana. A racer that cannot be spun now hits nothing: it slides or
+ * flies over the banana, and the banana stays for the next kart.
  */
 export function bananaHits(bananas, racers) {
   const hits = [];
