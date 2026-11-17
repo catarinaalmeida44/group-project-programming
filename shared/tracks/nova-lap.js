@@ -33,7 +33,8 @@
 // client/nova-lap-ground.js and the buildings as boxes in
 // client/nova-lap-buildings.js. tests/nova-lap.test.js checks that these
 // letters say the same as those shapes, square by square. To change the
-// layout, change the shapes and then the letters to match.
+// layout, change the shapes and then run "node tests/nova-lap-letters.js",
+// which writes the matching letters between the two MAP lines below.
 //
 // North is up: column 0 is the west edge, row 0 the north edge. The sea is
 // beyond the bottom edge. The numbers after some rows are row numbers.
