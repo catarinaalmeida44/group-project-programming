@@ -15,8 +15,8 @@
 //
 // History: from 12 November the menu had "Your kart", to pick the colours
 // of the kart, the helmet and the suit. On 17 November that became "Your
-// character", a button at the top of the menu. Since 18 November the
-// character is chosen here, for each race.
+// character", a button at the top of the menu. Later the same day, after
+// Pedro tried it, the character became a step of its own, for each race.
 
 import { CAST } from "../shared/cast.js";
 import { readCharacter, saveCharacter, faceOf, lookOfCharacter } from "./cast-choice.js";
