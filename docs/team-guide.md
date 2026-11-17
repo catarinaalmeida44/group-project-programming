@@ -26,7 +26,8 @@ The game is online at https://novasbe-kart.onrender.com
 | Automatic tests | More than 1,200. GitHub runs them on every pull request |
 | The server on the internet | Works. It updates itself a few minutes after every merge into `main` |
 | The database | Works. It holds the accounts, the sign-ins and the race results. See section 8 for a catch on the university Wi-Fi |
-| Characters, items, computer karts, cup, more campus tracks, email for accounts | Not started. This is the work ahead |
+| Six characters, chosen by face in the menu ("Your character") | Built on 17 November by Pedro, on the branch `characters`. They change only the kart's colours: everyone still drives the same way. Online, one player per character in a room. No podium yet |
+| Items, computer karts, cup, more campus tracks, email for accounts, different driving for each character | Not started. This is the work ahead |
 
 The full story of how each part was built, and why, is in `docs/build-diary.md`. The answers to likely staff questions are in `WALKTHROUGH.md`.
 

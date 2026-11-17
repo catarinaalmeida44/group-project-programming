@@ -2,6 +2,57 @@
 
 Entries from 10 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 17 November 2026: six characters, chosen by face
+
+**What was done**
+The menu button "Your kart" is now "Your character". It shows six faces with names: Dean, Professor Ricardo Pereira, Ró Versos, Cici Boss, FranFon and PCP. Clicking one chooses it, and the small kart turns round in that character's colours. In a single race and online, your kart has those colours. The faces are only in the menu: in the race the driver wears a helmet. Online, two players in a room cannot be the same character. The second one gets the first free character, and the page tells them: "Someone in this room is already PCP, so you are Dean."
+
+| File | What it is for |
+|---|---|
+| `shared/cast.js` (new) | The six characters: id, name and kart colours |
+| `client/faces/` (new) | One face picture per character, 256 by 256 pixels, about 10 KB each |
+| `client/cast-choice.js` (new) | Remembers your character in the browser, finds its face and colours, and writes the sentence the online page shows |
+| `client/kart-panel.js`, `client/index.html`, `client/style.css` | The "Your character" panel: a grid of faces instead of rows of colours |
+| `client/main.js`, `client/online.js` | The single race and the online page use the character's colours. Online, the page tells the server which character you chose |
+| `server/cast-keeper.js` (new) | Who in a room is which character: one player per character, the first free one if yours is taken, freed when a player leaves, no change during a race |
+| `server/messages.js`, `server/online.js` | A browser may say one more thing, `{"type":"character","id":"pcp"}`. Only the exact id of a character gets through |
+| `server/app.js` | The server may now send `.jpg` pictures (the faces) |
+| `tests/cast.test.js`, `tests/room-characters.test.js` (new) | 24 and 29 tests. No existing test was changed |
+| `WALKTHROUGH.md`, `PROJECT_BRIEF.md`, the READMEs, `docs/team-guide.md`, `docs/two-laptop-checklist.md` | Kept true. The checklist has seven new checks (76 to 82) |
+
+**Why it was done this way**
+- A character is a name, a face and a choice of colours of the kind the game already had (three small numbers). So the drawing of karts did not change at all, and the server already knew how to pass colours on to the other players.
+- The faces were cut from the photos with the image tools that come with Windows, so no new library was needed. Only the pixels were copied: nothing hidden in a phone photo (where or when it was taken) is in the pictures. The Professor's picture shows only his face, nothing of the Outlook screen it was taken from.
+- The rule "one player per character" was first put in `server/room.js`. An existing test (`room-bananas.test.js`) checks the exact list of things the room can do, so that nothing new can touch the bananas, and it failed. The test was not changed. The rule went into its own file, `server/cast-keeper.js`, instead: characters have nothing to do with driving anyway.
+- A test checks that `client/faces/` holds exactly one picture per character and nothing else, so no photo can sit on the internet without being used.
+
+**Decisions**
+- Decided by Pedro: six characters, their names and colours, faces only in the menu. A normal photo, not a video.
+- Decided by Pedro: all six people said yes to being in the game and in the public repository, before their photos went in (Pedro collected the yeses).
+- Decided by Catarina, through Pedro: option A. Choosing a character replaces choosing the kart colours one by one.
+- Decision made by the agent, please confirm: the name is written "Professor Ricardo Pereira" (Pedro wrote "Profesor").
+- Decision made by the agent, please confirm: Dean has a black kart, a white helmet and a white suit; Professor Ricardo Pereira an orange kart, a blue helmet and a navy suit; Ró Versos a pink kart with a yellow helmet and suit; Cici Boss a blue kart, a pink helmet and a navy suit (there is no pink suit); FranFon all black; PCP a red kart, a yellow helmet and a red suit.
+- Decision made by the agent, please confirm: a room still takes eight players, but there are six characters. A seventh and eighth player drive a plain kart in the colours of their place on the grid.
+- Decision made by the agent, please confirm: a player who has not chosen a character keeps the kart colours they chose before (or the colours of their place), as before.
+- Decision made by the agent, please confirm: a character cannot be changed during the countdown or the race. Someone who is watching can, and races with it next time.
+- Git: the agent made the branch `characters` from an up-to-date `main` and made the commits. Nothing was pushed.
+
+**What was checked, and what was not**
+- `npm test`: 1358 passed, 5 skipped (before: 1309 and 5).
+- The new rules were broken on purpose in six ways (two players with one character, a free character given during a race, a racer allowed to change during a race, a character not freed when its player leaves, a character's colours overwritten, any text accepted as a character). Each made between 1 and 3 tests fail. The code was then put back.
+- In the app's built-in browser: the panel shows the six faces, choosing PCP turns the small kart red with a yellow helmet and says "Saved". On the online page, the first tab was told "You are PCP." A second tab (same browser, so also PCP) was told "Someone in this room is already PCP, so you are Dean." and its kart was black and white. No errors on the page.
+- NOT checked: a single race driven with a character, by eye. The tests check the colours.
+- NOT checked: two real laptops and the live site. Checks 76 to 82 in `docs/two-laptop-checklist.md` are for that.
+- NOT checked: how the faces look on a phone or a small screen.
+
+**How to check it yourself**
+Run `npm start`, open http://localhost:3000, click "Your character" and pick one. Then open "Online" in two windows. Both windows share one saved choice, so the second is given another character. Run `npm test` and look for `cast.test.js` and `room-characters.test.js`.
+
+**What comes next**
+- Pedro tells the team, and Catarina in particular, that "Your kart" is now "Your character".
+- Publish the branch from GitHub Desktop, open the pull request, a teammate approves.
+- Next piece: the podium with faces at the end of an online race.
+
 ### 11 November 2026: a race start for online play
 
 **What was done**

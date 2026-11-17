@@ -11,7 +11,8 @@ Our game server: the program that runs on Render. It sends the game's files to t
 | `store.js` | Every question the game asks the database about players, sessions and race results |
 | `online.js` | Online play. Keeps a live connection open to every browser on the online page, passes the keys they hold to the room, sends everyone the state of all karts and bananas 20 times a second, and saves the result when a signed-in player finishes a race. One room for each track. Gives every room real chance to pick the seeds of its bananas with |
 | `room.js` | The karts of everyone driving together, and the race: who the host is, the countdown, who is racing, who is watching, and who finished in which position. Moves the karts with the shared rules, 60 steps a second: it puts them on the starting grid, lets them bump into each other, and looks after the bananas of a race. Knows nothing about the internet, which makes it easy to test |
-| `messages.js` | Checks every message a browser sends before the game looks at it: keys, restart, start, and the colours of its kart |
+| `messages.js` | Checks every message a browser sends before the game looks at it: keys, restart, start, the colours of its kart, and the character it wants to be |
+| `cast-keeper.js` | Who in a room is which character (`shared/cast.js`): a character belongs to one player at a time, a player whose choice is taken gets the first free one, and nobody changes character during a race. Kept apart from `room.js` because characters do not touch the driving |
 | `db.js` | Opens the connection to the database, and looks after one small table, `server_starts`, with one row for each time the server started |
 | `start.js` | Starts the server. This is what `npm start` runs, on a laptop and on Render |
 | `start-pretend.js` | Starts the server on a laptop with pretend accounts kept in memory (`npm run start:pretend`), so everyone can try accounts without the database's secret address. Never used online |
@@ -60,7 +61,7 @@ Twenty times a second, every browser in a room gets one update (`snapshot()` in 
 
 ## What the server refuses
 
-Each of these has a test, in `tests/server.test.js`, `tests/api.test.js`, `tests/accounts.test.js`, `tests/online.test.js`, `tests/online-accounts.test.js`, `tests/room.test.js`, `tests/room-race.test.js`, `tests/room-finishes.test.js`, `tests/bumps.test.js` or `tests/room-bananas.test.js`.
+Each of these has a test, in `tests/server.test.js`, `tests/api.test.js`, `tests/accounts.test.js`, `tests/online.test.js`, `tests/online-accounts.test.js`, `tests/room.test.js`, `tests/room-race.test.js`, `tests/room-finishes.test.js`, `tests/bumps.test.js`, `tests/room-bananas.test.js` or `tests/room-characters.test.js`.
 
 For normal page requests:
 

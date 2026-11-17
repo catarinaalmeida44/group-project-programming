@@ -140,6 +140,20 @@ Turn the loudspeakers on. One laptop is enough for checks 66 to 72.
 
 Write down as well: is anything too loud, too long, or annoying after three laps? Does the engine fit the speed?
 
+## Characters (added 17 November 2026)
+
+Since 17 November the menu has "Your character" instead of "Your kart": checks 37 and 38 above now happen through a character. Not run yet with two laptops: only tried in two tabs of one browser, which share one saved choice.
+
+| # | Do this | You should see | Result |
+|---|---|---|---|
+| 76 | A: on the menu, click "Your character" | Six faces with names: Dean, Professor Ricardo Pereira, Ró Versos, Cici Boss, FranFon, PCP. The small kart turns round | |
+| 77 | A: click PCP | PCP gets a yellow frame, the small kart turns red with a yellow helmet, and it says "Saved. You are PCP in your next race." | |
+| 78 | A: open Single race | Your kart is red with a yellow helmet. No face anywhere in the race | |
+| 79 | B: choose Cici Boss. Both: click "Online", same track | A is told "You are PCP.", B "You are Cici Boss." Each sees the other's kart in that character's colours | |
+| 80 | B: go back to the menu, choose PCP, and open "Online" again | B is told "Someone in this room is already PCP, so you are Dean." B's kart is black with a white helmet | |
+| 81 | A: close the online page. B: reload it | B is now told "You are PCP." | |
+| 82 | A (the host) starts a race. C: choose a character and open "Online" during the race | C watches. At the next start C has a kart in that character's colours | |
+
 Write down as well:
 
 - Does the race view run smoothly on each laptop? "Smooth", "a little jerky" or "jerky", and which laptop.
