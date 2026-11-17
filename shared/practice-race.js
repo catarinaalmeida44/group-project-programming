@@ -8,7 +8,10 @@
 //      chooses (computer-driver.js)
 //   3. the karts bump into each other (bumps.js)
 //   4. the bananas: whoever drives over one spins out (hazards.js)
+//   5. the walkers: people who cross the track walk on, and whoever drives
+//      into one fast loses speed (walkers.js). Most tracks have none
 // That is the same order as an online race on the server (server/room.js).
+// (Ramps need no line here: jumping is part of how one kart moves, in race.js.)
 //
 // The player is racer 0. The computer karts are racers 1, 2, 3 ... and start
 // in the places in front of the player on the grid (grid.js): the player
@@ -25,6 +28,7 @@ import { countdownAt } from "./countdown.js";
 import { createRacer, stepRacer } from "./race.js";
 import { bumpKarts } from "./bumps.js";
 import { createBananaMaker, stepBananas } from "./hazards.js";
+import { createWalkers, stepWalkers, walkerSpots } from "./walkers.js";
 import { createComputerDriver, decide, personalityOf } from "./computer-driver.js";
 import { CAST, isCharacterId } from "./cast.js";
 import { GRID_PLACES } from "./grid.js";
@@ -41,6 +45,8 @@ const NO_KEYS = Object.freeze({ gas: false, brake: false, left: false, right: fa
  *                   order: drivers[0] drives racers[1]
  *   countdownSteps  how many steps of the countdown have passed
  *   bananas, bananaMaker  as in countdown.js
+ *   walkers         what is remembered about each person who crosses the
+ *                   track (walkers.js). An empty list on a track without any
  *
  * Each driver also has "character": the character of cast.js it is.
  *
@@ -75,6 +81,7 @@ export function createPracticeRace(track, seed = null, line = null, count = COMP
     countdownSteps: 0,
     bananas: [],
     bananaMaker: seed === null ? null : createBananaMaker(seed),
+    walkers: createWalkers(track),
   };
 }
 
@@ -92,6 +99,10 @@ export function stepPracticeRace(track, race, input, character) {
   // 2. Every kart moves. Each computer driver decides from the race as it was
   //    at the start of this step, so the order of the karts does not matter.
   const karts = race.racers.map((racer) => racer.kart);
+  // What a computer driver steers round: the bananas, and the people who are
+  // out on the track and standing up. To a driver they are the same thing:
+  // a spot on the road to keep away from.
+  const toSteerRound = [...race.bananas, ...walkerSpots(track, race.walkers)];
   const drivers = [];
   const moved = race.racers.map((racer, index) => {
     if (index === 0) {
@@ -103,7 +114,7 @@ export function stepPracticeRace(track, race, input, character) {
       return stepRacer(track, racer, NO_KEYS, character);
     }
     const others = karts.filter((_, other) => other !== index);
-    const decision = decide(driver, track, racer, race.line, others, race.bananas, character);
+    const decision = decide(driver, track, racer, race.line, others, toSteerRound, character);
     drivers.push(decision.driver);
     return stepRacer(track, racer, decision.keys, character);
   });
@@ -115,13 +126,17 @@ export function stepPracticeRace(track, race, input, character) {
 
   // 4. Bananas.
   const result = stepBananas(track, race.bananas, race.bananaMaker, bumped);
+
+  // 5. Walkers. (A race made by hand without any gets fresh ones here.)
+  const street = stepWalkers(track, race.walkers, result.racers);
   return {
     ...race,
-    racers: result.racers,
+    racers: street.racers,
     drivers,
     countdownSteps,
     bananas: result.bananas,
     bananaMaker: result.maker,
+    walkers: street.walkers,
   };
 }
 
