@@ -83,7 +83,7 @@ Nothing in this folder decides how a kart moves. That is the job of the rules in
 | Other players | None | Everyone who has the page of the same track open, up to eight, each in the colours they chose, or in the colour of their starting place. Karts bump into each other |
 | Banana peels | They appear from time to time and make your kart spin | The same, but the server decides where and when |
 | Where your time goes | Your best times stay in this browser. Nobody else sees them | If you are signed in, the server saves the time it measured, and it appears on the shared leaderboard |
-| How a race starts | An arrow key, then 3, 2, 1, GO! | The host presses Enter, then 3, 2, 1, GO! for everyone together. Before that, everyone drives freely |
+| How a race starts | An arrow key, then 3, 2, 1, GO! | The host presses Enter, then 3, 2, 1, GO! for everyone together. Before that, every kart waits on the starting grid and the keys do nothing |
 | Arriving during a race | Does not apply | You watch the kart in front and join at the next start |
 | Works when the server is down | Yes, once the page is loaded | No |
 

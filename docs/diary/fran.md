@@ -2,6 +2,49 @@
 
 Francisco Fonseca (Fran, GitHub FranFon15). Entries from 11 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 17 November 2026: online, nobody moves until the host starts
+
+**What was done**
+New rule for online play, from Francisco: the first player to enter is the host. Before the host presses Enter, every kart stays on its place on the starting grid and the arrow keys do nothing. Then 3, 2, 1, GO!, and only then can anyone move. Before, everyone could drive around freely while waiting. Branch `online-lobby-host-starts`.
+
+| File | What changed |
+|---|---|
+| `server/room.js` | The "open" phase is now a waiting phase: nothing moves, nothing bumps, no clock runs. Two small helpers that only free driving used were removed |
+| `client/race-view.js` | The texts while waiting ("You can drive around meanwhile" and "Press R to go again" are gone), and a new `keysWork`: when the keys really do something |
+| `client/online.js` | Uses `keysWork`: the kart only leans, the engine only revs and the next checkpoint is only lit in a race after GO |
+| `client/online.html` | The help text: every kart waits on the grid until the host presses Enter |
+| `tests/room-waiting.test.js`, `tests/keys-work.test.js` | New. 21 tests |
+| 8 older test files | 17 tests rewritten, with Francisco's OK for the team (list below) |
+| `WALKTHROUGH.md`, `client/README.md`, `tests/README.md` | Kept true |
+
+**The 17 rewritten tests** (each has a comment saying so)
+- Same check, now driving after GO (7): in `room.test.js` "moves only the kart of the player who is holding a key" and "moves a kart exactly as the practice race would"; in `room-race.test.js` "puts every kart back on its starting place with laps and clock at zero"; in `grid.test.js` "puts every kart back behind the line when a race starts"; in `bumps.test.js` "happen between two karts that are both being driven"; in `online.test.js` "lets two browsers see each other's kart move" and "lets each connection drive only its own kart, even when it names another player" (the victim's clock now runs from GO, so it checks that the victim's kart did not move, instead of a clock at zero).
+- Replaced by a test of the new rule (10): in `room.test.js` the clock starting at a key press, and running once started; in `room-race.test.js` free driving after the last racer leaves; in `grid.test.js` crossing the line again and again while open; in `room-finishes.test.js` laps while open not listed; in `bumps.test.js` shoving a parked kart, and a parked kart's clock; in `race-view.test.js` "Press R to go again"; in `online.test.js` restart after driving away; in `online-accounts.test.js` nothing saved for laps while open.
+
+**Why it was done this way**
+- The smallest change on the server: one phase stops moving karts. Everything else about races (countdown, watching, time limits, next race) is untouched.
+- The page asks one tested function whether the keys work, instead of three slightly different checks in `online.js`.
+
+**Decisions**
+- The rule is Francisco's, for the team. The 17 tests were rewritten only after his OK.
+- Decision made by the agent, please confirm: R (restart) is still accepted while waiting. It does nothing harmful (the kart is already on the grid) and refusing it would need a message change. The help text no longer mentions it.
+- Decision made by the agent, please confirm: no message in the middle of the track while waiting; the line under the track says who may start.
+- In `bumps.test.js`, the group of tests keeps its old name "bumps while the room is open", with a comment, so that the one unchanged test in it is easy to find.
+
+**What was checked, and what was not**
+- Before rewriting anything: 17 tests failed with the new rule, listed with a reason each, and Francisco decided.
+- The new rule was broken on purpose in three ways (free driving again, anyone may start, the page treating keys as working while waiting). Each made tests fail.
+- In the Claude app's browser on the laptop: with the up arrow held before the start, the kart stayed at the same spot with its clock at 0 (read from the server's side, two seconds apart). After Enter the countdown showed, and after GO the kart drove off.
+- `npm test`: 1379 passed, 5 skipped.
+- **Not checked:** with two real players on two laptops, and on the live server (only after the merge).
+- Note: the test "puts a kart back at its start on restart, without touching anyone else" in `room.test.js` still passes but now proves little, because the karts cannot drive away before a race. It was not on the list, so it was left alone. The team may want to look at it.
+
+**How to check it yourself**
+Two browsers on the online page. In the second one, hold the up arrow: nothing moves. In the first (the host), press Enter: 3, 2, 1, GO!, and only then do both karts move.
+
+**What comes next**
+Piece 3: dropping the Cup from the brief.
+
 ### 11 November 2026: the main menu, settings and your own best times
 
 **What was done**
