@@ -2,6 +2,45 @@
 
 Entries from 10 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 17 November 2026 (third piece): the pilot stands beside the kart, face centred
+
+**What was done**
+Pedro looked at the second piece and found the faces off-centre in the round heads. He asked for something better: each character standing, holding the helmet, with the kart next to them. Now "Choose your character" shows exactly that. Each pilot stands in a racing suit in the character's colours, with a stripe in the kart's colour, holding the helmet on the right hand. Their face is a round picture in the middle of the head, always straight on. The empty kart stands behind them and to one side. In the race nothing changed: the pilot sits in the kart with the helmet on.
+
+| File | What it is for |
+|---|---|
+| `client/faces/` | The six photos cut again, each square centred on the face (nose in the middle), so every face fills its head the same way |
+| `client/pilot-shape.js` (new) | The standing pilot, made of the same boxes and bars as the kart, and the scene: the empty kart beside the pilot |
+| `client/kart-paint.js` | `paintPilotScene` paints the scene with the same painter as the race. The face is a round picture, centred on the head |
+| `client/kart-panel.js` | The step uses the scene, with the camera in front of the pilot |
+| `tests/pilot-shape.test.js` (new) | 14 tests |
+| `client/face-head.js`, `tests/face-head.test.js` | Removed. They were the bobblehead on the seated pilot, which this replaces. Their 14 tests went with them, because what they tested no longer exists; they were not removed to make anything pass. This happened in the commit called "Faces: cut the photos again", which also put `client/kart-paint.js` back as it was before the bobblehead (those changes were already staged when that commit was made) |
+| `WALKTHROUGH.md`, the READMEs, `docs/team-guide.md`, `docs/two-laptop-checklist.md` | Kept true |
+
+**Why it was done this way**
+- Off-centre faces had two causes. The photos were cut with the face not exactly in the middle (FranFon and Ró Versos most of all), and the old head moved the face round the ball as the kart turned. Now the photos are centred, and the face is painted straight on, in the middle of the head.
+- A photo taken from the front looks wrong when it is turned sideways, so the face does not turn. The pilot only turns a little either way, so this looks natural.
+- The pilot is built from the same blocks as the kart and painted by the same painter, so the colours and the light match the race.
+
+**Decisions**
+- Decided by Pedro: the character stands with the helmet in the hand and the kart next to them.
+- Decision made by the agent, please confirm: the helmet is in the right hand, the kart stands behind on the other side, and the suit has a stripe in the kart's colour.
+- Decision made by the agent, please confirm: the head is a little big for the body, like a toy figure, so the face can be seen on the small cards.
+- Git: the agent made the commits on the branch `character-select`, which Pedro had already pushed. Nothing new was pushed.
+
+**What was checked, and what was not**
+- `npm test`: 1372 passed, 5 skipped. 14 tests were removed with `face-head.js` and 14 new ones added.
+- The new shape was broken on purpose in four ways (the pilot inside the kart, the head off to one side, the helmet away from the hand, the seated driver left in the kart). Each made a test fail.
+- In the app's built-in browser, at two window sizes: the six pilots stand beside their karts with their faces centred, and the chosen one is shown big. "Race" opens the race on the chosen track, where the pilot wears the helmet and no face is seen. No errors on the page.
+- NOT checked: a phone-sized screen, two real laptops, the live site.
+
+**How to check it yourself**
+Run `npm start`, open http://localhost:3000, click "Single race" or "Online", pick a track, and look at the pilots. Run `npm test` and look for `pilot-shape.test.js`.
+
+**What comes next**
+- Pedro pushes the new commits from GitHub Desktop. The pull request updates itself.
+- Next piece: the podium, with the same standing pilots.
+
 ### 17 November 2026 (second piece): choose your character before the race, as a pilot with a face
 
 **What was done**
