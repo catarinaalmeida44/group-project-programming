@@ -2,6 +2,70 @@
 
 Entries from 10 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 17 November 2026 (fifth piece): real heads, the photo beside the pilot, and a dance for each character
+
+**What was done**
+Pedro wanted the pilots to really be the people in the photos, the normal photo on the right with the pilot on the left, and a different dance for each character (one pretending to drive, one doing the CR7 celebration). Now:
+- **Real heads.** Each pilot has the person's own head: hair, face and ears, cut out of their photo with the background made see-through.
+- **Cards.** Each card shows the pilot standing on the left and the normal photo on the right, with the name under both.
+- **A dance each.** When the mouse passes over a card, that pilot does their own dance:
+  - Dean claps.
+  - Professor Ricardo Pereira does the robot.
+  - Ró Versos drives, with a steering wheel.
+  - Cici Boss waves both arms.
+  - FranFon flies like a plane.
+  - PCP does the "siu": a run, a jump with a whole turn in the air, and the landing with arms spread and feet apart.
+- **The big picture** shows the chosen one beside their kart, doing their dance, then crossing arms, and again.
+
+| File | What it is for |
+|---|---|
+| `client/heads/` (new) | The six heads cut out of the photos, see-through round them, 180 pixels tall, about 40 KB each |
+| `client/faces/` | Back to the head-and-shoulders photos, for the right side of the cards |
+| `client/pilot-shape.js` | Rewritten. A body that can bounce, sway, lean, jump, spin and spread its feet. Arms that keep their length (`armWith`). The six dances, crossed arms and standing (`poseAt`). The steering wheel. The chosen pilot's round of dance and crossed arms (`chosenPose`) |
+| `client/kart-paint.js` | Paints the cut-out head straight on. In a spin it gets narrower, and from behind only the back of the head shows |
+| `client/cast-choice.js` | `headOf()` and `danceOf()`: each character's head picture and dance |
+| `client/kart-panel.js`, `client/style.css` | The cards (pilot left, photo right) and the big picture. Lighter floors, so dark suits show up |
+| `tests/pilot-shape.test.js` | Rewritten: 42 tests. These were my own tests from earlier today, for movements that no longer exist; none of the tests merged into `main` was changed |
+| `WALKTHROUGH.md`, the READMEs, `docs/two-laptop-checklist.md` | Kept true |
+
+**Why it was done this way**
+- **Cutting out the heads.** A small program found each photo's background by spreading from the picture's edges to neighbouring pixels of nearly the same colour, inside an oval round the head. It was written for this and ran once on Pedro's laptop, with the image tools that come with Windows, so no new library. Pictures were checked one by one on a dark and on a light background. PCP's skin is close to the colour of his wall, so his needed a stricter setting.
+- **Arms that keep their length.** The elbow is worked out from the shoulder and the hand, as a real arm bends. Without this, an arm reaching up would stretch like rubber.
+- **Every dance is a formula of time.** The same moment always gives the same pose, so each dance can be tested without a browser. A test plays every dance at 60 pictures a second and checks that no glove jumps more than two units from one picture to the next. The siu at first moved a glove 2.3 units in one picture during the spin, so the jump was made slower.
+
+**Decisions**
+- Decided by Pedro: real heads; photo on the right, pilot on the left; a different dance for each, including driving and the CR7 celebration.
+- Decision made by the agent, please confirm: which dance goes to whom. Dean: clap; Professor: robot; Ró Versos: drive; Cici Boss: wave; FranFon: plane; PCP: siu.
+- Decision made by the agent, please confirm: the helmet now lies on the ground beside the pilot, because the dances need both hands.
+- Decision made by the agent, please confirm: the big picture keeps the kart beside the pilot; the cards show the pilot alone.
+
+**What was checked, and what was not**
+- `npm test`: 1400 passed, 5 skipped.
+- Eight rules were broken on purpose, and each made a test fail:
+  - the pilot standing in the kart
+  - arms changing length
+  - the siu without its spin
+  - the wave covering the face
+  - no steering wheel
+  - feet leaving the ground in the clap
+  - two characters sharing a dance
+  - a head picture for an unknown id
+- In the app's built-in browser:
+  - A sheet with every dance at six moments was drawn and looked at. Each person is recognisable, and each dance reads as what it should be.
+  - In the real panel, the mouse over Dean's card made him clap, and the chosen PCP and Ró Versos showed their dances beside their karts.
+  - No errors on the page.
+- NOT checked:
+  - the dances at full speed with human eyes (the built-in browser redraws slowly)
+  - a phone
+  - two real laptops, and the live site
+
+**How to check it yourself**
+Run `npm start`, open http://localhost:3000 in a normal browser, click "Single race" or "Online", pick a track, move the mouse slowly over each card, and click PCP to see the siu. Run `npm test` and look for `pilot-shape.test.js`.
+
+**What comes next**
+- Pedro pushes the new commits from GitHub Desktop. The pull request updates itself.
+- Next piece: the podium, with the same pilots and dances.
+
 ### 17 November 2026 (fourth piece): real heads, and pilots who dance and cross their arms
 
 **What was done**
