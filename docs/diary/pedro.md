@@ -2,6 +2,49 @@
 
 Entries from 10 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 17 November 2026 (fourth piece): real heads, and pilots who dance and cross their arms
+
+**What was done**
+Pedro found the faces still not centred and asked for them smaller, inside the characters' heads, and for some movement. Now:
+- **The head** is a ball in the colour of the person's hair, with the face as an oval inside it, a little below the middle. No photo background is left.
+- **The faces** were cut again, from the hairline to the chin and from cheek to cheek, all the same shape, so each fills its oval the same way and sits in the middle.
+- **Dancing:** when the mouse passes over a character (or the keyboard reaches one), that pilot dances. They bounce on the beat, sway, pump a fist and lift the helmet up and down.
+- **The chosen one,** shown big, dances for a moment, then puts the helmet down in front of their feet and crosses their arms.
+- **Less movement:** someone who asked their computer for less movement on screen gets still pictures.
+
+| File | What it is for |
+|---|---|
+| `client/faces/` | The six faces, cut from hairline to chin, 216 by 252 pixels each |
+| `client/pilot-shape.js` | The head of hair with the face oval, and the poses: `poseAt()` (standing, dancing, arms crossed at any moment), `blendPoses()` (smoothly from one to another), `chosenPose()` and `cardPose()` |
+| `client/kart-paint.js` | Paints the hair, then the face in its oval with a soft edge |
+| `client/cast-choice.js` | `hairOf()`: each character's hair colour, taken by eye from the photos |
+| `client/kart-panel.js` | Starts a pilot dancing when the mouse arrives and stops it when it leaves, and plays the chosen pilot's dance and crossed arms |
+| `tests/pilot-shape.test.js` | Now 29 tests. My own tests from earlier today were rewritten for the new head and the poses; none of the tests merged into `main` was changed |
+| `WALKTHROUGH.md`, the READMEs, `docs/two-laptop-checklist.md` | Kept true |
+
+**Why it was done this way**
+- Every movement is a formula of time (sine waves for the beat), so the same moment always gives the same pose and can be tested without a browser.
+- The pose is blended from one movement to the next, so nothing jumps: a test moves through the chosen pilot's whole animation at 60 pictures a second and checks that no hand or helmet ever jumps more than about one unit between two pictures.
+- The face stays straight on: a photo taken from the front looks wrong when it is turned sideways.
+
+**Decisions**
+- Decided by Pedro: faces smaller and inside the heads; a dance or crossed arms when passing over a character.
+- Decision made by the agent, please confirm: the mouse over a card makes that pilot dance; the chosen one dances for 1.8 seconds, then crosses arms with the helmet on the ground.
+- Decision made by the agent, please confirm: the hair colours. Dark brown for everyone except Cici Boss (light blonde).
+
+**What was checked, and what was not**
+- `npm test`: 1387 passed, 5 skipped.
+- Six rules were broken on purpose (a bounce below standing, arms that do not cross, the helmet leaving the hand, arms crossing in a jump, the face falling out of the head, feet lifting off the ground). Each made a test fail.
+- In the app's built-in browser, at two window sizes: the faces sit inside heads of hair; the mouse over the Professor's card made him dance (pictures taken at three moments of the dance); the chosen PCP, Cici Boss and Dean crossed their arms with the helmet on the ground. No errors on the page.
+- NOT checked: how the dance feels at full speed with human eyes (the built-in browser redraws slowly); a phone; two real laptops; the live site.
+
+**How to check it yourself**
+Run `npm start`, open http://localhost:3000, click "Single race" or "Online", pick a track, move the mouse over the pilots, and click one. Run `npm test` and look for `pilot-shape.test.js`.
+
+**What comes next**
+- Pedro pushes the new commits from GitHub Desktop. The pull request updates itself.
+- Next piece: the podium, with the same pilots.
+
 ### 17 November 2026 (third piece): the pilot stands beside the kart, face centred
 
 **What was done**
