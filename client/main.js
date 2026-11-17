@@ -4,19 +4,24 @@
 //   keyboard.js           which keys are held
 //   ../shared/race.js     the rules: where the kart is one step later
 //   ../shared/countdown.js  the 3, 2, 1, GO! before the race
+//   ../shared/practice-race.js  the race: the player against computer karts
+//   ../shared/computer-driver.js  how the computer karts decide what to do
 //   camera.js            which part of the track is on the screen
 //   draw.js               the picture of the track and the kart
 //   buildings.js          the buildings standing up in the view behind the kart
 //   hud.js                the lap counter, the clock and the message
 //
-// The race runs entirely in this browser. Nothing is sent to the server. Your
+// The race runs entirely in this browser. Nothing is sent to the server.
+// The player races against computer karts, which drive by the same rules and
+// choose their own keys (utility AI, see computer-driver.js). Your
 // best times are kept in this browser only (records.js), and the camera view
 // you start in comes from the menu's settings (settings.js). The track comes
 // from the address of the page (track-choice.js): race.html?track=campus-loop
 // opens the campus loop, and without a choice it is the test oval. (The
 // online page is online.js.)
 
-import { createCountdownRace, stepCountdownRace, countdownAt } from "../shared/countdown.js";
+import { countdownAt } from "../shared/countdown.js";
+import { createPracticeRace, stepPracticeRace, placesInput, COMPUTER_KARTS } from "../shared/practice-race.js";
 import { STEP_SECONDS } from "../shared/physics.js";
 import { currentLap, nextCheckpoint } from "../shared/laps.js";
 import { TEST_DRIVER } from "../shared/characters.js";
@@ -29,6 +34,7 @@ import { lookFromChoice, readChoice } from "./kart-choice.js";
 import { readCharacter, lookOfCharacter } from "./cast-choice.js";
 import { lookOfTrack } from "./track-looks.js";
 import { routePoints, watchForWrongWay, WRONG_WAY_MESSAGE } from "./route.js";
+import { placeLine } from "./standings.js";
 import { watchForMissedCheckpoint, missedCheckpointMessage } from "./checkpoints.js";
 import { SEED_COUNT, SPIN_STEPS } from "../shared/hazards.js";
 import { createHud } from "./hud.js";
@@ -51,6 +57,8 @@ document.getElementById("track-name").textContent = track.name; // as text, neve
 const draw = createPainter(document.getElementById("track"), track, { storeys: storeysOf(track) });
 const showHud = createHud(document);
 const messageBox = document.getElementById("message");
+const placeBox = document.getElementById("place-box");
+const placeText = document.getElementById("place");
 
 /**
  * A number picked by chance, from which the bananas of one race grow
@@ -61,26 +69,29 @@ function newSeed() {
   return Math.floor(Math.random() * SEED_COUNT);
 }
 
-// The way round the track, for the "wrong way" warning (route.js).
-const wrongWay = watchForWrongWay(routePoints(track, lookOfTrack(track).route));
+// The way round the track: for the "wrong way" warning (route.js), and the
+// racing line the computer karts follow (computer-driver.js).
+const line = routePoints(track, lookOfTrack(track).route);
+const wrongWay = watchForWrongWay(line);
 // Notices when the kart has left a checkpoint out, so the page can say so (checkpoints.js).
 const missedCheckpoint = watchForMissedCheckpoint(track);
 
 // ---- The state of the race ----
-let race = createCountdownRace(track, newSeed()); // the racer, how far the countdown is, and the bananas
+const storage = storageOf(window); // this browser's storage, for the settings and the best times
+const myCharacter = readCharacter(storage)?.id ?? null; // the character chosen in the menu, or null (cast-choice.js)
+let race = newRace(); // the racers (the player is racers[0]), the computer drivers, the countdown and the bananas
 let started = false; //    the countdown starts at the first key press
 let lastFrameTime = null;
 let waitingSeconds = 0; // real time that has passed but is not yet turned into game steps
 let record = null; //      once the race is finished: did it beat your best times? (records.js)
 
 // ---- The state of the camera ----
-const storage = storageOf(window); // this browser's storage, for the settings and the best times
 // The colours of the character the player chose in the menu (cast-choice.js).
 // Without a character: the colours chosen before characters existed, or
 // null if they never chose any. The kart then gets the first look (kart-choice.js).
-const myLook = lookOfCharacter(readCharacter(storage)?.id) ?? lookFromChoice(readChoice(storage));
+const myLook = lookOfCharacter(myCharacter) ?? lookFromChoice(readChoice(storage));
 let view = readSettings(storage).startView; // the view chosen in the menu's settings, or the first one
-let camera = followTarget(race.racer.kart, track); // the spot in the middle of the screen, in the follow view
+let camera = followTarget(race.racers[0].kart, track); // the spot in the middle of the screen, in the follow view
 
 // The sound of the race: engine, bumps, beeps (sound.js). It starts at the
 // player's first key press, and M switches it off and on.
@@ -102,16 +113,16 @@ function start() {
 }
 
 function startAgain() {
-  race = createCountdownRace(track, newSeed());
+  race = newRace();
   started = false;
   waitingSeconds = 0;
   record = null;
-  camera = followTarget(race.racer.kart, track); // jump straight back, do not glide
+  camera = followTarget(race.racers[0].kart, track); // jump straight back, do not glide
 }
 
 function changeView() {
   view = nextView(view);
-  camera = followTarget(race.racer.kart, track);
+  camera = followTarget(race.racers[0].kart, track);
 }
 
 /**
@@ -139,11 +150,11 @@ function frame(now) {
     waitingSeconds += frameSeconds;
     while (waitingSeconds >= STEP_SECONDS) {
       // During 3, 2 and 1 this only counts down. From GO on it moves the kart.
-      race = stepCountdownRace(track, race, input, character);
+      race = stepPracticeRace(track, race, input, character);
       waitingSeconds -= STEP_SECONDS;
     }
   }
-  const { racer } = race;
+  const racer = race.racers[0];
   const countdown = countdownAt(race.countdownSteps);
 
   // The moment the race is finished, compare it with your best times, once.
@@ -164,7 +175,7 @@ function frame(now) {
   // round and round while it spins after a banana. (The rules do not turn
   // it: after the spin it points where it pointed before.)
   const shownKart = { ...racer.kart, look: myLook, spinTurn: spinTurnOf(racer.spinSteps, SPIN_STEPS) };
-  draw(view, shownKart, camera, steer, [], {
+  draw(view, shownKart, camera, steer, computerKarts(), {
     ...sceneFor(race.countdownSteps, started),
     bananas: race.bananas,
     // While the race is on, the next checkpoint is lit up in yellow.
@@ -181,6 +192,10 @@ function frame(now) {
   // The countdown is shown as one big number in the middle of the track.
   const showingCountdown = started && countdown.label !== "" && !progress.finished;
   messageBox.classList.toggle("countdown", showingCountdown && warning === null);
+
+  // Your place among all the karts, such as "3rd of 6" (standings.js).
+  placeText.textContent = placeLine(placesInput(race), track, 0);
+  placeBox.hidden = race.racers.length < 2;
 
   showHud({
     lap: currentLap(progress, track),
@@ -204,7 +219,7 @@ function frame(now) {
       laps: track.laps,
       finished: progress.finished,
       warning: warning !== null,
-      others: [],
+      others: race.racers.slice(1).map((other) => other.kart),
     },
     frameSeconds,
   );
@@ -223,10 +238,26 @@ function sceneFor(countdownSteps, hasStarted) {
   return { intro: introShare(counting, countdownSteps), lights: startLights(counting, countdownSteps) };
 }
 
+/** A new race, before the countdown. The computer karts are the characters the player did not choose. */
+function newRace() {
+  return createPracticeRace(track, newSeed(), line, COMPUTER_KARTS, myCharacter);
+}
+
+/** The computer karts as they are drawn: in their character's colours, turning while they spin. */
+function computerKarts() {
+  return race.racers.slice(1).map((other, index) => ({
+    ...other.kart,
+    look: lookOfCharacter(race.drivers[index].character.id),
+    spinTurn: spinTurnOf(other.spinSteps, SPIN_STEPS),
+  }));
+}
+
 /** The text shown in the middle of the track. */
 function messageFor(progress, countdown) {
   if (progress.finished) {
-    return `Finished in ${formatTime(progress.steps * STEP_SECONDS)}.${newBestText()} Press R to race again.`;
+    const place = placeLine(placesInput(race), track, 0);
+    const placeWords = place === "" ? "" : ` ${place},`;
+    return `Finished${placeWords} in ${formatTime(progress.steps * STEP_SECONDS)}.${newBestText()} Press R to race again.`;
   }
   if (!started) {
     return "Press an arrow key to start the countdown";
@@ -256,10 +287,17 @@ window.kartGame = {
     started,
     countdownSteps: race.countdownSteps,
     view,
-    kart: { ...race.racer.kart },
-    spinSteps: race.racer.spinSteps,
+    kart: { ...race.racers[0].kart },
+    spinSteps: race.racers[0].spinSteps,
     bananas: race.bananas.map((banana) => ({ ...banana })),
-    progress: { ...race.racer.progress, lapSteps: [...race.racer.progress.lapSteps] },
+    progress: { ...race.racers[0].progress, lapSteps: [...race.racers[0].progress.lapSteps] },
+    computers: race.racers.slice(1).map((other, index) => ({
+      name: race.drivers[index].character.name,
+      drives: race.drivers[index].personality.name,
+      kart: { ...other.kart },
+      lapsDone: other.progress.lapsDone,
+      finished: other.progress.finished,
+    })),
   }),
 };
 

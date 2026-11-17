@@ -1,6 +1,6 @@
 # shared
 
-The rules of the game: how a kart speeds up, turns, brakes and slides, how it bounces off walls and off other karts, where the karts start, how laps are counted, and the bananas that make a kart spin out.
+The rules of the game: how a kart speeds up, turns, brakes and slides, how it bounces off walls and off other karts, where the karts start, how laps are counted, the bananas that make a kart spin out, and how computer karts decide what to do.
 
 These files are used by both the browser and the server, so both follow exactly the same rules. They contain only calculations: nothing here draws on the screen or touches the database, which is what makes the rules easy to test. Nothing here uses real chance (`Math.random`) either: the same start and the same keys always give the same race.
 
@@ -8,6 +8,8 @@ These files are used by both the browser and the server, so both follow exactly 
 |---|---|
 | `race.js` | Puts the other files together. `createRacer` puts a racer on a place of the starting grid. `stepRacer` moves one racer forward by one step: look at the ground, move the kart, bounce off walls, update the laps. A racer that is spinning out ignores its keys and slides instead. The browser and the server both call this |
 | `countdown.js` | The 3, 2, 1, GO! before a race. `countdownAt` says what to show after a number of steps and whether the race has begun. `stepCountdownRace` leaves the racer alone until GO, then calls `stepRacer` and looks after the bananas. `createCountdownRace(track, seed)` makes the practice race: with a seed it has bananas, without one it has none. The online room uses `countdownAt` |
+| `practice-race.js` | The single race in the browser, against computer karts. `createPracticeRace(track, seed, line, count, playerCharacter)` puts five computer karts on the front of the grid and the player behind them (none if there is no racing line). The computer karts are the characters the player did not choose. `stepPracticeRace` runs the countdown, then moves the player with their keys and each computer kart with the keys its driver chose, then bumps and bananas. `placesInput` gives the karts in the form the place line needs |
+| `computer-driver.js` | The brain of a computer kart, with utility AI: it looks around, gives each thing it could do (follow, brake, overtake, dodge, recover) a score from 0 to 1, does the best one, and turns it into the four keys a player has. The six personalities, their weights, and which character drives with which are at the top. No dice, so the same race gives the same decisions |
 | `race-time.js` | How long an online race may last: two minutes after the first finish, and ten minutes after GO at the latest. The server decides when the time is up, the page shows how much is left, and both read the numbers here |
 | `grid.js` | The starting grid. `gridSpot(track, place)` says where each of the eight places is: two columns, each row further back. The server puts the karts there and the page can paint the grid boxes at the same spots |
 | `bumps.js` | Karts bumping into each other. `bumpKarts` takes all the karts on a track, pushes apart the ones that overlap, passes their speed on, and keeps everyone out of the walls |

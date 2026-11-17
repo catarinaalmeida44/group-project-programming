@@ -169,6 +169,7 @@ What this means for you: prefer finished, reliable features over many half-finis
   - They follow a racing line (a chain of points around each track), brake before corners and use items.
   - **[DROPPED 17 Nov 2026]** Three difficulty levels.
   - Mild catch-up: slightly faster when far behind, slightly slower when far ahead.
+- *17 Nov 2026, built by Rodrigo: computer karts in a single race. Five of them: the characters the player did not choose. Each character drives with its own "personality" (PCP Daredevil, Dean Steady, Professor Ricardo Pereira Careful, Cici Boss Hunter, FranFon Smooth, Ró Versos Calm). They decide with utility AI, as our professor suggested: they score each thing they could do (follow the racing line, brake, overtake, dodge a banana, back away from a wall) and do the most useful one, pressing the same four keys a player has. They follow the racing line the arrows use. Not built: computer karts online, items, catch-up. Decisions made by the agent, please confirm: five computer karts with the player starting at the back of the grid; which personality each character has; without a chosen character, the first five of the cast; the same driver stats as the player; the race is over for the player when they finish.*
 
 ### Characters and the selection menu
 
@@ -405,4 +406,4 @@ Before the demo:
 | Catarina Almeida | 70573 | catarinaalmeida44 | [OPEN] |
 | Francisco Fonseca (Fran) | 72576 | FranFon15 | [OPEN] |
 | Pedro Collares Pereira | 71022 | pedrocollarespereira | [OPEN] |
-| Rodrigo Simeão Versos | _to add_ | rodrigosversos | Campus tracks (reported 11 Nov 2026; computer karts not yet confirmed) |
+| Rodrigo Simeão Versos | _to add_ | rodrigosversos | Campus tracks (reported 11 Nov 2026); computer karts (built 17 Nov 2026, to be confirmed by the team) |

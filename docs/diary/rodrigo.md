@@ -2,6 +2,46 @@
 
 Rodrigo Simeão Versos (GitHub rodrigosversos). Entries from 11 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 17 November 2026: computer karts in a single race
+
+**What was done**
+A single race is now against five computer karts: the five characters of Pedro's cast that I did not choose (if I chose none, the first five). Each character always drives with its own personality: PCP Daredevil, Dean Steady, Professor Ricardo Pereira Careful, Cici Boss Hunter, FranFon Smooth, Ró Versos Calm. They start on the front of the grid and I start behind them. They decide what to do with utility AI, the method our professor suggested: many times a second each one looks around, gives a score from 0 to 1 to each thing it could do (follow the racing line, brake for a bend, overtake, dodge a banana, back away from a wall), and does the one with the highest score, by pressing the same four keys a player has. The race page now also shows my place ("3rd of 6"), and the finish message says where I finished. Branch `rodrigo-computer-karts`, from `main` after Pedro's characters and the fix for duplicate online karts were merged.
+
+| File | What changed |
+|---|---|
+| `shared/computer-driver.js` | New. The brain of a computer kart: looking around, the five scores, the best one, the keys. The six personalities, their weights, and which character drives with which |
+| `shared/practice-race.js` | New. The single race with computer karts: which characters race, the grid, the countdown, every kart moving each step, bumps and bananas, and the karts in the form the place line needs |
+| `client/main.js` | Runs the new race instead of the race with one kart, with the character I chose in the menu; draws the computer karts in their characters' colours; shows the place and the place at the finish |
+| `client/race.html` | The place next to the time |
+| `tests/computer-driver.test.js` | New. 38 tests |
+| `tests/practice-race.test.js` | New. 19 tests |
+| `WALKTHROUGH.md`, `PROJECT_BRIEF.md`, `client/README.md`, `shared/README.md`, `tests/README.md` | Kept true |
+
+**Why it was done this way**
+- **Utility AI** (my choice, as the professor suggested). With scores, two things that matter at once are weighed against each other, and a personality is only a different set of weights, not different code. A fixed list of rules would let one rule always win; a "state machine" (one mode at a time) needs rules for every switch.
+- **The same keys and the same rules as a player.** A computer kart cannot cheat: it goes through `stepRacer` like me, with the same top speed. This is also what will let the server use the same drivers online later.
+- **In `shared/`.** Deciding is a calculation, so it sits with the rules, can be tested without a browser, and can run on the server later.
+- **The racing line the arrows already use.** No second line to draw for each track. Each driver remembers which stretch of it it is on, so it does not cut across at the CTT hairpin.
+- **No dice.** The same race gives the same decisions, so the tests can drive whole races.
+
+**Decisions**
+- Mine: computer karts in single race, with utility AI; the computer karts are the characters available online.
+- The team's (17 Nov): no difficulty levels, so there is one level.
+- Decision made by the agent, please confirm: five computer karts, and I start at the back of the grid; which personality each character has (the people in the cast may have an opinion about who is the Daredevil and who is Calm); without a chosen character, the first five of the cast race; the same driver stats as the player; a finished computer kart rolls to a stop; the race is over for me when I finish, even if computer karts are still driving; the campus loop's racing line and hairpin as they are.
+- Decision made by the agent, please confirm, and tell the owner: `client/main.js` and `client/race.html` changed. They are not in my area.
+
+**What was checked, and what was not**
+- `npm test`: 1,460 passed, 5 skipped (57 new tests).
+- The new code was broken on purpose in 12 ways. Nine made a test fail at once. Two tests were too loose ("a spinning kart counts as stuck", "a kart may jump to any stretch of the line"): they were tightened, and then failed as they should. The third ("a finished computer kart keeps choosing keys") cannot fail, because `shared/race.js` already ignores the keys of a finished kart. After the characters came in, five more breaks: four made tests fail; the fifth ("names like toString count") changes nothing that can be seen.
+- One of my own tests was wrong at first (the sharp bend was too close for the difference between careful and daring to show). The test was fixed, not the code.
+- Whole races in Node, for every character I could choose and for none: all five computer karts finish all laps on both tracks, never inside a wall, never stuck. A race takes them about 25 to 30 seconds on the test oval and 59 to 69 seconds on the campus loop, and the winner changes from race to race.
+- In a Chrome browser without a screen, on both tracks, with Ró Versos chosen: the other five characters stand on the grid in their colours, Ró is not among them, drive off at GO, all finish 3 laps, the place shows "6th of 6" for a kart that does not move, and there were no errors.
+- **Not checked:** a person racing them on a real laptop; whether they are too fast or too slow for a beginner; how they look from behind in a long race.
+- **Not handled:** computer karts online, items, catch-up.
+
+**How to check it yourself**
+Run `npm start`, open http://localhost:3000, choose Single race and then the campus loop. Five karts in the colours of the characters you did not choose should stand in front of you. Choose another character in the menu and race again: the line-up changes. Press an arrow to start. They drive off at GO, the place shows next to the time, and when you finish the message says your place. Try also the test oval.
+
 ### 11 November 2026: buildings that stand up
 
 **What was done**
