@@ -20,8 +20,9 @@
 // Pedro tried it, the character became a step of its own, for each race.
 
 import { CAST } from "../shared/cast.js";
-import { readCharacter, saveCharacter, faceOf, lookOfCharacter } from "./cast-choice.js";
+import { readCharacter, saveCharacter, faceOf, lookOfCharacter, hairOf } from "./cast-choice.js";
 import { paintPilotScene, viewerBehind } from "./kart-paint.js";
+import { poseAt, chosenPose, cardPose, START_DANCING_SECONDS } from "./pilot-shape.js";
 import { makePart } from "./page-parts.js";
 
 // The cameras of the pictures: in front of the pilot, a little above.
@@ -56,7 +57,7 @@ export function connectCharacterChoice(page, storage) {
   page.getElementById("kart-preview-place").append(bigCanvas);
 
   // The face pictures, loaded once. A picture still loading is simply not
-  // painted yet: the pilot wears the helmet until it arrives.
+  // painted yet: the face is plain until it arrives.
   const faces = new Map(
     CAST.map(({ id }) => {
       const picture = new Image();
@@ -65,14 +66,20 @@ export function connectCharacterChoice(page, storage) {
     }),
   );
 
-  let chosen = CAST[0].id;
-  let smallCanvases = []; // [{ id, canvas }]
-  let moving = false; // true while the panel is open and the pictures move
+  // Someone who asked their computer for less movement on screen gets still
+  // pictures: no dance and no swinging, only the poses.
+  const still = page.defaultView.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
 
-  /** One card for each character: a round choice ("radio button"), the pilot in the kart, and the name. */
+  let chosen = CAST[0].id;
+  let chosenAt = 0; // when the chosen character was chosen, in milliseconds of the page's clock
+  let cards = []; // [{ id, canvas, hovered, dancing }]: "dancing" goes from 0 to 1 and back
+  let moving = false; // true while the panel is open and the pictures move
+  let lastFrame = null;
+
+  /** One card for each character: a round choice ("radio button"), the pilot beside the kart, and the name. */
   function showChoices() {
     choices.replaceChildren();
-    smallCanvases = [];
+    cards = [];
     const group = makePart(page, "fieldset", "faces");
     group.append(makePart(page, "legend", "visually-hidden", "Characters"));
     for (const { id, name } of CAST) {
@@ -87,7 +94,13 @@ export function connectCharacterChoice(page, storage) {
       canvas.width = 160;
       canvas.height = 150;
       canvas.setAttribute("aria-hidden", "true"); // the name under it says who it is
-      smallCanvases.push({ id, canvas });
+      const card = { id, canvas, hovered: false, dancing: 0 };
+      cards.push(card);
+      // The pilot dances while the mouse is over the card, or the keyboard is on it.
+      label.addEventListener("pointerenter", () => (card.hovered = true));
+      label.addEventListener("pointerleave", () => (card.hovered = false));
+      box.addEventListener("focus", () => (card.hovered = true));
+      box.addEventListener("blur", () => (card.hovered = false));
       label.append(box, canvas, makePart(page, "span", "face-name", name));
       group.append(label);
     }
@@ -96,32 +109,44 @@ export function connectCharacterChoice(page, storage) {
 
   function choose(id) {
     chosen = id;
+    chosenAt = performance.now(); // the big pilot starts the little dance again
     const character = CAST.find((one) => one.id === id);
-    bigCanvas.setAttribute("aria-label", `${character.name} in their kart`);
+    bigCanvas.setAttribute("aria-label", `${character.name} standing beside their kart`);
     const saved = saveCharacter(storage, id);
     status.textContent = saved || storage === null ? "" : "This browser did not let the game save your choice.";
   }
 
   /** Paints every picture, moved on a little each time. */
   function paint(now) {
-    const swing = Math.sin(((now / 1000) * Math.PI * 2) / SECONDS_PER_SWING) * BIG_SWING;
-    paintOne(bigCanvas, BIG_CAMERA, chosen, FACING_US + swing);
-    smallCanvases.forEach(({ id, canvas }, index) => {
+    const frameSeconds = lastFrame === null ? 0 : Math.min((now - lastFrame) / 1000, 0.1);
+    lastFrame = now;
+    const seconds = now / 1000;
+
+    // The chosen one: a little dance, then the helmet goes down and the arms cross.
+    const swing = still ? 0 : Math.sin((seconds * Math.PI * 2) / SECONDS_PER_SWING) * BIG_SWING;
+    const bigPose = still ? poseAt("crossed", 0) : chosenPose((now - chosenAt) / 1000);
+    paintOne(bigCanvas, BIG_CAMERA, chosen, FACING_US + swing, bigPose);
+
+    cards.forEach((card, index) => {
+      // Start or stop dancing smoothly, over a quarter of a second.
+      const step = frameSeconds / START_DANCING_SECONDS;
+      card.dancing = Math.min(Math.max(card.dancing + (card.hovered ? step : -step), 0), 1);
+      const pose = still ? poseAt("hold", 0) : cardPose(seconds, card.dancing);
       // Half of them turned to the left, half to the right, so the grid looks lively.
-      paintOne(canvas, SMALL_CAMERA, id, FACING_US + (index % 2 === 0 ? SMALL_TURN : -SMALL_TURN));
+      paintOne(card.canvas, SMALL_CAMERA, card.id, FACING_US + (index % 2 === 0 ? SMALL_TURN : -SMALL_TURN), pose);
     });
     if (moving) {
       requestAnimationFrame(paint);
     }
   }
 
-  function paintOne(canvas, camera, id, turn) {
+  function paintOne(canvas, camera, id, turn, pose) {
     const context = canvas.getContext("2d");
     context.setTransform(1, 0, 0, 1, 0, 0);
     context.clearRect(0, 0, canvas.width, canvas.height);
     const screen = { width: canvas.width, height: canvas.height };
     const viewer = viewerBehind({ ahead: 0, sideways: -SCENE_SHIFT }, turn, turn, camera, screen);
-    paintPilotScene(context, viewer, lookOfCharacter(id), faces.get(id));
+    paintPilotScene(context, viewer, { look: lookOfCharacter(id), hair: hairOf(id), face: faces.get(id), pose });
   }
 
   panel.addEventListener("close", () => {
@@ -144,6 +169,7 @@ export function connectCharacterChoice(page, storage) {
       choices.querySelector("input:checked")?.focus();
       if (!moving) {
         moving = true;
+        lastFrame = null;
         requestAnimationFrame(paint);
       }
     },

@@ -36,6 +36,24 @@ export function faceOf(id) {
   return characterById(id) === null ? null : `faces/${id}.jpg`;
 }
 
+/**
+ * The colour of each character's hair, for the head round the face when a
+ * character is shown standing (pilot-shape.js). Taken by eye from the photos.
+ */
+const HAIR = Object.freeze({
+  dean: "#2b2420",
+  ricardo: "#2a221d",
+  ro: "#2e231c",
+  cici: "#e3dccb",
+  franfon: "#2a201a",
+  pcp: "#2b2019",
+});
+
+/** The colour of a character's hair, or null for an id that is not in the cast. */
+export function hairOf(id) {
+  return characterById(id) === null ? null : HAIR[id];
+}
+
 /** The colours of a character's kart, ready to paint, or null for an id that is not in the cast. */
 export function lookOfCharacter(id) {
   const character = characterById(id);

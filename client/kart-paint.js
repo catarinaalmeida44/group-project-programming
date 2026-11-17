@@ -18,7 +18,10 @@
 
 import { kartParts, normalOf, shade } from "./kart-shape.js";
 import { chaseNumbers, eyeOf } from "./camera.js";
-import { pilotScene } from "./pilot-shape.js";
+import { pilotScene, FACE_OVAL } from "./pilot-shape.js";
+
+/** The colour of a face whose picture has not loaded yet. */
+const FACE_WAITING = "#c9a08a";
 
 // The sun shines from this direction on the map: from the left and above,
 // a little from the top of the map. (x to the right, y down the map, z up.)
@@ -194,44 +197,45 @@ export function paintKart(context, viewer, look, steer = 0) {
 }
 
 /**
- * Paints a character standing beside their kart, helmet in hand, with their
- * face (pilot-shape.js). Only for choosing a character and the podium: the
+ * Paints a character standing beside their kart, with their face, in a
+ * pose (pilot-shape.js). Only for choosing a character and the podium: the
  * race paints karts with paintKart, where the pilot wears the helmet.
- *   viewer  from viewerBehind()
- *   look    the character's colours (kart-shape.js)
- *   face    a picture of the face (an <img>). Until it has loaded, the head
- *           is painted plain, in the colour of the rim
+ *   viewer     from viewerBehind()
+ *   character  { look, hair, face, pose }:
+ *     look  the character's colours (kart-shape.js)
+ *     hair  the colour of the hair
+ *     face  a picture of the face (an <img>). Until it has loaded, the face
+ *           is painted plain
+ *     pose  from poseAt() or blendPoses() in pilot-shape.js
  */
-export function paintPilotScene(context, viewer, look, face) {
+export function paintPilotScene(context, viewer, { look, hair, face, pose }) {
   if (viewer === null) {
     return;
   }
-  const scene = sceneFor(look);
+  const scene = pilotScene(look, hair, pose);
   for (const shadow of scene.shadows) {
     paintShadowPatch(context, viewer, shadow);
   }
-  paintParts(context, viewer, scene.parts, face);
+  // The kart stands still, so its prepared parts are kept. The pilot moves,
+  // so theirs are prepared again for every picture: only a few parts.
+  paintParts(context, viewer, [...kartReady(look, scene.kart), ...scene.pilot.map(ready)], face);
 }
 
-/** The scene of a character, ready to paint. Reused when asked again. */
-const keptScenes = new Map();
-function sceneFor(look) {
+/** A part with what painting needs worked out: its middle, and the direction each face points. */
+function ready(part) {
+  return { ...part, middle: middleOfPart(part), faces: part.faces?.map(withNormal), decals: part.decals?.map(withNormal) };
+}
+
+/** The empty kart of a character, ready to paint. Reused when asked again. */
+const keptKarts = new Map();
+function kartReady(look, kart) {
   const key = `${look.body}${look.trim}${look.suit}${look.helmet}${look.stripe}`;
-  let scene = keptScenes.get(key);
-  if (scene === undefined) {
-    const { parts, shadows } = pilotScene(look);
-    scene = {
-      shadows,
-      parts: parts.map((part) => ({
-        ...part,
-        middle: middleOfPart(part),
-        faces: part.faces?.map(withNormal),
-        decals: part.decals?.map(withNormal),
-      })),
-    };
-    keptScenes.set(key, scene);
+  let parts = keptKarts.get(key);
+  if (parts === undefined) {
+    parts = kart.map(ready);
+    keptKarts.set(key, parts);
   }
-  return scene;
+  return parts;
 }
 
 /** Paints a list of parts, furthest first. */
@@ -355,10 +359,11 @@ function paintShadowPatch(context, viewer, { x, y, along, across, turn }) {
 }
 
 /**
- * A head with a real face: a round picture of the face, always straight on
- * and centred on the head, with a thin rim round it. The photo is not
- * turned with the body, like a cut-out: the faces in client/faces are
- * photos taken from the front, and a photo turned sideways looks wrong.
+ * A head with a real face: a ball of hair, lit from the top left, with the
+ * face in an oval inside it (FACE_OVAL in pilot-shape.js), always straight
+ * on. The photo is not turned with the body, like a cut-out: the faces in
+ * client/faces are photos taken from the front, and a photo turned
+ * sideways looks wrong.
  */
 function paintHead(context, viewer, head, face) {
   const [mx, my, mz] = head.middle;
@@ -367,18 +372,42 @@ function paintHead(context, viewer, head, face) {
     return;
   }
   const radius = head.radius * middle.scale;
+
+  // The hair: a ball, lighter where the light falls.
+  const shine = context.createRadialGradient(
+    middle.x - radius * 0.35, middle.y - radius * 0.5, radius * 0.1,
+    middle.x, middle.y, radius,
+  );
+  shine.addColorStop(0, lit(head.hair, 1.45));
+  shine.addColorStop(0.6, lit(head.hair, 1));
+  shine.addColorStop(1, lit(head.hair, 0.72));
   context.beginPath();
   context.arc(middle.x, middle.y, radius, 0, Math.PI * 2);
-  context.fillStyle = head.rim;
+  context.fillStyle = shine;
   context.fill();
+
+  // The face: an oval a little below the middle of the head.
+  const across = radius * FACE_OVAL.across;
+  const tall = radius * FACE_OVAL.tall;
+  const faceY = middle.y + radius * FACE_OVAL.below;
+  context.save();
+  context.beginPath();
+  context.ellipse(middle.x, faceY, across, tall, 0, 0, Math.PI * 2);
   if (face !== null && face.complete && face.naturalWidth > 0) {
-    context.save();
-    context.beginPath();
-    context.arc(middle.x, middle.y, radius * 0.94, 0, Math.PI * 2);
-    context.clip(); // only the round part of the square photo
-    context.drawImage(face, middle.x - radius, middle.y - radius, radius * 2, radius * 2);
-    context.restore();
+    context.clip();
+    context.drawImage(face, middle.x - across, faceY - tall, across * 2, tall * 2);
+  } else {
+    context.fillStyle = FACE_WAITING; // the picture has not arrived yet
+    context.fill();
   }
+  context.restore();
+  // A soft edge round the face, so it sits in the hair instead of on it.
+  context.beginPath();
+  context.ellipse(middle.x, faceY, across, tall, 0, 0, Math.PI * 2);
+  context.lineWidth = Math.max(1, radius * 0.06);
+  context.strokeStyle = "rgba(0, 0, 0, 0.22)";
+  context.stroke();
+  context.lineWidth = viewer.line;
 }
 
 /**
