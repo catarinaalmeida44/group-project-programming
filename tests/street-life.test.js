@@ -8,7 +8,9 @@
 // from the server cannot break the page.
 
 import { describe, it, expect } from "vitest";
-import { walkersToShow, WALKER_LOOKS } from "../client/street-life.js";
+import { walkersToShow, walkersDownNear, WALKER_LOOKS, HEARD_WITHIN } from "../client/street-life.js";
+import { watchForSounds } from "../client/sound-cues.js";
+import { SOUND_NAMES } from "../client/sound.js";
 import { rampBlocks, createScenery, RAMP_FLAT_STYLES } from "../client/scenery.js";
 import { walkersOf } from "../client/net.js";
 import { walkerAt, createWalkers, DOWN_STEPS, INSIDE_STEPS, WALKER_SPEED } from "../shared/walkers.js";
@@ -99,6 +101,65 @@ describe("which walkers the picture shows", () => {
     for (const walker of shown) {
       expect(walker.look).toBeLessThan(WALKER_LOOKS);
     }
+  });
+});
+
+describe("what the player hears of ramps and walkers", () => {
+  const kart = { x: 50, y: 35, vx: 200, vy: 0, angle: 0 };
+
+  it("counts only the walkers that sit on the ground close to the kart", () => {
+    const shown = [
+      { x: 60, y: 35, down: true }, //   close and down: counts
+      { x: 60, y: 30, down: false }, //  close but walking
+      { x: 500, y: 35, down: true }, //  down but far away
+    ];
+    expect(walkersDownNear(shown, kart)).toBe(1);
+    expect(walkersDownNear([], kart)).toBe(0);
+    expect(walkersDownNear(shown, null)).toBe(0);
+    expect(walkersDownNear("walkers", kart)).toBe(0);
+    expect(HEARD_WITHIN).toBeGreaterThan(20); // further than two things that touch
+  });
+
+  it("plays the jump once, at the moment the kart leaves the ground", () => {
+    const listen = watchForSounds();
+    const names = (facts) => listen(facts, 1 / 60).cues.map((cue) => cue.name);
+    expect(names({ kart, air: 0 })).toEqual([]); //   the first picture never has a sound
+    expect(names({ kart, air: 0 })).toEqual([]);
+    expect(names({ kart, air: 42 })).toEqual(["jump"]);
+    expect(names({ kart, air: 41 })).toEqual([]); //  still in the air: not again
+    expect(names({ kart, air: 0 })).toEqual([]); //   landing has no sound of its own
+    expect(names({ kart, air: 42 })).toEqual(["jump"]); // the next ramp plays again
+  });
+
+  it("does not take the push of a ramp for a crash", () => {
+    const listen = watchForSounds();
+    listen({ kart, air: 0 }, 1 / 60);
+    // The ramp throws the kart forward: 200 to 400 units a second in one step.
+    const pushed = { ...kart, x: 54, vx: 400 };
+    const names = listen({ kart: pushed, air: 42 }, 1 / 60).cues.map((cue) => cue.name);
+    expect(names).toEqual(["jump"]);
+    // The same sudden change without a ramp IS a knock.
+    const other = watchForSounds();
+    other({ kart, air: 0 }, 1 / 60);
+    expect(other({ kart: pushed, air: 0 }, 1 / 60).cues.map((cue) => cue.name)).toEqual(["bumpWall"]);
+  });
+
+  it("plays the silly sound when a walker near the kart topples, once for each", () => {
+    const listen = watchForSounds();
+    const names = (walkersDownNear) => listen({ kart, walkersDownNear }, 1 / 60).cues.map((cue) => cue.name);
+    expect(names(0)).toEqual([]);
+    expect(names(1)).toEqual(["oops"]);
+    expect(names(1)).toEqual([]); // still sitting there
+    expect(names(2)).toEqual(["oops"]); // a second one
+    expect(names(0)).toEqual([]); // they got up: no sound
+  });
+
+  it("has a sound for both new moments, and ignores facts that are not numbers", () => {
+    expect(SOUND_NAMES).toContain("jump");
+    expect(SOUND_NAMES).toContain("oops");
+    const listen = watchForSounds();
+    listen({ kart }, 1 / 60);
+    expect(listen({ kart, air: "high", walkersDownNear: "many" }, 1 / 60).cues).toEqual([]);
   });
 });
 

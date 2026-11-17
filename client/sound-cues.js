@@ -35,6 +35,8 @@ const KNOCK_PAUSE = 0.18;
 const KART_NEAR = 30;
 /** A kart that moved further than this in one picture was put somewhere else (back on the grid): that is not a knock. */
 const JUMP = 100;
+/** For this long after taking off from a ramp, in seconds, no knock is played: the ramp's push is not one. */
+const TAKE_OFF_QUIET = 0.25;
 /** A sideways slide this fast, in units per second, makes the tyres squeal at full strength. */
 const FULL_SLIDE = 140;
 
@@ -88,6 +90,8 @@ export function engineOf({ kart, gas = false, onGrass = false, spinning = false 
  *   finished  has it finished?
  *   warning   is a warning on the screen ("wrong way", "missed checkpoint")?
  *   others    the other karts on the track: [{ x, y }]
+ *   air       how many more steps the kart is in the air after a ramp (0 on the ground)
+ *   walkersDownNear  how many walkers sit on the ground close to the kart
  *
  * It answers { cues, engine }. "cues" is a list of { name, strength }:
  *   "count"     a number of the countdown appeared
@@ -99,11 +103,14 @@ export function engineOf({ kart, gas = false, onGrass = false, spinning = false 
  *   "bumpKart"  it knocked into another kart ("strength" from 0 to 1)
  *   "bumpWall"  it knocked into a wall
  *   "warning"   a warning came up
+ *   "jump"      the kart took off from a ramp
+ *   "oops"      a walker close to the kart toppled over
  * The very first picture never has a cue: there is nothing to compare it with.
  */
 export function watchForSounds() {
   let before = null; //   the facts of the picture before
   let sinceKnock = 1; //  seconds since the last knock that was played
+  let sinceTakeOff = 1; // seconds since the kart last took off from a ramp
 
   return (facts, frameSeconds) => {
     const now = {
@@ -114,11 +121,14 @@ export function watchForSounds() {
       laps: Number.isInteger(facts?.laps) ? facts.laps : 0,
       finished: facts?.finished === true,
       warning: facts?.warning === true,
+      air: Number.isFinite(facts?.air) && facts.air > 0 ? facts.air : 0,
+      downNear: Number.isInteger(facts?.walkersDownNear) && facts.walkersDownNear > 0 ? facts.walkersDownNear : 0,
     };
     const engine = engineOf({ kart: now.kart, gas: facts?.gas, onGrass: facts?.onGrass, spinning: now.spinning });
     const cues = [];
     const seconds = Number.isFinite(frameSeconds) && frameSeconds > 0 ? frameSeconds : 0;
     sinceKnock += seconds;
+    sinceTakeOff += seconds;
 
     if (before !== null) {
       if (now.label !== before.label && now.label !== "") {
@@ -135,9 +145,17 @@ export function watchForSounds() {
       if (now.warning && !before.warning) {
         cues.push({ name: "warning", strength: 1 });
       }
+      if (now.air > 0 && before.air === 0) {
+        cues.push({ name: "jump", strength: 1 });
+        sinceTakeOff = 0;
+      }
+      if (now.downNear > before.downNear) {
+        cues.push({ name: "oops", strength: 1 });
+      }
 
       const knock = knockBetween(before.kart, now.kart, seconds);
-      if (knock > 0 && sinceKnock >= KNOCK_PAUSE && !now.spinning) {
+      // (A ramp throws the kart forward: that sudden speed is not a knock.)
+      if (knock > 0 && sinceKnock >= KNOCK_PAUSE && !now.spinning && sinceTakeOff >= TAKE_OFF_QUIET) {
         sinceKnock = 0;
         const others = Array.isArray(facts?.others) ? facts.others : [];
         const kartNear = others.some((other) => isSpot(other) && Math.hypot(other.x - now.kart.x, other.y - now.kart.y) <= KART_NEAR);

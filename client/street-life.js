@@ -6,6 +6,20 @@
 
 import { walkerAt, DOWN_STEPS } from "../shared/walkers.js";
 
+/** A toppled walker within this many units of the player's kart is "close": the player hears it. */
+export const HEARD_WITHIN = 90;
+
+/**
+ * How many of the walkers the picture shows sit on the ground close to a
+ * kart. sound-cues.js plays a silly sound when this number goes up.
+ */
+export function walkersDownNear(shown, kart) {
+  if (!Array.isArray(shown) || kart === null || typeof kart !== "object") {
+    return 0;
+  }
+  return shown.filter((walker) => walker.down && Math.hypot(walker.x - kart.x, walker.y - kart.y) <= HEARD_WITHIN).length;
+}
+
 /** How many different jumpers the walkers wear (props.js has the colours). */
 export const WALKER_LOOKS = 6;
 

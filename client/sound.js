@@ -298,6 +298,16 @@ export function createSoundMachine(context, destination = context.destination) {
     },
     // Kart against wall: a boom, a long crash and a crack, and, when it was a
     // hard hit, bits tinkling down and a sad slide down afterwards.
+    // A ramp: a quick rising whoop as the kart leaves the ground.
+    jump: (at) => {
+      note({ wave: "triangle", from: 240, to: 940, at, lasts: 0.3, loud: 0.42 });
+      note({ wave: "square", from: 480, to: 1400, at: at + 0.04, lasts: 0.22, loud: 0.12 });
+    },
+    // A walker toppled over: two silly notes, down and then up, like a cartoon "boing".
+    oops: (at) => {
+      note({ wave: "triangle", from: 620, to: 200, at, lasts: 0.2, loud: 0.4 });
+      note({ wave: "triangle", from: 260, to: 700, at: at + 0.17, lasts: 0.24, loud: 0.38, wobble: { rate: 18, depth: 60 } });
+    },
     bumpWall: (at, strength) => {
       note({ from: 160, to: 28, at, lasts: 0.55, loud: 1.0 * strength });
       note({ wave: "sawtooth", from: 90, to: 40, at, lasts: 0.3, loud: 0.4 * strength });
@@ -349,7 +359,7 @@ export function createSoundMachine(context, destination = context.destination) {
 }
 
 /** The names of the short sounds, for the sound check page. */
-export const SOUND_NAMES = ["count", "go", "lap", "lastLap", "finish", "spin", "bumpKart", "bumpWall", "warning"];
+export const SOUND_NAMES = ["count", "go", "lap", "lastLap", "finish", "spin", "bumpKart", "bumpWall", "warning", "jump", "oops"];
 
 /**
  * The sound of one race page.
