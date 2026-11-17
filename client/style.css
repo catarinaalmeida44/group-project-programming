@@ -1844,19 +1844,21 @@ main:has(.status) canvas {
 /* The big picture beside the cards on a wide screen, above them on a narrow one. */
 .character-stage {
   display: grid;
-  grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 22.5rem) minmax(0, 1fr);
   gap: 1rem;
   align-items: start;
 }
 
-@media (max-width: 44rem) {
+@media (max-width: 52rem) {
   .character-stage {
     grid-template-columns: minmax(0, 1fr);
   }
 }
 
 .character-step .kart-preview {
+  max-width: 360px;
   margin: 0;
+  background: radial-gradient(ellipse at 50% 75%, #6f8597, #34495c 70%);
 }
 
 #character-go {
@@ -1864,36 +1866,59 @@ main:has(.status) canvas {
   font-weight: 800;
 }
 
-/* The small picture of a pilot in their kart, on each card. */
-.face-kart {
-  display: block;
-  width: 100%;
-  max-width: 10rem;
-  height: auto;
-  border-radius: 10px;
-  background: radial-gradient(ellipse at 50% 70%, #33475a, var(--navy-deep) 75%);
-}
-
 .faces {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
   gap: 0.7rem;
   margin: 0;
   padding: 0;
   border: 0;
 }
 
+/* A card: the pilot standing on the left, the photo on the right, the name under both. */
 .face {
   position: relative;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  grid-template-areas:
+    "pilot photo"
+    "name  name";
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.5rem 0.3rem 0.6rem;
+  justify-items: center;
+  gap: 0.3rem 0.4rem;
+  padding: 0.45rem 0.5rem 0.55rem;
   border: 2px solid var(--line);
   border-radius: 12px;
   cursor: pointer;
   text-align: center;
+}
+
+/* The pilot, standing on a dark floor. */
+.face-pilot {
+  grid-area: pilot;
+  display: block;
+  width: 6.5rem;
+  height: auto;
+  border-radius: 10px;
+  /* A lighter floor than the panel, so dark suits (FranFon is all black) stand out. */
+  background: radial-gradient(ellipse at 50% 75%, #6f8597, #34495c 70%);
+}
+
+/* The person's photo. */
+.face-photo {
+  grid-area: photo;
+  display: block;
+  width: 100%;
+  max-width: 6rem;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  object-fit: cover;
+  box-shadow: 0 0 0 2px var(--line);
+}
+
+.face .face-name {
+  grid-area: name;
 }
 
 .face:hover {

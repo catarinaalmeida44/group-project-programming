@@ -18,10 +18,7 @@
 
 import { kartParts, normalOf, shade } from "./kart-shape.js";
 import { chaseNumbers, eyeOf } from "./camera.js";
-import { pilotScene, FACE_OVAL } from "./pilot-shape.js";
-
-/** The colour of a face whose picture has not loaded yet. */
-const FACE_WAITING = "#c9a08a";
+import { pilotScene } from "./pilot-shape.js";
 
 // The sun shines from this direction on the map: from the left and above,
 // a little from the top of the map. (x to the right, y down the map, z up.)
@@ -197,28 +194,31 @@ export function paintKart(context, viewer, look, steer = 0) {
 }
 
 /**
- * Paints a character standing beside their kart, with their face, in a
- * pose (pilot-shape.js). Only for choosing a character and the podium: the
- * race paints karts with paintKart, where the pilot wears the helmet.
+ * Paints a character standing, with their own head, in a pose
+ * (pilot-shape.js), beside their kart or alone. Only for choosing a
+ * character and the podium: the race paints karts with paintKart, where
+ * the pilot wears the helmet.
  *   viewer     from viewerBehind()
- *   character  { look, hair, face, pose }:
- *     look  the character's colours (kart-shape.js)
- *     hair  the colour of the hair
- *     face  a picture of the face (an <img>). Until it has loaded, the face
- *           is painted plain
- *     pose  from poseAt() or blendPoses() in pilot-shape.js
+ *   character  { look, hair, head, pose, withKart }:
+ *     look      the character's colours (kart-shape.js)
+ *     hair      the colour of the hair, for the back of the head
+ *     head      the picture of the head (an <img> from client/heads). Until
+ *               it has loaded, the head is painted in the colour of the hair
+ *     pose      from poseAt(), blendPoses(), chosenPose() or cardPose()
+ *     withKart  true: the kart stands beside the pilot. False: the pilot alone
  */
-export function paintPilotScene(context, viewer, { look, hair, face, pose }) {
+export function paintPilotScene(context, viewer, { look, hair, head, pose, withKart = true }) {
   if (viewer === null) {
     return;
   }
-  const scene = pilotScene(look, hair, pose);
+  const scene = pilotScene(look, hair, pose, withKart);
   for (const shadow of scene.shadows) {
     paintShadowPatch(context, viewer, shadow);
   }
   // The kart stands still, so its prepared parts are kept. The pilot moves,
   // so theirs are prepared again for every picture: only a few parts.
-  paintParts(context, viewer, [...kartReady(look, scene.kart), ...scene.pilot.map(ready)], face);
+  const kart = withKart ? kartReady(look, scene.kart) : [];
+  paintParts(context, viewer, [...kart, ...scene.pilot.map(ready)], head);
 }
 
 /** A part with what painting needs worked out: its middle, and the direction each face points. */
@@ -359,55 +359,52 @@ function paintShadowPatch(context, viewer, { x, y, along, across, turn }) {
 }
 
 /**
- * A head with a real face: a ball of hair, lit from the top left, with the
- * face in an oval inside it (FACE_OVAL in pilot-shape.js), always straight
- * on. The photo is not turned with the body, like a cut-out: the faces in
- * client/faces are photos taken from the front, and a photo turned
- * sideways looks wrong.
+ * A head: the person's own head, cut out of their photo (client/heads),
+ * painted straight on like a cut-out, on the pilot's collar. A photo taken
+ * from the front looks wrong when it is turned sideways, so it is not
+ * turned. When the pilot turns away (the "siu" spin), the picture gets
+ * narrower and slides round, and from behind only the back of the head
+ * shows, in the colour of the hair.
  */
-function paintHead(context, viewer, head, face) {
+function paintHead(context, viewer, head, picture) {
   const [mx, my, mz] = head.middle;
   const middle = viewer.place(mx, my, mz);
   if (middle === null) {
     return;
   }
-  const radius = head.radius * middle.scale;
+  const loaded = picture !== null && picture.complete && picture.naturalWidth > 0;
+  const tall = head.height * middle.scale;
+  const wide = loaded ? (tall * picture.naturalWidth) / picture.naturalHeight : tall * 0.78;
 
-  // The hair: a ball, lighter where the light falls.
+  // How much the face looks towards the eye: 1 straight at it, 0 from the side, -1 away.
+  const [fx, fy] = head.facing;
+  const ex = viewer.eye[0] - mx;
+  const ey = viewer.eye[1] - my;
+  const lengths = Math.hypot(fx, fy) * Math.hypot(ex, ey);
+  const towards = lengths === 0 ? 1 : (fx * ex + fy * ey) / lengths;
+
+  // The back and sides of the head: an oval of hair, a little smaller than
+  // the picture, so that from the front the picture covers it.
   const shine = context.createRadialGradient(
-    middle.x - radius * 0.35, middle.y - radius * 0.5, radius * 0.1,
-    middle.x, middle.y, radius,
+    middle.x - wide * 0.2, middle.y - tall * 0.3, tall * 0.05,
+    middle.x, middle.y, tall * 0.55,
   );
-  shine.addColorStop(0, lit(head.hair, 1.45));
-  shine.addColorStop(0.6, lit(head.hair, 1));
-  shine.addColorStop(1, lit(head.hair, 0.72));
+  shine.addColorStop(0, lit(head.hair, 1.35));
+  shine.addColorStop(1, lit(head.hair, 0.75));
   context.beginPath();
-  context.arc(middle.x, middle.y, radius, 0, Math.PI * 2);
+  context.ellipse(middle.x, middle.y - tall * 0.04, wide * 0.44, tall * 0.46, 0, 0, Math.PI * 2);
   context.fillStyle = shine;
   context.fill();
 
-  // The face: an oval a little below the middle of the head.
-  const across = radius * FACE_OVAL.across;
-  const tall = radius * FACE_OVAL.tall;
-  const faceY = middle.y + radius * FACE_OVAL.below;
-  context.save();
-  context.beginPath();
-  context.ellipse(middle.x, faceY, across, tall, 0, 0, Math.PI * 2);
-  if (face !== null && face.complete && face.naturalWidth > 0) {
-    context.clip();
-    context.drawImage(face, middle.x - across, faceY - tall, across * 2, tall * 2);
-  } else {
-    context.fillStyle = FACE_WAITING; // the picture has not arrived yet
-    context.fill();
+  if (!loaded || towards < 0.15) {
+    return; // the picture has not arrived yet, or the eye sees the back of the head
   }
-  context.restore();
-  // A soft edge round the face, so it sits in the hair instead of on it.
-  context.beginPath();
-  context.ellipse(middle.x, faceY, across, tall, 0, 0, Math.PI * 2);
-  context.lineWidth = Math.max(1, radius * 0.06);
-  context.strokeStyle = "rgba(0, 0, 0, 0.22)";
-  context.stroke();
-  context.lineWidth = viewer.line;
+  // Turned a little: the face gets narrower and slides towards the side it looks to.
+  const tip = viewer.place(mx + fx, my + fy, mz);
+  const side = tip === null ? 0 : Math.sign(tip.x - middle.x);
+  const width = wide * towards;
+  const x = middle.x - width / 2 + side * (wide - width) * 0.35;
+  context.drawImage(picture, x, middle.y - tall / 2, width, tall);
 }
 
 /**
