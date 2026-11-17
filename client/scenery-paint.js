@@ -249,9 +249,11 @@ export function createSceneryPainter(art, scenery, haze) {
     context.closePath();
     context.fillStyle = shape.colour;
     context.fill();
-    context.strokeStyle = shape.colour; // a thin line in the same colour closes the gaps between squares
-    context.lineWidth = 1;
-    context.stroke();
+    if (shape.ahead < 520) {
+      context.strokeStyle = shape.colour; // a thin line in the same colour closes the gaps between squares
+      context.lineWidth = 1;
+      context.stroke();
+    }
   }
 
   return { paintStrip, paintFlat };

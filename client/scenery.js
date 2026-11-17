@@ -41,7 +41,11 @@ const LARGEST_SCALE = 120;
 const KART_TALL = 10;
 const KART_MIDDLE = 6;
 /** Further ahead than this, the small parts of a ceiling (its beams) are not drawn. */
-const DETAIL_TO = 560;
+const DETAIL_TO = 420;
+/** Further ahead than this, the underside of a roof is not drawn: from so far it is a thin line at most. */
+const UNDER_TO = 760;
+/** A wall square this near to scenery (in squares, from its middle) counts as having scenery. */
+const WITHIN_SQUARES = 1.2;
 
 /**
  * The four sides of a box, each read from its left end as seen from outside.
@@ -214,7 +218,7 @@ export function squaresWithScenery(scenery, tileSize) {
       continue; // a roof overhead does not show where a wall is
     }
     // In squares: the two ends of the strip, and every square whose middle
-    // is no further than one square from the line between them. (A fence
+    // is hardly more than one square from the line between them. (A fence
     // along a slanting edge runs through the corners of the wall squares
     // beside it, so "the square it stands on" would miss some of them.)
     const ax = strip.a[0] / tileSize;
@@ -227,7 +231,7 @@ export function squaresWithScenery(scenery, tileSize) {
         const x = column + 0.5;
         const y = row + 0.5;
         const along = lengthSquared > 0 ? Math.min(1, Math.max(0, ((x - ax) * (bx - ax) + (y - ay) * (by - ay)) / lengthSquared)) : 0;
-        if (Math.hypot(x - (ax + along * (bx - ax)), y - (ay + along * (by - ay))) <= 1) {
+        if (Math.hypot(x - (ax + along * (bx - ax)), y - (ay + along * (by - ay))) <= WITHIN_SQUARES) {
           squares.add(`${column} ${row}`);
         }
       }
@@ -412,8 +416,8 @@ export function sceneryInView(scenery, kart, settings = CHASE, screen = SCREEN) 
     if (corners.every((corner) => corner.ahead < near) || corners.every((corner) => corner.ahead > far)) {
       continue;
     }
-    if (flat.detail && corners[0].ahead > DETAIL_TO) {
-      continue; // too far away to tell a beam from the ceiling
+    if (corners[0].ahead > (flat.detail ? DETAIL_TO : flat.kind === "under" ? UNDER_TO : far)) {
+      continue; // too far away to tell a beam from the ceiling, or to see a ceiling at all
     }
     const kept = keepAhead(corners, near);
     if (kept.length < 3) {

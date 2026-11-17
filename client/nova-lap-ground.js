@@ -46,7 +46,7 @@ export const NOVA_LAP_GROUND = [
   { surface: "flagstones", rule: "wall", rect: [42, 78, 90, 82] }, //   the pavement of the coast road goes on east, out of reach
   { surface: "car-ramp", rule: "wall", rect: [26, 3, 44, 6] }, //       the way down to the car park under the avenue
 
-  { surface: "setts", rule: "wall", poly: [[8, 73], [9, 74], [17, 82], [17, 83], [8, 83]] }, // and in the corner of the two roads
+  { surface: "setts", rule: "wall", poly: [[8, 73], [9, 73.5], [17.5, 82], [17.5, 83], [8, 83]] }, // and in the corner of the two roads
 
   // ---- The lawns between the halls: slower, but open ----
   { surface: "lawn", rule: "grass", rect: [13, 16, 53, 74] },
@@ -55,7 +55,7 @@ export const NOVA_LAP_GROUND = [
   // ---- The west street and the coast road: pavements of pale flagstones ----
   { surface: "flagstones", rule: "road", rect: [9, 7, 13, 72] },
   // The corner between them is cut off slantwise, as the real one is.
-  { surface: "flagstones", rule: "road", poly: [[9, 70], [13, 70], [13, 72.3], [18.7, 78], [24, 78], [24, 82], [17, 82], [9, 74]] },
+  { surface: "flagstones", rule: "road", poly: [[9, 70], [13, 70], [13, 72.3], [18.7, 78], [24, 78], [24, 82], [17.5, 82], [9, 73.5]] },
   { surface: "flagstones", rule: "road", rect: [22, 78, 42, 82] },
 
   // ---- The entrance avenue: small cobbles, and a band of smooth slabs along its south side ----

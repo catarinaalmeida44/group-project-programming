@@ -124,8 +124,8 @@ const EDGES = [
   { name: "residence", rect: [12, 0, 46, 2], top: 10, faces: { south: "residence", east: WHITE, west: WHITE } },
   // Low walls: along the avenue, the west street and the coast road.
   { name: "avenue parapet", rect: [9, 6.7, 53, 7], top: 0.9, roof: "concrete-top", faces: { south: "concrete" } },
-  { name: "west street wall", rect: [8.7, 7, 9, 74], top: 0.6, roof: "limestone", faces: { east: "low-wall" } },
-  { name: "coast road wall", rect: [17, 82, 41.7, 82.3], top: 0.6, roof: "limestone", faces: { north: "low-wall" } },
+  { name: "west street wall", rect: [8.7, 7, 9, 73.5], top: 0.6, roof: "limestone", faces: { east: "low-wall" } },
+  { name: "coast road wall", rect: [17.5, 82, 41.7, 82.3], top: 0.6, roof: "limestone", faces: { north: "low-wall" } },
 ];
 
 export const NOVA_LAP_BLOCKS = [...ENTRANCE_AND_ATRIUM, ...TERRACE_AND_LIBRARY, ...PLAZA_AND_TUNNEL, ...HALLS, ...EDGES];
@@ -154,7 +154,7 @@ export const NOVA_LAP_FENCES = [
   // Shrubs along the slanting path down to the coast road.
   { name: "shrubs beside the slanting path", from: [49.66, 74], to: [41.66, 82], top: 1.3, art: "hedge", lean: [1, 1] },
   // The low wall round the corner of the two roads.
-  { name: "low wall round the corner", from: [9, 74], to: [17, 82], top: 0.6, art: "low-wall", lean: [-1, 1] },
+  { name: "low wall round the corner", from: [9, 73.5], to: [17.5, 82], top: 0.6, art: "low-wall", lean: [-1, 1] },
 ];
 
 // ---------------------------------------------------------------------------
