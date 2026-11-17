@@ -268,15 +268,17 @@ export const NOVA_LAP_FURNITURE = [
   // On the pavements of the coast road and of the west street: things to
   // steer round. They stand in the outer lanes, and never where a kart that
   // took a ramp (shared/tracks/nova-lap.js) is still in the air.
+  // (A kart flies about nine squares from a ramp. The lane it flies along and
+  // the lanes beside it are kept clear for that stretch, and the next thing
+  // in its own lane comes at least six squares after it has landed.)
   { kind: "bike", column: 31, row: 81 },
-  { kind: "cones", column: 22, row: 80 },
-  { kind: "bins", column: 22, row: 81 },
+  { kind: "cones", column: 19, row: 80 },
+  { kind: "bins", column: 19, row: 81 },
   { kind: "bike", column: 9, row: 61 },
-  { kind: "bins", column: 12, row: 57 },
-  { kind: "cones", column: 12, row: 45 },
-  { kind: "bike", column: 9, row: 36 },
-  { kind: "bins", column: 9, row: 27 },
-  { kind: "bike", column: 12, row: 19 },
+  { kind: "bins", column: 12, row: 52 },
+  { kind: "cones", column: 12, row: 41 },
+  { kind: "bike", column: 9, row: 31 },
+  { kind: "bins", column: 9, row: 25 },
   // Along the avenue, in the band of smooth slabs: young trees with red leaves, and stone benches.
   ...[16, 22, 34, 40, 46].map((column) => ({ kind: "avenue-tree", column, row: 14 })),
   ...[19, 37, 43].map((column) => ({ kind: "bench", column, row: 14 })),

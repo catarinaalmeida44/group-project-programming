@@ -135,7 +135,7 @@ What this means for you: prefer finished, reliable features over many half-finis
   - *The café is called MON CAFFE. The statue of the woman with the surfboard is bigger. No jump at the stairs: they go down.*
   - *She wants one pull request with everything, not several.*
 
-  *Decisions made by the agent on 17 Nov 2026, please confirm: all the numbers of the two rules (how long a jump lasts, how much faster, how fast a student walks, how long they sit: they are named at the top of `shared/ramps.js` and `shared/walkers.js`); a kart in the air cannot steer, flies over bananas and students, but is still stopped by a wall or a parked bike; a student who is inside a building or already sitting cannot be bumped; a kart that only creeps into a student does not topple them; the computer karts try to steer round students as they do round bananas; a jump has a rising "whoop" and a toppled student a silly two-note sound.*
+  *Decisions made by the agent on 17 Nov 2026, please confirm: all the numbers of the two rules (how long a jump lasts, how much faster, how fast a student walks, how long they sit: they are named at the top of `shared/ramps.js` and `shared/walkers.js`); a kart in the air cannot steer, flies over bananas and students, but is still stopped by a wall or a parked bike; a student who is inside a building or already sitting cannot be bumped; a kart that only creeps into a student does not topple them; the computer karts try to steer round students as they do round bananas; a jump has a rising "whoop" and a toppled student a silly two-note sound; a kart that has finished can still jump; the students keep walking after a race is over, until the next start.*
 
 ### Driving physics
 

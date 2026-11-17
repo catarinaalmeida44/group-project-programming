@@ -48,6 +48,14 @@ One commit of this evening (`a4c1080`) left both race pages broken: a script tha
 
 `tests/scenery.test.js`, "slopes the top of a box along x": it said that a sloping top is not painted. Ramps need a sloping top that is painted, so the rule changed, and the test now says that a sloping top is painted with each corner at its own height. The test file is one day old and from this same pull request.
 
+**What the helper reported at the end, and what was done about it**
+
+- It changed no existing test. It broke its own rules on purpose 15 times (a flying kart that can steer, a sitting student who can be hit again, walkers that walk during 3, 2, 1, and so on): a test failed every time, and the code was put back.
+- **Two landings were too tight.** A kart that had just landed from the ramp on the coast road had only five squares before the cones, and on the west street the bins stood level with the landing. The robot of the tests clipped both. The cones and bins of the coast road moved to the start of the corner, the bins of the west street moved on, the two outer ramps of the west street moved, and one bike was taken out. The rule for placing them is now written in `client/nova-lap-buildings.js`: the lane a kart flies along and the lanes beside it stay clear, and the next thing in its lane comes at least six squares after the landing.
+- **The computer karts got stuck at single obstacles.** Measured with five computer karts over three laps, on four different races: before the move they stood nearly still for 9 to 18 seconds a race, most of it at those bins. After the move: 0.4 to 4.3 seconds. They finish in 80 to 90 seconds.
+- **Tried and taken out again:** telling the computer karts where single obstacles stand, so that they steer round them as they do round bananas. Measured the same way, it did not help (1.5 to 5 seconds stuck), so it was removed rather than left in as code that does nothing useful.
+- **The helper's own choices, please confirm:** a kart that has finished can still jump; a kart that lands on a ramp takes off again; a student can be toppled again in the very step they get up; the students keep walking after a race is over, until the next start, as the bananas stay.
+
 **What was checked, and what was not**
 
 Checked:
