@@ -4,6 +4,43 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 17 November 2026, night: after Catarina played it
+
+**What she said**
+
+She played the new version and sent three screenshots. One complaint about the students: "when you go against a student, you don't get delayed, and it should somehow be like a banana." A sound for hitting a student: she may do that later herself. And in the screenshots the gantry over the start line, the one with the 3, 2, 1 lights, had a hole in its beam where the buildings behind showed through.
+
+**What was done**
+
+| What | Where |
+|---|---|
+| A kart that topples a student now spins out exactly as on a banana, on top of the speed it loses: for 1.2 seconds its keys do nothing and it slides. It is the banana's own code that is called, so the two cannot drift apart. A kart that cannot be spun at that moment (it is already spinning) only loses the speed | `shared/walkers.js` (it calls `spinOut` from `shared/hazards.js`) |
+| The hole in the gantry | `client/draw.js` |
+
+**Why the gantry had a hole**
+
+The picture is painted from the furthest thing to the nearest, and what is "furthest" is worked out from the square of the map a thing stands on. That works for anything that stands on one square. The gantry stands across several. It was sorted by the square under its middle, so a far building in a row of squares nearer to the camera than that middle was painted after the gantry, over part of its beam. On the old track there was no building straight behind the start. On the Nova lap the entrance front is exactly there. The gantry is now cut into one piece for each square it crosses, and each piece takes its own turn. The squares along the beam and the three lights are counted along the whole beam, so they still line up.
+
+**A sound for hitting a student**
+
+There already is one since this evening: a silly two-note sound (`oops` in `client/sound.js`), and now the banana's slip sound plays with it, because the kart spins. Catarina can hear and change both on http://localhost:3000/sound-test.html. The agent cannot hear.
+
+**Three tests were changed, because the rule changed**
+
+All three are from this same evening and this same pull request.
+
+| Test | It said | It says now |
+|---|---|---|
+| `tests/walkers.test.js`, "is not moved or turned, and its laps, clock and spin are left as they were" | the spin of the kart is untouched | the same, for a kart that cannot be spun at that moment. Two new tests after it pin the new rule: it spins out as on a banana, and a kart that drove past or only nudged does not |
+| `tests/walkers.test.js`, "drives on afterwards: the walker on the ground is not a wall" | 30 steps later the kart is faster again | it first sits out its spin with the gas doing nothing, then drives on through the spot |
+| `tests/room-street-life.test.js`, "keeps its laps and its clock: a walker costs speed and nothing else" | `spin` is 0 after the bump | the server reports the spin to every browser, the laps and the clock are still untouched, and the keys work again when the spin is over |
+
+**What was checked, and what was not**
+
+- The tests: 1,806 pass, 5 skipped.
+- The gantry, in the agent's browser, from the two places her screenshots were taken from: the beam is whole.
+- Not checked: the spin after a student in a real race on a real screen, and how it feels. The rule itself is tested, and it is the same spin as the banana's.
+
 ### 17 November 2026, late evening: students who walk, ramps to jump, things in the way
 
 **What she said**

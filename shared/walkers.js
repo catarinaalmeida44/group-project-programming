@@ -4,10 +4,11 @@
 // walker walks its path to the end, goes inside for a moment, comes out
 // again, walks back, goes inside at the other end, and so on, for ever.
 //
-// A kart that drives into a walker loses most of its speed, and the walker
-// topples over: it sits on the ground for a moment, seeing stars, and then
-// gets up and walks on. Nobody is hurt. A walker that is inside a building,
-// or already sitting on the ground, cannot be bumped.
+// A kart that drives into a walker loses most of its speed and spins out,
+// exactly as if it had slipped on a banana (hazards.js). The walker topples
+// over: it sits on the ground for a moment, seeing stars, and then gets up
+// and walks on. Nobody is hurt. A walker that is inside a building, or
+// already sitting on the ground, cannot be bumped.
 //
 // The browser and the server both use this file.
 //
@@ -27,14 +28,21 @@
 //   - the circle of the kart and the circle of the walker overlap
 // A kart that is spinning out, or has finished the race, topples a walker
 // like any other: it is moving. A walker is never a wall: karts drive
-// through the spot where one sits or stands. All that a walker costs is
-// speed, and only when it is toppled.
+// through the spot where one sits or stands.
+//
+// WHAT IT COSTS THE KART (changed on 17 November 2026, after Catarina
+// played it: losing speed alone was hardly a delay)
+// The kart keeps SPEED_KEPT_AFTER_WALKER of its speed, and it spins out as
+// on a banana: for a little over a second its keys do nothing and it
+// slides to a stop. A kart that cannot be spun at that moment (it is
+// already spinning, or has only just stopped) loses the speed and no more.
 //
 // Nothing here is left to chance and nothing looks at a clock: the same
 // walkers and the same karts always give the same answer.
 
 import { speedOf } from "./physics.js";
 import { KART_RADIUS } from "./race.js";
+import { spinOut } from "./hazards.js";
 
 // ---------------------------------------------------------------------------
 // NUMBERS TO TUNE BY PLAYTESTING
@@ -136,8 +144,8 @@ export function walkerAt(track, number, walker) {
  *      one step, which walks it a little further (or keeps it waiting inside).
  *   2. The bumps, with every walker where it is after that. A kart that
  *      topples a walker (see WHO TOPPLES A WALKER at the top) keeps
- *      SPEED_KEPT_AFTER_WALKER of its speed, in the same direction, and the
- *      walker sits down for DOWN_STEPS.
+ *      SPEED_KEPT_AFTER_WALKER of its speed, in the same direction, spins
+ *      out as on a banana, and the walker sits down for DOWN_STEPS.
  *
  *   walkers  what is remembered about each walker: [{ time, downSteps }],
  *            in the order of the track's walkers (see createWalkers)
@@ -192,10 +200,12 @@ export function stepWalkers(track, walkers, racers) {
       return racer;
     }
     const { kart } = racer;
-    return {
+    // Slower at once, and spinning out as on a banana. (spinOut gives the
+    // racer back unchanged if it cannot be spun now: see hazards.js.)
+    return spinOut({
       ...racer,
       kart: { ...kart, vx: kart.vx * SPEED_KEPT_AFTER_WALKER, vy: kart.vy * SPEED_KEPT_AFTER_WALKER },
-    };
+    });
   });
   return { walkers: after, racers: slowed, hits };
 }

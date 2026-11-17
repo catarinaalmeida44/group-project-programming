@@ -23,7 +23,7 @@
 
 import { SCREEN, FOLLOW, CHASE, RACE, blendChase, chaseRow, chasePoint, eyeOf, seenFromKart, easeAngle, sideSeen } from "./camera.js";
 import { createBuildings, buildingsInView } from "./buildings.js";
-import { createScenery, sceneryInView, squaresWithScenery, rampBlocks, RAMP_FLAT_STYLES } from "./scenery.js";
+import { createScenery, sceneryInView, squaresWithScenery, rampBlocks, cutAtSquares, RAMP_FLAT_STYLES } from "./scenery.js";
 import { createSceneryPainter } from "./scenery-paint.js";
 import { trafficLanes, carsAt } from "./traffic.js";
 import { WALL_ART } from "./wall-art.js";
@@ -285,12 +285,17 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
         });
       }
     }
-    if (gantry !== null) {
+    // The start gantry, one piece for each square it crosses. (As one wide
+    // thing it was sorted by the square of its middle, and a far building
+    // in a row nearer the camera was then painted over part of it: the
+    // beam looked see-through. Found by Catarina on 17 November 2026.)
+    for (const piece of gantry?.pieces ?? []) {
       things.push({
         kind: "gantry",
-        ahead: seenFromKart(spot, gantry.middle.x, gantry.middle.y).ahead,
-        column: Math.floor(gantry.middle.x / size),
-        row: Math.floor(gantry.middle.y / size),
+        piece,
+        ahead: seenFromKart(spot, (piece.a.x + piece.b.x) / 2, (piece.a.y + piece.b.y) / 2).ahead,
+        column: piece.column,
+        row: piece.row,
       });
     }
     // The light on the next checkpoint: one low curtain for each square it crosses.
@@ -346,7 +351,7 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
         paintKartWithJump(thing.kart, thing.viewer, thing.ground, 0);
         paintNameAbove(thing, scene.names);
       } else if (thing.kind === "gantry") {
-        paintGantry(spot, settings, near, scene.lights);
+        paintGantry(thing.piece, spot, settings, near, scene.lights);
       } else if (thing.kind === "light") {
         paintLight(thing, seconds);
       } else {
@@ -524,24 +529,28 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
    * The start gantry: two posts with a beam across the road above the
    * start line, chequered, with the start lights on it.
    */
-  function paintGantry(spot, settings, near, lights) {
-    const ends = [gantry.left, gantry.right].map((post) => {
-      const seen = seenFromKart(spot, post.x, post.y);
+  function paintGantry(piece, spot, settings, near, lights) {
+    const placeOf = (point) => {
+      const seen = seenFromKart(spot, point.x, point.y);
       return seen.ahead < near + 2 ? null : chasePoint(seen.ahead, seen.sideways, settings);
-    });
-    // The posts, each as far as it can be seen.
-    for (const end of ends) {
+    };
+    // The two ends of this piece of the beam. The first piece also has the
+    // left post of the gantry, the last piece the right one.
+    const a = placeOf(piece.a);
+    const b = placeOf(piece.b);
+    for (const end of [piece.first ? a : null, piece.last ? b : null]) {
       if (end !== null) {
         context.fillStyle = "#39434d";
         const half = (GANTRY.post / 2) * end.scale;
         context.fillRect(end.x - half, end.y - (GANTRY.clear + GANTRY.tall) * end.scale, half * 2, (GANTRY.clear + GANTRY.tall) * end.scale);
       }
     }
-    if (ends[0] === null || ends[1] === null) {
-      return; // one end is behind us: we are driving under the beam
+    if (a === null || b === null) {
+      return; // one end of this piece is behind us: we are driving under the beam
     }
-    const [a, b] = ends;
-    // A spot on the beam: "along" from 0 (left post) to 1 (right post), "up" in units above the road.
+    // Where a share of the WHOLE beam (0 at the left post, 1 at the right) lies on this piece.
+    const onPiece = (share) => (share - piece.from) / (piece.to - piece.from);
+    // A spot on this piece: "along" from 0 (its left end) to 1 (its right end), "up" in units above the road.
     const at = (along, up) => [
       a.x + (b.x - a.x) * along,
       a.y - up * a.scale + (b.y - up * b.scale - (a.y - up * a.scale)) * along,
@@ -557,26 +566,35 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
     const low = GANTRY.clear;
     const high = GANTRY.clear + GANTRY.tall;
     patch(0, 1, low, high, DARK);
-    // Two rows of chequers along the top and bottom edges of the beam.
+    // Two rows of chequers along the top and bottom edges of the beam. They
+    // are counted along the whole beam, so they line up from piece to piece.
     const squares = 40;
-    for (let i = 0; i < squares; i++) {
-      const white = "#f4f6f8";
-      if (i % 2 === 0) {
-        patch(i / squares, (i + 1) / squares, low, low + 2.2, white);
-        patch(i / squares, (i + 1) / squares, high - 2.2, high, white);
+    const white = "#f4f6f8";
+    for (let i = Math.floor(piece.from * squares); i < Math.ceil(piece.to * squares); i++) {
+      const from = Math.max(0, onPiece(i / squares));
+      const to = Math.min(1, onPiece((i + 1) / squares));
+      if (i % 2 === 0 && to > from) {
+        patch(from, to, low, low + 2.2, white);
+        patch(from, to, high - 2.2, high, white);
       }
     }
-    // The start lights, in the middle of the beam: red while the countdown
-    // runs, one more for each number, then all green at GO.
+    // The start lights, in the middle of the whole beam, 9 units apart: red
+    // while the countdown runs, one more for each number, then all green at
+    // GO. A lamp that lies on the join of two pieces is painted by both, so
+    // that neither covers half of it.
     const red = lights?.red ?? 0;
     const green = lights?.green === true;
     const lamps = 3;
-    const middle = at(0.5, low + GANTRY.tall / 2);
-    const scale = (a.scale + b.scale) / 2;
+    const reach = 3 / (gantry.long * (piece.to - piece.from)); // the size of a lamp, as a share of this piece
     for (let lamp = 0; lamp < lamps; lamp++) {
-      const x = middle[0] + (lamp - (lamps - 1) / 2) * 9 * scale;
+      const along = onPiece(0.5 + ((lamp - (lamps - 1) / 2) * 9) / gantry.long);
+      if (along < -reach || along > 1 + reach) {
+        continue;
+      }
+      const [x, y] = at(along, low + GANTRY.tall / 2);
+      const scale = a.scale + (b.scale - a.scale) * along;
       context.beginPath();
-      context.arc(x, middle[1], 2.7 * scale, 0, Math.PI * 2);
+      context.arc(x, y, 2.7 * scale, 0, Math.PI * 2);
       context.fillStyle = green ? "#39d353" : lamp < red ? "#ff3b30" : "#3a2326";
       context.fill();
     }
@@ -786,11 +804,25 @@ function gantryOf(track) {
   // Seen by a driver, "left" is the post on the driver's left.
   const [low, high] = [point(first), point(last)];
   const leftIsLow = alongX ? forwards : !forwards;
-  return {
-    left: leftIsLow ? low : high,
-    right: leftIsLow ? high : low,
-    middle: point((first + last) / 2),
-  };
+  const left = leftIsLow ? low : high;
+  const right = leftIsLow ? high : low;
+  const long = Math.hypot(right.x - left.x, right.y - left.y); // how long the beam is, in units
+  // The beam, cut where it crosses from one square of the map into the
+  // next. Each piece is painted in its own turn, among the other things on
+  // its square (see drawRaceView). "from" and "to" say which share of the
+  // whole beam a piece is: 0 at the left post, 1 at the right.
+  const cuts = cutAtSquares([left.x / size, left.y / size], [right.x / size, right.y / size]);
+  const pieces = cuts.map((cut, number) => ({
+    a: { x: cut.a[0] * size, y: cut.a[1] * size },
+    b: { x: cut.b[0] * size, y: cut.b[1] * size },
+    from: (cut.fromStart * size) / long,
+    to: (cut.toStart * size) / long,
+    first: number === 0,
+    last: number === cuts.length - 1,
+    column: Math.floor((cut.a[0] + cut.b[0]) / 2),
+    row: Math.floor((cut.a[1] + cut.b[1]) / 2),
+  }));
+  return { left, right, middle: point((first + last) / 2), long, pieces };
 }
 
 const WALKER_COLOURS_ABOVE = ["#d8473f", "#2f66b3", "#3fa35a", "#e9b92c", "#8d5aa8", "#f08a3c"];

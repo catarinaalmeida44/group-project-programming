@@ -21,6 +21,7 @@ import {
   walkerSpots,
 } from "../shared/walkers.js";
 import { createRacer, stepRacer, KART_RADIUS } from "../shared/race.js";
+import { SPIN_STEPS, canBeSpun, spinOut } from "../shared/hazards.js";
 import { createKart, speedOf, STEP_SECONDS } from "../shared/physics.js";
 import { createTrack, tileKindAt } from "../shared/track.js";
 import { TEST_DRIVER } from "../shared/characters.js";
@@ -428,7 +429,12 @@ describe("a kart that drives into a walker fast", () => {
     expect(Math.atan2(after.kart.vy, after.kart.vx)).toBeCloseTo(Math.atan2(-160, 120));
   });
 
-  it("is not moved or turned, and its laps, clock and spin are left as they were", () => {
+  // Changed on 17 November 2026, after Catarina played it ("you don't get
+  // delayed, it should be like a banana"). This test used to say that the
+  // spin of the kart is left as it was. A kart that could not be spun
+  // anyway (it has only just stopped spinning) still shows that: the test
+  // keeps that case, and the two tests after it pin the new rule.
+  it("is not moved or turned, and its laps and clock are left as they were", () => {
     const walkers = createWalkers(PLAZA);
     const spot = nextSpot(walkers);
     const racer = racerAt(spot.x + 2, spot.y, 200, 0, { spinShieldSteps: 7 });
@@ -436,6 +442,34 @@ describe("a kart that drives into a walker fast", () => {
     expect(after.kart).toMatchObject({ x: racer.kart.x, y: racer.kart.y, angle: racer.kart.angle });
     expect(after.progress).toBe(racer.progress);
     expect(after).toMatchObject({ spinSteps: 0, spinShieldSteps: 7, airSteps: 0, boostSteps: 0 });
+  });
+
+  it("spins out as on a banana: its keys do nothing for SPIN_STEPS, and it cannot be spun again at once", () => {
+    const walkers = createWalkers(PLAZA);
+    const spot = nextSpot(walkers);
+    const racer = racerAt(spot.x + 2, spot.y, 200, 0);
+    expect(canBeSpun(racer)).toBe(true);
+    const [after] = stepWalkers(PLAZA, walkers, [racer]).racers;
+    // Exactly what slipping on a banana does to a racer, on top of the speed it lost.
+    expect(after.spinSteps).toBe(SPIN_STEPS);
+    expect(after.spinShieldSteps).toBe(spinOut(racer).spinShieldSteps);
+    expect(canBeSpun(after)).toBe(false);
+    expect(speedOf(after.kart)).toBeCloseTo(200 * SPEED_KEPT_AFTER_WALKER);
+    // While it spins, the keys do nothing: gas and steering give the same kart as no keys at all.
+    const withKeys = stepRacer(PLAZA, after, { gas: true, left: true }, TEST_DRIVER);
+    const withoutKeys = stepRacer(PLAZA, after, {}, TEST_DRIVER);
+    expect(withKeys.kart).toEqual(withoutKeys.kart);
+    expect(withKeys.spinSteps).toBe(SPIN_STEPS - 1);
+  });
+
+  it("does not spin a kart that drove past, or one that only nudged the walker", () => {
+    const walkers = createWalkers(PLAZA);
+    const spot = nextSpot(walkers);
+    const past = racerAt(spot.x + REACH + 5, spot.y, 200, 0); //  fast, but not touching
+    const nudge = racerAt(spot.x, spot.y, TOPPLE_SPEED - 1, 0); // touching, but creeping
+    const after = stepWalkers(PLAZA, walkers, [past, nudge]);
+    expect(after.hits).toEqual([]);
+    expect(after.racers.map((racer) => racer.spinSteps)).toEqual([0, 0]);
   });
 
   it("topples it when the two circles overlap, however little, and not when they only come close", () => {
@@ -810,19 +844,33 @@ describe("a kart that is driven across the square", () => {
     expect(Math.hypot(walker.x - bump.after.kart.x, walker.y - bump.after.kart.y)).toBeLessThan(REACH);
   });
 
-  it("drives on afterwards: the walker on the ground is not a wall", () => {
+  // Changed on 17 November 2026 with the rule: the kart now spins out when it
+  // topples a walker, as on a banana. Before, this test drove on for 30 steps
+  // and expected the kart to be faster again by then. Now it first sits out
+  // its spin, with the gas held and doing nothing, and drives on after that.
+  // What the test is about has not changed: the walker on the ground is no wall.
+  it("drives on afterwards, once its spin is over: the walker on the ground is not a wall", () => {
     const bump = driveAtTheWalker([{ time: 50, downSteps: 0 }, { time: 0, downSteps: 0 }]);
     let racer = bump.after;
     let walkers = bump.walkers;
-    const slow = speedOf(racer.kart);
-    for (let step = 0; step < 30; step++) {
-      const after = stepWalkers(PLAZA, walkers, [stepRacer(PLAZA, racer, GAS, TEST_DRIVER)]);
-      expect(after.hits).toEqual([]);
-      [racer] = after.racers;
-      walkers = after.walkers;
-    }
+    expect(racer.spinSteps).toBe(SPIN_STEPS);
+    const drive = (steps) => {
+      for (let step = 0; step < steps; step++) {
+        const after = stepWalkers(PLAZA, walkers, [stepRacer(PLAZA, racer, GAS, TEST_DRIVER)]);
+        expect(after.hits).toEqual([]); // nobody is toppled twice
+        [racer] = after.racers;
+        walkers = after.walkers;
+      }
+    };
+    // While it spins the gas does nothing: it only slides, slower and slower.
+    drive(SPIN_STEPS);
+    expect(racer.spinSteps).toBe(0);
+    const afterTheSpin = speedOf(racer.kart);
+    expect(afterTheSpin).toBeLessThan(speedOf(bump.after.kart));
+    // Then the keys work again, and it drives through the spot where the walker sits.
+    drive(90);
+    expect(speedOf(racer.kart)).toBeGreaterThan(afterTheSpin + 50);
     expect(racer.kart.x).toBeGreaterThan(160 + REACH); // through the spot and out the other side
-    expect(speedOf(racer.kart)).toBeGreaterThan(slow + 50); // and picking up speed again
   });
 
   it("touches nobody when the walker is not there yet", () => {

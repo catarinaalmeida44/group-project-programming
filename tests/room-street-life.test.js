@@ -28,6 +28,7 @@ import { createComputerDriver, decide, personalityOf } from "../shared/computer-
 import { COUNTDOWN_STEPS } from "../shared/countdown.js";
 import { createRacer, KART_RADIUS } from "../shared/race.js";
 import { createKart, speedOf, topSpeedOf } from "../shared/physics.js";
+import { SPIN_STEPS } from "../shared/hazards.js";
 import { createTrack } from "../shared/track.js";
 import { gridSpot } from "../shared/grid.js";
 import { TEST_DRIVER } from "../shared/characters.js";
@@ -483,16 +484,27 @@ describe("a kart that is driven at the walkers in a room", () => {
     expect(room.snapshot().walkers[2].time).toBe(clock + DOWN_STEPS + 1);
   });
 
-  it("keeps its laps and its clock: a walker costs speed and nothing else", () => {
+  // Changed on 17 November 2026 with the rule: toppling a walker now makes the
+  // kart spin out, as on a banana. Before, this test said "a walker costs
+  // speed and nothing else" and expected "spin" to be 0. The laps and the
+  // clock are still never touched, which is what the test is about.
+  it("keeps its laps and its clock, and spins out as on a banana", () => {
     const { room, host } = driveUntil(walkerOneIsDown);
     const atTheBump = kartOf(room, host);
+    expect(atTheBump.spin).toBe(SPIN_STEPS); // the server says so to every browser, as it does for a banana
     run(room, 10);
     const later = kartOf(room, host);
     expect(later.steps).toBe(atTheBump.steps + 10);
     expect(later.passed).toBeGreaterThanOrEqual(atTheBump.passed);
     expect(later.finished).toBe(false);
-    expect(later.spin).toBe(0);
-    expect(later.x).toBeGreaterThan(atTheBump.x); // and it drives on, through the walker
+    expect(later.spin).toBe(SPIN_STEPS - 10); // still spinning: the held gas does nothing
+    expect(later.x).toBeGreaterThan(atTheBump.x); // it slides on, through the walker
+    // When the spin is over, the keys work again and it picks up speed.
+    run(room, SPIN_STEPS - 10);
+    const spunOut = kartOf(room, host);
+    expect(spunOut.spin).toBe(0);
+    run(room, 60);
+    expect(speedOf(kartOf(room, host))).toBeGreaterThan(speedOf(spunOut) + 50);
   });
 
   it("still finishes the race, later than on the bare street", () => {
