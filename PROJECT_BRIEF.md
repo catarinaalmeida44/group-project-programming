@@ -116,6 +116,16 @@ What this means for you: prefer finished, reliable features over many half-finis
 
   **[OPEN]** A lap of the campus loop takes about 20 seconds for the test kart, not 30 to 40, because at this scale a kart drives at about 200 km/h. Rodrigo proposes making all karts about 40% slower (the numbers at the top of `shared/physics.js`). This also makes laps of the test oval longer. For the team, and the owner of the driving physics, to decide.
 
+  *17 Nov 2026, at Catarina's request: a new track, the **Nova lap** (`shared/tracks/nova-lap.js`). The team filmed the lap it wants on campus (nine minutes of walking: the entrance avenue, through the Hovione Atrium, the terrace, under the library, the promenade, the stairs, past the beach tunnel, the coast road, the west street), because the campus loop, made from a map, was not recognisable. The agent went through the film picture by picture. Built so far is the base she asked for: the ground and the buildings. Benches, lamps, trees along the way and tables come later. How it is built is in `WALKTHROUGH.md`, "What is the Nova lap".*
+
+  *Decisions made by the agent on 17 Nov 2026, please confirm:*
+  - *The campus loop stays in the list of tracks for now, untouched, with its tests. Catarina said the new track replaces it. Taking it out means deleting Rodrigo's track and its tests, which is for the team, and Rodrigo, to say.*
+  - *3 metres a square instead of 6, so buildings are twice as big beside a kart. A lap is about 730 metres; a robot needs about 30 seconds for one.*
+  - *The coast road runs straight along the bottom of the map, although the real one runs at a slant, so that walls follow the squares. The halls and lawns were placed to fit.*
+  - *The names on the walls are the names on the real walls, sponsors included, drawn as letters by our code. The school's name on the entrance is drawn with lines, not taken from a logo file. The banner on the entrance has our own words ("We race the times"), because the real one is an advertisement. Say if a name should go.*
+  - *A sunny afternoon, although the film was shot on a grey day.*
+  - *A page for the team that flies the camera round a track: `track-tour.html?track=nova-lap`. It is not linked from the menu.*
+
 ### Driving physics
 
 - [DECIDED] Our own physics code. This is required, not just a preference: the server runs the races, and game libraries' physics only runs inside a browser.

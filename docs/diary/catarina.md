@@ -4,6 +4,89 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 17 November 2026: the Nova lap, a new track made from the video filmed on campus
+
+**What was asked**
+
+Catarina sent a nine-minute video of the lap the team wants, walked on campus, and described it in words: start at the entrance, through the Hovione Atrium (the only part indoors, a big square hall with a Christmas tree), out past the cafe and the library, everything else outdoors, down a ramp, with the tunnel to the street on the left, and back to where the video started. The old campus track, made from a map, was not recognisable: "the buildings were just a white wall with windows painted on", and everything round the campus looked like a forest. She asked for the base only (ground and buildings; tables, bikes, lamps and trees later), at a bigger scale, and for it to look like Nova. "Do not settle for less."
+
+**What was done**
+
+A new track, the **Nova lap**, and new drawing code for it. The campus loop was not touched.
+
+How the video was read: the laptop has no program for cutting a video into pictures, so the agent made a small page that steps through the video (muted) in its own browser and saves still pictures. It looked at one picture every two seconds, then at about 130 pictures of the important places at full size, and wrote down what is there: which paving, which building on which side, what is written on the walls. Nothing was installed and the video was not sent anywhere.
+
+What a player sees now, in the order of the lap:
+
+1. The avenue: small cobbles, a band of smooth slabs, the residence with its balconies on the left, the Cascais hall with its tall white frame on the right. At the end the entrance: the white wall with the school's name, the glass front, the white steel roof edge and the blue banner.
+2. Through the doors into the atrium: a polished floor, the white letters N O V A, the Christmas tree, a gallery with red-brown wooden beams underneath, a ceiling with a long skylight, the wall with the strokes of colour.
+3. Out onto the terrace: the roof overhead, the cafe behind glass, the sea-green glass floor, the turquoise statue.
+4. Under the library and down the promenade on ochre concrete: the long building with the deep white roof edge and the coloured rooms on the right, the Westmont Hospitality Hall on the left.
+5. The terracotta stairs (driven as a ramp), the lower plaza, the white Grand Auditorium.
+6. West along the path: brown slats, the tall white wall, and on the left the mouth of the beach tunnel with "Sagres Beach Way" over it.
+7. The coast road: flagstones, the low stone wall, the road with its white lines, palms and the sea.
+8. Up the west street past the lawns, the Santander hall and the Cascais hall, round the flags, back into the avenue.
+
+| Where | What it is for |
+|---|---|
+| `shared/tracks/nova-lap.js` | The track for the driving rules: letters for wall, road and grass, the start, eight checkpoints |
+| `client/nova-lap-ground.js` | The ground as shapes: which paving, lawn or road lies where |
+| `client/nova-lap-buildings.js` | Every building as a box: where it stands, how tall, which picture on which side. Also the railings and letters |
+| `client/nova-lap-look.js` | Sky, horizon, the way round, lines on the roads, the tree, the statue, the flags |
+| `client/wall-art.js` | The 45 pictures that go on walls, each painted by code |
+| `client/ground-art.js` | The 16 kinds of ground, each a small repeating picture, and the shadows of buildings |
+| `client/scenery.js`, `client/scenery-paint.js` | The new drawing code: where each strip of wall lands on the screen, and painting its picture there |
+| `client/ground.js`, `client/draw.js`, `client/buildings.js`, `client/props.js`, `client/track-looks.js` | Changed, to use the above. Other tracks are drawn as before |
+| `client/track-tour.html`, `client/track-tour.js` | A page that flies the camera round a track, to look without racing |
+| `tests/nova-lap.test.js`, `tests/nova-lap-look.test.js`, `tests/scenery.test.js` | The new tests |
+
+**Why it was done this way**
+
+- **A new track beside the old one, not instead of it.** The campus loop is Rodrigo's, and many tests are written against it. Removing it is for the team to decide.
+- **Twice the scale** (3 metres a square instead of 6). Beside a kart, a 12-metre front now looks like a 12-metre front. A lap is about 730 metres.
+- **Pictures on walls** are what makes a building recognisable: a name, a banner, a row of coloured rooms. The old code could only paint every wall the same. The pictures are painted by our own code when the page opens, so there are still no image files for buildings.
+- **Boxes that start above the ground** give the atrium a ceiling, the gallery its wooden underside and the library its bridge, with one idea instead of three.
+- **The ground as shapes** lets a path run at a slant and lets each place have its own paving. The letters of the track are made from the same shapes and a test checks they agree, so the picture cannot lie about where a wall is.
+- **The coast road was straightened.** The real one runs at a slant to the buildings. Walls at a slant are bumpy to drive along, because the rules only know squares.
+
+**Decisions made by the agent, please confirm**
+
+They are listed in `PROJECT_BRIEF.md` under the tracks: keeping the campus loop for now, the scale, the straightened coast road, the names on the walls and our own words on the banner, the sunny afternoon, and the track tour page.
+
+**What was checked, and what was not**
+
+Checked:
+
+- The agent flew the camera round the whole lap and looked at each place, and at each hall, the cafe, the auditorium and the inside of the atrium from the side, comparing with the pictures from the video.
+- A race in the agent's browser: holding the gas from the grid drives through the doors and across the atrium.
+- How long one picture takes to draw, in the agent's browser: 7 to 12 thousandths of a second on the new track, against 5 to 15 on the campus loop. So it is not slower than what the team already has.
+- The automatic tests: see the numbers at the end of this entry.
+
+Not checked:
+
+- **How it feels to race it.** The agent's browser was not on screen, where nothing moves smoothly. Catarina or a teammate needs to drive three laps and say what is wrong.
+- Whether it is smooth on a slow laptop or a phone.
+- Online, with two laptops, and the live server (nothing is merged yet).
+- Heights and sizes are estimates from the video. The halls and lawns west of the main building were placed to fit, not measured.
+
+**What was done in git**
+
+- A branch `nova-track` was made from `main` as it was after pull request 26.
+- A helper agent wrote the tests in a separate folder, `.worktrees/nova-tests`, on the branch `nova-track-tests`. That branch was merged into `nova-track` and the folder removed.
+- Small commits, one per step, pushed to GitHub as a backup. Nothing was merged into `main`.
+
+**How to check it yourself**
+
+1. Run `npm start` and open http://localhost:3000/track-tour.html?track=nova-lap. The camera flies round the lap by itself. Space stops it, the arrow keys move it, V shows the map from above.
+2. Open the menu, Single race, choose "Nova lap", choose a character, and drive.
+3. Run `npm test`.
+
+**What comes next**
+
+- Catarina says what does not look like Nova yet. Each building's front is one small piece of `client/wall-art.js`, so one can be changed without touching the others.
+- The things left out on purpose: the trees and benches of the avenue, lamp posts, tables, plants in the atrium, cars on the roads.
+- The team decides whether the campus loop leaves the menu.
+
 ### 15 November 2026: no email after all, decisions for the week, and sound
 
 **Email: built, then decided against**

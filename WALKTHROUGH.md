@@ -53,7 +53,11 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 | The first campus track | `shared/tracks/campus-loop.js` | Yes: the campus loop, round the outside of the campus. A first version, to be improved |
 | How tall the campus buildings are | `shared/tracks/campus-loop-storeys.js` | Yes: storeys per square, for the picture only |
 | Buildings standing up behind the kart | `client/buildings.js`, painted by `client/draw.js` | Yes, on the campus loop |
-| The list of tracks | `shared/tracks/index.js` | Yes: the test oval and the campus loop |
+| The Nova lap, the track made from the video filmed on campus | `shared/tracks/nova-lap.js` | Yes, since 17 November. A first version of the base: the ground and the buildings, without benches, lamps and trees along the way |
+| Buildings with real fronts, roofs to drive under, railings | `client/scenery.js`, `client/scenery-paint.js`, `client/wall-art.js`, `client/nova-lap-buildings.js` | Yes, on the Nova lap |
+| Ground drawn as shapes, with its own pavings | `client/ground-art.js`, `client/nova-lap-ground.js` | Yes, on the Nova lap |
+| A page that flies the camera round a track | `client/track-tour.html` | Yes, for the team: `track-tour.html?track=nova-lap` |
+| The list of tracks | `shared/tracks/index.js` | Yes: the test oval, the campus loop and the Nova lap |
 | Reading the chosen track from a page's address | `client/track-choice.js` | Yes: `race.html?track=campus-loop` and `online.html?track=campus-loop` |
 | The drivers and their scores | `shared/characters.js` | One placeholder driver |
 | The kinds of ground | `shared/surfaces.js` | Road and grass |
@@ -366,6 +370,28 @@ The layout is the real one (see above). On 12 November the picture was brought c
 - **The painted tunnel to the beach** at the southern tip.
 
 What is still wrong or missing: every building looks the same (the real ones differ: the Auditorium is a windowless wedge, the entrance has a blank cream wall and white trusses), the storeys are a first guess, there are no stairs, ramps, pools or benches where the real ones are, and nobody has compared it with the place itself. Catarina has asked people to film the campus. Their videos are the next source.
+
+## What is the Nova lap, and how was it made from a video?
+
+The campus loop was made from a map and from what can be read online, and nobody recognised the campus in it. So on 17 November the team filmed the lap they wanted, nine minutes of walking: from the entrance avenue through the Hovione Atrium, onto the terrace, under the library, down the promenade and the wide stairs, past the tunnel to the beach, along the coast road, up the west street and back. The coding agent went through that film picture by picture and built a new track from it, the **Nova lap** (`shared/tracks/nova-lap.js`). The campus loop is still there, untouched.
+
+**Bigger.** One square is 3 by 3 metres, half the size of a square of the campus loop. Compared with a kart, everything is twice as big, so a tall building looks tall and a low one low. A lap is about 730 metres.
+
+**Not a survey.** The real coast road runs at a slant to the buildings. Here it runs straight along the bottom of the map, so that walls run along the squares. Paths were widened so karts can pass each other. The stairs are driven as a flat ramp, because the driving rules have no hills.
+
+**The ground is drawn as shapes, not square by square** (`client/nova-lap-ground.js`): a rectangle of cobbles here, a slanting strip of ochre concrete there. Each kind of ground is a small picture that repeats (`client/ground-art.js`). The letters of the track (wall, road, grass) are made from the same shapes, and a test checks that the two agree, square by square. So the picture cannot show road where the rules say wall.
+
+**The buildings are boxes with a picture on each side** (`client/nova-lap-buildings.js`). A box has a place on the map, a height in metres, and for each side the name of a picture. A box that starts above the ground is a roof or a bridge: karts drive under it and see its underside. That is how the atrium has a ceiling with a skylight and a gallery with wooden beams, and how the library bridges the way. The pictures are painted once by our own code when the page opens (`client/wall-art.js`): there are still no image files of buildings.
+
+**How a picture gets onto a wall** (`client/scenery.js`, `client/scenery-paint.js`). A canvas can only draw a picture as a slanted rectangle, not narrowing to one side. So every wall is cut into strips one square wide, and each strip is drawn as several thin upright slices, each a little shorter than the one before. Thin enough slices look like one wall running into the distance. The furthest things are painted first, as before.
+
+**The ground close to the kart is painted twice.** The whole track is one hidden picture, and on a track this large that picture is too coarse for the ground right in front of the kart. Because the ground is shapes, it can be painted again at any moment: a second, small picture holds only the ground round the kart, four times as sharp, and is painted again every time the kart has moved a little (`client/ground.js`).
+
+**No invisible walls.** A wall with no scenery of its own still gets the low bank of the other tracks. A test builds the track the way the page does and checks that no bank is needed anywhere: every wall beside the road has a building, a railing, a hedge or a low wall.
+
+**What is on the walls.** The names on the walls are the names on the real walls (Hovione Atrium, Westmont Hospitality Hall, Sagres Beach Way and so on), drawn with letters by our code. The school's name on the entrance is drawn with lines, not copied from a logo file. The banner on the entrance is our own ("We race the times"): the real one is an advertisement.
+
+**What is missing.** Benches, lamp posts, the trees of the avenue, tables, bikes, cars on the roads: the team asked for the base first. The stairs and slopes are flat. Heights are estimates from the film. The halls and lawns west of the main building were placed to fit, not measured. Nobody has yet raced it on a real screen and said how it feels.
 
 ## What happens when karts touch, and what do the banana peels do?
 

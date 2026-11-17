@@ -78,8 +78,10 @@ let moving = !new URLSearchParams(window.location.search).has("at"); // an addre
 let view = "chase";
 let lastTime = null;
 
+let fixed = null; // a spot chosen with lookFrom() below, shown instead of the tour until a key is pressed
+
 function show() {
-  const place = placeAt(distance);
+  const place = fixed ?? placeAt(distance);
   const kart = { ...place, vx: Math.cos(place.angle) * speed, vy: Math.sin(place.angle) * speed, id: 0 };
   draw(view, kart, { x: kart.x, y: kart.y }, 0, [], {});
   const size = track.tileSize;
@@ -97,6 +99,7 @@ function frame(now) {
 }
 
 window.addEventListener("keydown", (event) => {
+  fixed = null;
   if (event.key === " ") {
     moving = !moving;
   } else if (event.key === "ArrowRight") {
@@ -121,12 +124,15 @@ window.trackTour = {
   lapLength,
   goTo(newDistance) {
     distance = newDistance;
+    fixed = null;
     moving = false;
     show();
   },
-  lookFrom(x, y, angle) {
+  /** Stand anywhere on the track, in squares of the map, looking along "angle". */
+  lookFrom(column, row, angle) {
+    fixed = { x: column * track.tileSize, y: row * track.tileSize, angle };
     moving = false;
-    draw("chase", { x, y, angle, vx: 0, vy: 0, id: 0 }, { x, y }, 0, [], {});
+    show();
   },
 };
 

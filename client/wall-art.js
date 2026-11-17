@@ -15,6 +15,8 @@
 //   fits     true for a picture that is stretched to whatever is there
 //            (a white wall, a railing), instead of keeping its own height
 //   holes    true when parts of the picture are see-through (a railing)
+//   inside   true for a wall indoors: it is lit by the lamps of the hall, so
+//            it is not made darker on the sides the sun does not reach
 //   paint    paint(c, length, height): draws it. Inside, 1 is one metre, x
 //            runs along the wall from its left end, y runs DOWN from the top.
 //            "up(m)" below turns "m metres above the ground" into a y.
@@ -495,11 +497,15 @@ export const WALL_ART = {
     paint(c, length, height) {
       const up = (metres) => height - metres;
       whiteWall(c, 0, 0, length, height);
-      c.fillStyle = "#c9cdcc";
-      c.fillRect(1.2, up(12.1), length - 2.4, 12.1);
-      c.fillStyle = "#39444d";
-      c.fillRect(2, up(11.4), length - 4, 11.4);
-      glass(c, 3, up(7.4), length - 6, 6.6, 5, 2, { dark: "#22303c", light: "#3f5566" });
+      // Inside the frame: white walls in shade, lighter towards the open top.
+      const shade = c.createLinearGradient(0, up(12.1), 0, height);
+      shade.addColorStop(0, "#d3d7d7");
+      shade.addColorStop(1, "#a9b0b3");
+      c.fillStyle = shade;
+      c.fillRect(1.4, up(12.1), length - 2.8, 12.1);
+      c.fillStyle = "rgba(40, 50, 60, 0.28)"; // the far corner, darkest
+      c.fillRect(1.4, up(12.1), 3.2, 12.1);
+      glass(c, 4.6, up(7.6), length - 7.4, 7.0, 5, 2, { dark: "#2a3a47", light: "#587084" });
     },
   },
 
@@ -904,6 +910,7 @@ export const WALL_ART = {
   "atrium-west-in": {
     length: 48,
     height: 12.5,
+    inside: true, // lit by the lamps of the hall, not by the sun
     paint(c, length, height) {
       const up = (metres) => height - metres;
       const day = c.createLinearGradient(0, 0, 0, height);
@@ -925,6 +932,7 @@ export const WALL_ART = {
   "atrium-north-in": {
     length: 72,
     height: 12.5,
+    inside: true, // lit by the lamps of the hall, not by the sun
     paint(c, length, height) {
       const up = (metres) => height - metres;
       whiteWall(c, 0, 0, length, height, "#eeede8");
@@ -954,6 +962,7 @@ export const WALL_ART = {
   "atrium-east-in": {
     length: 54,
     height: 12.5,
+    inside: true, // lit by the lamps of the hall, not by the sun
     paint(c, length, height) {
       const up = (metres) => height - metres;
       whiteWall(c, 0, 0, length, height, "#eeede8");
@@ -990,6 +999,7 @@ export const WALL_ART = {
   "atrium-south-in": {
     length: 72,
     height: 12.5,
+    inside: true, // lit by the lamps of the hall, not by the sun
     paint(c, length, height) {
       const up = (metres) => height - metres;
       whiteWall(c, 0, 0, length, height, "#eeede8");
