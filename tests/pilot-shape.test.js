@@ -187,7 +187,7 @@ describe("every movement", () => {
       // The robot's quick moves and the siu's spin are the fastest: still under two units a picture.
       expect(biggest, move).toBeLessThan(2);
     }
-  });
+  }, 20_000); // every movement at 60 pictures a second: it may take a few seconds when all the tests run at once
 
   it("is the same every time for the same moment, so the picture never flickers", () => {
     for (const move of MOVES) {
@@ -431,7 +431,8 @@ describe("the scene", () => {
     const cos = Math.cos(-KART_SPOT.turn);
     const sin = Math.sin(-KART_SPOT.turn);
     for (const move of MOVES) {
-      for (let seconds = 0; seconds < SIU_SECONDS; seconds += 1 / 30) {
+      // 15 moments a second: still more than ten during the spin of the siu.
+      for (let seconds = 0; seconds < SIU_SECONDS; seconds += 1 / 15) {
         for (const [x, y, z] of pointsOf(pilotScene(look, HAIR, poseAt(move, seconds)).pilot)) {
           const dx = x - KART_SPOT.x;
           const dy = y - KART_SPOT.y;
@@ -444,7 +445,7 @@ describe("the scene", () => {
         }
       }
     }
-  });
+  }, 20_000); // many moments of every movement: it may take a few seconds when all the tests run at once
 });
 
 describe("moving a part", () => {

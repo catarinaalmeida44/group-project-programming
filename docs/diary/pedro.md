@@ -40,7 +40,7 @@ Pedro wanted the pilots to really be the people in the photos, the normal photo 
 - Decision made by the agent, please confirm: the big picture keeps the kart beside the pilot; the cards show the pilot alone.
 
 **What was checked, and what was not**
-- `npm test`: 1400 passed, 5 skipped.
+- `npm test`: 1400 passed, 5 skipped, twice in a row. The first full run had one failure: the test "never has the pilot inside the kart" ran out of time (5 seconds) while all the test files ran together. It now checks 15 moments a second instead of 30, still more than ten during the spin, and the two heavy tests may take up to 20 seconds. It still catches a pilot standing inside the kart.
 - Eight rules were broken on purpose, and each made a test fail:
   - the pilot standing in the kart
   - arms changing length
