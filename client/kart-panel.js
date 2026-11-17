@@ -2,9 +2,10 @@
 //
 // The player picks Single race or Online, then a track (track-panel.js),
 // and then this panel opens. It shows every character of shared/cast.js as
-// their pilot in their kart, with their real face on the pilot's head
-// (face-head.js). The chosen one is shown big, turning from side to side.
-// The button at the bottom starts the race on the track that was picked.
+// their pilot standing beside their kart, helmet in hand, with their real
+// face (pilot-shape.js). The chosen one is shown big, turning gently from
+// side to side. The button at the bottom starts the race on the track that
+// was picked.
 //
 // The faces are only shown here (and later on the podium). In the race
 // every pilot wears a helmet.
@@ -20,19 +21,20 @@
 
 import { CAST } from "../shared/cast.js";
 import { readCharacter, saveCharacter, faceOf, lookOfCharacter } from "./cast-choice.js";
-import { paintKart, viewerBehind } from "./kart-paint.js";
+import { paintPilotScene, viewerBehind } from "./kart-paint.js";
 import { makePart } from "./page-parts.js";
 
-// The cameras of the pictures: in front of the kart and a little above it,
-// far enough back that the big head fits in.
-const BIG_CAMERA = { kartScreenY: 205, kartScale: 7.2, horizonY: -60, depth: 900, viewAhead: 100 };
-const SMALL_CAMERA = { kartScreenY: 140, kartScale: 5.8, horizonY: -50, depth: 900, viewAhead: 100 };
+// The cameras of the pictures: in front of the pilot, a little above.
+const BIG_CAMERA = { kartScreenY: 206, kartScale: 7.4, horizonY: 30, depth: 900, viewAhead: 100 };
+const SMALL_CAMERA = { kartScreenY: 136, kartScale: 4.3, horizonY: 20, depth: 900, viewAhead: 100 };
+/** Moves the whole scene this many units to the left on the screen, so the kart is not cut off at the right. */
+const SCENE_SHIFT = 2.6;
 
-/** The kart faces us, turned a little to one side, so the face and the kart can both be seen. */
+/** The pilot faces us. */
 const FACING_US = Math.PI;
-const SMALL_TURN = 0.55; // radians: the small pictures stand turned this far
-const BIG_SWING = 0.7; //   radians: the big picture swings this far each way
-const SECONDS_PER_SWING = 5;
+const SMALL_TURN = 0.2; // radians: the small pictures stand turned this far
+const BIG_SWING = 0.35; //  radians: the big picture swings this far each way
+const SECONDS_PER_SWING = 6;
 
 /**
  * Connects the "Choose your character" panel.
@@ -118,7 +120,8 @@ export function connectCharacterChoice(page, storage) {
     context.setTransform(1, 0, 0, 1, 0, 0);
     context.clearRect(0, 0, canvas.width, canvas.height);
     const screen = { width: canvas.width, height: canvas.height };
-    paintKart(context, viewerBehind({ ahead: 0, sideways: 0 }, turn, turn, camera, screen), lookOfCharacter(id), 0, faces.get(id));
+    const viewer = viewerBehind({ ahead: 0, sideways: -SCENE_SHIFT }, turn, turn, camera, screen);
+    paintPilotScene(context, viewer, lookOfCharacter(id), faces.get(id));
   }
 
   panel.addEventListener("close", () => {

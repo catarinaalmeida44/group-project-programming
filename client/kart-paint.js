@@ -18,6 +18,7 @@
 
 import { kartParts, normalOf, shade } from "./kart-shape.js";
 import { chaseNumbers, eyeOf } from "./camera.js";
+import { pilotScene } from "./pilot-shape.js";
 
 // The sun shines from this direction on the map: from the left and above,
 // a little from the top of the map. (x to the right, y down the map, z up.)
@@ -67,6 +68,9 @@ function withNormal(face) {
 function middleOfPart(part) {
   if (part.ball) {
     return part.ball.middle;
+  }
+  if (part.head) {
+    return part.head.middle;
   }
   const points = part.faces.flatMap((face) => face.points);
   const middle = [0, 0, 0];
@@ -186,7 +190,52 @@ export function paintKart(context, viewer, look, steer = 0) {
   }
   const parts = partsFor(look, steer);
   paintShadow(context, viewer);
+  paintParts(context, viewer, parts, null);
+}
 
+/**
+ * Paints a character standing beside their kart, helmet in hand, with their
+ * face (pilot-shape.js). Only for choosing a character and the podium: the
+ * race paints karts with paintKart, where the pilot wears the helmet.
+ *   viewer  from viewerBehind()
+ *   look    the character's colours (kart-shape.js)
+ *   face    a picture of the face (an <img>). Until it has loaded, the head
+ *           is painted plain, in the colour of the rim
+ */
+export function paintPilotScene(context, viewer, look, face) {
+  if (viewer === null) {
+    return;
+  }
+  const scene = sceneFor(look);
+  for (const shadow of scene.shadows) {
+    paintShadowPatch(context, viewer, shadow);
+  }
+  paintParts(context, viewer, scene.parts, face);
+}
+
+/** The scene of a character, ready to paint. Reused when asked again. */
+const keptScenes = new Map();
+function sceneFor(look) {
+  const key = `${look.body}${look.trim}${look.suit}${look.helmet}${look.stripe}`;
+  let scene = keptScenes.get(key);
+  if (scene === undefined) {
+    const { parts, shadows } = pilotScene(look);
+    scene = {
+      shadows,
+      parts: parts.map((part) => ({
+        ...part,
+        middle: middleOfPart(part),
+        faces: part.faces?.map(withNormal),
+        decals: part.decals?.map(withNormal),
+      })),
+    };
+    keptScenes.set(key, scene);
+  }
+  return scene;
+}
+
+/** Paints a list of parts, furthest first. */
+function paintParts(context, viewer, parts, face) {
   // Furthest part first. The low parts (the floor) come before all others.
   const order = parts
     .map((part) => ({ part, far: distance(viewer.eye, part.middle) }))
@@ -197,6 +246,10 @@ export function paintKart(context, viewer, look, steer = 0) {
   for (const { part } of order) {
     if (part.ball) {
       paintHelmet(context, viewer, part.ball);
+      continue;
+    }
+    if (part.head) {
+      paintHead(context, viewer, part.head, face);
       continue;
     }
     // Faces of one solid piece do not cover each other once the ones facing
@@ -272,6 +325,60 @@ function paintShadow(context, viewer) {
   context.closePath();
   context.fillStyle = SHADOW;
   context.fill();
+}
+
+/** A patch of shadow on the ground: { x, y, along, across, turn } (pilot-shape.js). */
+function paintShadowPatch(context, viewer, { x, y, along, across, turn }) {
+  const cos = Math.cos(turn);
+  const sin = Math.sin(turn);
+  const pushX = -viewer.light[0] * 2.2;
+  const pushY = -viewer.light[1] * 2.2;
+  context.beginPath();
+  const corners = 18;
+  for (let i = 0; i < corners; i++) {
+    const angle = (i / corners) * Math.PI * 2;
+    const px = Math.cos(angle) * along;
+    const py = Math.sin(angle) * across;
+    const spot = viewer.place(x + pushX + px * cos - py * sin, y + pushY + px * sin + py * cos, 0);
+    if (spot === null) {
+      return;
+    }
+    if (i === 0) {
+      context.moveTo(spot.x, spot.y);
+    } else {
+      context.lineTo(spot.x, spot.y);
+    }
+  }
+  context.closePath();
+  context.fillStyle = SHADOW;
+  context.fill();
+}
+
+/**
+ * A head with a real face: a round picture of the face, always straight on
+ * and centred on the head, with a thin rim round it. The photo is not
+ * turned with the body, like a cut-out: the faces in client/faces are
+ * photos taken from the front, and a photo turned sideways looks wrong.
+ */
+function paintHead(context, viewer, head, face) {
+  const [mx, my, mz] = head.middle;
+  const middle = viewer.place(mx, my, mz);
+  if (middle === null) {
+    return;
+  }
+  const radius = head.radius * middle.scale;
+  context.beginPath();
+  context.arc(middle.x, middle.y, radius, 0, Math.PI * 2);
+  context.fillStyle = head.rim;
+  context.fill();
+  if (face !== null && face.complete && face.naturalWidth > 0) {
+    context.save();
+    context.beginPath();
+    context.arc(middle.x, middle.y, radius * 0.94, 0, Math.PI * 2);
+    context.clip(); // only the round part of the square photo
+    context.drawImage(face, middle.x - radius, middle.y - radius, radius * 2, radius * 2);
+    context.restore();
+  }
 }
 
 /**
