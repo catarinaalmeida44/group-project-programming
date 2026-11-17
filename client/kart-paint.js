@@ -18,7 +18,6 @@
 
 import { kartParts, normalOf, shade } from "./kart-shape.js";
 import { chaseNumbers, eyeOf } from "./camera.js";
-import { faceHeadBall, faceTowardsEye, faceIsSeen, faceSquare } from "./face-head.js";
 
 // The sun shines from this direction on the map: from the left and above,
 // a little from the top of the map. (x to the right, y down the map, z up.)
@@ -180,12 +179,8 @@ function lightFor(kartAngle) {
  *   viewer  from viewerBehind() or viewerAbove()
  *   look    the colours (kart-shape.js)
  *   steer   from -1 (left) to 1 (right)
- *   face    a loaded picture of a face (an <img>), or null. With a face the
- *           driver has that face on a big head instead of a helmet
- *           (face-head.js). Only for choosing a character and the podium:
- *           the race never passes one.
  */
-export function paintKart(context, viewer, look, steer = 0, face = null) {
+export function paintKart(context, viewer, look, steer = 0) {
   if (viewer === null) {
     return;
   }
@@ -201,11 +196,7 @@ export function paintKart(context, viewer, look, steer = 0, face = null) {
   context.lineWidth = viewer.line;
   for (const { part } of order) {
     if (part.ball) {
-      if (face !== null && face.complete && face.naturalWidth > 0) {
-        paintFaceHead(context, viewer, part.ball, face);
-      } else {
-        paintHelmet(context, viewer, part.ball);
-      }
+      paintHelmet(context, viewer, part.ball);
       continue;
     }
     // Faces of one solid piece do not cover each other once the ones facing
@@ -281,61 +272,6 @@ function paintShadow(context, viewer) {
   context.closePath();
   context.fillStyle = SHADOW;
   context.fill();
-}
-
-/**
- * A head with a real face (face-head.js): a big ball, with the photo on the
- * front of it. Seen from the side, the photo is squeezed and slides round
- * the ball. Seen from behind, the back of the head is the helmet colour.
- */
-function paintFaceHead(context, viewer, helmet, face) {
-  const head = faceHeadBall(helmet);
-  const [mx, my, mz] = head.middle;
-  const middle = viewer.place(mx, my, mz);
-  if (middle === null) {
-    return;
-  }
-  const radius = head.radius * middle.scale;
-
-  // The ball itself, shaded like the helmet.
-  const shine = context.createRadialGradient(
-    middle.x - radius * 0.35, middle.y - radius * 0.45, radius * 0.1,
-    middle.x, middle.y, radius,
-  );
-  shine.addColorStop(0, lit(head.colour, 1.25));
-  shine.addColorStop(1, lit(head.colour, 0.7));
-  context.beginPath();
-  context.arc(middle.x, middle.y, radius, 0, Math.PI * 2);
-  context.fillStyle = shine;
-  context.fill();
-
-  const towards = faceTowardsEye(head, viewer.eye);
-  if (!faceIsSeen(towards)) {
-    return; // the eye sees the back of the head
-  }
-  // The front of the ball, where the middle of the face is, lands here on the screen.
-  const front = viewer.place(mx + head.radius, my, mz);
-  if (front === null) {
-    return;
-  }
-  const square = faceSquare(face.naturalWidth);
-  context.save();
-  context.beginPath();
-  context.arc(middle.x, middle.y, radius * 0.97, 0, Math.PI * 2);
-  context.clip(); // nothing of the photo outside the head
-  context.beginPath();
-  context.ellipse(front.x, middle.y, radius * towards * 0.97, radius * 0.97, 0, 0, Math.PI * 2);
-  context.clip(); // the face, squeezed as it turns away
-  const width = radius * 2 * towards;
-  context.drawImage(face, square.x, square.y, square.size, square.size, front.x - width / 2, middle.y - radius, width, radius * 2);
-  context.restore();
-  // A thin rim in the helmet colour, so the head reads as a ball.
-  context.beginPath();
-  context.arc(middle.x, middle.y, radius, 0, Math.PI * 2);
-  context.lineWidth = Math.max(1, radius * 0.07);
-  context.strokeStyle = lit(head.colour, 0.85);
-  context.stroke();
-  context.lineWidth = viewer.line;
 }
 
 /**
