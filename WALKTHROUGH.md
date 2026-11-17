@@ -391,7 +391,11 @@ The campus loop was made from a map and from what can be read online, and nobody
 
 **What is on the walls.** The names on the walls are the names on the real walls (Hovione Atrium, Westmont Hospitality Hall, Sagres Beach Way and so on), drawn with letters by our code. The school's name on the entrance is drawn with lines, not copied from a logo file. The banner on the entrance is our own ("We race the times"): the real one is an advertisement.
 
-**What is missing.** Benches, lamp posts, the trees of the avenue, tables, bikes, cars on the roads: the team asked for the base first. The stairs and slopes are flat. Heights are estimates from the film. The halls and lawns west of the main building were placed to fit, not measured. Nobody has yet raced it on a real screen and said how it feels.
+**Things that stand on a square of their own.** The letters N O V A in the atrium, the tables, the Christmas tree, the statue, the trees and benches of the avenue are each one entry in a list (`NOVA_LAP_FURNITURE` in `client/nova-lap-buildings.js`). The same entry makes the square solid for the driving rules and stands the picture on it, so a kart can never drive through a table.
+
+**The cars on the roads are only a picture** (`client/traffic.js`). The coast road and the west street are outside the track: no kart can reach them. Cars follow lanes there at a steady speed, by each browser's own clock. The server knows nothing about them and they cannot change a race. A test checks that no lane crosses ground a kart can drive on.
+
+**What is missing.** Bikes, people, cars that matter to the race: nothing that moves is part of the rules yet. The stairs and slopes are flat. Heights are estimates from the film. The halls and lawns west of the main building were placed to fit, not measured. Nobody has yet raced it on a real screen and said how it feels.
 
 ## What happens when karts touch, and what do the banana peels do?
 

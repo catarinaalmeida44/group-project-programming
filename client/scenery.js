@@ -439,6 +439,7 @@ export function sceneryInView(scenery, kart, settings = CHASE, screen = SCREEN) 
     shapes.push({
       kind: "flat",
       under: flat.kind === "under",
+      detail: flat.detail, // a small part, such as a beam: painted without the thin line that closes gaps
       colour: flat.colour,
       points,
       ahead: corners.reduce((sum, corner) => sum + corner.ahead, 0) / corners.length,

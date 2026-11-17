@@ -9,7 +9,7 @@
 // (towards the sea), 3.14 west, 4.71 north.
 
 import { NOVA_LAP_GROUND } from "./nova-lap-ground.js";
-import { NOVA_LAP_BLOCKS, NOVA_LAP_FENCES, NOVA_LAP_FLAT_STYLES } from "./nova-lap-buildings.js";
+import { NOVA_LAP_BLOCKS, NOVA_LAP_FENCES, NOVA_LAP_FLAT_STYLES, NOVA_LAP_FURNITURE } from "./nova-lap-buildings.js";
 import { WALL_ART } from "./wall-art.js";
 
 /** One square of the map is 3 metres and 32 units, so this many units are one metre. */
@@ -112,14 +112,33 @@ export const NOVA_LAP_LOOK = {
     flatStyles: NOVA_LAP_FLAT_STYLES,
   },
   wallArt: WALL_ART,
+  // Cars on the two roads beside the track. They are only a picture: no
+  // kart can reach the roads, and nothing here changes a race. Each lane
+  // is a line of points (in squares of the map) that its cars follow at a
+  // steady speed, in units a second, starting again at the first point.
+  traffic: [
+    // Along the coast road towards Cascais, right at the roundabout, up the west street.
+    { points: [[90, 84.4], [8.6, 84.4], [7.4, 83.4], [6.6, 82.2], [6.6, 0]], speed: 215, cars: 7 },
+    // Down the west street, round the roundabout, along the coast road towards Lisbon.
+    { points: [[4.4, 0], [4.4, 82.8], [3.3, 84.8], [4.2, 87.4], [6.4, 87.7], [9, 86.6], [90, 86.6]], speed: 235, cars: 7 },
+  ],
 
   scatter: [],
   // Single things, each at [column, row]. None of them is on the road.
   props: [
-    // Inside the atrium.
-    { kind: "christmas-tree", column: 56, row: 6 },
-    // Beside the library: the turquoise statue on its block.
-    { kind: "statue", column: 64, row: 32 },
+    // The things that stand on a square of their own: the Christmas tree,
+    // tables and chairs, the statue, the trees and benches of the avenue.
+    ...NOVA_LAP_FURNITURE,
+    // Bushes on the bank beside the slanting path, behind its stone edge.
+    ...[0.4, 1.5, 2.6, 3.7, 4.8, 5.9, 7.0].map((along, i) => ({
+      kind: "shrub",
+      column: 49.66 - along + 0.1,
+      row: 74 + along + 0.1,
+      size: 1.25 + (i % 3) * 0.2,
+    })),
+    // Lamp posts between the pavements and the two roads.
+    ...[20, 26, 32, 38, 46, 54, 62, 70, 78, 86].map((column) => ({ kind: "lamp", column, row: 82, size: 2 })),
+    ...[14, 22, 30, 38, 46, 54, 62, 70].map((row) => ({ kind: "lamp", column: 8, row, size: 2 })),
     // Black signs, as on the campus.
     { kind: "totem", column: 53, row: 14.2, label: "Hovione Atrium" },
     { kind: "totem", column: 63.4, row: 74.4, label: "Beach tunnel" },

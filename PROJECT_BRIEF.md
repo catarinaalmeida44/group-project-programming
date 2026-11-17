@@ -126,6 +126,10 @@ What this means for you: prefer finished, reliable features over many half-finis
   - *A sunny afternoon, although the film was shot on a grey day.*
   - *A page for the team that flies the camera round a track: `track-tour.html?track=nova-lap`. It is not linked from the menu.*
 
+  *17 Nov 2026, evening, after Catarina drove it: the beach tunnel was rebuilt, the Moon Café got its sign and tables, the atrium got black letters in the middle and tables, the avenue its trees and benches, and cars now drive along the two roads beside the track (a picture only, see `WALKTHROUGH.md`). Decisions made by the agent, please confirm: tables, letters, trees and benches stand on squares that karts cannot cross; the crescent moon on the café is our own drawing.*
+
+  ***[OPEN]** How to make the second half of the lap more fun. Ideas from Catarina: people walking in and out of the buildings along the promenade who topple over, in a funny way, when a kart bumps them; obstacles such as a parked bike; a jump with a speed boost. These are new rules: they must run on the server too and need tests. Nothing of this is built. Boost pads were already [PROPOSED] in the list of surfaces above.*
+
 ### Driving physics
 
 - [DECIDED] Our own physics code. This is required, not just a preference: the server runs the races, and game libraries' physics only runs inside a browser.

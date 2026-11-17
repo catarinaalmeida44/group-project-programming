@@ -334,16 +334,31 @@ export const SURFACES = {
     },
   },
 
-  // The sunken way down to the beach tunnel: sand-coloured concrete.
+  // The sunken way down to the beach tunnel: sand-coloured concrete with
+  // grooves across it, the way a ramp is made rough so nobody slips.
   "ramp-sand": {
     size: 64,
     paint(c, size, random) {
-      c.fillStyle = "#b99a55";
+      c.fillStyle = "#c2a45c";
       c.fillRect(0, 0, size, size);
+      clouds(c, size, random, 6, "150, 118, 52", 0.25, 10, 26);
       specks(c, size, random, 150, 1.5);
-      c.fillStyle = "rgba(70, 50, 15, 0.3)";
+      c.fillStyle = "rgba(70, 50, 15, 0.22)";
+      for (let groove = 0; groove < size; groove += 8) {
+        c.fillRect(groove, 0, 0.9, size);
+      }
       c.fillRect(0, 0, size, 0.8);
-      c.fillRect(0, 0, 0.8, size);
+    },
+  },
+
+  // The floor inside the mouth of the tunnel: the same concrete, in the dark.
+  "tunnel-floor": {
+    size: 64,
+    paint(c, size, random) {
+      c.fillStyle = "#5b5140";
+      c.fillRect(0, 0, size, size);
+      clouds(c, size, random, 5, "150, 130, 90", 0.25, 8, 20);
+      specks(c, size, random, 100, 1.4);
     },
   },
 
@@ -362,6 +377,10 @@ export const SURFACES = {
 };
 
 const keptPictures = new Map();
+/** For each canvas that was painted on: its patterns, by the name of the kind of ground. */
+const keptPatterns = new WeakMap();
+/** The hidden canvases on which shadows are painted, by size, so that none is made twice. */
+const keptShadowCanvases = new Map();
 
 /**
  * The repeating picture of one kind of ground, "pixels" wide and tall. Each
@@ -408,7 +427,12 @@ function trace(c, shape, tile) {
  */
 export function paintGroundShapes(context, track, look, sharp, area = { x: 0, y: 0, width: track.width, height: track.height }) {
   const tile = track.tileSize;
-  const patterns = new Map();
+  // The patterns made for this canvas are kept, because the ground close to
+  // the kart is painted again several times a second (ground.js).
+  if (!keptPatterns.has(context)) {
+    keptPatterns.set(context, new Map());
+  }
+  const patterns = keptPatterns.get(context);
   const patternFor = (name) => {
     if (!patterns.has(name)) {
       const surface = SURFACES[name];
@@ -493,10 +517,18 @@ function paintBlockShadows(context, track, look, area) {
   }
   const tile = track.tileSize;
   const perMetre = look.scenery.unitsPerMetre;
-  const shadows = document.createElement("canvas");
-  shadows.width = Math.max(1, Math.round(area.width)); // one pixel per unit: the soft edge this gives suits a shadow
-  shadows.height = Math.max(1, Math.round(area.height));
+  const width = Math.max(1, Math.round(area.width)); // one pixel per unit: the soft edge this gives suits a shadow
+  const height = Math.max(1, Math.round(area.height));
+  let shadows = keptShadowCanvases.get(`${width} ${height}`);
+  if (shadows === undefined) {
+    shadows = document.createElement("canvas");
+    shadows.width = width;
+    shadows.height = height;
+    keptShadowCanvases.set(`${width} ${height}`, shadows);
+  }
   const c = shadows.getContext("2d");
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.clearRect(0, 0, width, height);
   c.translate(-area.x, -area.y);
   c.fillStyle = "#0a141e";
   for (const block of blocks) {

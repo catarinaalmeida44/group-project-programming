@@ -146,6 +146,81 @@ function chooser(seed) {
   };
 }
 
+/**
+ * A painting on a wall, as in the beach tunnel: waves of colour along the
+ * wall, big round and pointed shapes over them. "seed" picks which: the
+ * same number always gives the same painting.
+ */
+function mural(c, x, y, width, height, seed) {
+  const random = chooser(seed);
+  const colours = ["#f2c531", "#e2493a", "#3f8fd8", "#3fb58a", "#f08a3c", "#f4f2ec", "#8d5aa8"];
+  const pick = () => colours[Math.floor(random() * colours.length)];
+  c.save();
+  c.beginPath();
+  c.rect(x, y, width, height);
+  c.clip();
+  c.fillStyle = "#2a6f9e";
+  c.fillRect(x, y, width, height);
+  for (let band = 0; band < 3; band++) {
+    c.fillStyle = pick();
+    c.beginPath();
+    c.moveTo(x, y + height);
+    for (let step = 0; step <= width + 0.5; step += 0.5) {
+      const wave = Math.sin(step * (0.9 + band * 0.4) + band * 2) * height * 0.12;
+      c.lineTo(x + step, y + height * (0.35 + band * 0.22) + wave);
+    }
+    c.lineTo(x + width, y + height);
+    c.closePath();
+    c.fill();
+  }
+  for (let i = 0; i < width * 0.9; i++) {
+    c.fillStyle = pick();
+    const middleX = x + random() * width;
+    const middleY = y + random() * height;
+    const radius = height * (0.08 + random() * 0.17);
+    c.beginPath();
+    if (random() < 0.55) {
+      c.arc(middleX, middleY, radius, 0, Math.PI * 2);
+    } else {
+      c.moveTo(middleX, middleY - radius);
+      c.lineTo(middleX + radius, middleY + radius);
+      c.lineTo(middleX - radius, middleY + radius);
+      c.closePath();
+    }
+    c.fill();
+  }
+  c.restore();
+}
+
+/** A crescent moon, open to the right: the mark of the cafe. Our own drawing. */
+function crescent(c, x, y, radius, colour) {
+  c.fillStyle = colour;
+  c.beginPath();
+  c.arc(x, y, radius, Math.PI * 0.35, Math.PI * 1.65); // the outer edge, round the left
+  c.arc(x + radius * 0.5, y, radius * 0.892, Math.PI * 1.4836, Math.PI * 0.5164, true); // and back along the inner edge
+  c.closePath();
+  c.fill();
+}
+
+/** A way into a building: a white frame, two glass doors, and a thin roof over them. "x" is the left edge of the doors. */
+function entrance(c, x, height, wide = 4.2) {
+  const up = (metres) => height - metres;
+  c.fillStyle = "#f4f4f1";
+  c.fillRect(x - 0.3, up(3.4), wide + 0.6, 3.4);
+  c.fillStyle = "#1c252d";
+  c.fillRect(x, up(3.1), wide, 3.1);
+  c.fillStyle = "rgba(150, 185, 205, 0.5)";
+  c.fillRect(x + 0.12, up(2.9), wide / 2 - 0.2, 2.9);
+  c.fillRect(x + wide / 2 + 0.08, up(2.9), wide / 2 - 0.2, 2.9);
+  c.fillStyle = "#d9dcdc";
+  c.fillRect(x + wide / 2 - 0.22, up(1.5), 0.07, 0.7);
+  c.fillRect(x + wide / 2 + 0.15, up(1.5), 0.07, 0.7);
+  c.fillStyle = "#f4f4f1";
+  c.fillRect(x - 0.8, up(3.75), wide + 1.6, 0.3);
+  c.fillStyle = "rgba(0, 0, 0, 0.3)";
+  c.fillRect(x - 0.8, up(3.45), wide + 1.6, 0.1);
+}
+
 export const WALL_ART = {
   // ---- Plain things that fit whatever they are put on ----
 
@@ -546,6 +621,7 @@ export const WALL_ART = {
       whiteWall(c, 0, up(5.6), 9, 5.6, CREAM);
       lettering(c, "Fidelidade Seguros", 0.8, up(4.2), 0.3, "#f6f4ee");
       lettering(c, "Plaza", 0.8, up(3.6), 0.3, "#f6f4ee");
+      entrance(c, 20, height);
     },
   },
 
@@ -578,6 +654,8 @@ export const WALL_ART = {
       }
       c.fillRect(0, up(4.5), length, 0.22);
       c.fillRect(0, 0, length, 0.2);
+      entrance(c, 10.4, height);
+      entrance(c, 37.4, height);
     },
   },
 
@@ -871,36 +949,247 @@ export const WALL_ART = {
     },
   },
 
-  // ---- The way to the beach: the mouth of the tunnel under the coast road ----
-  "tunnel-portal": {
-    length: 12,
-    height: 3.2,
+  // ---- The way to the beach: the tunnel under the coast road ----
+  //
+  // The mouth is built from several boxes (nova-lap-buildings.js), so that
+  // it is really hollow. These are the pictures on them.
+
+  // The long concrete beam over the mouth, with the name of the way on it.
+  "tunnel-beam": {
+    length: 18,
+    height: 1.2,
+    fits: true,
+    paint(c, length, height) {
+      const concrete = c.createLinearGradient(0, 0, 0, height);
+      concrete.addColorStop(0, "#bdb9af");
+      concrete.addColorStop(1, "#a29e94");
+      c.fillStyle = concrete;
+      c.fillRect(0, 0, length, height);
+      c.fillStyle = "rgba(255, 255, 255, 0.28)"; // the light on its top edge
+      c.fillRect(0, 0, length, 0.07);
+      c.fillStyle = "rgba(40, 40, 38, 0.35)"; //    the shadow under it
+      c.fillRect(0, height - 0.1, length, 0.1);
+      c.fillStyle = "rgba(70, 68, 62, 0.25)"; //    the marks of the boards the concrete was poured in
+      for (let x = 1.5; x < length; x += 1.5) {
+        c.fillRect(x, 0, 0.03, height);
+      }
+      lettering(c, "Sagres Beach Way", 5.4, height * 0.72, 0.5, "#f6f4ee", { weight: 600 });
+      // A small sign with an arrow: this way to the beach.
+      c.fillStyle = "#f6f4ee";
+      c.fillRect(1.4, height * 0.3, 2.3, height * 0.42);
+      lettering(c, "BEACH", 1.55, height * 0.62, 0.2, "#2a6f9e", { weight: 700 });
+      c.fillStyle = "#2a6f9e";
+      c.beginPath();
+      c.moveTo(3.1, height * 0.4);
+      c.lineTo(3.5, height * 0.51);
+      c.lineTo(3.1, height * 0.62);
+      c.closePath();
+      c.fill();
+    },
+  },
+
+  // The walls inside the mouth, covered in paintings. Above the height of
+  // the ceiling they are plain concrete, which nobody sees.
+  "tunnel-mural": {
+    period: 9,
+    height: 3.9,
+    paint(c, length, height) {
+      c.fillStyle = "#8f8b82";
+      c.fillRect(0, 0, length, height);
+      mural(c, 0, 1.2, length, 2.7, 61);
+      c.fillStyle = "rgba(10, 14, 18, 0.22)"; // it is in the shade
+      c.fillRect(0, 1.2, length, 2.7);
+    },
+  },
+
+  // The far end of the hollow: painted walls left and right, and in the
+  // middle the tunnel itself, running away under the road to the daylight
+  // of the beach.
+  "tunnel-back": {
+    length: 18,
+    height: 2.7,
     paint(c, length, height) {
       const up = (metres) => height - metres;
-      c.fillStyle = "#15191d";
+      mural(c, 0, 0, length, height, 23);
+      c.fillStyle = "rgba(10, 14, 18, 0.32)";
       c.fillRect(0, 0, length, height);
-      // Murals on the walls inside: big bright shapes.
-      const shapes = [
-        [1.0, 1.1, 0.8, "#f2c531"],
-        [2.6, 0.9, 0.6, "#e2493a"],
-        [3.9, 1.3, 0.7, "#3f8fd8"],
-        [8.2, 1.0, 0.75, "#f2c531"],
-        [9.7, 1.3, 0.6, "#3fb58a"],
-        [10.9, 0.9, 0.55, "#e2493a"],
-      ];
-      for (const [x, y, radius, colour] of shapes) {
+      // The tunnel: its walls, floor and ceiling run towards one small bright opening.
+      const left = 6;
+      const right = 12;
+      const far = { left: 8.2, right: 9.8, top: up(1.75), bottom: up(0.25) };
+      const side = (colour, corners) => {
         c.fillStyle = colour;
         c.beginPath();
-        c.arc(x, up(y), radius, 0, Math.PI * 2);
+        corners.forEach(([x, y], i) => (i === 0 ? c.moveTo(x, y) : c.lineTo(x, y)));
+        c.closePath();
+        c.fill();
+      };
+      side("#1d2126", [[left, 0], [right, 0], [far.right, far.top], [far.left, far.top]]); //            ceiling
+      side("#4b4334", [[left, height], [right, height], [far.right, far.bottom], [far.left, far.bottom]]); // floor
+      side("#27506e", [[left, 0], [far.left, far.top], [far.left, far.bottom], [left, height]]); //        left wall
+      side("#2f5f52", [[right, 0], [far.right, far.top], [far.right, far.bottom], [right, height]]); //    right wall
+      // Paintings on those walls too, smaller the further in they are.
+      const marks = [
+        [6.5, 1.3, 0.42, "#f2c531"], [7.15, 1.0, 0.3, "#e2493a"], [7.7, 1.15, 0.2, "#f4f2ec"],
+        [11.5, 1.3, 0.42, "#f08a3c"], [10.85, 1.0, 0.3, "#3f8fd8"], [10.3, 1.15, 0.2, "#f2c531"],
+      ];
+      for (const [x, metres, radius, colour] of marks) {
+        c.fillStyle = colour;
+        c.beginPath();
+        c.ellipse(x, up(metres), radius * 0.6, radius, 0, 0, Math.PI * 2);
         c.fill();
       }
-      c.fillStyle = "rgba(10, 12, 14, 0.55)"; // deeper in, it is dark
-      c.fillRect(4.6, up(2.3), 2.8, 2.3);
-      c.fillStyle = "#a9a59b"; // the concrete beam over the mouth
-      c.fillRect(0, 0, length, 0.95);
-      c.fillStyle = "rgba(255, 255, 255, 0.2)";
-      c.fillRect(0, 0, length, 0.08);
-      lettering(c, "Sagres Beach Way", length / 2, up(2.47), 0.3, "#f4f2ec", { align: "center", weight: 600 });
+      // Lamps along the ceiling.
+      c.fillStyle = "#f6efcf";
+      for (const [x, y, wide] of [[8.55, 0.25, 0.9], [8.75, 0.52, 0.5], [8.88, 0.7, 0.26]]) {
+        c.fillRect(x, y, wide, 0.07);
+      }
+      // The far end: sky, sea and sand in the sun.
+      c.fillStyle = "#bfe3f5";
+      c.fillRect(far.left, far.top, far.right - far.left, far.bottom - far.top);
+      c.fillStyle = "#3f8fc0";
+      c.fillRect(far.left, far.top + 0.75, far.right - far.left, 0.25);
+      c.fillStyle = "#ead9a8";
+      c.fillRect(far.left, far.top + 1.0, far.right - far.left, far.bottom - far.top - 1.0);
+      const glow = c.createRadialGradient(9, up(1), 0.3, 9, up(1), 3.2);
+      glow.addColorStop(0, "rgba(255, 250, 225, 0.35)");
+      glow.addColorStop(1, "rgba(255, 250, 225, 0)");
+      c.fillStyle = glow;
+      c.fillRect(left, 0, right - left, height);
+    },
+  },
+
+  // Reeds growing on top of the tunnel. You can see between their tips.
+  reeds: {
+    period: 3,
+    height: 0.9,
+    fits: true,
+    holes: true,
+    paint(c, length, height) {
+      const random = chooser(88);
+      for (let i = 0; i < 150; i++) {
+        const x = random() * length;
+        const tall = height * (0.45 + random() * 0.55);
+        c.strokeStyle = ["#6f8a4a", "#8aa05a", "#5a7340", "#a3a868"][Math.floor(random() * 4)];
+        c.lineWidth = 0.035;
+        c.beginPath();
+        c.moveTo(x, height);
+        c.quadraticCurveTo(x + (random() - 0.5) * 0.2, height - tall * 0.6, x + (random() - 0.5) * 0.45, height - tall);
+        c.stroke();
+      }
+      c.fillStyle = "#5a7340";
+      c.fillRect(0, height * 0.82, length, height * 0.18);
+    },
+  },
+
+  // A low edge of pale stone along a path.
+  kerb: {
+    period: 3,
+    height: 0.35,
+    fits: true,
+    paint(c, length, height) {
+      c.fillStyle = "#d8cfb8";
+      c.fillRect(0, 0, length, height);
+      c.fillStyle = "rgba(255, 255, 255, 0.4)";
+      c.fillRect(0, 0, length, height * 0.25);
+      c.fillStyle = "rgba(90, 80, 60, 0.3)";
+      for (let x = 0; x < length; x += 1) {
+        c.fillRect(x, 0, 0.04, height);
+      }
+    },
+  },
+
+  // ---- The cafe on the terrace ----
+
+  // Its long glass front, from the atrium wall (left) southwards: a board
+  // with its name, the door, and the counter seen through the glass.
+  "cafe-front": {
+    length: 24,
+    height: 4.4,
+    paint(c, length, height) {
+      const up = (metres) => height - metres;
+      const warm = c.createLinearGradient(0, 0, 0, height);
+      warm.addColorStop(0, "#f3cf8f");
+      warm.addColorStop(0.6, "#dba862");
+      warm.addColorStop(1, "#8f6f4c");
+      c.fillStyle = warm;
+      c.fillRect(0, 0, length, height);
+      // Inside: hanging lamps, the counter with its machines, shelves behind it.
+      c.fillStyle = "#fff0c4";
+      for (let x = 8.6; x < length; x += 1.7) {
+        c.beginPath();
+        c.arc(x, up(3.0), 0.22, 0, Math.PI * 2);
+        c.fill();
+        c.fillRect(x - 0.012, up(3.9), 0.024, 0.9);
+      }
+      c.fillStyle = "#5b3d2a";
+      c.fillRect(9.5, up(1.15), 13.5, 1.15); //      the counter
+      c.fillStyle = "#7a5238";
+      c.fillRect(9.5, up(1.22), 13.5, 0.1);
+      c.fillStyle = "#3a3f44";
+      c.fillRect(11, up(1.75), 1.4, 0.55); //        the coffee machine
+      c.fillRect(15.2, up(1.6), 0.9, 0.4);
+      c.fillStyle = "rgba(70, 45, 30, 0.75)";
+      c.fillRect(10, up(2.75), 12.5, 0.06); //       two shelves, with cups and jars
+      c.fillRect(10, up(2.2), 12.5, 0.06);
+      const random = chooser(12);
+      for (let x = 10.2; x < 22.3; x += 0.42) {
+        c.fillStyle = ["#f4f2ec", "#e2493a", "#3f8fd8", "#f2c531", "#3fb58a"][Math.floor(random() * 5)];
+        c.fillRect(x, up(2.75 + 0.3), 0.22, 0.3);
+        c.fillRect(x + 0.08, up(2.2 + 0.24), 0.2, 0.24);
+      }
+      c.fillStyle = "rgba(200, 225, 235, 0.14)"; // the glass itself, and its frames
+      c.fillRect(0, 0, length, height);
+      c.fillStyle = "#e8eae9";
+      for (let x = 0; x <= length; x += 1.5) {
+        c.fillRect(x - 0.035, 0, 0.07, height);
+      }
+      // The door.
+      c.fillStyle = "#f4f4f1";
+      c.fillRect(5.0, up(3.0), 2.9, 3.0);
+      c.fillStyle = "rgba(60, 45, 35, 0.8)";
+      c.fillRect(5.2, up(2.8), 1.2, 2.8);
+      c.fillRect(6.5, up(2.8), 1.2, 2.8);
+      crescent(c, 5.8, up(1.7), 0.3, "#ffd23f");
+      crescent(c, 7.1, up(1.7), 0.3, "#ffd23f");
+      // The board with the name, at the height of the eyes.
+      c.fillStyle = "#1f2d4f";
+      c.fillRect(0.5, up(3.3), 4.0, 2.2);
+      crescent(c, 1.35, up(2.25), 0.55, "#ffd23f");
+      lettering(c, "MOON", 2.15, up(2.45), 0.42, "#ffffff", { weight: 800 });
+      lettering(c, "CAFÉ", 2.15, up(1.75), 0.42, "#ffd23f", { weight: 800 });
+      lettering(c, "coffee · toasties · pastel de nata", 0.75, up(1.3), 0.11, "#ffffff", { weight: 500 });
+      // The white edge of the roof.
+      c.fillStyle = WHITE;
+      c.fillRect(0, 0, length, 0.4);
+    },
+  },
+
+  // The sign that stands on the roof of the cafe.
+  "moon-sign": {
+    length: 15.6,
+    height: 1.8,
+    fits: true,
+    paint(c, length, height) {
+      c.fillStyle = "#1f2d4f";
+      c.fillRect(0, 0, length, height);
+      c.fillStyle = "#ffd23f";
+      c.fillRect(0, 0, length, 0.1);
+      c.fillRect(0, height - 0.1, length, 0.1);
+      crescent(c, 1.6, height / 2, 0.62, "#ffd23f");
+      lettering(c, "MOON CAFÉ", 2.9, height * 0.72, 0.9, "#ffffff", { weight: 800 });
+      // Three small stars after the name.
+      c.fillStyle = "#ffd23f";
+      for (const [x, y, size] of [[13.6, 0.55, 0.16], [14.3, 1.1, 0.11], [14.8, 0.5, 0.09]]) {
+        c.beginPath();
+        for (let point = 0; point < 8; point++) {
+          const radius = point % 2 === 0 ? size : size * 0.4;
+          const angle = (point / 8) * Math.PI * 2;
+          c.lineTo(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius);
+        }
+        c.closePath();
+        c.fill();
+      }
     },
   },
 
@@ -1041,7 +1330,7 @@ export const WALL_ART = {
     },
   },
 
-  // The white letters that stand on the floor of the atrium, one picture each.
+  // The black letters that stand in the middle of the atrium, one picture each.
   "letter-n": letter((c, size) => novaLetter(c, 0, size)),
   "letter-o": letter((c, size) => novaLetter(c, 1, size)),
   "letter-v": letter((c, size) => novaLetter(c, 2, size)),
@@ -1090,6 +1379,6 @@ function novaLetter(c, which, size) {
       c.fillRect(shiftX + size * 0.12, size - 0.14, size * 0.76, 0.14);
     }
   };
-  draw(0.07, "#b9bcbd");
-  draw(0, "#fbfbf9");
+  draw(0.07, "#5a6068");
+  draw(0, "#16181b");
 }

@@ -22,7 +22,7 @@ const PIXELS_PER_METRE = 32;
 /** How many smaller copies of each picture are kept. */
 const SMALLER_COPIES = 3;
 /** A strip is never cut into more slices than this. */
-const MOST_SLICES = 150;
+const MOST_SLICES = 110;
 /** How bright each side of a building is: the sun stands in the south-west. */
 export const LIGHT = { south: 1, west: 0.97, east: 0.86, north: 0.8, fence: 0.95 };
 
@@ -193,7 +193,7 @@ export function createSceneryPainter(art, scenery, haze) {
       const rows = picture.fits ? chosen.canvas.height : Math.min(chosen.canvas.height - fromTop, (highest - base) * pixels);
       const tallLeft = (highest - base) * left.scale;
       const tallRight = (highest - base) * right.scale;
-      const slices = Math.max(1, Math.min(MOST_SLICES, Math.ceil(width), Math.ceil(Math.max(Math.abs(tallRight - tallLeft) / 3, width / 48))));
+      const slices = Math.max(1, Math.min(MOST_SLICES, Math.ceil(width), Math.ceil(Math.max(Math.abs(tallRight - tallLeft) / 4, width / 48))));
       let from = left;
       let uFrom = uA;
       for (let i = 1; i <= slices; i++) {
@@ -249,7 +249,7 @@ export function createSceneryPainter(art, scenery, haze) {
     context.closePath();
     context.fillStyle = shape.colour;
     context.fill();
-    if (shape.ahead < 520) {
+    if (shape.ahead < 520 && shape.detail !== true) {
       context.strokeStyle = shape.colour; // a thin line in the same colour closes the gaps between squares
       context.lineWidth = 1;
       context.stroke();

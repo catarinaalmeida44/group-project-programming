@@ -49,7 +49,15 @@ export const PROP_HEIGHT = {
   statue: 40,
   "banner-flag": 86,
   olive: 36,
+  "table-set": 12,
+  planter: 15,
+  shrub: 13,
+  "avenue-tree": 44,
+  car: 20,
 };
+
+/** The colours a car on the road can have. */
+const CAR_COLOURS = { red: "#c8372f", blue: "#2f66b3", white: "#eef0f1", grey: "#7d858c", black: "#23272b", yellow: "#e9b92c" };
 
 /** An arrow board at a bend: a dark board on two legs with three chevrons that point the way. "way" is 1 for right, -1 for left. */
 function arrowBoard(context, way) {
@@ -255,6 +263,142 @@ const STANDING = {
     }
   },
 
+  // A round white table with three chairs, as in the atrium and outside the cafe.
+  "table-set"(context) {
+    shadow(context, 14);
+    const chair = (x, colour) => {
+      context.fillStyle = "#39434d"; // two thin legs
+      context.fillRect(x - 2.3, -4.6, 0.6, 4.6);
+      context.fillRect(x + 1.7, -4.6, 0.6, 4.6);
+      context.fillStyle = colour;
+      context.fillRect(x - 2.7, -5.7, 5.4, 1.2); //  the seat
+      context.fillRect(x - 2.7, -10.6, 5.4, 3.8); // the back
+    };
+    chair(0, "#27406b"); // the chair behind the table
+    context.fillStyle = "#aeb3b7"; // the table: one leg, a foot, a round top
+    context.fillRect(-0.6, -7.8, 1.2, 7.8);
+    context.fillRect(-3, -0.7, 6, 0.7);
+    ellipse(context, 0, -7.4, 7.4, 1.9, "#cfd2d3");
+    ellipse(context, 0, -8, 7.4, 1.9, "#f6f5f1");
+    ellipse(context, 2.4, -8.3, 1.1, 0.5, "#7a4a2c"); // a cup of coffee
+    chair(-10.5, "#e9b92c");
+    chair(10.5, "#27406b");
+  },
+
+  // A long dark box with plants in it, as in the atrium.
+  planter(context) {
+    shadow(context, 14);
+    blob(context, -7, -9.5, 4.6, "#2f7d3a");
+    blob(context, 0, -11, 5.2, "#37893f");
+    blob(context, 7, -9.5, 4.6, "#2a7135");
+    blob(context, -3.5, -12.5, 3.4, "#47994a");
+    blob(context, 4, -12.8, 3.2, "#47994a");
+    context.fillStyle = "#3d4247";
+    context.fillRect(-12, -7, 24, 7);
+    context.fillStyle = "#565c62";
+    context.fillRect(-12, -7, 24, 1.2);
+  },
+
+  // A low round bush with purple tips, like the lavender on the banks of the campus.
+  shrub(context) {
+    shadow(context, 12);
+    blob(context, -6, -4.5, 5.6, "#5d7a55");
+    blob(context, 5.5, -4.8, 6, "#688a60");
+    blob(context, 0, -7, 6.6, "#6f9166");
+    context.fillStyle = "#8f7ab8";
+    for (const [x, y] of [[-8, -9], [-4, -12.2], [0, -13.4], [4.5, -12], [8.5, -9.6], [-1.5, -10.5], [2.4, -9.4]]) {
+      context.fillRect(x, y, 0.9, 2.4);
+    }
+  },
+
+  // A young tree of the avenue in autumn: a thin trunk in a square of soil, few leaves, all red.
+  "avenue-tree"(context) {
+    context.fillStyle = "rgba(70, 55, 40, 0.5)"; // the soil it stands in
+    context.beginPath();
+    context.ellipse(0, 0, 9, 2.6, 0, 0, TURN);
+    context.fill();
+    context.strokeStyle = "#5b463a";
+    context.lineCap = "round";
+    context.lineWidth = 1.5;
+    context.beginPath();
+    context.moveTo(0, 0);
+    context.lineTo(0.4, -24);
+    context.stroke();
+    context.lineWidth = 0.8;
+    for (const [fromY, toX, toY] of [[-20, -8, -32], [-22, 8.5, -33], [-24, -3, -41], [-24, 4.5, -40], [-18, 6, -26], [-17, -6.5, -25]]) {
+      context.beginPath();
+      context.moveTo(0.3, fromY);
+      context.lineTo(toX, toY);
+      context.stroke();
+    }
+    for (const [x, y, radius, colour] of [
+      [-7, -31, 4.2, "#8a3b34"], [7.5, -32, 4.4, "#a4483c"], [-2.5, -39, 4.6, "#96413a"], [4.5, -38.5, 4, "#7c332f"],
+      [5.5, -26, 3.2, "#a4483c"], [-6, -25, 3, "#8a3b34"], [0.5, -33, 3.6, "#b3564a"],
+    ]) {
+      blob(context, x, y, radius, colour);
+    }
+  },
+
+  // A car on the road. It is a flat picture, so there are three of them:
+  // seen from behind, from the front, and from the side. The label says
+  // which, and the colour: for example "back red" or "left white".
+  car(context, seconds, label) {
+    const [view, colourName] = label.split(" ");
+    const body = CAR_COLOURS[colourName] ?? CAR_COLOURS.grey;
+    const glass = "#22313d";
+    if (view === "left" || view === "right") {
+      shadow(context, 27);
+      if (view === "left") {
+        context.scale(-1, 1); // drawn with its nose to the right, turned over for the other way
+      }
+      blob(context, -15, -3.4, 3.5, "#1b1e21");
+      blob(context, 15, -3.4, 3.5, "#1b1e21");
+      context.fillStyle = body;
+      context.beginPath();
+      [[-25, -4], [-25, -10.5], [-17, -12], [-10, -18], [8, -18], [15, -12], [24, -10.5], [25, -4]].forEach(([x, y], i) =>
+        i === 0 ? context.moveTo(x, y) : context.lineTo(x, y),
+      );
+      context.closePath();
+      context.fill();
+      context.fillStyle = glass;
+      context.beginPath();
+      [[-15.5, -12.2], [-9.4, -16.8], [-1.5, -16.8], [-1.5, -12.2]].forEach(([x, y], i) => (i === 0 ? context.moveTo(x, y) : context.lineTo(x, y)));
+      context.closePath();
+      context.fill();
+      context.beginPath();
+      [[0, -12.2], [0, -16.8], [7.4, -16.8], [12.8, -12.2]].forEach(([x, y], i) => (i === 0 ? context.moveTo(x, y) : context.lineTo(x, y)));
+      context.closePath();
+      context.fill();
+      context.fillStyle = "#f7e9a8";
+      context.fillRect(23, -9.6, 2, 2.2);
+      context.fillStyle = "#d8382f";
+      context.fillRect(-25, -9.8, 1.6, 2.4);
+      return;
+    }
+    shadow(context, 13);
+    context.fillStyle = "#1b1e21"; // the two wheels that show
+    context.fillRect(-10.5, -4.4, 4, 4.4);
+    context.fillRect(6.5, -4.4, 4, 4.4);
+    context.fillStyle = body;
+    context.fillRect(-11, -11.5, 22, 8.5);
+    context.beginPath();
+    [[-9.5, -11.5], [-7.5, -18], [7.5, -18], [9.5, -11.5]].forEach(([x, y], i) => (i === 0 ? context.moveTo(x, y) : context.lineTo(x, y)));
+    context.closePath();
+    context.fill();
+    context.fillStyle = glass;
+    context.beginPath();
+    [[-8, -12], [-6.5, -16.8], [6.5, -16.8], [8, -12]].forEach(([x, y], i) => (i === 0 ? context.moveTo(x, y) : context.lineTo(x, y)));
+    context.closePath();
+    context.fill();
+    context.fillStyle = view === "front" ? "#f7e9a8" : "#d8382f"; // headlights in front, red lights behind
+    context.fillRect(-10.4, -9.8, 3.6, 2.2);
+    context.fillRect(6.8, -9.8, 3.6, 2.2);
+    context.fillStyle = "#e9ecee"; // the number plate
+    context.fillRect(-3.2, -6.6, 6.4, 2);
+    context.fillStyle = "rgba(0, 0, 0, 0.25)";
+    context.fillRect(-11, -4.2, 22, 1.2);
+  },
+
   // An old olive tree: a thick twisted trunk and a low, round, grey-green crown.
   olive(context) {
     shadow(context, 14);
@@ -440,6 +584,10 @@ export function paintPropFromAbove(context, kind, x, y, size = 1) {
     palm: [15, "#2f8a45"],
     olive: [12, "#5f7d57"],
     "christmas-tree": [14, "#1f5a33"],
+    "avenue-tree": [8, "#96413a"],
+    shrub: [9, "#688a60"],
+    planter: [9, "#37893f"],
+    "table-set": [8, "#f6f5f1"],
   }[kind];
   if (crown !== undefined) {
     context.fillStyle = "rgba(8, 14, 22, 0.2)";

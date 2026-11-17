@@ -21,10 +21,11 @@
 //   4. smoke and dust
 //   5. the player's own kart, last, so that nothing ever hides it
 
-import { SCREEN, FOLLOW, CHASE, RACE, blendChase, chaseRow, chasePoint, eyeOf, seenFromKart, easeAngle } from "./camera.js";
+import { SCREEN, FOLLOW, CHASE, RACE, blendChase, chaseRow, chasePoint, eyeOf, seenFromKart, easeAngle, sideSeen } from "./camera.js";
 import { createBuildings, buildingsInView } from "./buildings.js";
 import { createScenery, sceneryInView, squaresWithScenery } from "./scenery.js";
 import { createSceneryPainter } from "./scenery-paint.js";
+import { trafficLanes, carsAt } from "./traffic.js";
 import { createGround } from "./ground.js";
 import { paintSky } from "./sky.js";
 import { paintProp, paintPropFromAbove, PROP_HEIGHT } from "./props.js";
@@ -111,6 +112,7 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
   });
   const ground = createGround(track, look, grid, buildings);
   const gantry = gantryOf(track);
+  const traffic = trafficLanes(track, look.traffic);
   const mini = paintMiniPicture(ground.picture, track);
   // Every checkpoint as a line across the road, one piece per square of the map.
   const checkpointLights = track.checkpoints.map((checkpoint, number) => checkpointPieces(track, number));
@@ -239,6 +241,11 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
     }
     for (const banana of bananas) {
       standing("banana", banana.x, banana.y, 1);
+    }
+    // Cars on the roads beside the track: each is a flat picture, chosen by
+    // which side of the car the camera sees (from behind, the front, a side).
+    for (const car of carsAt(traffic, seconds)) {
+      standing("car", car.x, car.y, 1, { label: `${sideSeen(spot.angle, car.angle)} ${car.colour}` });
     }
     for (const other of others) {
       const seen = seenFromKart(spot, other.x, other.y);
@@ -569,6 +576,19 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
     for (const prop of props) {
       paintPropFromAbove(context, prop.kind, prop.x, prop.y, prop.size);
     }
+    // The cars on the roads, each as a small rounded box pointing the way it drives.
+    for (const car of carsAt(traffic, seconds)) {
+      context.save();
+      context.translate(car.x, car.y);
+      context.rotate(car.angle);
+      context.fillStyle = CAR_COLOURS_ABOVE[car.colour];
+      context.beginPath();
+      context.roundRect(-24, -10, 48, 20, 5);
+      context.fill();
+      context.fillStyle = "rgba(20, 30, 40, 0.75)";
+      context.fillRect(-10, -8, 20, 16);
+      context.restore();
+    }
     context.restore();
   }
 
@@ -722,6 +742,8 @@ function gantryOf(track) {
     middle: point((first + last) / 2),
   };
 }
+
+const CAR_COLOURS_ABOVE = { red: "#c8372f", blue: "#2f66b3", white: "#eef0f1", grey: "#7d858c", black: "#23272b", yellow: "#e9b92c" };
 
 /** A small copy of the track picture for the corner of the screen, painted once. */
 function paintMiniPicture(picture, track) {

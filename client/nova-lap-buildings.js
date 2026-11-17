@@ -70,11 +70,14 @@ const TERRACE_AND_LIBRARY = [
   { name: "roof edge over the terrace", rect: [64, 24, 65.3, 33], base: 9, top: 12.5, soffit: "slats", faces: { east: "fascia", south: "fascia", west: "fascia" } },
   { name: "roof edge over the promenade", rect: [64, 41, 65.3, 62], base: 9, top: 12.5, soffit: "slats", faces: { east: "fascia", north: "fascia", south: "fascia", west: "fascia" } },
 
-  // The flat roof that covers the first metres of the terrace.
-  { name: "terrace roof", rect: [64, 21, 73, 24], base: 4.6, top: 5.6, soffit: "beige", faces: { south: WHITE, east: WHITE } },
+  // The roof over the first metres of the terrace: high up, as high as the
+  // gallery of the atrium, on two slim white posts.
+  { name: "terrace roof", rect: [64, 21, 73, 24], base: 8.6, top: 9.6, soffit: "terrace-soffit", faces: { south: WHITE, east: WHITE } },
+  { name: "terrace roof, post", rect: [64.1, 23.7, 64.25, 23.85], top: 8.6, roof: null, art: WHITE },
+  { name: "terrace roof, post", rect: [72.75, 23.7, 72.9, 23.85], top: 8.6, roof: null, art: WHITE },
 
-  // The cafe: a glass box under a flat white roof.
-  { name: "cafe", rect: [73, 21, 80, 29], top: 4.2, faces: { west: "cafe-glass", south: "cafe-glass", east: WHITE, north: WHITE } },
+  // The cafe: a glass box under a flat white roof, with its name on the roof.
+  { name: "cafe", rect: [73, 21, 80, 29], top: 4.4, faces: { west: "cafe-front", south: "cafe-glass", east: WHITE, north: WHITE } },
   { name: "cafe canopy", rect: [71.8, 24, 73, 29.6], base: 3.9, top: 4.2, soffit: "white", faces: { west: WHITE, south: WHITE } },
   { name: "terrace edge", rect: [73, 29, 73.4, 33], top: 0.9, roof: "concrete-top", faces: { west: "concrete", north: "concrete" } },
 
@@ -98,9 +101,17 @@ const PLAZA_AND_TUNNEL = [
 
   { name: "Grand Auditorium", rect: [73, 66, 89, 81], top: 14, topEnd: 9, slope: "y", faces: { west: "auditorium-west", north: WHITE, south: WHITE } },
 
-  // The mouth of the beach tunnel, at the end of its sunken way.
-  { name: "tunnel mouth", rect: [50, 74, 52, 78], top: 3.2, roof: "lawn", faces: { east: "tunnel-portal", north: "sand-wall", south: "sand-wall", west: "sand-wall" } },
-  { name: "hedge behind the tunnel way", rect: [52, 78, 64, 78.5], top: 1.4, roof: "hedge-top", faces: { north: "hedge", south: "hedge" } },
+  // The beach tunnel, south of the path. As on the campus, its mouth runs
+  // along the path: a long concrete beam with the name on it, and under it
+  // a real hollow two squares deep, with painted walls and the way to the
+  // beach at the back. East of the mouth the side wall of the ramp slopes away.
+  { name: "tunnel, wall west of the mouth", rect: [49.5, 77, 51, 80], top: 3.9, roof: "lawn", faces: { north: "sand-wall", east: "tunnel-mural", west: "sand-wall" } },
+  { name: "tunnel, wall east of the mouth", rect: [57, 77, 58.5, 80], top: 3.9, roof: "lawn", faces: { north: "sand-wall", west: "tunnel-mural", east: "sand-wall" } },
+  { name: "tunnel, beam with the name", rect: [51, 77, 57, 77.6], base: 2.7, top: 3.9, soffit: "tunnel-ceiling", roof: "lawn", faces: { north: "tunnel-beam" } },
+  { name: "tunnel, ceiling", rect: [51, 77.6, 57, 79.5], base: 2.7, top: 3.9, soffit: "tunnel-ceiling", roof: "lawn" },
+  { name: "tunnel, back wall", rect: [51, 79.5, 57, 80], top: 2.7, faces: { north: "tunnel-back" } },
+  { name: "tunnel, reeds on top", rect: [49.5, 77.1, 58.5, 77.4], base: 3.9, top: 4.8, soffit: null, roof: null, faces: { north: "reeds" } },
+  { name: "tunnel, sloping wall of the ramp", rect: [58.5, 77, 64, 77.5], top: 3.9, topEnd: 0.5, slope: "x", faces: { north: "sand-wall", south: "sand-wall" } },
 ];
 
 const HALLS = [
@@ -135,11 +146,12 @@ export const NOVA_LAP_BLOCKS = [...ENTRANCE_AND_ATRIUM, ...TERRACE_AND_LIBRARY, 
 // ---------------------------------------------------------------------------
 
 export const NOVA_LAP_FENCES = [
-  // The white letters on the floor of the atrium, read from the entrance.
-  { name: "letter N", from: [60.5, 4.6], to: [60.5, 5.17], top: 1.7, art: "letter-n", lean: [-1, 0] },
-  { name: "letter O", from: [60.5, 5.9], to: [60.5, 6.47], top: 1.7, art: "letter-o", lean: [-1, 0] },
-  { name: "letter V", from: [60.5, 7.2], to: [60.5, 7.77], top: 1.7, art: "letter-v", lean: [-1, 0] },
-  { name: "letter A", from: [60.5, 8.5], to: [60.5, 9.07], top: 1.7, art: "letter-a", lean: [-1, 0] },
+  // The big black letters in the middle of the atrium, read from the
+  // entrance. Each stands on a square of its own, which karts cannot cross.
+  { name: "letter N", from: [64.5, 9.1], to: [64.5, 9.9], top: 2.4, art: "letter-n", lean: [-1, 0] },
+  { name: "letter O", from: [64.5, 10.1], to: [64.5, 10.9], top: 2.4, art: "letter-o", lean: [-1, 0] },
+  { name: "letter V", from: [64.5, 11.1], to: [64.5, 11.9], top: 2.4, art: "letter-v", lean: [-1, 0] },
+  { name: "letter A", from: [64.5, 12.1], to: [64.5, 12.9], top: 2.4, art: "letter-a", lean: [-1, 0] },
   // The glass rails of the gallery.
   { name: "gallery rail, south", from: [72.5, 16.5], to: [54, 16.5], base: 5.5, top: 6.6, art: "glass-rail", lean: [0, 1] },
   { name: "gallery rail, east", from: [72.5, 6.5], to: [72.5, 16.5], base: 5.5, top: 6.6, art: "glass-rail", lean: [1, 0] },
@@ -147,12 +159,16 @@ export const NOVA_LAP_FENCES = [
   // Railings: beside the stairs, along the sunken way to the tunnel, round the lower plaza.
   { name: "rail on the terrace beside the stairs", from: [71, 63], to: [71, 69], base: 1.3, top: 2.4, art: "railing", lean: [1, 0] },
   { name: "rail on the terrace, south", from: [71, 69], to: [73, 69], base: 1.3, top: 2.4, art: "railing", lean: [0, -1] },
-  { name: "rail along the tunnel way", from: [52, 74], to: [64, 74], top: 1.1, art: "railing", lean: [0, 1] },
+  { name: "rail along the tunnel way", from: [50.5, 74], to: [64, 74], top: 1.1, art: "railing", lean: [0, 1] },
+  { name: "rail at the foot of the tunnel way", from: [50.5, 77], to: [50.5, 74], top: 1.1, art: "railing", lean: [1, 0] },
   { name: "rail at the head of the tunnel way", from: [64, 74], to: [64, 78], top: 1.1, art: "railing", lean: [-1, 0] },
   { name: "rail south of the plaza", from: [64, 78], to: [73, 78], top: 1.1, art: "railing", lean: [0, 1] },
   { name: "rail on the retaining wall", from: [40, 70], to: [50, 70], base: 5.5, top: 6.6, art: "railing", lean: [0, -1] },
-  // Shrubs along the slanting path down to the coast road.
-  { name: "shrubs beside the slanting path", from: [49.66, 74], to: [41.66, 82], top: 1.3, art: "hedge", lean: [1, 1] },
+  // A stone edge along the slanting path down to the coast road. The bushes
+  // behind it are single things (nova-lap-look.js), so they look round.
+  { name: "edge of the slanting path", from: [49.66, 74], to: [41.66, 82], top: 0.35, art: "kerb", lean: [1, 1] },
+  // The sign on the roof of the cafe, read from the terrace.
+  { name: "cafe sign", from: [73.05, 22.4], to: [73.05, 27.6], base: 4.4, top: 6.2, art: "moon-sign", lean: [1, 0] },
   // The low wall round the corner of the two roads.
   { name: "low wall round the corner", from: [9, 73.5], to: [17.5, 82], top: 0.6, art: "low-wall", lean: [-1, 1] },
 ];
@@ -170,6 +186,17 @@ export const NOVA_LAP_FLAT_STYLES = {
   plain: { colour: "#e9eae8" },
   white: { colour: "#f1f1ee" },
   beige: { colour: "#dccba9" },
+  // The underside of the roof over the terrace: pale panels with joints between them.
+  "terrace-soffit": {
+    colour: "#e4d8be",
+    parts: [
+      { rect: [0, 0, 1, 0.05], colour: "#c4b596" },
+      { rect: [0, 0, 0.05, 1], colour: "#c4b596" },
+      { rect: [0.44, 0.44, 0.56, 0.56], colour: "#fff6d8" }, // a lamp let into each panel
+    ],
+  },
+  // The ceiling of the beach tunnel: dark concrete with a strip of light.
+  "tunnel-ceiling": { colour: "#2b2f33", parts: [{ rect: [0.35, 0.4, 0.65, 0.6], colour: "#f2ecd0" }] },
   paving: { colour: "#cf9a48" },
   limestone: { colour: "#efe8d5" },
   "concrete-top": { colour: "#cfcdc6" },
@@ -206,12 +233,36 @@ export const NOVA_LAP_FLAT_STYLES = {
 // WHAT IS SOLID
 // ---------------------------------------------------------------------------
 
-/** Squares that are wall although no box stands on them: under the standing letters, the tree and the statue. */
-const MORE_SOLID = [
-  [60, 4, 61, 9], //   the letters N O V A
-  [56, 6, 57, 7], //   the Christmas tree
-  [64, 32, 65, 33], // the statue beside the library
+/**
+ * Single things that stand on a square of their own, which karts cannot
+ * cross: { kind, column, row }. nova-lap-look.js stands each one up as a
+ * picture (props.js), and the list below makes its square solid.
+ */
+export const NOVA_LAP_FURNITURE = [
+  // Inside the atrium: the Christmas tree, tables with chairs, plants in boxes.
+  { kind: "christmas-tree", column: 56, row: 6 },
+  { kind: "table-set", column: 59, row: 7 },
+  { kind: "table-set", column: 68, row: 6 },
+  { kind: "table-set", column: 71, row: 9 },
+  { kind: "table-set", column: 69, row: 12 },
+  { kind: "table-set", column: 73, row: 14 },
+  { kind: "table-set", column: 70, row: 16 },
+  { kind: "table-set", column: 57, row: 16 },
+  { kind: "table-set", column: 60, row: 18 },
+  { kind: "planter", column: 55, row: 8 },
+  { kind: "planter", column: 55, row: 15 },
+  // On the terrace: the tables of the cafe, and the turquoise statue beside the library.
+  { kind: "table-set", column: 72, row: 25 },
+  { kind: "table-set", column: 72, row: 27 },
+  { kind: "table-set", column: 71, row: 30 },
+  { kind: "statue", column: 64, row: 32 },
+  // Along the avenue, in the band of smooth slabs: young trees with red leaves, and stone benches.
+  ...[16, 22, 34, 40, 46].map((column) => ({ kind: "avenue-tree", column, row: 14 })),
+  ...[19, 37, 43].map((column) => ({ kind: "bench", column, row: 14 })),
 ];
+
+/** Squares that are wall although no box stands on them: under the four standing letters. */
+const MORE_SOLID = [[64, 9, 65, 13]];
 
 /**
  * Every rectangle that is wall whatever the ground under it says: each box
@@ -220,5 +271,6 @@ const MORE_SOLID = [
  */
 export const NOVA_LAP_SOLID = [
   ...NOVA_LAP_BLOCKS.filter((block) => (block.base ?? 0) === 0 && block.solid !== false).map((block) => block.rect),
+  ...NOVA_LAP_FURNITURE.map(({ column, row }) => [column, row, column + 1, row + 1]),
   ...MORE_SOLID,
 ];

@@ -28,7 +28,7 @@ const SMALLER_COPIES = 5;
  *   ahead            how far ahead of the kart its middle lies, in units
  *   paintAgainAfter  it is painted again when the kart has moved this far, in units
  */
-const CLOSE = { reach: 480, sharpness: 4, ahead: 150, paintAgainAfter: 56 };
+const CLOSE = { reach: 512, sharpness: 4, ahead: 160, paintAgainAfter: 84 };
 
 const KERB_WIDTH = 5; //   units
 const EDGE_LINE = 2; //    units: the white line where road meets grass

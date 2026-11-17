@@ -83,7 +83,8 @@ export const NOVA_LAP_GROUND = [
   { surface: "glass-floor", rect: [66, 26, 70, 31] }, //                the frosted glass floor on the terrace
   { surface: "glass-floor", rect: [65, 49, 68, 53] }, //                and two more along the promenade
   { surface: "glass-floor", rect: [65, 56, 68, 61] },
-  { surface: "ramp-sand", rule: "wall", rect: [52, 74, 63, 78] }, //    the sunken way down to the beach tunnel
+  { surface: "ramp-sand", rule: "wall", rect: [50.5, 74, 64, 77] }, //  the sunken way down to the beach tunnel
+  { surface: "tunnel-floor", rule: "wall", rect: [51, 77, 57, 79.5] }, // and the floor inside its mouth
 ];
 
 /**

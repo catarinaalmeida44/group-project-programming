@@ -4,6 +4,52 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 17 November 2026, evening: Catarina's first feedback on the Nova lap
+
+**What she said**
+
+She drove it full screen. "A great base to start off with." She likes the entrance, the atrium, the statue. What she asked for:
+
+- The NOVA letters more in the middle of the atrium, and black. Some tables and chairs, to show it is a sitting area.
+- Around the Moon Café it felt laggy and the ceiling was weird. The café should stand out more: tables, a logo.
+- The Sagres beach entrance was lazy and did not look like the real one.
+- After the tunnel, a block of grass that is "one sheet", not something with depth.
+- More details in parts of the map.
+- The second half of the lap is boring: one long straight. She wants ideas to make it fun (obstacles, a bike in the way, a jump with a speed boost). While the agent was working she added one more: people walking in and out of the buildings along the promenade, who fall over, in a funny way, when a kart bumps them.
+
+**What was done**
+
+| What | Where |
+|---|---|
+| The beach tunnel was rebuilt. Its mouth now runs along the path, as the real one does: a long concrete beam with "Sagres Beach Way", a real hollow two squares deep with painted walls, the tunnel running away to the daylight of the beach at the back, reeds on top, and the sloping side wall of the ramp | `client/nova-lap-buildings.js` (seven boxes), `client/wall-art.js` (`tunnel-beam`, `tunnel-mural`, `tunnel-back`, `reeds`) |
+| The Moon Café: a navy sign on its roof with a crescent moon, a board with its name beside the door, a counter and shelves seen through the glass, three tables outside | `client/wall-art.js` (`cafe-front`, `moon-sign`), `client/nova-lap-buildings.js` |
+| The ceiling by the café. The roof over the terrace was drawn 4.6 metres up, barely above the camera, so it filled the top of the screen like a lid. It is now 8.6 metres up, on two slim posts, with panels and lamps on its underside | `client/nova-lap-buildings.js` |
+| The atrium: big black letters N O V A in the middle of the hall (karts have to go round them), eight tables with chairs, two boxes of plants | `client/nova-lap-buildings.js` (`NOVA_LAP_FURNITURE`), `client/props.js` |
+| The sheet of grass became a low stone edge with round lavender bushes behind it | `client/nova-lap-look.js`, `client/props.js` (`shrub`) |
+| Details: the young red trees and stone benches of the avenue, lamp posts along both roads, doors on the long building beside the promenade | the same files |
+| Cars drive along the coast road and the west street, round the roundabout. They are only a picture: no kart can reach them and the server knows nothing of them | `client/traffic.js` (new), `client/draw.js`, `client/props.js` (`car`) |
+| Lighter to draw: walls are cut into fewer slices, the ground close to the kart is painted again less often and reuses its patterns | `client/scenery-paint.js`, `client/ground.js`, `client/ground-art.js` |
+
+**About the lag**
+
+The agent could not make it lag: at the café a picture took about 6 thousandths of a second in its browser, and a screen needs one every 16. So this was not measured as fixed. Three things were made lighter anyway (the last row above), and the low ceiling, which made that spot look wrong, is gone. If it still stutters there on Catarina's laptop, the next step is to measure on her laptop, not to guess.
+
+**Decisions made by the agent, please confirm**
+
+- Tables, plants, the letters, the trees and the benches each stand on a square that karts cannot cross. They are at the sides, away from the driving line, so they only matter when karts are side by side.
+- The café's name is on it because that is its name. The crescent moon is our own drawing, not the café's logo.
+- The fun ideas (people walking, speed boosts, obstacles on the straights) were NOT built. They are new rules of the game, they have to run on the server as well, and they need tests. The agent described them to Catarina and asked which to build.
+
+**What was checked, and what was not**
+
+- `npm test`: 1,605 tests pass, 5 skipped. 11 are new, for the cars (`tests/traffic.test.js`): every car stays on its lane, and no lane crosses ground a kart can drive on. The tests of the track itself ran again on the changed layout: letters match the shapes, no checkpoint can be driven round, the robot and the five computer karts finish three laps, no wall is invisible.
+- The agent looked at each changed place in its browser: the tunnel from two sides, the café, the terrace, the atrium, the bushes, the avenue, the cars.
+- Not checked: how it feels in motion, and whether the lag is gone on Catarina's laptop.
+
+**What comes next**
+
+Catarina chooses among the fun ideas. Then they are built as rules, with tests, for the single race and for online.
+
 ### 17 November 2026: the Nova lap, a new track made from the video filmed on campus
 
 **What was asked**
