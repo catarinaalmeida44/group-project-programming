@@ -22,14 +22,14 @@ Everything the browser shows and does: the web page, the drawing of the track an
 | `account-panel.js` | Puts accounts on the page: the account corner and the panels "Sign in", "Create account" and "Your account", where a player can change their password or delete the account |
 | `settings-panel.js` | The Settings panel on the page: the camera view a race starts in, and sound on or off |
 | `favicon.svg` | The small picture on the browser's tab: our own drawing of a finish flag |
-| `race.html` | The single race page: the title, the lap counter and clock, the canvas the track is drawn on, and the help text. The track is chosen in the address: `race.html?track=campus-loop` |
+| `race.html` | The single race page: the title, the lap counter, clock and place, the canvas the track is drawn on, and the help text. The track is chosen in the address: `race.html?track=campus-loop` |
 | `track-choice.js` | Reads the track from the address of the race page or the online page. Only a short name from `shared/tracks/index.js` is accepted; anything else gives the test oval |
 | `storage.js` | Keeps short texts in the browser's own storage (`localStorage`), carefully: a browser that refuses, or text that was changed, must not break the game |
 | `settings.js` | The player's settings. Today: the camera view a race starts in |
 | `records.js` | Your best race time and best lap on each track, kept in this browser only |
 | `online.html` | The online page. The same layout, plus three lines under the track: whether you are connected and how many players are there, who you are signed in as and whether your last result was saved, and the names of the signed-in players with you. The track, and with it the room, is chosen in the address: `online.html?track=campus-loop` |
 | `style.css` | How all three pages look: colours, sizes, spacing |
-| `main.js` | Runs the practice race. Many times a second it asks the keyboard which keys are held, asks the rules in `shared/` where the kart is now, moves the camera, and draws the picture |
+| `main.js` | Runs the practice race against the computer karts. Many times a second it asks the keyboard which keys are held, asks the rules in `shared/practice-race.js` where every kart is now, moves the camera, and draws the picture with the place ("3rd of 6") |
 | `online.js` | Runs the online page. It moves no kart itself: it tells the server which keys are held and draws what the server says is happening. It never sends a time: the server saves a signed-in player's result by itself and tells the page |
 | `page-life.js` | Closes the online page's connection when the player leaves the page, and reloads the page when Back brings it back from the browser's back/forward cache, so a player who left never stays on the track as a ghost kart |
 | `net.js` | Makes online karts move smoothly. The server sends updates 20 times a second, and this file works out where each kart is in between. It also checks every message from the server, and writes the lines about your account and about who is in the room |
