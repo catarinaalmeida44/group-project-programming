@@ -44,7 +44,7 @@ import { lookOf } from "./kart-shape.js";
 import { createRaceSound } from "./sound.js";
 import { tileKindAt } from "../shared/track.js";
 import { SPIN_STEPS } from "../shared/hazards.js";
-import { readRace, readEndsIn, timeLeftNotice, raceView, kartToWatch } from "./race-view.js";
+import { readRace, readEndsIn, timeLeftNotice, raceView, kartToWatch, keysWork } from "./race-view.js";
 import { followTarget, easeTowards, nextView } from "./camera.js";
 import { storageOf } from "./storage.js";
 import { readSettings } from "./settings.js";
@@ -291,18 +291,18 @@ function frame(now) {
   camera = camera === null ? target : easeTowards(camera, target, frameSeconds);
 
   // The kart leans while the player steers, but only when the keys do
-  // something: not when watching, during 3, 2, 1, after the finish, or
-  // while it spins after a banana.
-  const spinning = mine !== undefined && mine.spin > 0;
-  const keysWork = mine !== undefined && !mine.finished && race.phase !== "countdown" && !spinning;
-  const steer = keysWork ? (input.right ? 1 : 0) - (input.left ? 1 : 0) : 0;
+  // something: in a race after GO (see keysWork in race-view.js). Not while
+  // waiting for the host, during 3, 2, 1, when watching, after the finish,
+  // or while it spins after a banana.
+  const keysDoSomething = keysWork(race, mine);
+  const steer = keysDoSomething ? (input.right ? 1 : 0) - (input.left ? 1 : 0) : 0;
 
   // What the picture shows besides the karts: the camera coming down from
   // above the grid during 3, 2, 1, the start lights, the banana peels, and
   // the names of the signed-in players above their karts.
   const counting = race.phase === "countdown";
   // While our own kart is being driven, its next checkpoint is lit up in yellow.
-  const driving = keysWork && Number.isInteger(mine.passed) && !about.big;
+  const driving = keysDoSomething && Number.isInteger(mine.passed) && !about.big;
   const scene = {
     intro: introShare(counting, race.countdownSteps),
     lights: startLights(counting || race.phase === "racing", race.countdownSteps),
@@ -316,7 +316,7 @@ function frame(now) {
   // moment, brings up a warning. A missed checkpoint comes first: going
   // back for it means driving against the arrows.
   const missed = driving ? missedCheckpoint(mine, mine.passed) : null;
-  const goingWrongWay = keysWork && race.phase === "racing" && wrongWay(mine, now / 1000);
+  const goingWrongWay = keysDoSomething && wrongWay(mine, now / 1000);
   const warning = missed !== null ? missedCheckpointMessage(track, missed) : goingWrongWay ? WRONG_WAY_MESSAGE : null;
 
   // When the race is over for everyone, the results board comes up: the
@@ -350,7 +350,7 @@ function frame(now) {
     {
       label: about.big ? about.message : "",
       kart: shown,
-      gas: keysWork && input.gas,
+      gas: keysDoSomething && input.gas,
       onGrass: tileKindAt(track, shown.x, shown.y) === "grass",
       spinning: shown.spin > 0,
       lapsDone: shown.lapsDone,
