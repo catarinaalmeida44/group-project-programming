@@ -20,7 +20,7 @@ Everything the browser shows and does: the web page, the drawing of the track an
 | `account-view.js` | The words for the account corner, and what is wrong with a form before it is sent, by the rules in `shared/account-rules.js`. No browser needed, so it has tests |
 | `account.js` | Creating an account, signing in and out, deleting the account: checks the form, asks the server, remembers who is signed in. It never keeps a password |
 | `account-panel.js` | Puts accounts on the page: the account corner and the panels "Sign in", "Create account" and "Your account", where a player can change their password or delete the account |
-| `settings-panel.js` | The Settings panel on the page: the camera view a race starts in |
+| `settings-panel.js` | The Settings panel on the page: the camera view a race starts in, and sound on or off |
 | `favicon.svg` | The small picture on the browser's tab: our own drawing of a finish flag |
 | `race.html` | The single race page: the title, the lap counter and clock, the canvas the track is drawn on, and the help text. The track is chosen in the address: `race.html?track=campus-loop` |
 | `track-choice.js` | Reads the track from the address of the race page or the online page. Only a short name from `shared/tracks/index.js` is accepted; anything else gives the test oval |
@@ -36,7 +36,10 @@ Everything the browser shows and does: the web page, the drawing of the track an
 | `standings.js` | Who is in front in an online race ("2nd of 4"), and the lines of the results at its end: finishers in the order of arrival, then the karts that ran out of time by who was closest to the finish. For showing only: what is saved is the server's own count |
 | `results-board.js` | The results board that comes up over the track when an online race is over: the winner on top with their kart turning round, everyone else below. It only puts the lines of `standings.js` on the page and paints the karts. How it moves is in `style.css` |
 | `hud.js` | Fills in the lap counter, the clock, the lap times, the camera name and the message. Used by both pages |
-| `keyboard.js` | Turns the arrow keys into the four answers the rules expect: gas, brake, left, right. Also listens for R (start again), V (change the camera) and Enter (online: the host starts a race) |
+| `keyboard.js` | Turns the arrow keys into the four answers the rules expect: gas, brake, left, right. Also listens for R (start again), V (change the camera), M (sound off or on) and Enter (online: the host starts a race) |
+| `sound-cues.js` | Which sound belongs to which moment of a race, how the engine should sound right now, and the saved choice "sound on or off". Plain arithmetic, so it has tests |
+| `sound.js` | The sounds themselves, made by code with the browser's own sound workshop: the engine, the tyres, and the short sounds (beeps, bumps, jingles, the crowd). No sound files. Judged by ear |
+| `sound-test.html`, `sound-test.js` | The sound check page: every sound on a button and an engine to rev with a slider. For the team, to tune the sounds by ear. Not linked from the menu |
 | `camera.js` | The arithmetic of the camera: which part of the track is on the screen, and where things land on it. Two cameras for the view behind the kart: high above the grid, and low behind the kart with the horizon on the screen. No painting |
 | `draw.js` | Puts the picture together on the canvas, in one of the three views: the sky, the ground, everything that stands on it from the furthest to the nearest, smoke and dust, the player's own kart, and the small map in the corner |
 | `ground.js` | Paints the whole track once from straight above (road, grass, kerbs, roofs, shadows, the start line, the grid, arrows) and lays that picture flat for the race view, row by row, up to the horizon |

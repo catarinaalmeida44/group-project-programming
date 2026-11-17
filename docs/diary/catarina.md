@@ -4,6 +4,83 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 15 November 2026: no email after all, decisions for the week, and sound
+
+**Email: built, then decided against**
+
+On 13 November Catarina asked for a plan for email, so that a forgotten password can be reset, and then said "build it". It was built on 15 November on a branch of its own, `email-reset` (pull request 18). When it came to the one step only she can do, making an account at an email service with a sender address of ours, she did not want that, and asked whether accounts are safe without it. They are: email was only ever for getting back into an account, not for keeping it safe. She decided to **skip email**. Pull request 18 is to be closed without merging. The work stays on its branch.
+
+The agent's mistake here: the plan said "create one free account at an email service" and "confirm one sender address", but did not say plainly that this means an email address of ours that players see. That only came up when the work was done. A step that only the member can do has to be spelled out before building, not after.
+
+Also on 15 November: Catarina could not find the pull request for the race fixes. The agent can only give a link, and the link has to be clicked and "Create pull request" pressed. She did that, and Pedro approved and merged it the same afternoon (pull request 17). It then sat under "Closed", not "Open", which is why she could not see it. The new version went live.
+
+**Her decisions for the coming week** (also in `PROJECT_BRIEF.md`)
+
+- No email.
+- Characters and the race track are the big pieces. The team thinks about them as ideas first, before anything is built.
+- Checkpoints against short cuts: she does not like that the checkpoints forbid short cuts. To be discussed with the new map. Nothing changes until then.
+- The camera that goes through walls: after the map is final.
+- Not for now: a one-lap race for the demo, touch controls for phones.
+- Meanwhile: sound.
+
+**Sound: what was done**
+
+Every sound is made by our own code. There are no sound files.
+
+- **Engine and tyres**: a hum that goes higher with speed, a rumble on grass, a squeal when the kart slides or spins.
+- **Short sounds**: the countdown beeps and GO, a chime for a lap, a call for the last lap, a fanfare with a cheering crowd at the finish, the banana slip, bumps into karts and walls, and a buzz when a warning comes up.
+- **M** switches the sound off and on during a race. Settings in the menu has a box for it too. The choice is kept in the browser.
+- **A sound check page**, `sound-test.html`, with every sound on a button, for tuning by ear. It is not in the menu.
+
+Catarina listened on that page and asked for changes twice:
+
+1. "The engine is too loud at top speed, and the short sounds can be more over the top." The engine became about half as loud and duller. The short sounds got more notes, a thump underneath and a longer tail.
+2. "The banana, and the bumps, more over the top, and a YAYYY at the end of the finish", with a link to a well-known sound effect of children cheering. That recording is not ours to use. The agent tried to make children's voices by code. Her verdict: "that yay sounds demonic". The voices were taken out. The finish now ends with a crowd made of hiss, whistles and clapping. For a real "yay" the team would have to record their own voices.
+
+| Where | What it is for |
+|---|---|
+| `client/sound-cues.js` (new) | Decides which sound is due when, and how the engine should sound. Has tests |
+| `client/sound.js` (new) | Makes the sounds. The numbers to tune are at the top |
+| `client/sound-test.html`, `client/sound-test.js` (new) | The sound check page |
+| `client/main.js`, `client/online.js` | Changed: hand the facts of every picture to the sound |
+| `client/keyboard.js` | Changed: the M key |
+| `client/settings-panel.js`, `client/index.html` | Changed: the box "Sound in races" in Settings (it was there before, greyed out, as "coming later") |
+| `client/race.html`, `client/online.html`, `client/style.css` | Changed: the line about M, and the look of the sound check page |
+| `tests/sound-cues.test.js` (new) | 34 tests |
+
+No older test was changed. One page test (`menu-page.test.js`, "gives every box of a form a label of its own") failed on the first version of the new box in Settings. The page was fixed, not the test.
+
+**Decisions made by the agent, please confirm**
+
+- Sound is on for a player who never chose.
+- You hear your own kart only, not the engines of others.
+- A page that is not in front falls silent.
+- A hard bump into a kart gets a double honk on top. If that gets annoying in a full race, it is one line to take out.
+
+**What was checked**
+
+- `npm test`: 1,309 tests pass, 5 are skipped. Before the sound there were 1,275.
+- The deciding code was broken on purpose in 19 ways. Every one made a test fail.
+- Catarina listened to every sound on the sound check page, twice, and said "Good, finish it" after the second round.
+- The agent cannot hear. It played every sound into a silent recorder inside the browser and measured: none is silent, none has broken numbers, an unknown name plays nothing, mute is silent, and every sound at once on top of the engine at full speed stays at 0.92 of the point where loudspeakers crackle.
+- In the real race page, with the loudspeakers switched away: the sound started at the first key press, M switched it off and on and the choice was saved, and driving into a wall caused no error.
+
+**What was NOT checked**
+
+- Nobody has heard the sound in a real race over three laps, or online with two laptops. Checks 66 to 75 in `docs/two-laptop-checklist.md` are for that.
+- Only one browser. Not Firefox, Safari or a phone.
+- The email work is not in this branch and was not merged anywhere.
+
+**How to check it yourself**
+
+1. `npm start`, open http://localhost:3000/sound-test.html and click the buttons.
+2. Open a Single race, press an arrow key, and drive. Press M to switch the sound.
+
+**Git steps, done by the agent at Catarina's request**
+
+- Made the branch `email-reset` on top of `race-fixes`, five commits, pushed. Catarina opened pull request 18 from it, to be closed without merging.
+- Made the branch `sound` from the new `main`. Four commits: the sound, the second round, the tests, the notes. Pushed. The pull request is for Catarina to create and a teammate to approve.
+
 ### 13 November 2026, evening: two minutes, a results board, changing your password
 
 **What Catarina asked for, after reading the report of the day**

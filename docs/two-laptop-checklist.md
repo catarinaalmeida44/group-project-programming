@@ -121,6 +121,25 @@ Use the campus loop for these: in the menu, choose Online and the Campus loop on
 | 64 | A: reload the menu on the phone | The phone is signed out | |
 | 65 | A: sign out on the laptop and sign in again, first with the old password, then with the new one | The old one is refused, the new one works | |
 
+## Sound (added 15 November 2026)
+
+Turn the loudspeakers on. One laptop is enough for checks 66 to 72.
+
+| # | What to do | What should happen | OK? |
+|---|---|---|---|
+| 66 | Open a Single race and wait without touching a key | Silence. (A browser only lets a page make sound after a key press) | |
+| 67 | Press an arrow key | A beep with a thump for 3, 2 and 1, and a big chord at GO. The engine hums | |
+| 68 | Drive off and reach top speed, then let go of the gas | The engine sings higher as you speed up and stays in the background. It is a little fuller while the gas is held | |
+| 69 | Drive onto the grass, then steer hard at speed | A low rumble on the grass. The tyres squeal when the kart slides | |
+| 70 | Touch a wall gently, then drive into one at full speed | A soft thud, then a boom with a crash and bits tinkling down. Not twenty times while you grind along the wall | |
+| 71 | Drive over a banana | A whistle sliding down and a whirling sound for as long as the kart spins, then "boing" | |
+| 72 | Finish a lap, start the last lap, and finish the race | A chime for the lap, a trumpet call for the last lap, and at the finish a fanfare with a crowd cheering | |
+| 73 | Press M, drive, press M again | "it is off" under the track and silence at once, then "on" and the sound again. Open the menu, Settings: the box "Sound in races" says the same | |
+| 74 | Switch to another tab during a race, and come back | Silence while the page is not in front, sound again when you come back | |
+| 75 | Online, with two laptops: B drives into the back of A | Both hear a knock with a clang, each on their own laptop. Write down if one of them hears nothing | |
+
+Write down as well: is anything too loud, too long, or annoying after three laps? Does the engine fit the speed?
+
 Write down as well:
 
 - Does the race view run smoothly on each laptop? "Smooth", "a little jerky" or "jerky", and which laptop.

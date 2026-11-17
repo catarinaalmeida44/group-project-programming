@@ -21,6 +21,7 @@ The game is online at https://novasbe-kart.onrender.com
 | Accounts: sign up, sign in, sign out, change your password, delete your account | Works since 12 November (changing the password since 13 November). A user name and a password, no email yet, so a forgotten password cannot be reset |
 | The shared leaderboard | Works since 12 November. The server saves the time when a signed-in player finishes an online race |
 | Online races are driven to the end: no restart in the middle, a time limit, your place and a results list | Works since 13 November. Tried in the tests and in one browser, not yet by people |
+| Sound: engine, bumps, the countdown, lap and finish | Works since 15 November, made by our own code with no sound files. M switches it off and on. Catarina tuned it by ear on the page `/sound-test.html` |
 | A yellow light on the next checkpoint, and a warning when one was missed | Works since 13 November. This is why a lap sometimes did not count on the campus loop: see `WALKTHROUGH.md`, "How does a player know which way to go?" |
 | Automatic tests | More than 1,200. GitHub runs them on every pull request |
 | The server on the internet | Works. It updates itself a few minutes after every merge into `main` |
@@ -122,6 +123,7 @@ Ask the owner before changing a file they look after. That is the main way we av
 - **Results are only saved for signed-in players, in online races that began with the countdown.** A single race in the browser never reaches the shared leaderboard, and neither does driving around online before the host presses Enter.
 - **The free server sleeps.** After 15 minutes without visitors it takes about a minute to wake up. Open the link a few minutes before you show it to anyone.
 - **Right after installing Node.js, `npm` may be "not found".** Close and reopen the app or terminal you are using.
+- **The game is silent until your first key press.** A browser only lets a page make sound after you pressed a key or clicked. That is correct, not a mistake. To change how a sound sounds, change the numbers at the top of `client/sound.js` and listen on http://localhost:3000/sound-test.html, which has every sound on a button. A coding agent cannot hear: it can check that a sound is not silent and does not crackle, and nothing more.
 - **An agent's own browser can be slow.** The built-in browser of the Claude app redraws about once a second when it is not on screen, so the game looks jerky there. Judge how the game feels in a normal browser.
 - **Online, your own kart reacts a moment late.** That is known and written down. It is not a mistake in your code.
 - **Everything in the race is drawn by our own code, with no image files.** A kart is a small 3D shape (`client/kart-shape.js`), a tree is a few circles (`client/props.js`), and how a track looks is in `client/track-looks.js`. To change how something looks, change it there. None of it changes how a kart drives: that is in `shared/`.

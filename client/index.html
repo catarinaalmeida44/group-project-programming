@@ -456,10 +456,13 @@
 
         <fieldset>
           <legend>Sound</legend>
-          <label class="later">
-            <input type="checkbox" disabled> Sound on
-            <span>(coming later: the game has no sound yet)</span>
-          </label>
+          <!-- settings-panel.js ticks the box from what is saved, and saves a change. -->
+          <div class="field field-check">
+            <input type="checkbox" id="sound-on">
+            <label for="sound-on">Sound in races</label>
+          </div>
+          <p class="note">Engine, bumps and the countdown. During a race, <kbd>M</kbd> switches it too.</p>
+          <p id="sound-status" class="note" role="status"></p>
         </fieldset>
 
         <h3>Controls</h3>
