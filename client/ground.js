@@ -13,6 +13,7 @@
 // coloured comes from the track's "look" (track-looks.js).
 
 import { chaseNumbers } from "./camera.js";
+import { paintGroundShapes } from "./ground-art.js";
 
 /** The hidden picture is never larger than this many pixels along a side. */
 const LARGEST_PICTURE = 4096;
@@ -20,6 +21,14 @@ const LARGEST_PICTURE = 4096;
 const BEST_SHARPNESS = 3;
 /** How many smaller copies of the picture are kept, each half the size of the one before. */
 const SMALLER_COPIES = 5;
+/**
+ * The sharper picture of the ground close to the kart (see paintClose):
+ *   reach            how many units of track it covers, each way
+ *   sharpness        pixels per unit of track
+ *   ahead            how far ahead of the kart its middle lies, in units
+ *   paintAgainAfter  it is painted again when the kart has moved this far, in units
+ */
+const CLOSE = { reach: 480, sharpness: 4, ahead: 150, paintAgainAfter: 56 };
 
 const KERB_WIDTH = 5; //   units
 const EDGE_LINE = 2; //    units: the white line where road meets grass
@@ -44,10 +53,16 @@ export function createGround(track, look, grid, buildings = null) {
   const context = picture.getContext("2d");
   context.scale(picture.width / track.width, picture.height / track.height); // from here on, draw in units of track
 
-  paintTiles(context, track, look);
-  paintShadows(context, track, buildings);
-  paintRoofs(context, track, look, buildings);
-  paintEdges(context, track, look);
+  if (Array.isArray(look.ground)) {
+    // A track whose ground is drawn as shapes: cobbles here, lawn there (ground-art.js).
+    paintGroundShapes(context, track, look, picture.width / track.width);
+    paintRoofs(context, track, look, buildings);
+  } else {
+    paintTiles(context, track, look);
+    paintShadows(context, track, buildings);
+    paintRoofs(context, track, look, buildings);
+    paintEdges(context, track, look);
+  }
   paintArrows(context, track, look);
   paintStartLine(context, track);
   paintGrid(context, grid);
@@ -73,6 +88,40 @@ export function createGround(track, look, grid, buildings = null) {
   let patterns = null; // made the first time they are needed, for the canvas that asks
   let patternsFor = null;
   const matrix = new DOMMatrix();
+
+  // THE GROUND CLOSE TO THE KART, PAINTED SHARPER
+  // A large track cannot have a hidden picture sharp enough for the ground
+  // right in front of the kart: the picture would need too much memory. A
+  // track whose ground is drawn as shapes can be painted again at any
+  // moment, so for such a track a second, small picture is kept: only the
+  // ground round the kart, four times as sharp. It is painted again every
+  // time the kart has driven a little further.
+  const close = Array.isArray(look.ground) && sharpness < CLOSE.sharpness ? document.createElement("canvas") : null;
+  let closeAt = null; //      { x, y }: the corner of the track that the close picture starts at, in units
+  let closeMiddle = null; //  where its middle was aimed when it was painted
+  let closePattern = null;
+  if (close !== null) {
+    close.width = Math.round(CLOSE.reach * CLOSE.sharpness);
+    close.height = close.width;
+  }
+
+  function paintClose(context, spot) {
+    // Aim the picture a little ahead of the kart: that is where the camera looks.
+    const middle = { x: spot.x + Math.cos(spot.angle) * CLOSE.ahead, y: spot.y + Math.sin(spot.angle) * CLOSE.ahead };
+    if (closeMiddle !== null && Math.hypot(middle.x - closeMiddle.x, middle.y - closeMiddle.y) < CLOSE.paintAgainAfter) {
+      return;
+    }
+    closeMiddle = middle;
+    closeAt = { x: Math.round(middle.x - CLOSE.reach / 2), y: Math.round(middle.y - CLOSE.reach / 2) };
+    const closeContext = close.getContext("2d");
+    closeContext.setTransform(CLOSE.sharpness, 0, 0, CLOSE.sharpness, -closeAt.x * CLOSE.sharpness, -closeAt.y * CLOSE.sharpness);
+    paintGroundShapes(closeContext, track, look, CLOSE.sharpness, { x: closeAt.x, y: closeAt.y, width: CLOSE.reach, height: CLOSE.reach });
+    paintRoofs(closeContext, track, look, buildings);
+    paintArrows(closeContext, track, look);
+    paintStartLine(closeContext, track);
+    paintGrid(closeContext, grid);
+    closePattern = context.createPattern(close, "no-repeat");
+  }
 
   /**
    * Paints the ground of the race view: everything below the horizon.
@@ -106,6 +155,9 @@ export function createGround(track, look, grid, buildings = null) {
     const alongKart = spot.x * cos + spot.y * sin;
     const acrossKart = spot.x * sin - spot.y * cos;
     context.imageSmoothingEnabled = true;
+    if (close !== null) {
+      paintClose(context, spot);
+    }
 
     for (let y = firstRow; y < screen.height; y++) {
       // How large the ground is drawn on this row, sideways and along the road.
@@ -137,6 +189,22 @@ export function createGround(track, look, grid, buildings = null) {
       patterns[copy].setTransform(matrix);
       context.fillStyle = patterns[copy];
       context.fillRect(0, y, screen.width, 1);
+
+      // Where the ground is drawn larger than the big picture is sharp, lay
+      // the close picture over it. Outside its square it paints nothing,
+      // so the big picture shows there.
+      if (closePattern !== null && scale > perUnit[0].x * 1.15) {
+        const sharp = CLOSE.sharpness;
+        matrix.a = (-scale * sin) / sharp;
+        matrix.c = (scale * cos) / sharp;
+        matrix.e = screen.width / 2 + scale * (acrossKart - closeAt.x * sin + closeAt.y * cos);
+        matrix.b = (-squeezed * cos) / sharp;
+        matrix.d = (-squeezed * sin) / sharp;
+        matrix.f = y + 0.5 + squeezed * (alongKart + ahead - closeAt.x * cos - closeAt.y * sin);
+        closePattern.setTransform(matrix);
+        context.fillStyle = closePattern;
+        context.fillRect(0, y, screen.width, 1);
+      }
     }
 
     // Haze: the ground fades into the colour of the horizon far away. It

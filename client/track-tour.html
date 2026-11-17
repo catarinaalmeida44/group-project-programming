@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nova SBE kart racer: track tour</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <main>
+      <h1>Nova SBE kart racer</h1>
+      <nav class="modes">
+        <a href="/">← Menu</a>
+      </nav>
+
+      <!-- A page for the team: the camera of the race flies round a track by
+           itself, along the arrows, so that the buildings can be looked at
+           without having to drive. It is not linked from the menu.
+           track-tour.js does the flying. -->
+      <section class="stage" aria-label="Track tour">
+        <canvas id="track"></canvas>
+      </section>
+      <p class="help">
+        <span id="tour-name"></span>: <span id="tour-place" role="status"></span>.
+        <kbd>Space</kbd> stops and starts the tour, <kbd>←</kbd> <kbd>→</kbd> go back and forward,
+        <kbd>↑</kbd> <kbd>↓</kbd> make it faster and slower, <kbd>V</kbd> changes the camera.
+      </p>
+      <p class="note">The track is chosen in the address, like a race: <code>track-tour.html?track=nova-lap</code>.</p>
+    </main>
+
+    <script type="module" src="/track-tour.js"></script>
+  </body>
+</html>

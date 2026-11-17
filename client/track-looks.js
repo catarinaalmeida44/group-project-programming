@@ -21,6 +21,7 @@
 
 import { TRACKS } from "../shared/tracks/index.js";
 import { routePoints, bendsOf } from "./route.js";
+import { NOVA_LAP_LOOK } from "./nova-lap-look.js";
 
 /** A race circuit in the country: the look of the test oval, and of any track without a look of its own. */
 const CIRCUIT = {
@@ -152,6 +153,8 @@ const CAMPUS_LOOP_LOOK = {
 const LOOKS = new Map([
   [TRACKS["test-oval"], TEST_OVAL_LOOK],
   [TRACKS["campus-loop"], CAMPUS_LOOP_LOOK],
+  // The Nova lap is the base circuit with everything of its own on top (nova-lap-look.js).
+  [TRACKS["nova-lap"], { ...CIRCUIT, ...NOVA_LAP_LOOK }],
 ]);
 
 /** The look of a track. A track that has none of its own gets the plain circuit. */

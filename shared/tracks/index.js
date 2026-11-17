@@ -6,10 +6,12 @@
 import { TEST_OVAL } from "./test-oval.js";
 import { CAMPUS_LOOP } from "./campus-loop.js";
 import { CAMPUS_LOOP_STOREYS } from "./campus-loop-storeys.js";
+import { NOVA_LAP } from "./nova-lap.js";
 
 export const TRACKS = Object.freeze({
   "test-oval": TEST_OVAL,
   "campus-loop": CAMPUS_LOOP,
+  "nova-lap": NOVA_LAP,
 });
 
 /** The track used when none is chosen, or when the chosen one does not exist. */

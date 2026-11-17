@@ -45,6 +45,10 @@ export const PROP_HEIGHT = {
   totem: 34,
   tunnel: 30,
   bench: 5,
+  "christmas-tree": 66,
+  statue: 40,
+  "banner-flag": 86,
+  olive: 36,
 };
 
 /** An arrow board at a bend: a dark board on two legs with three chevrons that point the way. "way" is 1 for right, -1 for left. */
@@ -134,6 +138,138 @@ const STANDING = {
     context.fillRect(-8, -4.6, 16, 4.6);
     context.fillStyle = "#e3e0d8";
     context.fillRect(-8, -5.6, 16, 1.4);
+  },
+
+  // The Christmas tree in the atrium: tall, dark green, hung with gold
+  // lights and coloured stars, a star on top.
+  "christmas-tree"(context, seconds) {
+    shadow(context, 16);
+    context.fillStyle = "#5a3d28";
+    context.fillRect(-2, -5, 4, 5);
+    // Four tiers of branches, each a wide triangle, the lowest the widest.
+    const tiers = [
+      [-58, -38, 9],
+      [-46, -24, 13],
+      [-33, -11, 16.5],
+      [-20, -3, 20],
+    ];
+    tiers.forEach(([top, bottom, half], i) => {
+      context.fillStyle = i % 2 === 0 ? "#1f5a33" : "#246639";
+      context.beginPath();
+      context.moveTo(0, top);
+      context.lineTo(half, bottom);
+      context.lineTo(-half, bottom);
+      context.closePath();
+      context.fill();
+    });
+    // Lights: they twinkle, each in its own time.
+    const colours = ["#ffd866", "#fff2b0", "#ff7a59", "#ffffff", "#ffc23f"];
+    for (let i = 0; i < 46; i++) {
+      const height = 5 + ((i * 37) % 50);
+      const reach = (58 - height) * 0.33;
+      const x = (((i * 53) % 100) / 50 - 1) * reach;
+      const bright = 0.55 + 0.45 * Math.sin(seconds * 3 + i * 1.7);
+      context.globalAlpha *= bright;
+      context.fillStyle = colours[i % colours.length];
+      context.beginPath();
+      context.arc(x, -height, i % 5 === 0 ? 1.3 : 0.8, 0, TURN);
+      context.fill();
+      context.globalAlpha /= bright;
+    }
+    // The star on top.
+    context.fillStyle = "#ffd23f";
+    context.beginPath();
+    for (let point = 0; point < 10; point++) {
+      const radius = point % 2 === 0 ? 4.2 : 1.8;
+      const angle = (point / 10) * TURN - Math.PI / 2;
+      context.lineTo(Math.cos(angle) * radius, -61 + Math.sin(angle) * radius);
+    }
+    context.closePath();
+    context.fill();
+  },
+
+  // The turquoise statue beside the library: a figure with a cape, on a tall block, all one colour.
+  statue(context) {
+    shadow(context, 8);
+    context.fillStyle = "#2fa9a2";
+    context.fillRect(-4.6, -15, 9.2, 15); //  the block
+    context.fillStyle = "#3cc0b8";
+    context.fillRect(-4.6, -15, 3.2, 15); //  its lit side
+    context.fillStyle = "#35b5ad";
+    // Legs, body, head.
+    context.fillRect(-2.4, -26, 1.9, 11);
+    context.fillRect(0.5, -26, 1.9, 11);
+    context.beginPath();
+    context.moveTo(-3.2, -26);
+    context.lineTo(3.2, -26);
+    context.lineTo(3.8, -35);
+    context.lineTo(-3.8, -35);
+    context.closePath();
+    context.fill();
+    blob(context, 0, -37.3, 2.3, "#35b5ad");
+    // The cape, flying out to one side, and an arm on the hip.
+    context.fillStyle = "#2a9891";
+    context.beginPath();
+    context.moveTo(3.4, -34.5);
+    context.quadraticCurveTo(11, -33, 12.5, -24);
+    context.lineTo(4, -27);
+    context.closePath();
+    context.fill();
+    context.fillRect(-5.6, -34, 2, 6.5);
+  },
+
+  // A tall narrow flag on a white pole, as at the corner of the avenue.
+  // The label says which: "white", "blue", "portugal" or "europe".
+  "banner-flag"(context, seconds, label) {
+    shadow(context, 3);
+    context.fillStyle = "#e9ecee";
+    context.fillRect(-0.55, -84, 1.1, 84);
+    const sway = Math.sin(seconds * 2.4 + label.length) * 1.4;
+    if (label === "portugal" || label === "europe") {
+      // An ordinary flag, flying from the top of the pole.
+      const parts = label === "portugal" ? [["#1f7a3f", 0, 6], ["#d8322a", 6, 15]] : [["#2f55a8", 0, 15]];
+      for (const [colour, from, wide] of parts) {
+        context.fillStyle = colour;
+        context.beginPath();
+        context.moveTo(0.5 + from, -83 + from * 0.05 * sway);
+        context.lineTo(0.5 + wide, -83 + wide * 0.08 * sway);
+        context.lineTo(0.5 + wide, -73 + wide * 0.08 * sway);
+        context.lineTo(0.5 + from, -73 + from * 0.05 * sway);
+        context.closePath();
+        context.fill();
+      }
+      return;
+    }
+    // A long banner down the pole, bellying in the wind.
+    context.fillStyle = label === "blue" ? "#5f8fb8" : "#f4f5f3";
+    context.beginPath();
+    context.moveTo(0.5, -83);
+    context.quadraticCurveTo(13 + sway, -80, 11 + sway, -64);
+    context.quadraticCurveTo(9 + sway * 1.6, -50, 10 + sway * 0.6, -38);
+    context.lineTo(0.5, -36);
+    context.closePath();
+    context.fill();
+    context.fillStyle = label === "blue" ? "rgba(255, 255, 255, 0.75)" : "rgba(60, 80, 100, 0.55)";
+    for (let mark = 0; mark < 4; mark++) {
+      context.fillRect(3.4 + sway * 0.4, -76 + mark * 8, 3.8, 3.2);
+    }
+  },
+
+  // An old olive tree: a thick twisted trunk and a low, round, grey-green crown.
+  olive(context) {
+    shadow(context, 14);
+    context.fillStyle = "#6a5a48";
+    context.beginPath();
+    context.moveTo(-3.6, 0);
+    context.quadraticCurveTo(-1.2, -9, -3, -16);
+    context.lineTo(2.6, -16);
+    context.quadraticCurveTo(1.4, -8, 3.8, 0);
+    context.closePath();
+    context.fill();
+    blob(context, 0, -24, 13, "#5f7d57");
+    blob(context, -8, -20, 8.5, "#56724f");
+    blob(context, 8, -21, 9, "#688a60");
+    blob(context, -2, -30, 7.5, "#74966b");
   },
 
   // A round leafy tree: a short trunk and three overlapping balls of leaves.
@@ -298,7 +434,13 @@ function ellipse(context, x, y, halfWidth, halfHeight, colour) {
  * The canvas is already set up so that one unit of drawing is one unit of track.
  */
 export function paintPropFromAbove(context, kind, x, y, size = 1) {
-  const crown = { tree: [14, "#2f7d3a"], pine: [19, "#23633a"], palm: [15, "#2f8a45"] }[kind];
+  const crown = {
+    tree: [14, "#2f7d3a"],
+    pine: [19, "#23633a"],
+    palm: [15, "#2f8a45"],
+    olive: [12, "#5f7d57"],
+    "christmas-tree": [14, "#1f5a33"],
+  }[kind];
   if (crown !== undefined) {
     context.fillStyle = "rgba(8, 14, 22, 0.2)";
     context.beginPath();

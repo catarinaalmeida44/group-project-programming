@@ -23,6 +23,8 @@
 
 import { SCREEN, FOLLOW, CHASE, RACE, blendChase, chaseRow, chasePoint, eyeOf, seenFromKart, easeAngle } from "./camera.js";
 import { createBuildings, buildingsInView } from "./buildings.js";
+import { createScenery, sceneryInView, squaresWithScenery } from "./scenery.js";
+import { createSceneryPainter } from "./scenery-paint.js";
 import { createGround } from "./ground.js";
 import { paintSky } from "./sky.js";
 import { paintProp, paintPropFromAbove, PROP_HEIGHT } from "./props.js";
@@ -92,9 +94,22 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
   const context = canvas.getContext("2d");
   const look = lookOfTrack(track);
   const grid = gridOf(track);
-  const buildings = createBuildings(track, storeys, { barrierHeight: look.barrierHeight });
-  const ground = createGround(track, look, grid, buildings);
+  // A track can have scenery of its own: buildings with real fronts, roofs
+  // to drive under, railings (scenery.js). A wall that has none still gets
+  // a plain barrier, so that no wall is ever invisible.
+  const scenery = look.scenery ? createScenery(track, look.scenery) : null;
+  const sceneryPainter = scenery ? createSceneryPainter(look.wallArt ?? {}, scenery, look.haze) : null;
   const props = propsOfTrack(track, look, storeys);
+  const ownScenery = scenery ? squaresWithScenery(scenery, track.tileSize) : null;
+  for (const prop of scenery ? props : []) {
+    // A square with a statue or a tree on it shows what is in the way, too.
+    ownScenery.add(`${Math.floor(prop.x / track.tileSize)} ${Math.floor(prop.y / track.tileSize)}`);
+  }
+  const buildings = createBuildings(track, storeys, {
+    barrierHeight: look.barrierHeight,
+    noBarrierAt: ownScenery ? (column, row) => ownScenery.has(`${column} ${row}`) : null,
+  });
+  const ground = createGround(track, look, grid, buildings);
   const gantry = gantryOf(track);
   const mini = paintMiniPicture(ground.picture, track);
   // Every checkpoint as a line across the road, one piece per square of the map.
@@ -185,6 +200,7 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
     // camera and the kart, and shows a wall beside the camera for as long
     // as any of it can be seen.
     things.push(...buildingsInView(buildings, spot, settings, SCREEN));
+    things.push(...sceneryInView(scenery, spot, settings, SCREEN));
 
     const standing = (kind, x, y, scale, more = {}) => {
       const seen = seenFromKart(spot, x, y);
@@ -281,7 +297,8 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
     const eye = eyeOf(settings);
     const eyeColumn = Math.floor((spot.x - Math.cos(spot.angle) * eye.behind) / size);
     const eyeRow = Math.floor((spot.y - Math.sin(spot.angle) * eye.behind) / size);
-    const layer = (thing) => (thing.kind === "side" ? 0 : thing.kind === "roof" ? 1 : 2);
+    const layer = (thing) =>
+      thing.kind === "side" || thing.kind === "strip" ? 0 : thing.kind === "roof" || thing.kind === "flat" ? 1 : 2;
     things.sort(
       (a, b) =>
         Math.abs(b.row - eyeRow) - Math.abs(a.row - eyeRow) ||
@@ -293,6 +310,10 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
     for (const thing of things) {
       if (thing.kind === "side" || thing.kind === "roof") {
         paintBuildingPiece(thing);
+      } else if (thing.kind === "strip") {
+        sceneryPainter.paintStrip(context, thing, settings, SCREEN);
+      } else if (thing.kind === "flat") {
+        sceneryPainter.paintFlat(context, thing);
       } else if (thing.kind === "kart") {
         paintKart(context, thing.viewer, lookOf(thing.kart), 0);
         paintNameAbove(thing, scene.names);

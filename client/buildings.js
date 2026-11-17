@@ -25,7 +25,7 @@ import { CHASE, SCREEN, chaseNumbers, chasePoint, seenFromKart } from "./camera.
  * that its walls stay flat. Stops with an error that says what is wrong if the
  * storeys do not fit the track.
  */
-export function createBuildings(track, storeys, { barrierHeight = 0 } = {}) {
+export function createBuildings(track, storeys, { barrierHeight = 0, noBarrierAt = null } = {}) {
   const hasStoreys = storeys !== null && storeys !== undefined;
   if (!hasStoreys && !(barrierHeight > 0)) {
     return null;
@@ -68,7 +68,11 @@ export function createBuildings(track, storeys, { barrierHeight = 0 } = {}) {
     [[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]].some(
       ([dc, dr]) => inside(c + dc, r + dr) && !isWall(c + dc, r + dr),
     );
-  const isBarrier = (c, r) => barrierHeight > 0 && isWall(c, r) && storeysAt(c, r) === 0 && touchesOpenGround(c, r);
+  // "noBarrierAt" lets a track say where it has scenery of its own (a
+  // building with a real front, a railing): no barrier is needed there.
+  const hasOwnScenery = (c, r) => typeof noBarrierAt === "function" && noBarrierAt(c, r) === true;
+  const isBarrier = (c, r) =>
+    barrierHeight > 0 && isWall(c, r) && storeysAt(c, r) === 0 && touchesOpenGround(c, r) && !hasOwnScenery(c, r);
   // Height in units of a square. Outside the map counts as flat.
   const heightAt = (c, r) => {
     if (!inside(c, r)) {
