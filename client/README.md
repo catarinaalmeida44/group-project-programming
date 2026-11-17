@@ -53,10 +53,11 @@ Everything the browser shows and does: the web page, the drawing of the track an
 | `kart-shape.js` | The kart and its driver as a shape in three dimensions: boxes, wedges and wheels with real positions, in the colours of a "look". No painting, so it has tests |
 | `kart-paint.js` | Paints that shape from any direction: leaves out the faces that point away, paints the furthest parts first, and makes each face brighter the more it faces the sun |
 | `kart-choice.js` | The colours a player can choose for their kart, turning a choice into a look, and keeping the choice in the browser. The rule for what may be chosen is `shared/kart-looks.js` |
-| `kart-panel.js` | "Choose your character", the step after choosing a track: every character as their pilot in their kart with their face, the chosen one big, and the button that starts the race |
-| `face-head.js` | The sums for a pilot with a real face: a bigger head, where it sits, and how much of the face the eye sees. Only for choosing a character (and later the podium), never in the race |
+| `kart-panel.js` | "Choose your character", the step after choosing a track: a card for each character with the pilot on the left (doing their dance when the mouse passes) and the photo on the right, the chosen one big beside their kart, and the button that starts the race |
+| `pilot-shape.js` | The pilot standing, with their own head, and how they move: standing, arms crossed, and six dances (clap, robot, drive, wave, plane, siu). Arms that keep their length. Only for choosing a character (and later the podium), never in the race |
+| `heads/` | Each character's head cut out of their photo, with the background see-through (PNG). Painted on the standing pilot |
 | `cast-choice.js` | Your character: remembering it in the browser, where its face is, its colours, and what the online page says when someone else already is it |
-| `faces/` | One small picture of the face of each character, 256 by 256 pixels. Shown only when choosing a character, never in the race |
+| `faces/` | One photo of each character, head and shoulders, 256 by 256 pixels, for the cards. Shown only when choosing a character, never in the race |
 | `buildings.js` | Makes the buildings of a track stand up in the view behind the kart: works out their sides and roofs from the storeys of each square, and which of them can be seen from the kart. Walls without storeys that touch open ground become low banks. No painting; `draw.js` paints them |
 | `format.js` | Turns a number of seconds into a race time such as `1:23.45` |
 

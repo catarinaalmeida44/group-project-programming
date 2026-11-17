@@ -146,8 +146,8 @@ Since the second change of 17 November the character is chosen after the track, 
 
 | # | Do this | You should see | Result |
 |---|---|---|---|
-| 76 | A: on the menu, click "Single race", then a track | "Choose your character" opens. Six pilots in their karts, each with their real face on a big head: Dean, Professor Ricardo Pereira, Ró Versos, Cici Boss, FranFon, PCP. The chosen one is shown big, swinging from side to side | |
-| 77 | A: click PCP | PCP gets a yellow frame, and the big picture shows PCP's red kart with a yellow head round the face | |
+| 76 | A: on the menu, click "Single race", then a track | "Choose your character" opens, with six cards: Dean, Professor Ricardo Pereira, Ró Versos, Cici Boss, FranFon, PCP. The chosen one is shown big, beside their kart | |
+| 77 | A: move the mouse slowly over the six cards, then click PCP | Each card has the pilot on the left, with the person's own head, and the photo on the right. Each pilot does their own dance while the mouse is over them: Dean claps, the Professor does the robot, Ró Versos drives, Cici Boss waves, FranFon flies like a plane, PCP does the "siu" (jump, spin, land with arms spread). PCP gets a yellow frame; the big picture shows PCP beside a red kart, doing the siu, then crossing arms, and again | |
 | 78 | A: click "Race" | The race on the track you picked. Your kart is red, and your pilot wears a yellow helmet. No face anywhere in the race | |
 | 79 | B: "Online", a track, Cici Boss, "Join the room". A: the same track, PCP, "Join the room" | A is told "You are PCP.", B "You are Cici Boss." Each sees the other's kart in that character's colours | |
 | 80 | B: go back to the menu, "Online", the same track, choose PCP, "Join the room" | B is told "Someone in this room is already PCP, so you are Dean." B's kart is black with a white helmet | |
