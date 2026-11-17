@@ -14,6 +14,7 @@ This brief is context, not a contract. Many details will change as we build and 
 - **[PROPOSED]**: recommended during planning, not yet confirmed by the team. Treat it as the default, but check with us before building something that depends heavily on it.
 - **[OPEN]**: not decided. Do not decide it silently: ask us.
 - **[COURSE RULE]**: required by the course and graded. Not negotiable.
+- **[DROPPED date]**: the team decided not to do this. It stays visible, with the date, so the history is clear. Do not build it.
 
 ## 2. How to work with us
 
@@ -76,10 +77,11 @@ What this means for you: prefer finished, reliable features over many half-finis
 
 ### Modes
 
-- [DECIDED] Two modes: **Single race** (choose one track) and **Cup** (several tracks in a row, with points). There is no boss level.
-- **[DECIDED 11 Nov 2026 by the team, reported by Francisco]** The cup has 3 tracks, not 5: more doable in the time left.
-- [PROPOSED] Cup = all the tracks, 3 laps each. Points per finishing position: 10 / 7 / 5 / 3 / 2 / 1. Ties go to the better finish in the last race. You keep the same character for the whole cup.
-- [PROPOSED] The cup can be played at three difficulties (Easy, Normal, Hard), set by how well the computer karts drive.
+- **[DECIDED 17 Nov 2026 by the team, reported by Francisco]** The game has only two modes: **Single race** (practice, in the browser) and **Online**. There is no Cup mode, no cup points and no difficulty levels. We prefer one good race to several mediocre ones. The items below that this replaces are marked [DROPPED 17 Nov 2026] and kept for the record.
+- **[DROPPED 17 Nov 2026]** (was [DECIDED]) Two modes: **Single race** (choose one track) and **Cup** (several tracks in a row, with points). There is no boss level.
+- **[DROPPED 17 Nov 2026]** (was [DECIDED 11 Nov 2026 by the team, reported by Francisco]) The cup has 3 tracks, not 5: more doable in the time left.
+- **[DROPPED 17 Nov 2026]** (was [PROPOSED]) Cup = all the tracks, 3 laps each. Points per finishing position: 10 / 7 / 5 / 3 / 2 / 1. Ties go to the better finish in the last race. You keep the same character for the whole cup.
+- **[DROPPED 17 Nov 2026]** (was [PROPOSED]) The cup can be played at three difficulties (Easy, Normal, Hard), set by how well the computer karts drive.
 - [PROPOSED] The host can set races to 1 lap, for testing and for the 5-minute demo.
 
 ### Map and camera
@@ -165,7 +167,7 @@ What this means for you: prefer finished, reliable features over many half-finis
 - [PROPOSED] Computer karts:
   - Each race has 6 karts: up to 4 humans, with computer karts filling the rest.
   - They follow a racing line (a chain of points around each track), brake before corners and use items.
-  - Three difficulty levels.
+  - **[DROPPED 17 Nov 2026]** Three difficulty levels.
   - Mild catch-up: slightly faster when far behind, slightly slower when far ahead.
 
 ### Characters and the selection menu
@@ -174,9 +176,9 @@ What this means for you: prefer finished, reliable features over many half-finis
 - *12 Nov 2026: a first step towards characters is built. Every kart is one 3D model with a driver, and a player can choose the colour of the kart, the helmet and the suit in the menu ("Your kart"). Other players see those colours online. There are no characters with different shapes or different driving yet: everyone still drives the placeholder driver. Decision made by the agent, please confirm: two players may choose the same colours (the rule below about one character per player is about characters, which do not exist yet).*
 - [DECIDED] Each character can be used by only one player per race. No duplicates.
 - [DECIDED] All characters are available in the demo.
-- [PROPOSED] Normal players unlock characters 7 and 8 by winning the cup on Normal and on Hard. Demo accounts get everything unlocked through their saved progress, never through a "demo mode" switch or a special address, which would be a security hole. **[OPEN]** The alternative is no unlocking at all.
+- **[OPEN since 17 Nov 2026]** (was [PROPOSED]) Normal players unlock characters 7 and 8 by winning the cup on Normal and on Hard. Demo accounts get everything unlocked through their saved progress, never through a "demo mode" switch or a special address, which would be a security hole. **Why this is open again:** the cup and its Normal and Hard levels were dropped on 17 Nov 2026, so there is no cup to win and this way of unlocking cannot work. The team has to choose: another way to unlock (for example winning an online race, or a number of finished races), or no unlocking at all, which was already the alternative. Until then, nothing is locked.
 - [PROPOSED] What the menu shows:
-  - a grid of portraits, with locked characters shown as silhouettes with a padlock and their unlock condition
+  - a grid of portraits, with locked characters shown as silhouettes with a padlock and their unlock condition *(only if unlocking is kept: [OPEN] again since 17 Nov 2026, see above)*
   - for the highlighted character: name, weight class, a one-line description and 7 stat bars, read from the same stats file the physics uses
   - control with arrow keys and Enter, or the mouse; it remembers your last choice
 - [PROPOSED] How picking works online:
@@ -190,17 +192,17 @@ What this means for you: prefer finished, reliable features over many half-finis
   - picking a locked character, even by sending the request directly to the server
   - two requests for the same character at once: exactly one must succeed
   - picking after the timer runs out
-  - changing character in the middle of a cup
+  - **[DROPPED 17 Nov 2026]** changing character in the middle of a cup
   - a computer kart getting a character a human picked
 
 ### Menu flow [PROPOSED]
 
 1. Title screen: log in, sign up, or practice as a guest
-2. Main menu: Single race / Cup / Online / Leaderboards / Profile
-3. Online: create a room (choose the mode, the track or difficulty, and the number of laps) or join one with a code, then the lobby
+2. Main menu: Single race / Cup / Online / Leaderboards / Profile *(Cup dropped 17 Nov 2026)*
+3. Online: create a room (choose the mode, the track or difficulty, and the number of laps) or join one with a code, then the lobby *(choosing a mode or a difficulty dropped 17 Nov 2026: there is only one online mode and no difficulty)*
 4. Character selection
-5. Track selection (single race) or difficulty selection (cup)
-6. Countdown, race, results. In a cup, a standings screen follows, then the next track.
+5. Track selection (single race) or difficulty selection (cup) *(difficulty selection and the cup dropped 17 Nov 2026)*
+6. Countdown, race, results. In a cup, a standings screen follows, then the next track. *(the cup's standings screen and next track dropped 17 Nov 2026)*
 7. Back to the main menu
 
 *11 Nov 2026, built by Francisco: a first main menu is the first page of the game: Single race (the test track), Cup (shown greyed out until the tracks exist), Online (the online test page), Leaderboard and a Settings button in the top right corner. There is no title screen, login or Profile yet, because there are no accounts. Ideas from Francisco for later, not decided by the team: a character selection page before the race with a Start button, 2 computer karts to begin with, and the game itself driving in the background of the menu ("attract mode") instead of a video.*
@@ -214,7 +216,7 @@ What this means for you: prefer finished, reliable features over many half-finis
 - [DECIDED] We run our own game server; no third-party realtime service. The server runs every race and decides the results, so scores cannot be faked from the browser.
 - [PROPOSED] Rooms:
   - A room has a 4-letter code and up to 4 humans.
-  - The host chooses the mode and the track or difficulty, and starts the race when everyone is ready.
+  - The host chooses the mode and the track or difficulty, and starts the race when everyone is ready. *(choosing a mode or a difficulty dropped 17 Nov 2026)*
   - Computer karts fill the empty seats.
 - *10 Nov 2026: a first version of the items below is built as an "Online test" page: one room for everyone on the test track, up to 8 players, no race start. It follows the proposals under "During the race" (keys only, 60 steps and 20 updates a second, gliding). Rooms with codes, a host, computer karts, items and disconnect handling beyond removing the kart are not built.*
 - *11 Nov 2026: the one room now has a race start. The host presses Enter, and the server counts 3, 2, 1, GO! for everyone together. Decision made by the agent, please confirm: the host is whoever has been in the room longest, and passes to the next longest when they leave (this matches "if the host leaves before the start, the next player becomes host" below). Decided by Pedro: someone who joins during a race watches it and joins at the next start. Rooms with codes, a "ready" step, a finishing order and results are still not built.*
@@ -227,7 +229,7 @@ What this means for you: prefer finished, reliable features over many half-finis
 - [PROPOSED] Disconnects:
   - A computer driver takes over the kart of a player who drops out. If they come back within 30 seconds, they get it back.
   - If the host leaves before the start, the next player becomes host.
-  - Nobody can join a cup that is already in progress.
+  - **[DROPPED 17 Nov 2026]** Nobody can join a cup that is already in progress.
 - Rejected actions to test:
   - a wrong code
   - a full room
@@ -262,7 +264,7 @@ What this means for you: prefer finished, reliable features over many half-finis
   - *On top of the wait after 5 wrong passwords, the server limits how many sign-up and sign-in tries it accepts per minute, from one computer and in total, so a flood of tries cannot slow the races down.*
 - *13 Nov 2026, at Catarina's request: a signed-in player can change their password in the menu ("Your account"). The server asks for the current password again, and signs the player out on every other device afterwards. "Forgot password" is still not built: it needs email (below), which is still **[OPEN]**. Without email there is no safe way to prove who is asking for a new password.*
 - *15 Nov 2026, decided by Catarina: **no email**. Email and "forgot password" were built that day on the branch `email-reset` (pull request 18) and on purpose not merged. Email needs an account at an email service and a sender address of ours that players see, and she does not want that. Accounts stay a user name and a password. A forgotten password means a lost account, which the sign-up form says. Email was never what makes an account safe: it only helps someone who forgot their password. The work stays on its branch in case the team changes its mind. A recovery code shown once at sign-up (no email needed) was offered as another way and not chosen.*
-- *Not built: progress (trophies, unlocked characters, last character chosen), a profile page, and the cup leaderboard.*
+- *Not built: progress (trophies, unlocked characters, last character chosen), a profile page, and the cup leaderboard. (Trophies and the cup leaderboard were dropped on 17 Nov 2026 with the cup.)*
 - [PROPOSED] Sign-up:
   - Username: 3 to 16 letters, numbers or underscores, and unique.
   - Email: one account per email, never shown publicly.
@@ -282,16 +284,16 @@ What this means for you: prefer finished, reliable features over many half-finis
 - [PROPOSED] What is stored:
   - **Players:** username, email, scrambled password, verified yes/no, date joined
   - **Sessions:** who is logged in, and until when
-  - **Progress:** trophies per difficulty, unlocked characters, last character chosen
-  - **Race results:** track, mode (single race or cup), total time, best lap, finishing position, date
+  - **Progress:** trophies per difficulty, unlocked characters, last character chosen *(trophies per difficulty dropped 17 Nov 2026; unlocked characters depends on the [OPEN] unlocking question in section 4)*
+  - **Race results:** track, mode (single race or cup), total time, best lap, finishing position, date *(cup dropped 17 Nov 2026)*
 - [PROPOSED] Who can do what:
   - You can see your own progress.
   - Nobody can change progress or results directly. Only the server does, after a race.
   - Leaderboards are public but show only usernames and times.
   - You can delete your own account and its data, but no one else's.
 - [PROPOSED] Leaderboards:
-  - For each track: top 10 race times and top 10 laps, plus your own rank. Every server-run race counts, whether single race or cup.
-  - For the cup: best total time at each difficulty.
+  - For each track: top 10 race times and top 10 laps, plus your own rank. Every server-run race counts, whether single race or cup. *(cup dropped 17 Nov 2026)*
+  - **[DROPPED 17 Nov 2026]** For the cup: best total time at each difficulty.
   - Practice mode never counts.
 - Rejected actions to test:
   - a username or email that's already taken
@@ -347,7 +349,7 @@ The base is done when:
 7. **Protection:** tests run automatically on every pull request, and `main` is protected.
 8. **Everyone has practised:** every member has merged one small reviewed pull request (for example, adding their name to the README).
 
-Not in the base: accounts, email, items, computer karts, campus tracks, character selection, cup, leaderboards.
+Not in the base: accounts, email, items, computer karts, campus tracks, character selection, cup, leaderboards. *(The cup was dropped altogether on 17 Nov 2026.)*
 
 Explain the base to us as you build it. By the end, each of us should be able to say where the server, the rules file, the tests and the database connection live, and what each one does.
 
@@ -370,10 +372,10 @@ Keep a `WALKTHROUGH.md` file up to date as you build, in plain language. It shou
 | 1 | Accounts, email, security, database (owns the database tables) |
 | 2 | Driving physics, characters, items (owns the rules file) |
 | 3 | Campus tracks, computer karts |
-| 4 | Game server and multiplayer: rooms, syncing character selection, cup flow |
+| 4 | Game server and multiplayer: rooms, syncing character selection, cup flow *(cup flow dropped 17 Nov 2026)* |
 
 - **Sat 14 to Tue 17:** one complete track from start to finish: single race against computer karts, accounts, saved result, leaderboard, and an online race.
-- **Wed 18 to Fri 20:** all tracks, the cup, all characters and items, email.
+- **Wed 18 to Fri 20:** all tracks, the cup, all characters and items, email. *(The cup was dropped on 17 Nov 2026, and email on 15 Nov 2026.)*
 - **Sat 21 to Sun 22:** no new features. Handle invalid input everywhere, test on the public link with 4 laptops, rehearse the demo and the walkthrough, finish the README.
 - **Mon 23:** submit during the day. After the deadline, no more pushes to `main`.
 
@@ -387,13 +389,13 @@ Priority rule: one complete, working track beats five unfinished ones.
 | 0:30–1:15 | Create an online room. Teammates join, and one of them tries to pick a character that's already taken and sees "Already taken" |
 | 1:15–2:45 | One 1-lap race on the campus track: drifting, items, a trip onto the grass, the minimap |
 | 2:45–3:30 | Results, then the track leaderboard with the new time on it |
-| 3:30–4:15 | Profile screen with the trophies from a cup the demo account played the day before |
+| 3:30–4:15 | **[DROPPED 17 Nov 2026]** Profile screen with the trophies from a cup the demo account played the day before. *This slot is free: the team decides what to show instead.* |
 | 4:15–5:00 | Buffer |
 
 Before the demo:
 - Wake the server 10 minutes early.
 - Test online racing on the classroom Wi-Fi.
-- Have the demo accounts verified and fully unlocked.
+- Have the demo accounts verified and fully unlocked. *(Unlocking is [OPEN] again since 17 Nov 2026, see section 4.)*
 - Backup plan: practice mode, still live.
 
 ## 12. Team

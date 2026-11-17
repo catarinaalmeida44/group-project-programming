@@ -2,6 +2,43 @@
 
 Francisco Fonseca (Fran, GitHub FranFon15). Entries from 11 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 17 November 2026: no Cup, written into the brief
+
+**What was done**
+The team decided on 17 November (reported by Francisco) that there is no Cup mode, no cup points and no difficulty levels. The game has only Single race (practice, in the browser) and Online: one good race rather than several mediocre ones. Only `PROJECT_BRIEF.md` was changed, plus this diary. Branch `drop-cup-from-brief`. No code.
+
+In the brief:
+- A new status, **[DROPPED date]**, in the list at the top: decided against, kept visible with the date.
+- A new [DECIDED 17 Nov 2026] line with the two modes.
+- Marked [DROPPED 17 Nov 2026], text kept: the Cup mode, its 3 tracks, its points, Easy/Normal/Hard, the computer karts' three difficulty levels, the cup leaderboard, "changing character in the middle of a cup", "nobody can join a cup in progress", and the demo step with the profile trophies.
+- A short note after the part that is dropped, where a line has more in it: the menu flow (Cup, mode and difficulty choice, the cup standings screen), the host choosing a mode or difficulty, trophies per difficulty, "cup" as a race mode and in the per-track leaderboard, "cup flow" in the roadmap, the cup in the roadmap's Wednesday to Friday, and the cup in "not in the base".
+- Unlocking characters 7 and 8 by winning the cup moved back to **[OPEN]**, because there is no cup to win. The two lines that depend on it (padlocked portraits in the menu, and "fully unlocked" demo accounts) say so.
+
+**Why it was done this way**
+Nothing was deleted, as Francisco asked: anyone reading the brief can see what was planned and when it was dropped.
+
+**Decisions**
+- The decision is the team's, reported by Francisco.
+- Decision made by the agent, please confirm: the computer karts' "three difficulty levels" was marked dropped too, because the difficulty levels were what the cup's Easy/Normal/Hard were made of.
+- Decision made by the agent, please confirm: the demo slot 3:30–4:15 is marked free, for the team to fill.
+
+**Still mentioning the cup outside the brief (not changed, waiting for Francisco)**
+- In the game: `client/index.html` shows a greyed-out Cup button with "Cup: coming soon, with three campus tracks". The test "shows the Cup, but it cannot be clicked yet, and says why" in `tests/menu.test.js` checks that button, so removing it means changing an existing test, which needs an OK first.
+- Notes: `README.md` (status line), `WALKTHROUGH.md` (state line, the menu row, the menu section, the menu tests, an earlier check), `client/README.md` (the menu row), `tests/README.md` (the menu tests row), `docs/team-guide.md` (the "not started" row and the multiplayer area).
+- Diaries, which are history and stay as they are: this one (11 November) and Catarina's.
+- Fine as it is: `tests/track-list.test.js` uses "cup" as an example of a kind of race that must be refused.
+
+**What was checked, and what was not**
+- `npm test`: 1358 passed, 5 skipped. Only documents changed, so no test was expected to change.
+- Read the brief through after the change, looking for any cup or difficulty mention not yet marked.
+- Not checked: whether the team agrees with the two agent decisions above.
+
+**How to check it yourself**
+Search `PROJECT_BRIEF.md` for "DROPPED 17 Nov" and for "OPEN since 17 Nov".
+
+**What comes next**
+Francisco decides about the Cup button in the menu and the other notes listed above.
+
 ### 17 November 2026: no more ghost karts in online play
 
 **What was done**
