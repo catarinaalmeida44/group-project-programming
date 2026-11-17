@@ -71,7 +71,8 @@ What this means for you: prefer finished, reliable features over many half-finis
 - [DECIDED] Set at the Nova SBE Carcavelos campus and its surroundings.
 - [DECIDED] Online multiplayer: players race from different computers.
 - [DECIDED] Original characters, names, items and art. No Nintendo characters, names, music or images anywhere in the game or the repository. We borrow mechanics and stat balance only.
-- [OPEN] Game title, character names and designs, art style, item names and theme.
+- [OPEN] Game title, art style, item names and theme.
+- [DECIDED 17 Nov 2026 by Pedro] The first six characters, each a real person who said yes: Dean (black and white), Professor Ricardo Pereira (orange and blue), Ró Versos (pink and yellow), Cici Boss (blue and pink), FranFon (all black), PCP (red and yellow). Their faces are shown only in the menu, when choosing, never in the race. Choosing a character replaces choosing the kart colours one by one (Catarina chose this, option A, through Pedro).
 
 ### Modes
 
