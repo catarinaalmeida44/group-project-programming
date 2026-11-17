@@ -31,7 +31,7 @@ A single race is now against five computer karts: the five characters of Pedro's
 - Decision made by the agent, please confirm, and tell the owner: `client/main.js` and `client/race.html` changed. They are not in my area.
 
 **What was checked, and what was not**
-- `npm test`: 1,425 passed, 5 skipped (57 new tests).
+- `npm test`: 1,460 passed, 5 skipped (57 new tests).
 - The new code was broken on purpose in 12 ways. Nine made a test fail at once. Two tests were too loose ("a spinning kart counts as stuck", "a kart may jump to any stretch of the line"): they were tightened, and then failed as they should. The third ("a finished computer kart keeps choosing keys") cannot fail, because `shared/race.js` already ignores the keys of a finished kart. After the characters came in, five more breaks: four made tests fail; the fifth ("names like toString count") changes nothing that can be seen.
 - One of my own tests was wrong at first (the sharp bend was too close for the difference between careful and daring to show). The test was fixed, not the code.
 - Whole races in Node, for every character I could choose and for none: all five computer karts finish all laps on both tracks, never inside a wall, never stuck. A race takes them about 25 to 30 seconds on the test oval and 59 to 69 seconds on the campus loop, and the winner changes from race to race.
