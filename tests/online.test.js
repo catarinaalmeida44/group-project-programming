@@ -155,6 +155,19 @@ const kartIn = (update, id) => update.karts.find((kart) => kart.id === id);
 
 const pause = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
+/**
+ * Since 17 November 2026 nobody can drive before the host starts a race.
+ * The host says start, and this waits until GO: from then on keys move karts.
+ * The countdown runs in real time, about three seconds.
+ */
+async function startAndWaitForGo(host) {
+  host.send({ type: "start" });
+  await host.next((message) => message.type === "state" && message.race.phase === "racing", 8000);
+}
+
+/** How long a test that waits for GO may take, in thousandths of a second. */
+const WITH_A_COUNTDOWN = 15000;
+
 describe("connecting", () => {
   it("welcomes a browser with a player number, a place and the name of the track", async () => {
     const browser = await connect();
@@ -189,6 +202,9 @@ describe("connecting", () => {
 });
 
 describe("driving together", () => {
+  // Rewritten on 17 November 2026, with Francisco's OK for the team: the
+  // driver (the host, who connected first) starts a race and drives after
+  // GO, instead of driving while the room is open. What is checked is unchanged.
   it("lets two browsers see each other's kart move", async () => {
     const driver = await connect();
     const watcher = await connect();
@@ -196,6 +212,7 @@ describe("driving together", () => {
     const driverStart = kartIn(before, driver.first.id);
     const watcherStart = kartIn(before, watcher.first.id);
 
+    await startAndWaitForGo(driver);
     driver.send(GAS);
 
     // The watcher's browser is told that the driver's kart has moved...
@@ -211,8 +228,13 @@ describe("driving together", () => {
       (message) => message.type === "state" && kartIn(message, driver.first.id)?.x > driverStart.x + 20,
     );
     expect(kartIn(seenByDriver, driver.first.id).steps).toBeGreaterThan(0);
-  });
+  }, WITH_A_COUNTDOWN);
 
+  // Rewritten on 17 November 2026, with Francisco's OK for the team: the
+  // cheat now presses the gas in a race after GO, instead of while the room
+  // is open. In a race everyone's clock runs from GO, so the victim's clock
+  // is no longer checked to be at zero: the victim's kart must simply not
+  // have moved.
   it("lets each connection drive only its own kart, even when it names another player", async () => {
     const victim = await connect();
     const cheat = await connect();
@@ -220,6 +242,7 @@ describe("driving together", () => {
     const victimStart = kartIn(before, victim.first.id);
     const cheatStart = kartIn(before, cheat.first.id);
 
+    await startAndWaitForGo(victim); // the victim connected first, so is the host
     // The cheat presses the gas and claims to be the victim.
     cheat.send({ ...GAS, id: victim.first.id, player: victim.first.id });
 
@@ -227,21 +250,26 @@ describe("driving together", () => {
       (message) => message.type === "state" && kartIn(message, cheat.first.id)?.x > cheatStart.x + 20,
     );
     expect(kartIn(after, victim.first.id).x).toBe(victimStart.x);
-    expect(kartIn(after, victim.first.id).steps).toBe(0);
-  });
+    expect(kartIn(after, victim.first.id).y).toBe(victimStart.y);
+  }, WITH_A_COUNTDOWN);
 
-  it("puts a kart back at its start when its browser asks to restart", async () => {
+  // Replaced on 17 November 2026, with Francisco's OK for the team. The old
+  // test drove away and then asked to restart, while the room was open. Now
+  // the kart cannot drive away before a race, so a restart then has nothing
+  // to undo: it must change nothing and must not get the browser sent away.
+  it("keeps a kart on its grid place when its browser holds the gas and asks to restart before a race", async () => {
     const browser = await connect();
     const start = kartIn(await browser.next(stateWith(1)), browser.first.id);
 
     browser.send(GAS);
-    await browser.next((message) => message.type === "state" && message.karts[0].x > start.x + 20);
-
-    browser.send(NO_KEYS);
     browser.send({ type: "restart" });
-    const after = await browser.next((message) => message.type === "state" && message.karts[0].steps === 0);
+    browser.send(NO_KEYS);
+    await pause(300);
+    const after = await browser.next(stateWith(1));
     expect(after.karts[0].x).toBe(start.x);
     expect(after.karts[0].y).toBe(start.y);
+    expect(after.karts[0].steps).toBe(0);
+    expect(online.room.playerCount()).toBe(1); // still welcome
   });
 
   it("takes a kart off the track when its browser leaves", async () => {

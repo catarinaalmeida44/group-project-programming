@@ -274,13 +274,20 @@ describe("saving the result of a finished race", () => {
     expect(browser.messages.filter(ofType("saved"))).toEqual([]);
   }, RACE_TIMEOUT);
 
-  it("saves nothing for laps driven while the room is open, without a race", async () => {
+  // Replaced on 17 November 2026, with Francisco's OK for the team. The old
+  // test drove a whole lap while the room was open, with no race, and checked
+  // that nothing was saved. Now nobody can drive before the host starts, so
+  // there is no such lap: the kart stays on the grid and nothing is saved.
+  it("saves nothing while the room waits for the host, however long the gas is held", async () => {
     const { cookie } = await signedIn("Ana");
     const browser = await connect({ cookie });
     await browser.next(ofType("account"));
-    browser.send(GAS); // nobody pressed Enter: this is free driving
-    await browser.next((message) => message.type === "state" && message.karts[0]?.finished === true, 8000);
-    await pause(300);
+    browser.send(GAS); // nobody pressed Enter: the kart must stay where it is
+    await pause(2000);
+    const update = await browser.next(ofType("state"));
+    expect(update.race.phase).toBe("open");
+    expect(update.karts[0].steps).toBe(0);
+    expect(update.karts[0].finished).toBe(false);
     expect(store.countResults()).toBe(0);
     expect(browser.messages.filter(ofType("saved"))).toEqual([]);
   }, RACE_TIMEOUT);

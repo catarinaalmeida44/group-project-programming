@@ -707,47 +707,41 @@ describe("bumps in a race", () => {
   });
 });
 
+// Since 17 November 2026 nobody moves while the room is open, waiting for
+// the host, so nothing bumps then. Three tests in this group were changed
+// that day, with Francisco's OK for the team (see each one). The group keeps
+// its name so that the unchanged test in it is easy to find.
 describe("bumps while the room is open", () => {
-  it("let a driver shove a parked kart out of the way, but never drive through it", () => {
+  // Replaced on 17 November 2026. The old test let a driver shove a parked
+  // kart out of the way while the room was open. Now the driver cannot move.
+  it("do not happen while the room waits for the host: a kart with the gas held stays behind the one in front, and neither moves", () => {
     const { room, ids } = roomWith(3);
     const [parked, , driver] = ids; // place 2 is straight behind place 0
     const parkedStart = kartOf(room, parked);
+    const driverStart = kartOf(room, driver);
 
     room.setKeys(driver, GAS);
-    run(room, 120, () => {
-      expect(kartOf(room, driver).x).toBeLessThan(kartOf(room, parked).x - TOUCHING + ROUNDING);
-    });
+    run(room, 120);
 
-    expect(kartOf(room, parked).x).toBeGreaterThan(parkedStart.x + 40); // it rolled away
-    expect(kartOf(room, driver).x).toBeGreaterThan(parkedStart.x); //      and the driver got on
+    expect(kartOf(room, parked)).toEqual(parkedStart);
+    expect(kartOf(room, driver)).toEqual(driverStart);
   });
 
-  it("do not start the clock of a parked kart: it rolls to a stop with its clock at zero", () => {
+  // Replaced on 17 November 2026. The old test checked that a parked kart
+  // pushed by another kept its clock at zero. Now nobody's clock runs, and
+  // nothing is pushed, before the host starts.
+  it("do not start anyone's clock while the room waits for the host, whatever keys everyone holds", () => {
     const { room, ids } = roomWith(3);
-    const [parked, , driver] = ids;
-    room.setKeys(driver, GAS);
-    run(room, 30, () => {
-      expect(kartOf(room, parked).steps).toBe(0);
-    });
-    expect(speedOf(kartOf(room, parked))).toBeGreaterThan(0); // it was hit, and is rolling
-
-    // The driver stops. The parked kart rolls on by itself, and comes to rest.
-    room.setKeys(driver, { gas: false, brake: true, left: false, right: false });
-    run(room, 20);
-    room.setKeys(driver, NO_KEYS);
+    for (const id of ids) {
+      room.setKeys(id, { gas: true, brake: false, left: false, right: true });
+    }
     run(room, 300, () => {
-      expect(kartOf(room, parked).steps).toBe(0);
-      expect(kartOf(room, parked).lapsDone).toBe(0);
+      for (const id of ids) {
+        expect(kartOf(room, id).steps).toBe(0);
+        expect(kartOf(room, id).lapsDone).toBe(0);
+        expect(speedOf(kartOf(room, id))).toBe(0);
+      }
     });
-    const resting = kartOf(room, parked);
-    expect(speedOf(resting)).toBe(0);
-    run(room, 60);
-    expect(kartOf(room, parked)).toEqual(resting);
-
-    // Its clock starts at its own first key press, as always.
-    room.setKeys(parked, GAS);
-    run(room, 10);
-    expect(kartOf(room, parked).steps).toBe(10);
   });
 
   it("leave a parked kart that nobody touches exactly where it is", () => {
@@ -759,10 +753,14 @@ describe("bumps while the room is open", () => {
     expect(kartOf(room, parked)).toEqual(before);
   });
 
+  // Rewritten on 17 November 2026: the same check, in a race after GO
+  // instead of while the room is open.
   it("happen between two karts that are both being driven", () => {
     // Places 0 and 1 are side by side. The left one steers right, into the other.
     const { room, ids } = roomWith(2);
     const [left, right] = ids;
+    room.startRace(left);
+    run(room, COUNTDOWN_STEPS);
     room.setKeys(left, { gas: true, brake: false, left: false, right: true });
     room.setKeys(right, GAS);
     let closest = Infinity;

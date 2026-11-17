@@ -8,9 +8,9 @@
 // There is one room for each track (online.js makes them). Rooms with codes
 // come later.
 //
-// Karts on the track bump into each other (shared/bumps.js), while the room
-// is open and in a race. A bump moves karts and changes their speed. It
-// never touches anyone's laps or clock.
+// Karts on the track bump into each other (shared/bumps.js) in a race. A
+// bump moves karts and changes their speed. It never touches anyone's laps
+// or clock. While the room waits for a start nothing moves, so nothing bumps.
 //
 // A race that began with the countdown has bananas (shared/hazards.js): the
 // first one a few seconds after GO. A kart that drives over one spins out.
@@ -21,8 +21,9 @@
 // seed has no bananas at all. Every online room is given one, by online.js.)
 //
 // A room is always in one of four phases:
-//   "open"       nobody has started a race. Everyone drives around freely,
-//                and each player's own clock starts at their first key press.
+//   "open"       waiting for the host to start a race. Every kart stands still
+//                on its place on the starting grid, and keys do nothing.
+//                (Until 17 Nov 2026 everyone could drive around freely here.)
 //   "countdown"  the host started a race. Every kart is on the starting grid
 //                and 3, 2, 1 is being counted. Keys do nothing.
 //   "racing"     GO! Everyone who was in the room at the start is racing.
@@ -40,7 +41,7 @@
 // when the time runs out gets no result.
 
 import { fastestLapSteps } from "../shared/laps.js";
-import { createRacer, stepRacer, rollRacer } from "../shared/race.js";
+import { createRacer, stepRacer } from "../shared/race.js";
 import { countdownAt, COUNTDOWN_STEPS } from "../shared/countdown.js";
 import { FINISH_WINDOW_STEPS, RACE_LIMIT_STEPS } from "../shared/race-time.js";
 import { GRID_PLACES } from "../shared/grid.js";
@@ -135,7 +136,7 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
     return players.size === 0 ? null : Math.min(...players.keys());
   }
 
-  /** Back to free driving, with every kart on its starting place and no bananas. */
+  /** Back to waiting for a start, with every kart on its starting place and no bananas. */
   function openTheRoom() {
     phase = "open";
     countdownSteps = 0;
@@ -178,7 +179,7 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
     /**
      * Takes a player's kart out of the room. Their place becomes free.
      * If that was the last racer of a race, the race is over and the room
-     * goes back to free driving, so that the people watching are not stuck.
+     * goes back to waiting for a start, so that the people watching are not stuck.
      */
     removePlayer(id) {
       players.delete(id);
@@ -291,17 +292,14 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
     /**
      * Moves the room forward by one step of game time.
      *
-     * While the room is open: a kart that has not started yet and has no
-     * key held is parked, so a player's clock starts at their first key
-     * press. A parked kart that is pushed by another kart rolls to a stop,
-     * but its clock stays at zero and its checkpoints are not counted.
+     * While the room is open, waiting for the host: nothing moves. Every
+     * kart stays on its place on the starting grid whatever keys are held,
+     * and nobody's clock runs.
      *
      * In a race: during 3, 2 and 1 nothing moves. From GO on, every racer
      * is moved, key held or not, so everyone's clock starts at the same
-     * step. The karts of people who are watching are never moved.
-     *
-     * In both cases the karts on the track then bump into each other. In a
-     * race, from GO on, the bananas come last.
+     * step. The karts of people who are watching are never moved. The karts
+     * on the track then bump into each other, and the bananas come last.
      *
      * A race is over when every racer has finished, or when its time has
      * run out: two minutes after the first racer finished, and never more
@@ -313,16 +311,7 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
       step++;
 
       if (phase === "open") {
-        for (const player of players.values()) {
-          if (!isParked(player)) {
-            player.racer = stepRacer(track, player.racer, player.keys, character);
-          } else if (isMoving(player.racer.kart)) {
-            // Parked, but pushed by a bump: the kart rolls to a stop. Its clock stays at zero.
-            player.racer = rollRacer(track, player.racer, character);
-          }
-        }
-        bump();
-        return;
+        return; // waiting for the host: nothing moves
       }
 
       const inTheRace = racers();
@@ -438,19 +427,6 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
       };
     },
   };
-}
-
-function anyKeyHeld(keys) {
-  return keys.gas || keys.brake || keys.left || keys.right;
-}
-
-/** While the room is open: has this player not started driving yet? Their clock is at zero and no key is held. */
-function isParked(player) {
-  return player.racer.progress.steps === 0 && !anyKeyHeld(player.keys);
-}
-
-function isMoving(kart) {
-  return kart.vx !== 0 || kart.vy !== 0;
 }
 
 function round(number, decimals) {

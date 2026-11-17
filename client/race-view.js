@@ -116,13 +116,13 @@ export function raceView({ race, myId, mine }) {
   }
 
   if (race.phase === "open") {
-    const finished = mine?.finished === true;
+    // Waiting for the host: every kart stands on the grid and keys do nothing.
     return {
-      message: finished ? `${finishedIn(mine)} Press R to go again.` : "",
+      message: "",
       big: false,
       line: host
-        ? "You are the host: press Enter to start a race for everyone here."
-        : "Waiting for the host to start a race. You can drive around meanwhile.",
+        ? "You are the host: press Enter to start a race for everyone here. Nobody can move before that."
+        : "Waiting for the host to start a race. Your kart stays on the grid until then.",
     };
   }
 
@@ -139,6 +139,19 @@ export function raceView({ race, myId, mine }) {
     return { message: `Time is up: the race is over. ${nextRace}`, big: false, line: "" };
   }
   return { message: "", big: false, line: "" };
+}
+
+/**
+ * Do this player's arrow keys move their kart right now, as far as the
+ * server's rules go (server/room.js)? Only in a race after GO, in their own
+ * kart, before they finish, and not while it spins after a banana. Not while
+ * waiting for the host, not during 3, 2, 1, not when watching, and not once
+ * the race is over. The page uses it so that the kart only leans, the
+ * engine only revs and the next checkpoint is only lit when the keys really
+ * do something.
+ */
+export function keysWork(race, mine) {
+  return race.phase === "racing" && mine !== undefined && mine.finished !== true && !(mine.spin > 0);
 }
 
 const WATCHING_LINE = "A race is on. You are watching the kart in front, and you will join at the next start.";
