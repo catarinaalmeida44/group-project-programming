@@ -52,7 +52,7 @@ One commit of this evening (`a4c1080`) left both race pages broken: a script tha
 
 Checked:
 
-- `npm test`: see the number at the end of this list. Before this evening's second round there were 1,605.
+- The tests: 1,804 pass, 5 are skipped (the ones that need the database address). Before this round there were 1,605. Of the 199 new ones, 179 are the helper's (ramps, walkers, the room) and 20 are for the picture side.
 - The new rules have their own tests, written by the helper: a kart takes off only when it drives over a ramp the right way and fast enough, cannot steer in the air, lands after exactly the time the rule says, is still stopped by a wall, and flies over a banana; a walker is toppled by a fast kart and not by a slow one, not when inside a building, not when already sitting, not by a kart in the air; the server sends the walkers only on a track that has them; nothing a browser sends can make a kart jump or move a walker. On the real track: every walker's whole path is on open ground, and the flight after every ramp is clear of walls.
 - The picture side has its own tests too (`tests/street-life.test.js`): a walker is drawn exactly where the rules say it is.
 - A robot drove a whole lap in the real single race page, in the agent's browser: it took the ramp on the coast road, its speed went from about 300 to 409 units a second, and the picture taken at that moment shows the kart in the air above its shadow, with a computer kart ahead of it jumping too.
