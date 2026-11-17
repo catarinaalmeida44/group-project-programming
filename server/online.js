@@ -56,8 +56,15 @@ export const MAX_MESSAGES_PER_SECOND = 60;
 const BROKE_THE_RULES = 1008;
 const TRY_AGAIN_LATER = 1013;
 
-// Every so often we check that each browser is still there.
-const CHECK_STILL_THERE_MS = 15000;
+/**
+ * Every so often we check that each browser is still there (see the end of
+ * attachOnlinePlay). A browser that has not answered by the next check is
+ * removed, so a kart whose browser vanished stays on the track for one to two
+ * checks: 5 to 10 seconds. It was 15 seconds until 17 Nov 2026, so a ghost
+ * kart could stay for up to 30. Much shorter would risk removing a real
+ * player whose answer is slow, for example on a phone hotspot.
+ */
+export const STILL_THERE_CHECK_MS = 5000;
 
 /**
  * When we send a browser away we tell it why, and then give it this long to
@@ -76,6 +83,9 @@ export const GOODBYE_WAIT_MS = 2000;
  *   character, maxPlayers  what every room uses
  *   accounts    the account rules (accounts.js), or null: nothing is saved then
  *   goodbyeWaitMs  how long to wait before cutting a connection we sent away
+ *   stillThereCheckMs  how often to check that every browser is still there.
+ *               Normally left out. A test gives a short one, so it does not
+ *               have to wait 10 seconds
  *   pickSeed    what every room calls when a race starts, to get the seed of
  *               that race's bananas (see room.js). Normally left out: then
  *               it is real chance. A test can give its own, to know where
@@ -92,6 +102,7 @@ export function attachOnlinePlay(
     maxPlayers,
     accounts = null,
     goodbyeWaitMs = GOODBYE_WAIT_MS,
+    stillThereCheckMs = STILL_THERE_CHECK_MS,
     pickSeed = randomSeed,
   },
 ) {
@@ -423,7 +434,7 @@ export function attachOnlinePlay(
         connection.ping();
       }
     }
-  }, CHECK_STILL_THERE_MS);
+  }, stillThereCheckMs);
   stillThereCheck.unref(); // this timer alone must not keep the program running
 
   return {

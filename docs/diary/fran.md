@@ -39,6 +39,42 @@ Search `PROJECT_BRIEF.md` for "DROPPED 17 Nov" and for "OPEN since 17 Nov".
 **What comes next**
 Francisco decides about the Cup button in the menu and the other notes listed above.
 
+### 17 November 2026: no more ghost karts in online play
+
+**What was done**
+Francisco reported that after leaving online play for the menu (with "← Menu" or Back) and joining again, his kart was on the track twice, then three times. Now the online page closes its connection itself when it is left, and reloads if Back brings it back from the browser's back/forward cache. The server also checks every 5 seconds instead of 15 that each browser is still there. Branch `fix-duplicate-online-karts`.
+
+| File | What changed |
+|---|---|
+| `client/page-life.js` | New. On "pagehide" it closes the connection. On "pageshow" from the cache it reloads the page |
+| `client/online.js` | Two lines: uses `page-life.js` |
+| `server/online.js` | The still-there check every 5 seconds instead of 15, and a setting so tests can make it shorter |
+| `tests/leaving.test.js`, `tests/page-life.test.js` | New. 10 tests |
+| `WALKTHROUGH.md`, `client/README.md`, `tests/README.md` | Kept true |
+
+**Why it was done this way**
+- The bug could not be made to happen here (see below), so the fix covers the likely cause without relying on it: whatever the browser does, a page that is hidden closes its connection, and a kart whose browser stops answering goes within 10 seconds.
+- 5 seconds, not 1: a real player on a slow connection must have time to answer. The cost is one tiny message per player every 5 seconds.
+- The new code is in its own small file so it can be tested without a browser.
+
+**Decisions**
+- Francisco approved the fix on 17 November before it was built.
+- Decision made by the agent, please confirm: this diary stays `fran.md`. Francisco's instructions named `francisco.md`, but his entries are already in `fran.md`.
+- `server/online.js` and `client/online.js` belong to the "game server and multiplayer" area, which has no owner yet in `docs/team-guide.md`. Whoever takes it should know about this change.
+
+**What was checked, and what was not**
+- Tried to reproduce the bug before changing anything, with a small script that counts the karts in the room from the server's side. On the laptop: "← Menu" left 0 karts at once, coming back 1, Back 0, Forward 1. On the live server: "← Menu" left 0 karts at once, still 0 every 4 seconds for 35 seconds. **The bug did not happen.** The Claude app's browser used for this never keeps pages in a back/forward cache (checked: a page brought back with Back was always loaded fresh), so the likely cause could not be tested there.
+- After the fix, in the same browser on the laptop: open 1 kart, "← Menu" 0, Back to online 1, Back to the menu 0.
+- The new code was broken on purpose in four ways (every 15 seconds again, a silent browser never removed, the page not saying goodbye, reloading on the wrong occasion). Each made a test fail.
+- `npm test`: 1319 passed, 5 skipped. Then Pedro's characters (pull request 20) were merged into `main`, touching the same two online files. `main` was merged into this branch without conflicts, and `npm test` on the combination gave 1368 passed, 5 skipped. The browser check above was done before that merge.
+- **Not checked:** Chrome, Edge or Safari with their back/forward cache, and the live server after this change (it changes only after the merge).
+
+**How to check it yourself**
+After the merge, on the live site in Chrome: go Online, "← Menu", Online, Back, Forward, several times, with a second laptop on the online page. The second laptop should never see more than one kart of yours.
+
+**What comes next**
+Piece 2: the online lobby where nobody moves until the host starts.
+
 ### 11 November 2026: the main menu, settings and your own best times
 
 **What was done**

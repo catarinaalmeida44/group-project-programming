@@ -48,6 +48,7 @@ import { readRace, readEndsIn, timeLeftNotice, raceView, kartToWatch } from "./r
 import { followTarget, easeTowards, nextView } from "./camera.js";
 import { storageOf } from "./storage.js";
 import { readSettings } from "./settings.js";
+import { closeWhenLeft } from "./page-life.js";
 
 // The short name is always one from our own list of tracks, whatever the
 // address says, so it is safe to use in the address of the connection below.
@@ -110,6 +111,10 @@ let lastFrameTime = null;
 // "wss" is the secure kind, used when the page itself was loaded securely (https).
 const secure = window.location.protocol === "https:";
 const connection = new WebSocket(`${secure ? "wss" : "ws"}://${window.location.host}/play?track=${trackName}`);
+
+// Leaving the page closes the connection, so our kart does not stay on the
+// track as a ghost. Coming back with Back reloads the page (page-life.js).
+closeWhenLeft(window, connection, () => window.location.reload());
 
 connection.addEventListener("open", () => {
   connected = true;
