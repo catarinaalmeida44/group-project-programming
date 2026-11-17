@@ -375,7 +375,7 @@ What is still wrong or missing: every building looks the same (the real ones dif
 
 The campus loop was made from a map and from what can be read online, and nobody recognised the campus in it. So on 17 November the team filmed the lap they wanted, nine minutes of walking: from the entrance avenue through the Hovione Atrium, onto the terrace, under the library, down the promenade and the wide stairs, past the tunnel to the beach, along the coast road, up the west street and back. The coding agent went through that film picture by picture and built a new track from it, the **Nova lap** (`shared/tracks/nova-lap.js`). The campus loop is still there, untouched.
 
-**Bigger.** One square is 3 by 3 metres, half the size of a square of the campus loop. Compared with a kart, everything is twice as big, so a tall building looks tall and a low one low. A lap is about 730 metres.
+**Bigger.** One square is 3 by 3 metres, half the size of a square of the campus loop. Compared with a kart, everything is twice as big, so a tall building looks tall and a low one low. A lap is about 690 metres.
 
 **Not a survey.** The real coast road runs at a slant to the buildings. Here it runs straight along the bottom of the map, so that walls run along the squares. Paths were widened so karts can pass each other. The stairs are driven as a flat ramp, because the driving rules have no hills.
 

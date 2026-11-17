@@ -67,7 +67,8 @@ const SIDES = [
  */
 export function createScenery(track, model) {
   const { blocks = [], fences = [], unitsPerMetre } = model;
-  if (!(unitsPerMetre > 0)) {
+  // A real number above zero: not a text such as "5", and not "endless".
+  if (typeof unitsPerMetre !== "number" || !Number.isFinite(unitsPerMetre) || !(unitsPerMetre > 0)) {
     throw new Error("Scenery: unitsPerMetre must be a number above zero");
   }
   const size = track.tileSize;

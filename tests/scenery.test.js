@@ -125,7 +125,8 @@ describe("the part of a rectangle that lies in each square", () => {
 
 describe("making the scenery of a track: what is refused", () => {
   it("refuses scenery that does not say how many units a metre is", () => {
-    for (const unitsPerMetre of [undefined, null, 0, -5, NaN]) {
+    // (A text such as "5" and an endless number are refused too: added on 17 November 2026, when the check was made stricter.)
+    for (const unitsPerMetre of [undefined, null, 0, -5, NaN, "5", Infinity]) {
       expect(() => createScenery(FIELD, { unitsPerMetre, blocks: [] }), String(unitsPerMetre)).toThrow(/Scenery: unitsPerMetre/);
     }
   });

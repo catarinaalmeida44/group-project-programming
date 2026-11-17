@@ -76,7 +76,7 @@ export const NOVA_LAP_LOOK = {
 
   // A wall that has no scenery of its own becomes a low bank, as on the
   // other tracks, so that no wall is ever invisible. Every wall beside the
-  // road of this track has scenery (tests/nova-lap.test.js checks it).
+  // road of this track has scenery (tests/nova-lap-look.test.js checks it).
   barrierHeight: 8,
   barrier: { colours: ["#3f7a3c", "#47843f"], top: "#4f8f45" },
   buildings: {

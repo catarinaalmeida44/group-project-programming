@@ -21,7 +21,7 @@
 //   went through the film picture by picture and drew what it saw.
 // - Each letter is a square of 3 by 3 metres: half the size of a square of
 //   the campus loop, so everything is twice as big compared with a kart.
-//   A lap along the driving line is about 730 metres.
+//   A lap along the driving line is about 690 metres.
 // - It is not a survey. The real coast road runs at a slant to the buildings.
 //   Here it runs straight along the bottom of the map, so that walls run
 //   along the squares. The halls and lawns were placed to fit.

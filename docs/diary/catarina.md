@@ -43,7 +43,7 @@ What a player sees now, in the order of the lap:
 **Why it was done this way**
 
 - **A new track beside the old one, not instead of it.** The campus loop is Rodrigo's, and many tests are written against it. Removing it is for the team to decide.
-- **Twice the scale** (3 metres a square instead of 6). Beside a kart, a 12-metre front now looks like a 12-metre front. A lap is about 730 metres.
+- **Twice the scale** (3 metres a square instead of 6). Beside a kart, a 12-metre front now looks like a 12-metre front. A lap is about 690 metres.
 - **Pictures on walls** are what makes a building recognisable: a name, a banner, a row of coloured rooms. The old code could only paint every wall the same. The pictures are painted by our own code when the page opens, so there are still no image files for buildings.
 - **Boxes that start above the ground** give the atrium a ceiling, the gallery its wooden underside and the library its bridge, with one idea instead of three.
 - **The ground as shapes** lets a path run at a slant and lets each place have its own paving. The letters of the track are made from the same shapes and a test checks they agree, so the picture cannot lie about where a wall is.
@@ -60,7 +60,10 @@ Checked:
 - The agent flew the camera round the whole lap and looked at each place, and at each hall, the cafe, the auditorium and the inside of the atrium from the side, comparing with the pictures from the video.
 - A race in the agent's browser: holding the gas from the grid drives through the doors and across the atrium.
 - How long one picture takes to draw, in the agent's browser: 7 to 12 thousandths of a second on the new track, against 5 to 15 on the campus loop. So it is not slower than what the team already has.
-- The automatic tests: see the numbers at the end of this entry.
+- `npm test`: 1,594 tests pass, 5 are skipped (the ones that need the database address). Before this work there were 1,488. The 106 new ones were written by the helper agent and run again by the main agent after the merge.
+- What the new tests showed about the track: its letters match the shapes on every square; no checkpoint can be driven round (a search over the squares, which was also tried on a checkpoint shortened on purpose, and caught it); a simple robot drives the three laps in 74 seconds without touching a wall; the five computer karts all finish three laps, in about 88 seconds; the wrong way round counts no lap; no wall beside the road is invisible.
+- The helper noticed three small things, all corrected: a lap is about 690 metres, not 730 as first written; one comment named the wrong test file; and the scenery code accepted a text or an endless number where it needs a real number.
+- The menu shows the Nova lap as a third card with its small map, and the server has an online room for it (it answered "welcome" with the track's name).
 
 Not checked:
 
