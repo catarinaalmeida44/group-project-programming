@@ -37,6 +37,7 @@
 import { WebSocketServer } from "ws";
 import { STEP_SECONDS } from "../shared/physics.js";
 import { createRoom, randomSeed, STEPS_PER_UPDATE } from "./room.js";
+import { createCastKeeper, mayChangeCharacter } from "./cast-keeper.js";
 import { readClientMessage, MAX_MESSAGE_LENGTH } from "./messages.js";
 import { ticketOf } from "./api.js";
 
@@ -183,6 +184,7 @@ export function attachOnlinePlay(
    */
   function openTable(tableTrack, shortName) {
     const room = createRoom(tableTrack, character, maxPlayers, pickSeed);
+    const cast = createCastKeeper(); // who in the room is which character
     const connections = new Set();
     const seats = new Map(); // player number in the room -> { connection, account, username }
 
@@ -224,6 +226,7 @@ export function attachOnlinePlay(
         gone = true;
         connections.delete(connection);
         seats.delete(player.id);
+        cast.forget(player.id); // their character is free again
         room.removePlayer(player.id);
         stopTheClockIfEmpty();
         tellNames();
@@ -271,7 +274,7 @@ export function attachOnlinePlay(
           return;
         }
 
-        // Is it one of the three things a browser may say?
+        // Is it one of the things a browser may say (messages.js)?
         const message = isBinary ? null : readClientMessage(data.toString());
         if (message === null) {
           kick("Message not understood");
@@ -285,7 +288,20 @@ export function attachOnlinePlay(
         } else if (message.type === "restart") {
           room.restart(player.id); // the room says no during a race
         } else if (message.type === "look") {
-          room.setLook(player.id, message.look); // the colours of this player's own kart
+          // The colours of this player's own kart. A player who is a
+          // character keeps the character's colours.
+          if (cast.characterOf(player.id) === undefined) {
+            room.setLook(player.id, message.look);
+          }
+        } else if (message.type === "character") {
+          // The character chosen in the menu, or, if someone here already
+          // is that character, the first one nobody is (cast-keeper.js).
+          const mayChange = mayChangeCharacter(room, player.id);
+          const character =
+            cast.choose(player.id, message.character, mayChange) ?? cast.giveFree(player.id, mayChange);
+          if (character !== null) {
+            room.setLook(player.id, character.look);
+          }
         } else {
           room.startRace(player.id); // the room says no to anyone but the host
         }
@@ -366,7 +382,7 @@ export function attachOnlinePlay(
           saveFinish(finish);
         }
         if (room.stepCount() % STEPS_PER_UPDATE === 0) {
-          tellEveryone(JSON.stringify(room.snapshot()));
+          tellEveryone(JSON.stringify(cast.dress(room.snapshot()))); // with each player's character
         }
       }
     }

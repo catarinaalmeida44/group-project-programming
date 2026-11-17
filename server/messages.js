@@ -2,7 +2,7 @@
 //
 // Anyone on the internet can send our server anything, not only the text
 // our own page sends. So every message is checked here before the game
-// looks at it. A browser may say exactly four things:
+// looks at it. A browser may say exactly five things:
 //
 //   {"type":"keys","gas":true,"brake":false,"left":false,"right":true}
 //       "these are the driving keys I am holding now"
@@ -15,11 +15,16 @@
 //       "paint my kart in these colours". Three small whole numbers, each
 //       the number of a colour in a short list (shared/kart-looks.js). It
 //       only changes how the kart is drawn.
+//   {"type":"character","id":"pcp"}
+//       "I want to be this character" (shared/cast.js). Only the id of a
+//       character in the cast gets through. The room decides whether it is
+//       still free.
 //
 // A browser never says where its kart is, how fast it goes or which lap it
 // is on. The server works those out itself, with the shared rules.
 
 import { cleanLookChoice } from "../shared/kart-looks.js";
+import { isCharacterId } from "../shared/cast.js";
 
 /** A real message is far shorter than this. Anything longer is refused unread. */
 export const MAX_MESSAGE_LENGTH = 200;
@@ -27,7 +32,7 @@ export const MAX_MESSAGE_LENGTH = 200;
 /**
  * Checks one message from a browser.
  * Gives { type: "keys", keys }, { type: "restart" }, { type: "start" } or
- * { type: "look", look }, or null if the message is not one of the four
+ * { type: "look", look } or { type: "character", character }, or null if the message is not one of the five
  * things a browser may say.
  * What it gives back is built fresh from the checked parts only, so
  * anything extra a browser added to its message is dropped.
@@ -60,6 +65,11 @@ export function readClientMessage(text) {
     // colour written out, a name, or a number out of range is refused.
     const look = cleanLookChoice(message);
     return look === null ? null : { type: "look", look };
+  }
+
+  if (message.type === "character") {
+    // Only the exact id of a character in the cast gets through.
+    return isCharacterId(message.id) ? { type: "character", character: message.id } : null;
   }
 
   if (message.type === "keys") {
