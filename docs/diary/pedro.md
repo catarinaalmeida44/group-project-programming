@@ -2,6 +2,69 @@
 
 Entries from 10 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 18 November 2026: the podium
+
+**What was done**
+When a race is over, the race picture becomes a podium in the Hovione Atrium.
+- **The hall:** a white hall with tall glass panes and a big NOVA SBE sign.
+- **The steps:** 2nd on the left, 1st in the middle and highest, 3rd on the right.
+- **The drivers:** the first three stand on the steps as in "Choose your character", in their suits but with no helmet. The winner lifts a gold trophy. The other two do their own dance.
+- **The crowd:** 28 students cheer round the podium with their arms up.
+- **Confetti** falls, and a line under the picture gives the places, names and times.
+
+It comes:
+- **Online,** when the server says the race is over. After 10 seconds the results board comes up on top of it, as before.
+- **In a single race,** when every kart has finished, or at the latest 30 seconds after the player finished. It stays until R starts a new race.
+
+| File | What it is for |
+|---|---|
+| `client/podium.js` (new) | Who stands on the podium and when it comes |
+| `client/podium-shape.js` (new) | The hall, the sign, the steps, the drivers without helmets, the crowd |
+| `client/podium-view.js` (new) | Paints it on the race picture, with the camera, the words, the confetti and the line of results |
+| `client/pilot-shape.js` | A "trophy" pose and the trophy itself (`trophyParts`), and a way to leave the helmet out |
+| `client/kart-paint.js` | `paintScene()` paints any list of parts; each head can carry its own picture, so three different people can be painted together |
+| `client/main.js`, `client/online.js` | Show the podium at the end of a race |
+| `tests/podium.test.js` (new) | 28 tests. No existing test was changed |
+| `WALKTHROUGH.md`, the READMEs in `client/` and `tests/` | Kept true. New section: "What happens at the end of a race: the podium" |
+
+**Why it was done this way**
+- The podium is its own scene, not a place on the Nova lap's map. That way it is the same atrium after every track, as Pedro chose, and the track drawing did not have to change.
+- It is built from the same blocks and painted by the same painter as the karts and the pilots, so the drivers look exactly as in "Choose your character".
+- "trophy" is not added to the list of movements `MOVES`, because an existing test checks that exact list. It has its own list, `PODIUM_MOVES`.
+
+**Decisions**
+- Decided by Pedro: a podium in single and online races; always the Hovione Atrium; NOVA SBE in our own letters, not the school's logo; no helmet at all on the podium; the winner lifts a trophy; lots of people cheering.
+- Decision made by the agent, please confirm: in a single race, the podium waits at most 30 seconds after the player finished. Karts still driving then are left off it.
+- Decision made by the agent, please confirm: online, the podium is shown alone for 10 seconds, then the results board comes up on top of it.
+- Decision made by the agent, please confirm: 2nd and 3rd do their own dance; a kart that is no character keeps a helmet on, so no empty head is shown.
+- Git: the agent made the branch `podium` from an up-to-date `main` and made the commits. Nothing was pushed.
+
+**What was checked, and what was not**
+- `npm test`: all tests pass (1834 passed, 5 skipped).
+- One test drives a whole single race with no browser, the computer driving the player's kart too. It ends on the podium with three different characters, the fastest first.
+- Eight rules were broken on purpose, and each made a test fail:
+  - a kart that did not finish on the podium
+  - the podium not waiting for the others
+  - the podium before the player finished
+  - helmets on the podium
+  - everyone lifting the trophy
+  - drivers floating above their step
+  - the crowd standing on the podium
+  - 2nd on the wrong side
+- In the app's built-in browser, the podium was painted on its own with a pretend top 3, and looked at and improved twice:
+  - the trophy was half hidden behind the winner's head
+  - the drivers' arms overlapped
+  - there was too much empty floor
+- The single race and online pages load without errors.
+- NOT checked: a race driven by hand to the end, in the browser, until the podium comes. Single or online.
+- NOT checked: two real laptops, and the live site.
+
+**How to check it yourself**
+Run `npm start`, open http://localhost:3000, and drive a single race to the end. When every kart has finished (or 30 seconds after you), the podium comes up. Online, finish a race with a teammate. Run `npm test` and look for `podium.test.js`.
+
+**What comes next**
+- Pedro tries it, then publishes the branch `podium` from GitHub Desktop and opens the pull request. Ask the teammate to merge only after the last push.
+
 ### 17 November 2026 (fifth piece): real heads, the photo beside the pilot, and a dance for each character
 
 **What was done**

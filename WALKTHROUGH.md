@@ -449,6 +449,17 @@ Online, the name of a signed-in player is shown above their kart.
 
 Tested in `tests/cast.test.js`, `tests/room-characters.test.js` and `tests/pilot-shape.test.js`.
 
+## What happens at the end of a race: the podium
+
+**When it comes** (`client/podium.js`): online, when the server says the race is over (everyone finished, or the time ran out). In a single race, when every kart has finished, or at the latest 30 seconds after the player finished, so a computer kart that is stuck cannot keep the player waiting. It never comes before the player finished. Online, the podium is shown alone for 10 seconds, then the results board comes up on top of it, with everyone.
+
+**Who stands on it**: the first three karts that finished, the fastest on the top step. A kart that did not finish never stands on it, even if it was in front on the track. Each driver is their character, with their own head, suit and dance. A kart that is no character keeps a helmet on, so no empty head is shown.
+
+**Where**: always the Hovione Atrium, whatever track was raced (Pedro's choice, 18 November): a white hall with tall glass panes and a big NOVA SBE sign, written in our own letters, not with the school's logo.
+
+**What it shows** (`client/podium-shape.js`, painted by `client/podium-view.js` with the same painter as the karts): three steps, 2nd on the left, 1st in the middle and highest, 3rd on the right; the drivers standing on them in their suits with no helmet; the winner lifting a gold trophy (`trophyParts()` and the "trophy" pose in `client/pilot-shape.js`); the other two doing their own dance; 28 students cheering round the podium with their arms up, always in the same places and colours; confetti; and a line under the picture with the places, names and times.
+
+**Tested in `tests/podium.test.js`**: who stands where; that a kart that did not finish is never on it; when a single race is over (never before the player finished, at once when everyone has, and at the latest after 30 seconds); a whole single race driven by the computer, including the player's kart, which ends with three different characters on the podium, fastest first; the drivers' feet on their own step; no helmet; the trophy only for the winner and high above the shoulders; and a crowd that never stands on or in front of the podium.
 ## How are laps counted, and can a player cheat?
 
 A track has checkpoints: invisible rectangles across the road, in driving order. The first one is the finish line. The game keeps one count for each kart: checkpoints passed.
