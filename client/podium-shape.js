@@ -140,13 +140,50 @@ export function hallParts() {
     },
   ];
   for (const step of PODIUM_STEPS) {
-    const half = STEP_WIDTH / 2;
-    parts.push({
-      name: `step ${step.place}`,
-      faces: box(-STEP_DEPTH / 2, STEP_DEPTH / 2, step.y - half, step.y + half, 0, step.height, step.colour, STEP_TOP),
-    });
+    parts.push(stepPart(step));
   }
   return parts;
+}
+
+/** One step of the podium, standing where it stands (or with its middle at "y", when given). */
+export function stepPart(step, y = step.y) {
+  const half = STEP_WIDTH / 2;
+  return {
+    name: `step ${step.place}`,
+    faces: box(-STEP_DEPTH / 2, STEP_DEPTH / 2, y - half, y + half, 0, step.height, step.colour, STEP_TOP),
+  };
+}
+
+/**
+ * The podium as separate groups, for painting it on a real track (the Nova
+ * lap, in front of the school's name) among the walls and trees there.
+ * Each group is one step with its driver, or one student of the crowd:
+ *   { at: [x, y], parts, shadows, labels }
+ * "at" is where the group stands in the podium's own directions (as in
+ * PODIUM_STEPS and crowdSpots), and its parts, shadows and labels are
+ * measured from there. The race view (draw.js) sorts the groups with
+ * everything else on the track, so a tree in front hides what is behind it.
+ *   drivers  up to three, from podiumLineup() in podium.js, each with "picture"
+ */
+export function podiumGroups(drivers, seconds, crowd = crowdSpots()) {
+  const fromStep = (step) => ([x, y, z]) => [x, y - step.y, z];
+  const steps = PODIUM_STEPS.map((step) => {
+    const driver = drivers.find((one) => one.place === step.place);
+    const parts = [stepPart(step, 0), ...(driver ? podiumDriver(driver, seconds).map((part) => mapPart(part, fromStep(step))) : [])];
+    return {
+      at: [0, step.y],
+      parts,
+      shadows: [{ x: 0.6, y: 0, along: STEP_DEPTH * 0.62, across: STEP_WIDTH * 0.62, turn: 0 }],
+      labels: [{ text: String(step.place), point: [STEP_DEPTH / 2 + 0.05, 0, step.height / 2], size: Math.min(4.5, step.height * 0.8), colour: "#1d2733" }],
+    };
+  });
+  const people = crowd.map((spot) => ({
+    at: [spot.x, spot.y],
+    parts: crowdPerson(spot, seconds).map((part) => mapPart(part, ([x, y, z]) => [x - spot.x, y - spot.y, z])),
+    shadows: [{ x: 0.4, y: 0, along: 2.2, across: 2.6, turn: 0 }],
+    labels: [],
+  }));
+  return [...steps, ...people];
 }
 
 /**

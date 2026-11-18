@@ -31,7 +31,7 @@ import { jumpHeight } from "../shared/ramps.js";
 import { createGround } from "./ground.js";
 import { paintSky } from "./sky.js";
 import { paintProp, paintPropFromAbove, PROP_HEIGHT } from "./props.js";
-import { paintKart, viewerBehind, viewerAbove } from "./kart-paint.js";
+import { paintKart, paintScene, viewerBehind, viewerAbove } from "./kart-paint.js";
 import { lookOf, shade } from "./kart-shape.js";
 import { lookOfTrack, propsOfTrack } from "./track-looks.js";
 import { checkpointPieces } from "./checkpoints.js";
@@ -87,6 +87,15 @@ const MINIMAP_MARGIN = 10;
  *             nextCheckpoint  the number of the checkpoint the player has to
  *                      reach next. It is lit up with a low curtain of yellow
  *                      light, and marked on the small map (checkpoints.js)
+ *             podium   [{ x, y, angle, parts, shadows, labels }]: groups of
+ *                      shapes that stand on the track at the end of a race
+ *                      (podium-view.js). Each is painted with kart-paint.js,
+ *                      sorted among the buildings and trees like a kart
+ *             camera   a camera of its own, in the form of RACE (camera.js),
+ *                      instead of the race camera. Race view only
+ *             hideOwnKart  true: the kart the camera stays with is not
+ *                      painted, and the small map is left out (the camera
+ *                      only stands there to look at the podium)
  *
  * A kart may carry "spinTurn": extra turning, in radians, for the picture
  * only. A kart that slipped on a banana is drawn spinning with it.
@@ -166,7 +175,7 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
     }
 
     // The views that show only part of the track get a small map in the corner.
-    if (view !== "map") {
+    if (view !== "map" && scene.hideOwnKart !== true) {
       drawMinimap(kart, others, bananas, light, seconds);
     }
   };
@@ -194,7 +203,8 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
     // The camera comes down from high above the grid while 3, 2, 1 is counted.
     const intro = typeof scene.intro === "number" ? Math.min(Math.max(scene.intro, 0), 1) : 1;
     const eased = intro * intro * (3 - 2 * intro); // slow at both ends, quick in the middle
-    const settings = intro >= 1 ? RACE : blendChase(CHASE, RACE, eased);
+    // A page can bring its own camera, in the same form as RACE (the podium does).
+    const settings = scene.camera ?? (intro >= 1 ? RACE : blendChase(CHASE, RACE, eased));
 
     // The camera swings round behind the kart a moment after the kart has
     // turned. If the kart was put somewhere else (back on the grid), or
@@ -285,6 +295,18 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
         });
       }
     }
+    // The podium at the end of a race: each step with its driver, and each
+    // student of the crowd, is one thing, painted like a kart.
+    for (const group of Array.isArray(scene.podium) ? scene.podium : []) {
+      const seen = seenFromKart(spot, group.x, group.y);
+      if (seen.ahead > settings.viewAhead) {
+        continue;
+      }
+      const viewer = viewerBehind(seen, group.angle - spot.angle, group.angle, settings, SCREEN);
+      if (viewer !== null) {
+        things.push({ kind: "podium", group, viewer, ahead: seen.ahead, column: Math.floor(group.x / size), row: Math.floor(group.y / size) });
+      }
+    }
     // The start gantry, one piece for each square it crosses. (As one wide
     // thing it was sorted by the square of its middle, and a far building
     // in a row nearer the camera was then painted over part of it: the
@@ -350,6 +372,8 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
       } else if (thing.kind === "kart") {
         paintKartWithJump(thing.kart, thing.viewer, thing.ground, 0);
         paintNameAbove(thing, scene.names);
+      } else if (thing.kind === "podium") {
+        paintPodiumGroup(thing.group, thing.viewer);
       } else if (thing.kind === "gantry") {
         paintGantry(thing.piece, spot, settings, near, scene.lights);
       } else if (thing.kind === "light") {
@@ -364,8 +388,27 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
     paintPuffs(puffs, spot, settings, near);
 
     // Our own kart last: always in the same spot and never hidden.
-    const own = viewerBehind({ ahead: 0, sideways: 0 }, kart.angle + (kart.spinTurn ?? 0) - spot.angle, kart.angle, settings, SCREEN);
-    paintKartWithJump(kart, own, chasePoint(0, 0, settings), steerShown);
+    if (scene.hideOwnKart !== true) {
+      const own = viewerBehind({ ahead: 0, sideways: 0 }, kart.angle + (kart.spinTurn ?? 0) - spot.angle, kart.angle, settings, SCREEN);
+      paintKartWithJump(kart, own, chasePoint(0, 0, settings), steerShown);
+    }
+  }
+
+  /** One group of the podium (a step with its driver, or a student), and the words on it. */
+  function paintPodiumGroup(group, viewer) {
+    paintScene(context, viewer, { parts: group.parts, shadows: group.shadows ?? [] });
+    context.save();
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    for (const label of group.labels ?? []) {
+      const spot = viewer.place(...label.point);
+      if (spot !== null) {
+        context.font = `900 ${Math.round(label.size * spot.scale)}px "Segoe UI", Arial, sans-serif`;
+        context.fillStyle = label.colour;
+        context.fillText(label.text, spot.x, spot.y);
+      }
+    }
+    context.restore();
   }
 
   /**

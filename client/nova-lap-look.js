@@ -29,6 +29,12 @@ export const NOVA_LAP_LOOK = {
   kerbColours: ["#d8473f", "#f2f5f7"],
   edgeLines: false,
 
+  // The podium at the end of a race (podium-view.js): on the lawn in front
+  // of the white wall with the school's name, at the end of the avenue, as
+  // [column, row]. The camera stands further west on the lawn and looks
+  // east, at the podium and the name above it. (Pedro, 18 November 2026.)
+  podium: { at: [50.8, 6.1], camera: [49.1, 6.1] },
+
   // The way round, through the middle of the road, as [column, row]. The
   // arrows on the ground follow it, and so do the computer karts.
   route: [
