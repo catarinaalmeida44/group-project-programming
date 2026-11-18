@@ -1383,6 +1383,64 @@ export const WALL_ART = {
     },
   },
 
+  // The big screen in the far corner of the atrium: a black cabinet standing
+  // on the floor, and on it a notice from the IT help desk. Moodle is the
+  // school's site for courses, where the team hands in this project: a joke
+  // for everybody at Nova. (Asked for by Catarina, 18 November 2026.)
+  "it-screen": {
+    length: 12.7,
+    height: 4.2,
+    fits: true,
+    inside: true, // it gives its own light
+    paint(c, length, height) {
+      const up = (metres) => height - metres;
+      // The cabinet and its foot.
+      c.fillStyle = "#14171b";
+      c.fillRect(0, 0, length, height);
+      c.fillStyle = "#262b31";
+      c.fillRect(0, up(0.5), length, 0.5);
+      // The lit picture.
+      const left = 0.18;
+      const top = 0.16;
+      const wide = length - left * 2;
+      const tall = height - 0.58 - top;
+      const middle = left + wide / 2;
+      const glow = c.createLinearGradient(0, top, 0, top + tall);
+      glow.addColorStop(0, "#1a4a96");
+      glow.addColorStop(1, "#0c2657");
+      c.fillStyle = glow;
+      c.fillRect(left, top, wide, tall);
+      // A yellow band along the top, with a warning sign and who is speaking.
+      c.fillStyle = "#f2c531";
+      c.fillRect(left, top, wide, 0.6);
+      c.fillStyle = "#14171b";
+      c.beginPath();
+      c.moveTo(left + 0.55, top + 0.1);
+      c.lineTo(left + 0.85, top + 0.52);
+      c.lineTo(left + 0.25, top + 0.52);
+      c.closePath();
+      c.fill();
+      c.fillStyle = "#f2c531";
+      c.fillRect(left + 0.52, top + 0.23, 0.06, 0.16);
+      c.fillRect(left + 0.52, top + 0.42, 0.06, 0.05);
+      lettering(c, "IT HELP DESK", left + 1.1, top + 0.44, 0.3, "#14171b", { weight: 800 });
+      lettering(c, "SERVICE NOTICE", left + wide - 0.3, top + 0.41, 0.2, "#14171b", { align: "right", weight: 700 });
+      // The notice: one line of polite words, then the news in big letters.
+      // Letters are made smaller if a line would not fit, whatever font the browser has.
+      const fitted = (text, size, weight) => {
+        c.font = `${weight} ${size * 1.38}px ${SANS}`;
+        const room = wide - 1;
+        const needed = c.measureText(text).width;
+        return needed > room ? (size * room) / needed : size;
+      };
+      const polite = "We regret to inform you that, unfortunately,";
+      const news = "MOODLE IS DOWN.";
+      lettering(c, polite, middle, top + 1.22, fitted(polite, 0.36, 600), "#e6eefb", { align: "center", weight: 600 });
+      lettering(c, news, middle, top + 2.5, fitted(news, 0.95, 800), "#ffffff", { align: "center", weight: 800 });
+      lettering(c, "Your IT Help Desk team", middle, top + 3.12, 0.26, "#a9c0e6", { align: "center", weight: 600 });
+    },
+  },
+
   // The black letters that stand in the middle of the atrium, one picture each.
   "letter-n": letter((c, size) => novaLetter(c, 0, size)),
   "letter-o": letter((c, size) => novaLetter(c, 1, size)),

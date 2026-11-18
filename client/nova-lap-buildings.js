@@ -156,6 +156,12 @@ export const NOVA_LAP_FENCES = [
   { name: "letter O", from: [64.5, 10.1], to: [64.5, 10.9], base: 0.45, top: 2.85, art: "letter-o", lean: [-1, 0] },
   { name: "letter V", from: [64.5, 11.1], to: [64.5, 11.9], base: 0.45, top: 2.85, art: "letter-v", lean: [-1, 0] },
   { name: "letter A", from: [64.5, 12.1], to: [64.5, 12.9], base: 0.45, top: 2.85, art: "letter-a", lean: [-1, 0] },
+  // The big screen in the far corner of the atrium (the south-east one, on
+  // the left of the doors to the terrace as you leave). It slants across the
+  // corner with its back to it, and is read from the hall. It stands under
+  // the gallery, so it is lower than the gallery's underside (4.4 metres).
+  // The squares behind it are solid: SCREEN_CORNER further down.
+  { name: "IT help desk screen", from: [75.75, 16.75], to: [72.75, 19.75], top: 4.2, art: "it-screen", lean: [-1, -1] },
   // The glass rails of the gallery.
   { name: "gallery rail, south", from: [72.5, 16.5], to: [54, 16.5], base: 5.5, top: 6.6, art: "glass-rail", lean: [0, 1] },
   { name: "gallery rail, east", from: [72.5, 6.5], to: [72.5, 16.5], base: 5.5, top: 6.6, art: "glass-rail", lean: [1, 0] },
@@ -284,8 +290,19 @@ export const NOVA_LAP_FURNITURE = [
   ...[19, 37, 43].map((column) => ({ kind: "bench", column, row: 14 })),
 ];
 
-/** Squares that are wall although nothing stands on them. None at the moment. */
-const MORE_SOLID = [];
+/**
+ * The corner of the atrium behind the big screen: three steps of squares
+ * that follow the slanting screen, so that no kart drives through it or
+ * gets behind it.
+ */
+const SCREEN_CORNER = [
+  [75, 17, 76, 20],
+  [74, 18, 75, 20],
+  [73, 19, 74, 20],
+];
+
+/** Squares that are wall although no box and no single thing stands on them. */
+const MORE_SOLID = [...SCREEN_CORNER];
 
 /**
  * Every rectangle that is wall whatever the ground under it says: each box
