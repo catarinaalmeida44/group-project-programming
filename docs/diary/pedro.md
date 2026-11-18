@@ -2,6 +2,50 @@
 
 Entries from 10 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 18 November 2026 (second piece): the podium at the NOVA wall, cheering, and words at the finish
+
+**What was done**
+Pedro asked for three more things after trying the podium.
+- **The podium at the NOVA wall.** On the Nova lap, the podium now stands on the track itself: on the lawn right in front of the white wall with the school's name, at the end of the entrance avenue, by the start. The race camera looks at it, with the name above the drivers. On the other two tracks, which have no such wall, the hall with the NOVA SBE sign stays.
+- **Cheering.** The crowd cheers when the podium comes up, and again every 2.3 seconds, 8 times in all. This is the cheer from the end of the finish fanfare.
+- **Words at the finish.** A driver who finishes while others still drive is told, in a single race and online: "You finished 2nd, in 1:02.34! Wait for all the drivers to finish the race!"
+
+| File | What it is for |
+|---|---|
+| `client/nova-lap-look.js` | Where the podium stands on the Nova lap, and where its camera stands |
+| `client/draw.js` | The race view can paint groups of podium shapes in the world, sorted among the walls and trees, take a camera of its own, and leave out its own kart and the small map |
+| `client/podium-shape.js` | `podiumGroups()`: the podium as groups (a step with its driver, a student), measured from where each stands |
+| `client/podium-view.js` | On a track with a podium spot, paints the podium there through `draw.js`; elsewhere, in the hall |
+| `client/podium.js` | `finishPlace()`, `finishedWords()` and `cheersDue()` |
+| `client/sound.js` | `cheer()`: the crowd cheers once |
+| `client/main.js`, `client/online.js` | The words at the finish, and the cheering on the podium |
+| `tests/podium.test.js` | 14 more tests, 42 in all. No existing test was changed |
+| `WALKTHROUGH.md`, the READMEs in `client/` and `tests/` | Kept true |
+
+**Why it was done this way**
+- The podium is painted by the same race view that paints the track, so the real wall, the lawn, the trees and the glass front are all there, and a tree in front of a student hides them as it should.
+- The camera for the podium is closer and a little higher than the race camera. With the race camera the drivers were about 100 pixels tall, too small for their faces.
+- A test checks that no step of the podium, and no student near it, stands on a road square, so the podium is never in the way of the karts.
+
+**Decisions**
+- Decided by Pedro: the podium in front of the part of the track that says NOVA; cheering; the place, then "wait for all drivers to finish the race".
+- Decision made by the agent, please confirm: on the Test oval and the Campus loop the podium stays in the hall, because they have no NOVA wall.
+- Decision made by the agent, please confirm: the crowd cheers 8 times and then stops, so it does not go on for ever.
+- Decision made by the agent, please confirm: the words at the finish give the time too. In a single race "New best time!" is added when there is one. "Press R to race again" now shows only on the podium.
+
+**What was checked, and what was not**
+- `npm test`: 1848 passed, 5 skipped.
+- A test found a small mistake: `null` counted as "0 seconds" for the cheering (JavaScript counts `null >= 0` as true). Fixed.
+- Four rules were broken on purpose (the podium on the road, a wrong place at the finish, cheering for ever, no waiting message). Each made a test fail.
+- In the app's built-in browser, the podium was painted at the NOVA wall with a pretend top 3, and the camera was moved three times until the drivers were big and the name stood above them. The race and online pages load on the Nova lap and the Test oval without errors.
+- NOT checked: hearing the cheering (an agent cannot hear); a race driven by hand to the end until the podium comes; two real laptops; the live site.
+
+**How to check it yourself**
+Run `npm start`, open http://localhost:3000, choose Single race, then the Nova lap, and drive to the end. At your finish you are told your place and to wait. When everyone has finished, the podium comes up in front of the NOVA wall, with the crowd cheering. Turn the sound on (M).
+
+**What comes next**
+- Pedro tries it, then publishes the branch `podium` and opens the pull request. Ask the teammate to merge only after the last push.
+
 ### 18 November 2026: the podium
 
 **What was done**

@@ -55,9 +55,9 @@ Everything the browser shows and does: the web page, the drawing of the track an
 | `kart-choice.js` | The colours a player can choose for their kart, turning a choice into a look, and keeping the choice in the browser. The rule for what may be chosen is `shared/kart-looks.js` |
 | `kart-panel.js` | "Choose your character", the step after choosing a track: a card for each character with the pilot on the left (doing their dance when the mouse passes) and the photo on the right, the chosen one big beside their kart, and the button that starts the race |
 | `pilot-shape.js` | The pilot standing, with their own head, and how they move: standing, arms crossed, six dances (clap, robot, drive, wave, plane, siu), and lifting the trophy. Arms that keep their length. Only for choosing a character and the podium, never in the race |
-| `podium.js` | Who stands on the podium (the first three who finished) and when it comes: online when the race is over, in a single race when every kart finished or 30 seconds after the player |
+| `podium.js` | Who stands on the podium (the first three who finished) and when it comes: online when the race is over, in a single race when every kart finished or 30 seconds after the player. Also the words at the finish (your place, and wait for all the drivers) and when the crowd cheers |
 | `podium-shape.js` | The podium in the Hovione Atrium: the hall with the NOVA SBE sign, the three steps, the drivers without helmets, the winner's trophy, the cheering crowd |
-| `podium-view.js` | Paints the podium on the race picture, with confetti and a line of results |
+| `podium-view.js` | Paints the podium: on the Nova lap on the track itself, in front of the school's name (through `draw.js`), elsewhere in a hall of its own; with confetti and a line of results |
 | `heads/` | Each character's head cut out of their photo, with the background see-through (PNG). Painted on the standing pilot |
 | `cast-choice.js` | Your character: remembering it in the browser, where its face is, its colours, and what the online page says when someone else already is it |
 | `faces/` | One photo of each character, head and shoulders, 256 by 256 pixels, for the cards. Shown only when choosing a character, never in the race |
