@@ -44,6 +44,10 @@ const TROUSERS = ["#2c343d", "#1c2f5a", "#4a4f57", "#6b5a45"];
 
 /** How many students cheer round the podium. */
 export const CROWD_SIZE = 28;
+/** The ways a student cheers: waving both arms, jumping, or clapping over the head. */
+export const CROWD_CHEERS = Object.freeze(["wave", "jump", "clap"]);
+/** How high a jumping student gets off the ground, in units. */
+export const CROWD_JUMP = 1.8;
 
 /**
  * Where each student of the crowd stands, and in which colours: always the
@@ -68,6 +72,10 @@ export function crowdSpots() {
       shirt: SHIRTS[Math.floor(next() * SHIRTS.length)],
       trousers: TROUSERS[Math.floor(next() * TROUSERS.length)],
       phase: next() * Math.PI * 2,
+      // How this student cheers: one in three waves, one jumps, one claps
+      // (crowdPerson below). Taken from their number, not from "chance", so
+      // that nobody stands anywhere else than before. (18 November 2026.)
+      cheer: CROWD_CHEERS[spots.length % CROWD_CHEERS.length],
     });
   };
   // Two rows behind the podium.
@@ -86,22 +94,34 @@ export function crowdSpots() {
 }
 
 /**
- * One student of the crowd, cheering: bouncing on the toes, both arms up and
- * waving. About 17 units tall: shorter than the drivers, who are a little
- * big, like toy figures. Gives a list of parts.
+ * One student of the crowd, cheering, always with both arms up. How they
+ * cheer is "cheer" in their spot:
+ *   "wave"  bouncing on the toes, the arms waving from side to side (also
+ *           for a spot that does not say)
+ *   "jump"  jumping off the ground, the arms straight up
+ *   "clap"  bouncing, clapping the hands over the head
+ * About 17 units tall: shorter than the drivers, who are a little big, like
+ * toy figures. Gives a list of parts.
  */
 export function crowdPerson(spot, seconds) {
   const beat = seconds * Math.PI * 2 * 1.6 + spot.phase;
-  const lift = 0.6 * Math.abs(Math.sin(beat / 2));
+  const cheer = spot.cheer ?? "wave";
+  const jump = cheer === "jump" ? CROWD_JUMP * Math.max(0, Math.sin(beat / 2)) ** 2 : 0; // up, down, and a moment on the ground
+  const lift = cheer === "jump" ? 0.3 * Math.max(0, -Math.sin(beat / 2)) : 0.6 * Math.abs(Math.sin(beat / 2));
   const wave = Math.sin(beat);
   const hip = 6.8 + lift;
   const shoulder = 11.8 + lift;
+  // Where the hands are, across: waving together from side to side, straight
+  // up for a jump, or meeting over the head and opening again for a clap.
+  const open = 0.5 * (1 + Math.cos(beat * 2)); // 0 when the hands meet
+  const leftHand = cheer === "clap" ? -(0.35 + 2.7 * open) : cheer === "jump" ? -2.6 : -3.2 + wave * 0.9;
+  const rightHand = cheer === "clap" ? 0.35 + 2.7 * open : cheer === "jump" ? 2.6 : 3.2 + wave * 0.9;
   const parts = [
     { name: "crowd left leg", faces: bar([0, -0.9, hip], [0.2, -1.0, 0.4], 1.4, spot.trousers) },
     { name: "crowd right leg", faces: bar([0, 0.9, hip], [0.2, 1.0, 0.4], 1.4, spot.trousers) },
     { name: "crowd body", faces: box(-1.0, 1.0, -2.0, 2.0, hip - 0.4, shoulder + 0.4, spot.shirt, shade(spot.shirt, 1.08)) },
-    { name: "crowd left arm", faces: bar([0, -2.2, shoulder], [0.6, -3.2 + wave * 0.9, shoulder + 4.6], 1.1, spot.skin) },
-    { name: "crowd right arm", faces: bar([0, 2.2, shoulder], [0.6, 3.2 + wave * 0.9, shoulder + 4.6], 1.1, spot.skin) },
+    { name: "crowd left arm", faces: bar([0, -2.2, shoulder], [0.6, leftHand, shoulder + 4.6], 1.1, spot.skin) },
+    { name: "crowd right arm", faces: bar([0, 2.2, shoulder], [0.6, rightHand, shoulder + 4.6], 1.1, spot.skin) },
     {
       name: "crowd head",
       // A ball of skin with the hair as a band over the top. The "visor" of
@@ -111,7 +131,7 @@ export function crowdPerson(spot, seconds) {
   ];
   const cos = Math.cos(spot.turn);
   const sin = Math.sin(spot.turn);
-  return parts.map((part) => mapPart(part, ([x, y, z]) => [spot.x + x * cos - y * sin, spot.y + x * sin + y * cos, z]));
+  return parts.map((part) => mapPart(part, ([x, y, z]) => [spot.x + x * cos - y * sin, spot.y + x * sin + y * cos, z + jump]));
 }
 
 /**
@@ -211,7 +231,7 @@ export function hallLabels() {
  * parts. The head carries the picture of the person's head, if there is
  * one. A driver who is not a character has no picture: they keep a helmet
  * on, in their own colours, so no empty head is ever shown.
- *   driver  { place, look, hair, picture, dance }
+ *   driver  { place, look, hair, longHair, picture, dance }
  */
 export function podiumDriver(driver, seconds) {
   const step = PODIUM_STEPS.find((one) => one.place === driver.place);
@@ -219,7 +239,7 @@ export function podiumDriver(driver, seconds) {
     throw new RangeError("podiumDriver: only places 1, 2 and 3 stand on the podium");
   }
   const pose = driver.place === 1 ? poseAt("trophy", seconds) : poseAt(driver.dance ?? "clap", seconds + driver.place * 0.37);
-  const parts = pilotParts(driver.look, driver.hair ?? "#2b2420", pose, false).map((part) => {
+  const parts = pilotParts(driver.look, driver.hair ?? "#2b2420", pose, false, driver.longHair ?? null).map((part) => {
     if (part.name !== "head") {
       return part;
     }

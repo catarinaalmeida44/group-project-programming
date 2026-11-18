@@ -23,6 +23,8 @@ import {
   STEP_WIDTH,
   STEP_DEPTH,
   CROWD_SIZE,
+  CROWD_CHEERS,
+  CROWD_JUMP,
   crowdSpots,
   crowdPerson,
   hallParts,
@@ -36,7 +38,7 @@ import { tileKindAt } from "../shared/track.js";
 import { NOVA_LAP_LOOK } from "../client/nova-lap-look.js";
 import { lookOfTrack } from "../client/track-looks.js";
 import { poseAt, trophyParts } from "../client/pilot-shape.js";
-import { lookOfCharacter, hairOf, headOf, danceOf } from "../client/cast-choice.js";
+import { lookOfCharacter, hairOf, longHairOf, headOf, danceOf } from "../client/cast-choice.js";
 import { LOOKS } from "../client/kart-shape.js";
 import { createPracticeRace, stepPracticeRace } from "../shared/practice-race.js";
 import { createComputerDriver, decide, personalityOf } from "../shared/computer-driver.js";
@@ -441,5 +443,124 @@ describe("the podium as groups, for a track", () => {
     const groups = podiumGroups([driver(1)], 1);
     const third = groups.find((one) => one.at[1] === PODIUM_STEPS[2].y);
     expect(third.parts).toHaveLength(1); // only the step
+  });
+});
+// ---------------------------------------------------------------------------
+// Added on 18 November 2026, for Catarina: the crowd waves, jumps and claps,
+// and a driver with long hair keeps it on the podium.
+// ---------------------------------------------------------------------------
+
+describe("how the crowd cheers (added 18 November 2026)", () => {
+  const crowd = crowdSpots();
+  const one = (cheer) => crowd.find((spot) => spot.cheer === cheer);
+  const lowestOf = (parts) => Math.min(...pointsOf(parts).map((point) => point[2]));
+  const named = (name, parts) => parts.find((each) => each.name === name);
+  /** Where the hand end of an arm is: its highest corners, averaged. */
+  const handOf = (arm) => {
+    const points = arm.faces.flatMap((face) => face.points);
+    const top = Math.max(...points.map((point) => point[2]));
+    const high = points.filter((point) => point[2] > top - 0.8);
+    return [0, 1, 2].map((axis) => high.reduce((sum, point) => sum + point[axis], 0) / high.length);
+  };
+  const during = (spot, seconds = 2) => Array.from({ length: Math.round(seconds * 30) }, (_, i) => crowdPerson(spot, i / 30));
+
+  it("has students who wave, who jump and who clap, about a third each", () => {
+    for (const cheer of CROWD_CHEERS) {
+      const count = crowd.filter((spot) => spot.cheer === cheer).length;
+      expect(count, cheer).toBeGreaterThanOrEqual(Math.floor(CROWD_SIZE / 3));
+    }
+    expect(crowd.every((spot) => CROWD_CHEERS.includes(spot.cheer))).toBe(true);
+  });
+
+  it("is the same crowd every time", () => {
+    expect(crowdSpots()).toEqual(crowdSpots());
+  });
+
+  it("jumping: leaves the ground, comes down again, and never goes below it", () => {
+    const lows = during(one("jump")).map(lowestOf);
+    expect(Math.max(...lows)).toBeGreaterThan(CROWD_JUMP * 0.9);
+    expect(Math.min(...lows)).toBeGreaterThanOrEqual(0);
+    expect(Math.min(...lows)).toBeLessThan(0.5); // back on the ground between two jumps
+  });
+
+  it("waving and clapping: the feet stay on the ground", () => {
+    for (const cheer of ["wave", "clap"]) {
+      for (const parts of during(one(cheer))) {
+        const feet = lowestOf([named("crowd left leg", parts), named("crowd right leg", parts)]);
+        expect(feet, cheer).toBeLessThan(0.5);
+        expect(feet, cheer).toBeGreaterThanOrEqual(0);
+      }
+    }
+  });
+
+  it("clapping: the hands meet over the head and open again", () => {
+    const gaps = during(one("clap")).map((parts) => {
+      const left = handOf(named("crowd left arm", parts));
+      const right = handOf(named("crowd right arm", parts));
+      const head = named("crowd head", parts).ball;
+      expect(Math.min(left[2], right[2])).toBeGreaterThan(head.middle[2]); // over the head
+      return Math.hypot(left[0] - right[0], left[1] - right[1], left[2] - right[2]);
+    });
+    expect(Math.min(...gaps)).toBeLessThan(1.5);
+    expect(Math.max(...gaps)).toBeGreaterThan(4.5);
+  });
+
+  it("waving: the hands stay apart, going from side to side together", () => {
+    const gaps = during(one("wave")).map((parts) => {
+      const left = handOf(named("crowd left arm", parts));
+      const right = handOf(named("crowd right arm", parts));
+      return Math.hypot(left[0] - right[0], left[1] - right[1], left[2] - right[2]);
+    });
+    expect(Math.min(...gaps)).toBeGreaterThan(4.5);
+  });
+
+  it("keeps everybody's arms up, however they cheer", () => {
+    for (const cheer of CROWD_CHEERS) {
+      for (const parts of during(one(cheer))) {
+        const body = named("crowd body", parts).faces.flatMap((face) => face.points);
+        const shoulders = Math.max(...body.map((point) => point[2]));
+        expect(handOf(named("crowd left arm", parts))[2], cheer).toBeGreaterThan(shoulders);
+        expect(handOf(named("crowd right arm", parts))[2], cheer).toBeGreaterThan(shoulders);
+      }
+    }
+  });
+
+  it("treats a student who does not say how they cheer as waving", () => {
+    const { cheer, ...plain } = one("wave");
+    expect(cheer).toBe("wave");
+    expect(crowdPerson(plain, 0.7)).toEqual(crowdPerson(one("wave"), 0.7));
+  });
+});
+
+describe("long hair on the podium (added 18 November 2026)", () => {
+  it("is in the lineup for Cici Boss, and for nobody else", () => {
+    const lineup = podiumLineup([kart(1, "cici", true, 4000), kart(2, "pcp", true, 4100), kart(7, undefined, true, 4200)], TEST_OVAL);
+    expect(lineup[0].longHair).toEqual(longHairOf("cici"));
+    expect(lineup[1].longHair).toBe(null);
+    expect(lineup[2].longHair).toBe(null);
+  });
+
+  it("is on the head of the driver standing on the step, with their picture", () => {
+    const picture = { fake: "picture" };
+    const driver = { place: 2, look: lookOfCharacter("cici"), hair: hairOf("cici"), longHair: longHairOf("cici"), picture, dance: danceOf("cici") };
+    const head = podiumDriver(driver, 1).find((each) => each.name === "head").head;
+    expect(head.long).toEqual(longHairOf("cici"));
+    expect(head.picture).toBe(picture);
+    const short = podiumDriver({ ...driver, longHair: null }, 1).find((each) => each.name === "head").head;
+    expect("long" in short).toBe(false);
+  });
+
+  it("does the gangnam on the podium when second or third, and lifts the trophy when first", () => {
+    const second = podiumDriver({ place: 2, look: lookOfCharacter("cici"), hair: hairOf("cici"), picture: { fake: "picture" }, dance: danceOf("cici") }, 0.5);
+    const first = podiumDriver({ place: 1, look: lookOfCharacter("cici"), hair: hairOf("cici"), picture: { fake: "picture" }, dance: danceOf("cici") }, 0.5);
+    expect(first.some((each) => each.name.startsWith("trophy"))).toBe(true);
+    expect(second.some((each) => each.name.startsWith("trophy"))).toBe(false);
+    // The gangnam lifts a foot: at some moment one shoe is clearly higher than the other.
+    const shoe = (parts, name) => Math.min(...parts.find((each) => each.name === name).faces.flatMap((face) => face.points.map((point) => point[2])));
+    const gaps = Array.from({ length: 40 }, (_, i) => {
+      const parts = podiumDriver({ place: 2, look: lookOfCharacter("cici"), hair: hairOf("cici"), picture: { fake: "picture" }, dance: danceOf("cici") }, i / 20);
+      return Math.abs(shoe(parts, "left shoe") - shoe(parts, "right shoe"));
+    });
+    expect(Math.max(...gaps)).toBeGreaterThan(1.2);
   });
 });
