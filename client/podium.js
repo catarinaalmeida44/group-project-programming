@@ -18,6 +18,7 @@ import { characterById } from "../shared/cast.js";
 import { hairOf, headOf, danceOf, lookOfCharacter } from "./cast-choice.js";
 import { lookOf } from "./kart-shape.js";
 import { STEP_SECONDS } from "../shared/physics.js";
+import { placeText } from "./net.js";
 
 /** How long the podium is shown on its own before the results board comes up online, in seconds. */
 export const PODIUM_SECONDS = 10;
@@ -94,6 +95,47 @@ export function singleRaceIsOver(race, stepsSinceYouFinished) {
   }
   return stepsSinceYouFinished * STEP_SECONDS >= WAIT_AFTER_YOU_SECONDS;
 }
+
+/** The crowd cheers again every this many seconds while the podium is shown (one cheer lasts about 2), this many times. */
+export const CHEER_EVERY_SECONDS = 2.3;
+export const CHEERS = 8;
+
+/**
+ * How many times the crowd should have cheered by now, "seconds" after the
+ * podium came up: once straight away, then again every CHEER_EVERY_SECONDS,
+ * CHEERS times in all, so it does not go on for ever.
+ */
+export function cheersDue(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0) {
+    return 0; // also for null, which JavaScript would otherwise count as 0
+  }
+  return Math.min(CHEERS, Math.floor(seconds / CHEER_EVERY_SECONDS) + 1);
+}
+
+/**
+ * The place a kart finished in: 1 for the winner, 2, 3, ... Two karts
+ * with the same race time share a place. Null when that kart has not
+ * finished (or is not in the list).
+ */
+export function finishPlace(karts, id) {
+  const usable = Array.isArray(karts) ? karts.filter((kart) => kart !== null && typeof kart === "object") : [];
+  const mine = usable.find((kart) => kart.id === id);
+  if (mine === undefined || mine.finished !== true) {
+    return null;
+  }
+  return 1 + usable.filter((kart) => kart.finished === true && kart.steps < mine.steps).length;
+}
+
+/**
+ * What a driver who has just finished is told, until the podium comes:
+ * "You finished 2nd, in 1:02.34! Wait for all the drivers to finish the race!"
+ */
+export function finishedWords(place, steps, formatTime) {
+  return `You finished ${placeText(place)}, in ${formatTime(steps * STEP_SECONDS)}! ${WAIT_FOR_ALL}`;
+}
+
+/** The second half of the words at the finish. */
+export const WAIT_FOR_ALL = "Wait for all the drivers to finish the race!";
 
 /** The line under the podium: "1st PCP 1:02.34 · 2nd Dean 1:04.10 · 3rd FranFon 1:05.00". */
 export function podiumCaption(lineup, formatTime) {

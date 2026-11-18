@@ -47,7 +47,7 @@ import { readSettings } from "./settings.js";
 import { recordFinishedRace } from "./records.js";
 import { createRaceSound } from "./sound.js";
 import { tileKindAt } from "../shared/track.js";
-import { podiumLineup, podiumKartsOf, singleRaceIsOver, podiumCaption } from "./podium.js";
+import { podiumLineup, podiumKartsOf, singleRaceIsOver, podiumCaption, cheersDue, finishPlace, finishedWords } from "./podium.js";
 import { createPodiumView } from "./podium-view.js";
 
 const track = chooseTrack(window.location.search);
@@ -60,7 +60,7 @@ document.getElementById("track-name").textContent = track.name; // as text, neve
 // gets low barriers along the edge of the road instead.
 const trackCanvas = document.getElementById("track");
 const draw = createPainter(trackCanvas, track, { storeys: storeysOf(track) });
-const podium = createPodiumView(); // the podium, painted on the same picture when the race is over (podium-view.js)
+const podium = createPodiumView(track, draw); // the podium, painted on the same picture when the race is over (podium-view.js)
 const showHud = createHud(document);
 const messageBox = document.getElementById("message");
 const placeBox = document.getElementById("place-box");
@@ -92,6 +92,7 @@ let waitingSeconds = 0; // real time that has passed but is not yet turned into 
 let record = null; //      once the race is finished: did it beat your best times? (records.js)
 let youFinishedAt = null; // the step of the race when the player finished, or null
 let podiumSince = null; //   when the podium came up, in milliseconds of the page's clock, or null
+let cheered = 0; //          how many times the crowd has cheered on this podium
 
 // ---- The state of the camera ----
 // The colours of the character the player chose in the menu (cast-choice.js).
@@ -127,6 +128,7 @@ function startAgain() {
   record = null;
   youFinishedAt = null;
   podiumSince = null;
+  cheered = 0;
   camera = followTarget(race.racers[0].kart, track); // jump straight back, do not glide
 }
 
@@ -204,7 +206,13 @@ function frame(now) {
     // The podium instead of the track: the first three, the winner with the trophy.
     const lineup = podiumLineup(podiumKartsOf(race, myCharacter), track);
     const caption = `${podiumCaption(lineup, formatTime)}  ·  Press R to race again`;
-    podium.paint(trackCanvas.getContext("2d"), { width: trackCanvas.width, height: trackCanvas.height }, lineup, (now - podiumSince) / 1000, caption);
+    const shownFor = (now - podiumSince) / 1000;
+    podium.paint(trackCanvas.getContext("2d"), { width: trackCanvas.width, height: trackCanvas.height }, lineup, shownFor, caption);
+    // The crowd cheers, again and again for a while.
+    while (cheered < cheersDue(shownFor)) {
+      sound.cheer();
+      cheered++;
+    }
   } else {
     draw(view, shownKart, camera, steer, computerKarts(), {
       ...sceneFor(race.countdownSteps, started),
@@ -292,9 +300,9 @@ function computerKarts() {
 /** The text shown in the middle of the track. */
 function messageFor(progress, countdown) {
   if (progress.finished) {
-    const place = placeLine(placesInput(race), track, 0);
-    const placeWords = place === "" ? "" : ` ${place},`;
-    return `Finished${placeWords} in ${formatTime(progress.steps * STEP_SECONDS)}.${newBestText()} Press R to race again.`;
+    // Your place, and then the podium is on its way: it comes when everyone has finished (podium.js).
+    const place = finishPlace(placesInput(race), 0) ?? 1;
+    return `${finishedWords(place, progress.steps, formatTime)}${newBestText()}`;
   }
   if (!started) {
     return "Press an arrow key to start the countdown";

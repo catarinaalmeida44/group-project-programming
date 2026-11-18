@@ -27,7 +27,7 @@
 
 import { TRACKS, storeysOf } from "../shared/tracks/index.js";
 import { createPodiumView } from "./podium-view.js";
-import { podiumLineup, podiumCaption, PODIUM_SECONDS } from "./podium.js";
+import { podiumLineup, podiumCaption, cheersDue, finishPlace, finishedWords, PODIUM_SECONDS } from "./podium.js";
 import { formatTime } from "./format.js";
 import { chooseTrackName } from "./track-choice.js";
 import { createKeyboard } from "./keyboard.js";
@@ -77,8 +77,9 @@ const placeText = document.getElementById("place");
 const resultsBox = document.getElementById("results");
 const resultsList = document.getElementById("results-list");
 const board = createResultsBoard(document); // the big results board when a race is over (results-board.js)
-const podium = createPodiumView(); //           the podium, painted on the race picture when a race is over (podium-view.js)
+const podium = createPodiumView(track, draw); //           the podium, painted on the race picture when a race is over (podium-view.js)
 let podiumSince = null; //                      when the podium came up, in milliseconds of the page's clock, or null
+let cheered = 0; //                              how many times the crowd has cheered on this podium
 
 // ---- What we know from the server ----
 const playback = createPlayback(); // the latest updates, for smooth drawing
@@ -334,13 +335,20 @@ function frame(now) {
   // PODIUM_SECONDS the results board comes up on top of it, with everyone.
   if (race.phase === "finished" && podiumSince === null) {
     podiumSince = now;
+    cheered = 0;
   } else if (race.phase !== "finished") {
     podiumSince = null;
   }
   if (podiumSince !== null) {
     const lineup = podiumLineup(latestKarts, track);
     const trackCanvas = document.getElementById("track");
-    podium.paint(trackCanvas.getContext("2d"), { width: trackCanvas.width, height: trackCanvas.height }, lineup, (now - podiumSince) / 1000, podiumCaption(lineup, formatTime));
+    const shownFor = (now - podiumSince) / 1000;
+    podium.paint(trackCanvas.getContext("2d"), { width: trackCanvas.width, height: trackCanvas.height }, lineup, shownFor, podiumCaption(lineup, formatTime));
+    // The crowd cheers, again and again for a while.
+    while (cheered < cheersDue(shownFor)) {
+      sound.cheer();
+      cheered++;
+    }
   } else {
     draw(view, dressed(shown), camera, steer, others, scene);
   }
@@ -358,6 +366,9 @@ function frame(now) {
   // The sentence about the next race moves from the middle of the track to
   // the bottom of the board.
   const podiumAlone = podiumSince !== null && now - podiumSince < PODIUM_SECONDS * 1000;
+  // Finished while others still drive: your place, and wait for the podium.
+  const waitingWords =
+    race.phase === "racing" && mine?.finished === true ? finishedWords(finishPlace(latestKarts, myId) ?? 1, mine.steps, formatTime) : null;
   if (race.phase === "finished" && !podiumAlone && !board.isShown()) {
     const looks = new Map(latestKarts.filter((kart) => kart !== null && typeof kart === "object").map((kart) => [kart.id, lookOf(dressed(kart))]));
     board.show(boardLines(latestKarts, track, names, myId), looks);
@@ -374,7 +385,7 @@ function frame(now) {
     steps: shown.steps,
     lapSteps: shown.lapSteps,
     view,
-    message: board.isShown() || podiumAlone ? "" : (warning ?? about.message),
+    message: board.isShown() || podiumAlone ? "" : (warning ?? waitingWords ?? about.message),
   });
 
   // The facts of this picture, for the sound: sound-cues.js decides from

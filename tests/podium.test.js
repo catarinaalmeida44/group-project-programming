@@ -9,6 +9,12 @@ import {
   podiumKartsOf,
   singleRaceIsOver,
   podiumCaption,
+  cheersDue,
+  finishPlace,
+  finishedWords,
+  WAIT_FOR_ALL,
+  CHEER_EVERY_SECONDS,
+  CHEERS,
   PODIUM_SECONDS,
   WAIT_AFTER_YOU_SECONDS,
 } from "../client/podium.js";
@@ -23,7 +29,12 @@ import {
   hallLabels,
   podiumDriver,
   podiumMoving,
+  podiumGroups,
 } from "../client/podium-shape.js";
+import { TRACKS } from "../shared/tracks/index.js";
+import { tileKindAt } from "../shared/track.js";
+import { NOVA_LAP_LOOK } from "../client/nova-lap-look.js";
+import { lookOfTrack } from "../client/track-looks.js";
 import { poseAt, trophyParts } from "../client/pilot-shape.js";
 import { lookOfCharacter, hairOf, headOf, danceOf } from "../client/cast-choice.js";
 import { LOOKS } from "../client/kart-shape.js";
@@ -315,5 +326,120 @@ describe("the crowd", () => {
     const moving = podiumMoving([], 1);
     expect(moving.parts.filter((one) => one.name === "crowd head")).toHaveLength(CROWD_SIZE);
     expect(moving.shadows).toHaveLength(CROWD_SIZE + PODIUM_STEPS.length);
+  });
+});
+
+describe("at the finish, before the podium", () => {
+  const karts = [kart(1, "dean", true, 4000), kart(2, "pcp", true, 3700), kart(3, "cici", false, 900), kart(4, "ro", true, 3700)];
+
+  it("knows the place each finisher came in, sharing a place on the same time", () => {
+    expect(finishPlace(karts, 2)).toBe(1);
+    expect(finishPlace(karts, 4)).toBe(1); // the same time as kart 2
+    expect(finishPlace(karts, 1)).toBe(3);
+  });
+
+  it("has no place for a kart that has not finished, or is not there", () => {
+    expect(finishPlace(karts, 3)).toBe(null);
+    expect(finishPlace(karts, 99)).toBe(null);
+    expect(finishPlace(null, 1)).toBe(null);
+  });
+
+  it("tells the driver their place and time, and to wait for everyone", () => {
+    const words = finishedWords(2, 3600, formatTime);
+    expect(words).toBe(`You finished 2nd, in ${formatTime(60)}! Wait for all the drivers to finish the race!`);
+    expect(words.endsWith(WAIT_FOR_ALL)).toBe(true);
+    expect(finishedWords(1, 60, formatTime)).toContain("1st");
+    expect(finishedWords(3, 60, formatTime)).toContain("3rd");
+  });
+});
+
+describe("the crowd's cheering on the podium", () => {
+  it("starts at once, when the podium comes up", () => {
+    expect(cheersDue(0)).toBe(1);
+  });
+
+  it("cheers again every little while", () => {
+    expect(cheersDue(CHEER_EVERY_SECONDS - 0.01)).toBe(1);
+    expect(cheersDue(CHEER_EVERY_SECONDS)).toBe(2);
+    expect(cheersDue(CHEER_EVERY_SECONDS * 3 + 0.1)).toBe(4);
+  });
+
+  it("stops after a while, so it does not go on for ever", () => {
+    expect(cheersDue(1000)).toBe(CHEERS);
+  });
+
+  it("never cheers before the podium, or on a strange time", () => {
+    for (const strange of [-1, NaN, undefined, null]) {
+      expect(cheersDue(strange), String(strange)).toBe(0);
+    }
+  });
+});
+
+describe("the podium on the Nova lap, in front of the school's name", () => {
+  const track = TRACKS["nova-lap"];
+  const spot = NOVA_LAP_LOOK.podium;
+
+  it("has its spot in the Nova lap's look", () => {
+    expect(lookOfTrack(track).podium).toBe(spot);
+  });
+
+  it("stands right in front of the white wall with the name, at the end of the avenue", () => {
+    const [column, row] = spot.at;
+    // The white wall with the name is column 53, from row 4 to row 9 (client/nova-lap-buildings.js).
+    expect(column).toBeGreaterThan(48);
+    expect(column).toBeLessThan(53);
+    expect(row).toBeGreaterThanOrEqual(4);
+    expect(row).toBeLessThanOrEqual(9);
+  });
+
+  it("is looked at from the west, the camera on the same lawn, closer than the wall", () => {
+    const [column, row] = spot.at;
+    const [cameraColumn, cameraRow] = spot.camera;
+    expect(cameraColumn).toBeLessThan(column);
+    expect(Math.abs(cameraRow - row)).toBeLessThan(1);
+  });
+
+  it("stands on the lawn and not in the way of the karts: no part of it on a road square", () => {
+    const size = track.tileSize;
+    const [column, row] = spot.at;
+    for (const group of podiumGroups([], 1)) {
+      // Facing the camera in the west: the podium's own directions turned half round.
+      const x = column * size - group.at[0];
+      const y = row * size - group.at[1];
+      if (Math.abs(group.at[1]) < 20) {
+        // The steps, and the crowd close to them.
+        expect(tileKindAt(track, x, y), `${group.at}`).not.toBe("road");
+      }
+    }
+  });
+});
+
+describe("the podium as groups, for a track", () => {
+  const driver = (place) => ({ place, look: lookOfCharacter("pcp"), hair: hairOf("pcp"), picture: null, dance: "clap" });
+
+  it("has one group for each step, with its driver, and one for each student", () => {
+    const groups = podiumGroups([driver(1), driver(2), driver(3)], 1);
+    expect(groups).toHaveLength(PODIUM_STEPS.length + CROWD_SIZE);
+    for (const step of PODIUM_STEPS) {
+      const group = groups.find((one) => one.at[1] === step.y && one.at[0] === 0);
+      expect(group.parts.find((one) => one.name === `step ${step.place}`)).toBeDefined();
+      expect(group.labels[0].text).toBe(String(step.place));
+    }
+  });
+
+  it("measures each group from where it stands: the step's driver stands over the middle of the group", () => {
+    const groups = podiumGroups([driver(2)], 1);
+    const second = groups.find((one) => one.at[1] === PODIUM_STEPS[1].y);
+    const shoes = [part("left shoe", second.parts), part("right shoe", second.parts)];
+    for (const [, y] of pointsOf(shoes)) {
+      expect(Math.abs(y)).toBeLessThan(STEP_WIDTH / 2);
+    }
+    expect(lowest(shoes)).toBeCloseTo(PODIUM_STEPS[1].height);
+  });
+
+  it("leaves a step empty when nobody came in that place", () => {
+    const groups = podiumGroups([driver(1)], 1);
+    const third = groups.find((one) => one.at[1] === PODIUM_STEPS[2].y);
+    expect(third.parts).toHaveLength(1); // only the step
   });
 });
