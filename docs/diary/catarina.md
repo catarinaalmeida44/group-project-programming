@@ -4,6 +4,79 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 18 November 2026, evening: where the podium was, the Moodle screen, a new "Choose your character", and Cici Boss
+
+**What she asked**
+
+1. Pedro said he had built a podium for the end of a race. She played a single race and an online race and did not see one. Did he really build it, why does it not show, how can it be better?
+2. A big screen in the corner of the Hovione Atrium, as on the real campus, with a message from the IT help desk that Moodle is down. An inside joke.
+3. "Choose your character": no photos beside the pilots, and a better layout. Her own character looked odd. Her dance should be the Gangnam Style dance.
+
+While the work was going on she looked at it and said more: the long hair the agent had painted looked awful, her face was off-centre and her chin was cut off, and the panel's design could be better still. She then sent her whole photo.
+
+**1. The podium: it exists, it was not merged**
+
+Pedro built it on 18 November on the branch `podium` and opened pull request 28. Rodrigo approved it. Nobody has pressed "Merge" yet. The live site and Catarina's copy both follow `main`, so neither had it. Nothing is broken.
+
+The agent looked at it on screen with a pretend top three, on the Nova lap (in front of the NOVA wall) and on the Test oval (in the hall): it works. This work is built on top of his branch, so it has the podium in it.
+
+One thing was made better, because she had described a crowd "cheering and jumping and applauding" and his all waved: one student in three now waves, one jumps, one claps over the head (`crowdPerson()` in `client/podium-shape.js`). Which one comes from the student's number in the crowd, so nobody stands anywhere else than before and Pedro's tests still pass unchanged.
+
+**2. The screen**
+
+| What | Where |
+|---|---|
+| The screen: a slanting "fence" in the south-east corner of the atrium, 4.2 metres tall, under the gallery | `client/nova-lap-buildings.js` ("IT help desk screen") |
+| What is on it: a black cabinet, a yellow band "IT HELP DESK · SERVICE NOTICE", "We regret to inform you that, unfortunately," and "MOODLE IS DOWN." in big letters, signed "Your IT Help Desk team" | `client/wall-art.js` (`it-screen`) |
+| The six squares behind it are wall, so no kart drives through it | `SCREEN_CORNER` in `client/nova-lap-buildings.js`; the letters in `shared/tracks/nova-lap.js` were made again with `node tests/nova-lap-letters.js` |
+
+It was made wider once after a first look, and the big line is written smaller by itself if the browser's font would make it too long.
+
+**3. "Choose your character"**
+
+- The photos are gone. Only the pilots are shown.
+- First design: the chosen one big on the left, six tiles on the right. She said it could be better. Second design, the one that is in: a poster of the chosen one on top (the colour of their kart, their number, name, "Signature move", colours, the Race button, which no longer needs scrolling) and the six in a line-up under it, the chosen one marked "YOU".
+- The pictures are painted with twice as many dots as before, so they stay sharp when shown large.
+
+All of it is in `client/kart-panel.js`, `client/index.html` and `client/style.css`.
+
+**Cici Boss**
+
+- **The dance.** "gangnam" in `client/pilot-shape.js`: the wrists crossed in front and pumping, the feet apart and stepping in turn, then one arm up swinging a lasso. For the stepping, a pose can now lift a foot, and a leg bends at the knee when its foot is lifted (`legWith()`). Every other dance is exactly as it was.
+- **The head.** Her old head picture was an oval cut from `client/faces/cici.jpg`, a square that ends under her lip: so the chin was never in it. The agent first painted long hair with code. She did not like it, and it was taken out again. The head was then cut again from the whole photo she sent (it was in her Downloads folder; the photo itself was not copied into the project): the wall, the clothes, the neck and the necklaces are taken away, the hair stays, with its purple and blue ends. `longHairOf()` in `client/cast-choice.js` says how far her picture goes on below the chin, and `paintHead()` in `client/kart-paint.js` lets that part hang over the shoulders. The cutting was done by a small program written for this, which is not part of the game. Only the pixels were copied, so nothing hidden in a phone photo is in the picture.
+
+**One existing test was changed, because the rule changed**
+
+| Test | It said | It says now |
+|---|---|---|
+| `tests/pilot-shape.test.js`, "is one of standing, arms crossed, and the six dances" | the list of dances is exactly six | the list has a seventh, "gangnam", at its end. Catarina asked for a new dance, so the list had to grow. Pedro wrote this test: he should know |
+
+No other existing test was changed or deleted.
+
+**Decisions made by the agent, please confirm**
+
+- The size, colours and extra words of the screen, and that the corner behind it is wall.
+- The design of the panel, the number of each character (their place in the cast) and the names of the dances.
+- The photo files stay in `client/faces/`, shown nowhere, because tests of 17 November check that they exist. The team says whether to delete them.
+- "wave" stays in the list of dances, danced by nobody.
+- Which students of the crowd wave, jump and clap.
+- This branch starts from Pedro's `podium`, not from `main`, because it changes the same files. It should be merged after his pull request 28.
+
+**What was checked, and what was not**
+
+- `npm test`: 1,895 pass, 5 skipped (on Pedro's branch before: 1,848 and 5). The 5 need the real database.
+- Nine rules were broken on purpose, one at a time (her dance back to the wave, the corner behind the screen open, "Moodle is up", the screen taller than the gallery, a leg that never bends, no foot lifted, long hair not passed on, nobody jumping, the photos back). Each made between 1 and 3 tests fail. This was before the head was cut again and the second design: the tests for those were run, not broken on purpose.
+- In the agent's browser: the screen from three places in the atrium, readable from the kart; both designs of the panel at 1280 by 800, where the whole panel fits without scrolling; her new head in the panel and on the podium; ten moments of the gangnam side by side; the podium on the Nova lap and in the hall. The single race and online pages load on the Nova lap. The only errors on the pages are the ones about accounts, which a laptop without the database always has.
+- NOT checked: anything in motion. The agent's browser shows single pictures, so how the dance and the crowd feel is for a person to judge. NOT checked: a race driven by hand to the podium. NOT checked: the panel on a phone or a small laptop screen (under about 830 dots wide it becomes one column, which was not looked at). NOT checked: the live site, where none of this is until it is merged.
+
+**How to check it yourself**
+
+Run `npm start` and open http://localhost:3000. Click Single race, then Race on the Nova lap: the new panel opens. Move the mouse over the six. Choose Cici Boss and watch the poster. Then race: after the doors of the atrium, the screen is ahead on the left. For the screen without racing: http://localhost:3000/track-tour.html?track=nova-lap. Finish the race to see the podium. `npm test` runs everything; `atrium-screen.test.js` is the new file.
+
+**Git**
+
+Branch `atrium-screen-and-characters`, made from Pedro's `origin/podium`, pushed to GitHub. No pull request yet.
+
 ### 17 November 2026, night: after Catarina played it
 
 **What she said**
