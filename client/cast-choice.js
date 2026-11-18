@@ -55,6 +55,22 @@ export function hairOf(id) {
 }
 
 /**
+ * The characters whose hair is longer than their head picture shows. The
+ * head pictures end at the chin, so long hair is painted by our own code
+ * (kart-paint.js): it falls from the head over both shoulders. "tips" is the
+ * colour of its ends. Cici Boss has long fair hair with purple ends.
+ * (Added on 18 November 2026: her head alone looked like an egg.)
+ */
+const LONG_HAIR = Object.freeze({
+  cici: Object.freeze({ tips: "#8d6cc4" }),
+});
+
+/** How a character's long hair looks ({ tips }), or null for short hair or an id that is not in the cast. */
+export function longHairOf(id) {
+  return characterById(id) === null ? null : (LONG_HAIR[id] ?? null);
+}
+
+/**
  * Where the picture of a character's head is: the head cut out of the photo,
  * with the background made see-through. Painted on the standing pilot
  * (pilot-shape.js). Null for an id that is not in the cast.
@@ -68,7 +84,7 @@ const DANCE = Object.freeze({
   dean: "clap",
   ricardo: "robot",
   ro: "drive",
-  cici: "wave",
+  cici: "gangnam", // "wave" until 18 November 2026: she asked for this one
   franfon: "plane",
   pcp: "siu",
 });

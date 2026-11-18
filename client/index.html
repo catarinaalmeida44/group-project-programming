@@ -404,9 +404,10 @@
     </dialog>
 
     <!-- Choose your character: the step after choosing a track. kart-panel.js
-         paints every character as their pilot in their kart, with their face,
-         and sets the button below to the race on the chosen track. The faces
-         are only shown here, never in the race. -->
+         paints the chosen pilot big beside their kart, and every character
+         as a pilot on a tile, and sets the button to the race on the chosen
+         track. The faces are only shown here and on the podium, never in
+         the race. -->
     <dialog id="your-kart" class="panel panel-wide" aria-labelledby="your-kart-title" closedby="any">
       <div class="panel-head">
         <h2 id="your-kart-title">Choose your character</h2>
@@ -419,13 +420,17 @@
       <div class="panel-body character-step">
         <p id="character-lead" class="panel-lead"></p>
         <div class="character-stage">
-          <!-- The big picture of the chosen pilot is put here by kart-panel.js. -->
-          <div id="kart-preview-place"></div>
-          <!-- One card for each character goes here. -->
+          <!-- The chosen one: the big picture is put here by kart-panel.js,
+               with the name and the button that starts the race under it. -->
+          <div class="character-chosen">
+            <div id="kart-preview-place" class="character-floor"></div>
+            <p id="character-name" class="character-name"></p>
+            <a id="character-go" class="button button-primary button-wide" href="/race.html">Race</a>
+            <p id="kart-status" class="note" role="status"></p>
+          </div>
+          <!-- One tile for each character goes here. -->
           <div id="kart-choices" class="kart-choices"></div>
         </div>
-        <p id="kart-status" class="note" role="status"></p>
-        <a id="character-go" class="button button-primary button-wide" href="/race.html">Race</a>
         <p class="note">Each character has its own kart colours. Online, only one player in a room can be each character: if someone already is yours, you get the first free one. In the race the pilot wears a helmet, so the face is not shown.</p>
       </div>
     </dialog>

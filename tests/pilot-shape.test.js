@@ -24,10 +24,14 @@ import {
   FOREARM,
   KART_SPOT,
   SIU_SECONDS,
+  GANGNAM_SECONDS,
+  GANGNAM_STEP,
+  LEG,
+  legWith,
   CHOSEN_TIMES,
 } from "../client/pilot-shape.js";
 import { kartParts, LOOKS } from "../client/kart-shape.js";
-import { lookOfCharacter, hairOf, headOf, danceOf } from "../client/cast-choice.js";
+import { lookOfCharacter, hairOf, longHairOf, headOf, danceOf } from "../client/cast-choice.js";
 import { CAST } from "../shared/cast.js";
 
 const look = lookOfCharacter("pcp");
@@ -143,8 +147,11 @@ describe("the arms", () => {
 });
 
 describe("every movement", () => {
-  it("is one of standing, arms crossed, and the six dances", () => {
-    expect(DANCES).toEqual(["clap", "robot", "drive", "wave", "plane", "siu"]);
+  // Changed on 18 November 2026, said out loud in Catarina's diary: this
+  // test pinned six dances. Catarina asked for a new dance for her own
+  // character, so the list now has a seventh, "gangnam", at its end.
+  it("is one of standing, arms crossed, and the seven dances", () => {
+    expect(DANCES).toEqual(["clap", "robot", "drive", "wave", "plane", "siu", "gangnam"]);
     expect(MOVES).toEqual(["stand", "crossed", ...DANCES]);
   });
 
@@ -483,5 +490,188 @@ describe("faces in the race", () => {
       const code = readFileSync(new URL(`../client/${file}`, import.meta.url), "utf8");
       expect(code, file).not.toMatch(/faceOf|headOf|faces\/|heads\/|paintPilotScene|pilot-shape/);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Added on 18 November 2026, for Catarina: Cici Boss dances the "gangnam",
+// a foot can be lifted with the knee bending, and long hair.
+// ---------------------------------------------------------------------------
+
+describe("the gangnam (added 18 November 2026)", () => {
+  const BEAT = GANGNAM_SECONDS / 8;
+  const every = (from, to) => {
+    const poses = [];
+    for (let t = from; t < to; t += 1 / 60) {
+      poses.push(poseAt("gangnam", t));
+    }
+    return poses;
+  };
+
+  it("is the dance of Cici Boss, and no longer the wave", () => {
+    expect(danceOf("cici")).toBe("gangnam");
+    expect(CAST.map(({ id }) => danceOf(id))).not.toContain("wave");
+  });
+
+  it("first holds the reins: the wrists crossed in front of the chest, pumping down and up", () => {
+    const reins = every(0, BEAT * 3);
+    for (const pose of reins) {
+      expect(pose.leftHand[1]).toBeGreaterThan(0); // the left hand is on the right side
+      expect(pose.rightHand[1]).toBeLessThan(0); //   and the right hand on the left
+      expect(pose.leftHand[0]).toBeGreaterThan(1.6); // in front of the suit, which ends at 1.6
+      expect(pose.rightHand[0]).toBeGreaterThan(1.6);
+      expect(distance(pose.leftHand, pose.rightHand)).toBeLessThan(2.5);
+    }
+    const heights = reins.map((pose) => pose.rightHand[2]);
+    expect(Math.max(...heights) - Math.min(...heights)).toBeGreaterThan(1.5);
+  });
+
+  it("then swings a lasso: the right hand goes round beside the head, the left fist stays in front", () => {
+    const lasso = every(BEAT * 4.1, BEAT * 7.1);
+    for (const pose of lasso) {
+      expect(pose.rightHand[2]).toBeGreaterThan(20); // as high as the head
+      expect(pose.rightHand[1]).toBeGreaterThan(4.5); // beside the head, not in front of the face
+      expect(pose.leftHand[2]).toBeLessThan(15);
+      expect(pose.leftHand[0]).toBeGreaterThan(1.6);
+    }
+    const across = lasso.map((pose) => pose.rightHand[1]);
+    const forwards = lasso.map((pose) => pose.rightHand[0]);
+    expect(Math.max(...across) - Math.min(...across)).toBeGreaterThan(3); // a circle: it moves both ways
+    expect(Math.max(...forwards) - Math.min(...forwards)).toBeGreaterThan(3);
+  });
+
+  it("keeps the feet apart and lifts them in turn, never both at once", () => {
+    const poses = every(0, GANGNAM_SECONDS);
+    expect(poses.every((pose) => pose.feetApart > 1)).toBe(true);
+    expect(Math.max(...poses.map((pose) => pose.hop))).toBeGreaterThan(GANGNAM_STEP * 0.95); // the right foot
+    expect(Math.min(...poses.map((pose) => pose.hop))).toBeLessThan(-GANGNAM_STEP * 0.95); //  the left foot
+    for (const pose of poses) {
+      const pilot = pilotParts(look, HAIR, pose);
+      const left = sizeOf([part("left shoe", pilot)]).minZ;
+      const right = sizeOf([part("right shoe", pilot)]).minZ;
+      expect(Math.min(left, right)).toBeCloseTo(0); // one foot always stands
+      expect(Math.max(left, right)).toBeCloseTo(Math.abs(pose.hop));
+    }
+  });
+
+  it("ends a round exactly as it began, so it can go round and round", () => {
+    const start = poseAt("gangnam", 0);
+    const end = poseAt("gangnam", GANGNAM_SECONDS - 1e-6);
+    expect(distance(start.leftHand, end.leftHand)).toBeLessThan(0.01);
+    expect(distance(start.rightHand, end.rightHand)).toBeLessThan(0.01);
+    expect(Math.abs(start.hop - end.hop)).toBeLessThan(0.01);
+    // And the next round is the same as the first.
+    const later = poseAt("gangnam", GANGNAM_SECONDS + 0.7);
+    expect(distance(later.rightHand, poseAt("gangnam", 0.7).rightHand)).toBeLessThan(1e-6);
+  });
+
+  it("lasts as long as the siu, so the chosen pilot shows one whole round before crossing arms", () => {
+    expect(GANGNAM_SECONDS).toBe(CHOSEN_TIMES.dance);
+  });
+
+  it("is not the wave under a new name: the wave is still there, unchanged, for whoever wants it", () => {
+    expect(DANCES).toContain("wave");
+    const wave = poseAt("wave", 0.5);
+    expect(wave.leftHand[2]).toBeGreaterThan(20);
+    expect(wave.hop).toBe(0);
+  });
+});
+
+describe("a leg (added 18 November 2026)", () => {
+  const colour = "#123456";
+  const lengthOf = (a, b) => distance(a, b);
+
+  it("is one straight piece when the pilot stands, as before", () => {
+    expect(legWith([0, 1.7, 9.4], [0.3, 1.95, 1.2], colour)).toHaveLength(6); // one bar: six sides
+    for (const move of MOVES.filter((one) => one !== "gangnam")) {
+      for (const seconds of MOMENTS) {
+        const pilot = pilotParts(look, HAIR, poseAt(move, seconds));
+        expect(part("left leg", pilot).faces, `${move} at ${seconds}`).toHaveLength(6);
+        expect(part("right leg", pilot).faces, `${move} at ${seconds}`).toHaveLength(6);
+      }
+    }
+  });
+
+  it("bends at the knee when the foot is lifted: two pieces, the knee in front", () => {
+    const hip = [0, 1.7, 9.4];
+    const foot = [0.9, 1.95, 2.9]; // lifted 1.7
+    const faces = legWith(hip, foot, colour);
+    expect(faces).toHaveLength(12); // two bars
+    const furthestForwards = Math.max(...faces.flatMap((face) => face.points.map((point) => point[0])));
+    expect(furthestForwards).toBeGreaterThan(Math.max(hip[0], foot[0]) + 1.5);
+  });
+
+  it("keeps its length when it bends: thigh and shin together are as long as the straight leg", () => {
+    // The knee is the same distance from the hip and from the foot: half a leg each.
+    for (const lifted of [0.2, 0.8, 1.7, 3]) {
+      const hip = [0, 1.7, 9.4];
+      const foot = [0.3 + lifted * 0.4, 1.95, 1.2 + lifted];
+      const between = lengthOf(hip, foot);
+      const forwards = Math.sqrt((LEG / 2) ** 2 - (between / 2) ** 2);
+      const knee = [(hip[0] + foot[0]) / 2 + forwards, (hip[1] + foot[1]) / 2, (hip[2] + foot[2]) / 2];
+      expect(lengthOf(hip, knee) + lengthOf(knee, foot)).toBeGreaterThan(LEG - 0.2);
+      expect(lengthOf(hip, knee) + lengthOf(knee, foot)).toBeLessThan(LEG + 0.6);
+      const faces = legWith(hip, foot, colour);
+      const furthest = Math.max(...faces.flatMap((face) => face.points.map((point) => point[0])));
+      expect(furthest, `lifted ${lifted}`).toBeGreaterThan(knee[0]); // the knee is where the sum says
+      expect(furthest, `lifted ${lifted}`).toBeLessThan(knee[0] + 1.6); //  give or take half the thickness of the leg
+    }
+  });
+
+  it("is never bent by a pose without a hop, even one made by hand that has no hop at all", () => {
+    const { hop, ...old } = poseAt("stand", 1);
+    expect(hop).toBe(0);
+    const pilot = pilotParts(look, HAIR, old);
+    expect(part("left leg", pilot).faces).toHaveLength(6);
+    expect(sizeOf([part("left shoe", pilot), part("right shoe", pilot)]).maxZ).toBeCloseTo(1.3);
+    // And mixing two such poses gives a hop of zero, not "not a number".
+    expect(blendPoses(old, old, 0.5).hop).toBe(0);
+  });
+});
+
+describe("long hair (added 18 November 2026)", () => {
+  it("is only Cici Boss's, with the colour of its ends; everybody else has short hair", () => {
+    expect(longHairOf("cici")).toEqual({ tips: expect.stringMatching(/^#[0-9a-f]{6}$/) });
+    for (const { id } of CAST.filter((one) => one.id !== "cici")) {
+      expect(longHairOf(id), id).toBe(null);
+    }
+  });
+
+  it("is nobody's who is not in the cast", () => {
+    for (const notAnId of ["mario", "", null, undefined, "CICI", " cici", {}, ["cici"]]) {
+      expect(longHairOf(notAnId), JSON.stringify(notAnId)).toBe(null);
+    }
+  });
+
+  it("is carried by the head of the pilot, and only when asked for", () => {
+    const short = part("head", pilotParts(look, HAIR, poseAt("stand", 0))).head;
+    expect("long" in short).toBe(false);
+    const long = part("head", pilotParts(look, HAIR, poseAt("stand", 0), true, longHairOf("cici"))).head;
+    expect(long.long).toEqual(longHairOf("cici"));
+    expect(long.hair).toBe(HAIR); // the colour of the hair itself is unchanged
+  });
+
+  it("reaches the scene of the character panel, beside the kart and alone", () => {
+    for (const withKart of [true, false]) {
+      const scene = pilotScene(look, HAIR, poseAt("stand", 0), withKart, longHairOf("cici"));
+      expect(part("head", scene.pilot).head.long, `with kart: ${withKart}`).toEqual(longHairOf("cici"));
+      expect("long" in part("head", pilotScene(look, HAIR, poseAt("stand", 0), withKart).pilot).head).toBe(false);
+    }
+  });
+
+  it("changes nothing else about the pilot: the same parts in the same places", () => {
+    const pose = poseAt("clap", 0.4);
+    const withoutHead = (parts) => parts.filter((one) => one.name !== "head");
+    expect(withoutHead(pilotParts(look, HAIR, pose, true, longHairOf("cici")))).toEqual(withoutHead(pilotParts(look, HAIR, pose)));
+  });
+});
+
+describe("the photos beside the pilots (taken out on 18 November 2026)", () => {
+  it("are not shown by the character panel any more: it paints the pilots only", () => {
+    const code = readFileSync(new URL("../client/kart-panel.js", import.meta.url), "utf8");
+    expect(code).not.toMatch(/faceOf|faces\//);
+    expect(code).toMatch(/headOf/); // the head on the pilot is still the person's own
+    const page = readFileSync(new URL("../client/index.html", import.meta.url), "utf8");
+    expect(page).not.toMatch(/faces\//);
   });
 });

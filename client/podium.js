@@ -15,7 +15,7 @@
 
 import { standings } from "./standings.js";
 import { characterById } from "../shared/cast.js";
-import { hairOf, headOf, danceOf, lookOfCharacter } from "./cast-choice.js";
+import { hairOf, longHairOf, headOf, danceOf, lookOfCharacter } from "./cast-choice.js";
 import { lookOf } from "./kart-shape.js";
 import { STEP_SECONDS } from "../shared/physics.js";
 import { placeText } from "./net.js";
@@ -28,12 +28,12 @@ export const WAIT_AFTER_YOU_SECONDS = 30;
 
 /**
  * The drivers on the podium, at most three, the winner first:
- *   [{ place, id, character, name, look, hair, head, dance, steps }]
+ *   [{ place, id, character, name, look, hair, longHair, head, dance, steps }]
  *   place      1, 2 or 3: the step they stand on, in the order they finished
  *   character  the id of their character (shared/cast.js), or null
  *   name       the character's name, or "Kart" and the kart's number
  *   look       the colours of their kart and suit (kart-shape.js)
- *   hair, head, dance  from cast-choice.js; null for a kart without a character
+ *   hair, longHair, head, dance  from cast-choice.js; null for a kart without a character
  *   steps      their race time, in steps
  * Only karts that finished stand on it.
  *   karts  [{ id, character?, place?, look?, finished, steps, passed, x, y }]
@@ -52,6 +52,7 @@ export function podiumLineup(karts, track) {
       name: character === null ? `Kart ${kart.id}` : character.name,
       look: character === null ? lookOf(kart) : lookOfCharacter(character.id),
       hair: character === null ? null : hairOf(character.id),
+      longHair: character === null ? null : longHairOf(character.id),
       head: character === null ? null : headOf(character.id),
       dance: character === null ? null : danceOf(character.id),
       steps: kart.steps,

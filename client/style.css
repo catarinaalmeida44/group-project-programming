@@ -83,6 +83,7 @@ h1,
 .panel-head h2,
 .tile .menu-choice,
 .track-name,
+.character-name,
 .podium .row-rank {
   font-style: italic;
   font-weight: 900;
@@ -1839,14 +1840,15 @@ main:has(.status) canvas {
   box-shadow: 0 0 0 2px var(--line);
 }
 
-/* -- Choose your character: the chosen pilot big, and a card for each -- */
+/* -- Choose your character: the chosen pilot big, and a tile for each -- */
 
-/* The big picture beside the cards on a wide screen, above them on a narrow one. */
+/* The chosen one on the left and the tiles on the right on a wide screen;
+   on a narrow one the chosen one is above the tiles. */
 .character-stage {
   display: grid;
-  grid-template-columns: minmax(0, 22.5rem) minmax(0, 1fr);
-  gap: 1rem;
-  align-items: start;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: 1.1rem;
+  align-items: stretch;
 }
 
 @media (max-width: 52rem) {
@@ -1855,74 +1857,101 @@ main:has(.status) canvas {
   }
 }
 
+/* The left side: the big picture, the name, the button, one under the other. */
+.character-chosen {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+/* The floor the chosen pilot and the kart stand on. It takes the room that
+   is left over, with the picture in its middle. */
+.character-floor {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  border-radius: 14px;
+  background: radial-gradient(ellipse at 50% 72%, #7389a0, #2c3f50 72%);
+  box-shadow: 0 0 0 2px var(--line);
+}
+
 .character-step .kart-preview {
-  max-width: 360px;
+  max-width: none;
   margin: 0;
-  background: radial-gradient(ellipse at 50% 75%, #6f8597, #34495c 70%);
+  border-radius: 14px;
+  background: none;
+  box-shadow: none;
+}
+
+/* The name of the chosen character, in the game's own lettering. */
+.character-name {
+  margin: 0;
+  font-size: 1.55rem;
+  line-height: 1.15;
+  text-align: center;
+  text-wrap: balance;
 }
 
 #character-go {
-  margin: 0.4rem 0 0.8rem;
   font-weight: 800;
 }
 
-.faces {
+.character-chosen .note:empty {
+  display: none;
+}
+
+/* Three tiles in a row, two rows. (".panel" in front, so that this wins
+   over the frame every other group of choices in a panel has.) */
+.panel .faces {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.7rem;
   margin: 0;
   padding: 0;
   border: 0;
 }
 
-/* A card: the pilot standing on the left, the photo on the right, the name under both. */
+/* A tile: the pilot standing on a floor that has a little of the colour of
+   their kart ("--tint", set by kart-panel.js), and the name on a dark band. */
 .face {
   position: relative;
-  display: grid;
-  grid-template-columns: 6.5rem minmax(0, 1fr);
-  grid-template-areas:
-    "pilot photo"
-    "name  name";
-  align-items: center;
-  justify-items: center;
-  gap: 0.3rem 0.4rem;
-  padding: 0.45rem 0.5rem 0.55rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   border: 2px solid var(--line);
-  border-radius: 12px;
+  border-radius: 14px;
+  /* A lighter floor than the panel, so dark suits (FranFon is all black) stand out. */
+  background: radial-gradient(ellipse at 50% 74%, color-mix(in srgb, var(--tint, #6f8597) 38%, #7d91a3), #2c3f50 74%);
   cursor: pointer;
   text-align: center;
+  transition:
+    transform 120ms,
+    border-color 120ms;
 }
 
-/* The pilot, standing on a dark floor. */
 .face-pilot {
-  grid-area: pilot;
-  display: block;
-  width: 6.5rem;
-  height: auto;
-  border-radius: 10px;
-  /* A lighter floor than the panel, so dark suits (FranFon is all black) stand out. */
-  background: radial-gradient(ellipse at 50% 75%, #6f8597, #34495c 70%);
-}
-
-/* The person's photo. */
-.face-photo {
-  grid-area: photo;
   display: block;
   width: 100%;
-  max-width: 6rem;
   height: auto;
-  aspect-ratio: 1;
-  border-radius: 10px;
-  object-fit: cover;
-  box-shadow: 0 0 0 2px var(--line);
 }
 
+/* The band with the name: tall enough for two lines, so that every tile is the same height. */
 .face .face-name {
-  grid-area: name;
+  display: grid;
+  flex: 1;
+  place-items: center;
+  min-height: 2.9em;
+  padding: 0.3rem 0.4rem;
+  background: rgba(11, 24, 32, 0.82);
+  font-weight: 700;
 }
 
+/* (For someone who asked for less movement, the rule at the very end of
+   this file switches the gliding off: the tile then changes at once.) */
 .face:hover {
   border-color: var(--text);
+  transform: translateY(-2px);
 }
 
 /* As with the colours: the round choice is there for the keyboard and for

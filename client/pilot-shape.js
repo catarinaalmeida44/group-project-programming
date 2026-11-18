@@ -54,8 +54,12 @@ export const FOREARM = 4.0;
 /** Where the helmet lies: on the ground beside the pilot's right foot. */
 export const HELMET_SPOT = Object.freeze([1.6, 7.4, HELMET_RADIUS]);
 
-/** The dances, one for each character (see danceOf in cast-choice.js). */
-export const DANCES = Object.freeze(["clap", "robot", "drive", "wave", "plane", "siu"]);
+/**
+ * The dances. Each character has their own (see danceOf in cast-choice.js).
+ * "gangnam" was added on 18 November 2026 for Cici Boss, who had "wave"
+ * before: "wave" stays in the list, and nobody dances it at the moment.
+ */
+export const DANCES = Object.freeze(["clap", "robot", "drive", "wave", "plane", "siu", "gangnam"]);
 /** Every movement poseAt() knows: standing, arms crossed, and the dances. */
 export const MOVES = Object.freeze(["stand", "crossed", ...DANCES]);
 /** The movement of the winner on the podium (podium-shape.js): the trophy held high. */
@@ -63,12 +67,25 @@ export const PODIUM_MOVES = Object.freeze(["trophy"]);
 
 /** How long one round of the "siu" takes: a run, a jump with a spin, the landing, and back to standing. */
 export const SIU_SECONDS = 3.4;
+/**
+ * How long one round of the "gangnam" takes: four beats of riding, four
+ * beats of swinging the lasso. As long as the siu, so that the big picture
+ * of the chosen pilot shows exactly one round before the arms are crossed.
+ */
+export const GANGNAM_SECONDS = SIU_SECONDS;
+/** How high a foot is lifted in the "gangnam", in units. */
+export const GANGNAM_STEP = 1.7;
 
 const TURN = Math.PI * 2;
 
-/** A pose with nothing moving: every number at zero. The hands and elbows are filled in by each movement. */
+/**
+ * A pose with nothing moving: every number at zero. The hands and elbows
+ * are filled in by each movement. "hop" lifts one foot off the ground, the
+ * knee bending forwards: above zero the right foot, below zero the left,
+ * by that many units.
+ */
 function still(pose) {
-  return { lift: 0, sway: 0, lean: 0, jump: 0, spin: 0, feetApart: 0, wheel: 0, trophy: 0, ...pose };
+  return { lift: 0, sway: 0, lean: 0, jump: 0, spin: 0, feetApart: 0, hop: 0, wheel: 0, trophy: 0, ...pose };
 }
 
 /** The pose of standing: the left hand on the hip, the right arm down, breathing a little. */
@@ -93,6 +110,9 @@ function stand(seconds) {
  *   "plane"    arms out like the wings of a plane, banking left and right (FranFon)
  *   "siu"      a little run, a jump with a full turn, and landing with the
  *              arms spread down and the feet apart (PCP)
+ *   "gangnam"  riding an invisible horse: the wrists crossed in front, the
+ *              feet apart and stepping in turn, then one arm up swinging a
+ *              lasso (Cici Boss)
  * Anything else is standing.
  */
 export function poseAt(move, seconds) {
@@ -191,9 +211,52 @@ export function poseAt(move, seconds) {
     }
     case "siu":
       return siuAt(t);
+    case "gangnam":
+      return gangnamAt(t);
     default:
       return stand(t);
   }
+}
+
+/**
+ * The horse-riding dance, eight beats a round. The whole time the feet are
+ * apart and step in turn, a foot up between two beats, the body bouncing
+ * and shifting over the foot that stands. For the first four beats the
+ * wrists are crossed in front, as if holding reins, and pump down on every
+ * beat. For the last four the right arm is up beside the head, swinging a
+ * lasso round once a beat, the left fist held in front of the chest.
+ */
+function gangnamAt(seconds) {
+  const beats = (seconds / GANGNAM_SECONDS) * 8;
+  const inRound = ((beats % 8) + 8) % 8;
+  const step = Math.sin(beats * Math.PI); // above zero the right foot is up, below zero the left
+  const pump = Math.cos(beats * TURN); // the hands, down and up once a beat
+  const swing = beats * TURN; // the lasso, round once a beat
+  const body = {
+    lift: 0.45 * Math.abs(step),
+    sway: -0.7 * step, // over the foot that stands
+    lean: -0.07 * step,
+    feetApart: 1.3,
+    hop: GANGNAM_STEP * step,
+  };
+  const reins = still({
+    ...body,
+    leftHand: [4.6, 0.9, 13.4 + pump],
+    leftBend: [0, -1, -0.5],
+    rightHand: [5.0, -0.9, 13.0 + pump],
+    rightBend: [0, 1, -0.5],
+  });
+  const lasso = still({
+    ...body,
+    leftHand: [4.2, 0.6, 13.6 + pump * 0.5],
+    leftBend: [0, -1, -0.5],
+    rightHand: [0.8 + 1.9 * Math.cos(swing), 6.6 + 1.9 * Math.sin(swing), 21.6 + 0.6 * Math.sin(swing)],
+    rightBend: [0, 1, 0],
+  });
+  // From the reins to the lasso during the fourth beat, and back during the
+  // eighth, so that a round ends exactly as it began.
+  const share = inRound < 4 ? easeInOut((inRound - 3.2) / 0.8) : 1 - easeInOut((inRound - 7.2) / 0.8);
+  return blendPoses(reins, lasso, share);
 }
 
 /** The famous jump and landing, in four parts, each flowing into the next. */
@@ -257,6 +320,7 @@ export function blendPoses(from, to, share) {
     jump: mix(from.jump, to.jump),
     spin: mix(from.spin, to.spin),
     feetApart: mix(from.feetApart, to.feetApart),
+    hop: mix(from.hop ?? 0, to.hop ?? 0),
     wheel: mix(from.wheel, to.wheel),
     trophy: mix(from.trophy, to.trophy),
     leftHand: mixPoint(from.leftHand, to.leftHand, s),
@@ -356,10 +420,16 @@ export function armWith(shoulder, hand, bend) {
  *   pose  from poseAt() or blendPoses(). Left out: standing
  *   withHelmet  false: no helmet anywhere (the podium). Left out: the
  *               helmet lies on the ground beside the pilot
+ *   longHair    for a character whose hair falls over the shoulders
+ *               (longHairOf in cast-choice.js): { tips }, the colour of
+ *               its ends. Left out: short hair, the head picture alone
  */
-export function pilotParts(look, hair = "#2b2420", pose = poseAt("stand", 0), withHelmet = true) {
+export function pilotParts(look, hair = "#2b2420", pose = poseAt("stand", 0), withHelmet = true, longHair = null) {
   const { body, suit, helmet, stripe } = look;
   const { lift, sway, lean, jump, spin, feetApart } = pose;
+  const hop = pose.hop ?? 0;
+  const leftUp = Math.max(0, -hop); // how far each foot is off the ground
+  const rightUp = Math.max(0, hop);
   const suitLight = shade(suit, 1.08);
   const hipZ = HIP_Z + lift;
   const shoulderZ = SHOULDER_Z + lift;
@@ -386,8 +456,9 @@ export function pilotParts(look, hair = "#2b2420", pose = poseAt("stand", 0), wi
   const moveHand = ([x, y, z]) => [x, y + sway, z + lift];
   const left = armWith(leftShoulder, moveHand(pose.leftHand), pose.leftBend);
   const right = armWith(rightShoulder, moveHand(pose.rightHand), pose.rightBend);
-  const leftFoot = [0.3, -(FOOT_Y + feetApart), ANKLE];
-  const rightFoot = [0.3, FOOT_Y + feetApart, ANKLE];
+  // A lifted foot also comes a little forwards, as the knee does.
+  const leftFoot = [0.3 + leftUp * 0.4, -(FOOT_Y + feetApart), ANKLE + leftUp];
+  const rightFoot = [0.3 + rightUp * 0.4, FOOT_Y + feetApart, ANKLE + rightUp];
 
   const upperParts = [
     // The body of the racing suit, with a stripe down the front in the
@@ -424,10 +495,10 @@ export function pilotParts(look, hair = "#2b2420", pose = poseAt("stand", 0), wi
 
   const lowerParts = [
     // Shoes and legs: the legs reach from the feet up to the hips.
-    { name: "left shoe", faces: box(-1.0, 2.8, leftFoot[1] - 1.15, leftFoot[1] + 1.15, 0, 1.3, SHOE) },
-    { name: "right shoe", faces: box(-1.0, 2.8, rightFoot[1] - 1.15, rightFoot[1] + 1.15, 0, 1.3, SHOE) },
-    { name: "left leg", faces: bar([0, -1.7 + hip[1], hipZ], leftFoot, 2.1, shade(suit, 0.92)) },
-    { name: "right leg", faces: bar([0, 1.7 + hip[1], hipZ], rightFoot, 2.1, shade(suit, 0.92)) },
+    { name: "left shoe", faces: box(leftFoot[0] - 1.3, leftFoot[0] + 2.5, leftFoot[1] - 1.15, leftFoot[1] + 1.15, leftUp, leftUp + 1.3, SHOE) },
+    { name: "right shoe", faces: box(rightFoot[0] - 1.3, rightFoot[0] + 2.5, rightFoot[1] - 1.15, rightFoot[1] + 1.15, rightUp, rightUp + 1.3, SHOE) },
+    { name: "left leg", faces: legWith([0, -1.7 + hip[1], hipZ], leftFoot, shade(suit, 0.92)) },
+    { name: "right leg", faces: legWith([0, 1.7 + hip[1], hipZ], rightFoot, shade(suit, 0.92)) },
   ].map((part) => mapPart(part, lower));
 
   // The head sits on the collar, and turns with the body.
@@ -440,8 +511,28 @@ export function pilotParts(look, hair = "#2b2420", pose = poseAt("stand", 0), wi
     ...upperParts,
     // The helmet lies on the ground, beside the pilot.
     ...(withHelmet ? [{ name: "helmet", ball: { middle: [...HELMET_SPOT], radius: HELMET_RADIUS, colour: helmet, stripe, visor: VISOR } }] : []),
-    { name: "head", head: { middle: headMiddle, height: HEAD_HEIGHT, hair, facing } },
+    { name: "head", head: { middle: headMiddle, height: HEAD_HEIGHT, hair, facing, ...(longHair ? { long: longHair } : {}) } },
   ];
+}
+
+/** The length of a leg, from the hip to the ankle, standing straight. */
+export const LEG = HIP_Z - ANKLE;
+
+/**
+ * A leg from the hip to the foot. Standing, it is one straight piece, as it
+ * always was. When the foot is lifted, the foot is nearer the hip than the
+ * leg is long, so the leg bends: the knee goes forwards, and the leg is two
+ * pieces that together keep its length.
+ */
+export function legWith(hip, foot, colour) {
+  const length = Math.hypot(foot[0] - hip[0], foot[1] - hip[1], foot[2] - hip[2]);
+  if (length >= LEG) {
+    return bar(hip, foot, 2.1, colour);
+  }
+  const forwards = Math.sqrt((LEG / 2) ** 2 - (length / 2) ** 2);
+  const middle = mixPoint(hip, foot, 0.5);
+  const knee = [middle[0] + forwards, middle[1], middle[2]];
+  return [...bar(hip, knee, 2.1, colour), ...bar(knee, foot, 2.1, colour)];
 }
 
 /**
@@ -501,12 +592,12 @@ export function emptyKartParts(look) {
 }
 
 /**
- * A scene for a character. Gives { kart, pilot, shadows }:
+ * A scene for a character ("longHair" as in pilotParts). Gives { kart, pilot, shadows }:
  *   kart     the parts of the empty kart, moved to its spot, or none when "withKart" is false
  *   pilot    the parts of the pilot, moved to their spot
  *   shadows  [{ x, y, across, along, turn }]: the patches of shadow on the ground
  */
-export function pilotScene(look, hair, pose, withKart = true) {
+export function pilotScene(look, hair, pose, withKart = true, longHair = null) {
   const spot = withKart ? PILOT_SPOT : ALONE_SPOT;
   const shadows = [{ x: spot.x + 0.6, y: spot.y, along: 4.4, across: 5.4 + (pose?.feetApart ?? 0), turn: 0 }];
   if (withKart) {
@@ -514,7 +605,7 @@ export function pilotScene(look, hair, pose, withKart = true) {
   }
   return {
     kart: withKart ? emptyKartParts(look).map((part) => movePart(part, KART_SPOT)) : [],
-    pilot: pilotParts(look, hair, pose).map((part) => movePart(part, spot)),
+    pilot: pilotParts(look, hair, pose, true, longHair).map((part) => movePart(part, spot)),
     shadows,
   };
 }
