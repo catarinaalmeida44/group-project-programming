@@ -377,7 +377,14 @@ describe("the crowd's cheering on the podium", () => {
   });
 });
 
-describe("the podium on the Nova lap, in front of the school's name", () => {
+// Changed on 18 November 2026, said out loud in Catarina's diary: Pedro put
+// the podium on the lawn in front of the white wall with the school's name.
+// Catarina asked for it inside the Hovione Atrium, on the floor the race
+// drives over. Two tests below pinned the lawn and now pin the atrium, and
+// one kept its checks and lost the word "lawn" in its name.
+describe("the podium on the Nova lap, inside the Hovione Atrium", () => {
+  /** The inside of the atrium, in squares: [left, top, right, bottom] (client/nova-lap-ground.js). */
+  const ATRIUM = [54, 4, 76, 20];
   const track = TRACKS["nova-lap"];
   const spot = NOVA_LAP_LOOK.podium;
 
@@ -385,33 +392,41 @@ describe("the podium on the Nova lap, in front of the school's name", () => {
     expect(lookOfTrack(track).podium).toBe(spot);
   });
 
-  it("stands right in front of the white wall with the name, at the end of the avenue", () => {
-    const [column, row] = spot.at;
-    // The white wall with the name is column 53, from row 4 to row 9 (client/nova-lap-buildings.js).
-    expect(column).toBeGreaterThan(48);
-    expect(column).toBeLessThan(53);
-    expect(row).toBeGreaterThanOrEqual(4);
-    expect(row).toBeLessThanOrEqual(9);
+  it("stands inside the atrium, and so does its camera, well away from the walls", () => {
+    for (const [column, row] of [spot.at, spot.camera]) {
+      expect(column).toBeGreaterThan(ATRIUM[0] + 2);
+      expect(column).toBeLessThan(ATRIUM[2] - 2);
+      expect(row).toBeGreaterThan(ATRIUM[1] + 2);
+      expect(row).toBeLessThan(ATRIUM[3] - 2);
+    }
   });
 
-  it("is looked at from the west, the camera on the same lawn, closer than the wall", () => {
+  it("is looked at from the west, from nearer the entrance", () => {
     const [column, row] = spot.at;
     const [cameraColumn, cameraRow] = spot.camera;
     expect(cameraColumn).toBeLessThan(column);
     expect(Math.abs(cameraRow - row)).toBeLessThan(1);
   });
 
-  it("stands on the lawn and not in the way of the karts: no part of it on a road square", () => {
+  it("stands on the floor of the hall: no step and no student inside a wall, the letters or a table", () => {
+    // Where each group stands on the map, worked out as client/podium-view.js
+    // does: the podium faces its camera.
     const size = track.tileSize;
     const [column, row] = spot.at;
-    for (const group of podiumGroups([], 1)) {
-      // Facing the camera in the west: the podium's own directions turned half round.
-      const x = column * size - group.at[0];
-      const y = row * size - group.at[1];
-      if (Math.abs(group.at[1]) < 20) {
-        // The steps, and the crowd close to them.
-        expect(tileKindAt(track, x, y), `${group.at}`).not.toBe("road");
-      }
+    const [cameraColumn, cameraRow] = spot.camera;
+    const back = Math.atan2(row - cameraRow, column - cameraColumn) + Math.PI;
+    const groups = podiumGroups([], 1);
+    expect(groups.length).toBeGreaterThan(20);
+    for (const group of groups) {
+      const x = column * size + group.at[0] * Math.cos(back) - group.at[1] * Math.sin(back);
+      const y = row * size + group.at[0] * Math.sin(back) + group.at[1] * Math.cos(back);
+      // The floor of the atrium counts as road for the driving rules. A wall,
+      // the base of the letters and a square with a table are all "wall".
+      expect(tileKindAt(track, x, y), `${group.at}`).toBe("road");
+      expect(x / size, `${group.at}`).toBeGreaterThan(ATRIUM[0]);
+      expect(x / size, `${group.at}`).toBeLessThan(ATRIUM[2]);
+      expect(y / size, `${group.at}`).toBeGreaterThan(ATRIUM[1]);
+      expect(y / size, `${group.at}`).toBeLessThan(ATRIUM[3]);
     }
   });
 });

@@ -1392,39 +1392,31 @@ export const WALL_ART = {
     height: 4.2,
     fits: true,
     inside: true, // it gives its own light
+    // White with black letters, as the school's own notices are: its name
+    // in a corner, plain heavy capitals, nothing else. (Changed from a blue
+    // screen with a yellow band at Catarina's request, the same evening.)
     paint(c, length, height) {
       const up = (metres) => height - metres;
+      const black = "#111315";
       // The cabinet and its foot.
-      c.fillStyle = "#14171b";
+      c.fillStyle = black;
       c.fillRect(0, 0, length, height);
       c.fillStyle = "#262b31";
       c.fillRect(0, up(0.5), length, 0.5);
-      // The lit picture.
+      // The lit picture: white.
       const left = 0.18;
       const top = 0.16;
       const wide = length - left * 2;
       const tall = height - 0.58 - top;
       const middle = left + wide / 2;
-      const glow = c.createLinearGradient(0, top, 0, top + tall);
-      glow.addColorStop(0, "#1a4a96");
-      glow.addColorStop(1, "#0c2657");
-      c.fillStyle = glow;
+      c.fillStyle = "#fbfbf8";
       c.fillRect(left, top, wide, tall);
-      // A yellow band along the top, with a warning sign and who is speaking.
-      c.fillStyle = "#f2c531";
-      c.fillRect(left, top, wide, 0.6);
-      c.fillStyle = "#14171b";
-      c.beginPath();
-      c.moveTo(left + 0.55, top + 0.1);
-      c.lineTo(left + 0.85, top + 0.52);
-      c.lineTo(left + 0.25, top + 0.52);
-      c.closePath();
-      c.fill();
-      c.fillStyle = "#f2c531";
-      c.fillRect(left + 0.52, top + 0.23, 0.06, 0.16);
-      c.fillRect(left + 0.52, top + 0.42, 0.06, 0.05);
-      lettering(c, "IT HELP DESK", left + 1.1, top + 0.44, 0.3, "#14171b", { weight: 800 });
-      lettering(c, "SERVICE NOTICE", left + wide - 0.3, top + 0.41, 0.2, "#14171b", { align: "right", weight: 700 });
+      // Along the top: the school's name on the left, who is speaking on the right, and a thin line under both.
+      novaName(c, left + 0.45, top + 0.62, 0.36, black);
+      lettering(c, "SCHOOL OF BUSINESS & ECONOMICS", left + 2.25, top + 0.6, 0.13, black, { weight: 600 });
+      lettering(c, "IT HELP DESK", left + wide - 0.45, top + 0.6, 0.26, black, { align: "right", weight: 800 });
+      c.fillStyle = black;
+      c.fillRect(left + 0.45, top + 0.82, wide - 0.9, 0.035);
       // The notice: one line of polite words, then the news in big letters.
       // Letters are made smaller if a line would not fit, whatever font the browser has.
       const fitted = (text, size, weight) => {
@@ -1435,12 +1427,11 @@ export const WALL_ART = {
       };
       const polite = "We regret to inform you that, unfortunately,";
       const news = "MOODLE IS DOWN.";
-      lettering(c, polite, middle, top + 1.22, fitted(polite, 0.36, 600), "#e6eefb", { align: "center", weight: 600 });
-      lettering(c, news, middle, top + 2.5, fitted(news, 0.95, 800), "#ffffff", { align: "center", weight: 800 });
-      lettering(c, "Your IT Help Desk team", middle, top + 3.12, 0.26, "#a9c0e6", { align: "center", weight: 600 });
+      lettering(c, polite, middle, top + 1.5, fitted(polite, 0.34, 500), black, { align: "center", weight: 500 });
+      lettering(c, news, middle, top + 2.62, fitted(news, 0.95, 800), black, { align: "center", weight: 800 });
+      lettering(c, "Your IT Help Desk team", middle, top + 3.16, 0.24, "#5b6168", { align: "center", weight: 600 });
     },
   },
-
   // The black letters that stand in the middle of the atrium, one picture each.
   "letter-n": letter((c, size) => novaLetter(c, 0, size)),
   "letter-o": letter((c, size) => novaLetter(c, 1, size)),
