@@ -26,6 +26,9 @@
 // has to travel to the server and the result has to travel back.
 
 import { TRACKS, storeysOf } from "../shared/tracks/index.js";
+import { createPodiumView } from "./podium-view.js";
+import { podiumLineup, podiumCaption, PODIUM_SECONDS } from "./podium.js";
+import { formatTime } from "./format.js";
 import { chooseTrackName } from "./track-choice.js";
 import { createKeyboard } from "./keyboard.js";
 import { createPainter } from "./draw.js";
@@ -74,6 +77,8 @@ const placeText = document.getElementById("place");
 const resultsBox = document.getElementById("results");
 const resultsList = document.getElementById("results-list");
 const board = createResultsBoard(document); // the big results board when a race is over (results-board.js)
+const podium = createPodiumView(); //           the podium, painted on the race picture when a race is over (podium-view.js)
+let podiumSince = null; //                      when the podium came up, in milliseconds of the page's clock, or null
 
 // ---- What we know from the server ----
 const playback = createPlayback(); // the latest updates, for smooth drawing
@@ -323,7 +328,22 @@ function frame(now) {
     names,
     nextCheckpoint: driving ? nextCheckpointNumber(mine.passed, track) : undefined,
   };
-  draw(view, dressed(shown), camera, steer, others, scene);
+  // When the race is over for everyone, the podium comes first: the first
+  // three in the Hovione Atrium, the winner lifting the trophy (podium.js).
+  // It stays in the picture until the next race starts. After
+  // PODIUM_SECONDS the results board comes up on top of it, with everyone.
+  if (race.phase === "finished" && podiumSince === null) {
+    podiumSince = now;
+  } else if (race.phase !== "finished") {
+    podiumSince = null;
+  }
+  if (podiumSince !== null) {
+    const lineup = podiumLineup(latestKarts, track);
+    const trackCanvas = document.getElementById("track");
+    podium.paint(trackCanvas.getContext("2d"), { width: trackCanvas.width, height: trackCanvas.height }, lineup, (now - podiumSince) / 1000, podiumCaption(lineup, formatTime));
+  } else {
+    draw(view, dressed(shown), camera, steer, others, scene);
+  }
 
   // A checkpoint that was left out, or driving against the arrows for a
   // moment, brings up a warning. A missed checkpoint comes first: going
@@ -337,7 +357,8 @@ function frame(now) {
   // once, from the newest update, and stays until the next race starts.
   // The sentence about the next race moves from the middle of the track to
   // the bottom of the board.
-  if (race.phase === "finished" && !board.isShown()) {
+  const podiumAlone = podiumSince !== null && now - podiumSince < PODIUM_SECONDS * 1000;
+  if (race.phase === "finished" && !podiumAlone && !board.isShown()) {
     const looks = new Map(latestKarts.filter((kart) => kart !== null && typeof kart === "object").map((kart) => [kart.id, lookOf(dressed(kart))]));
     board.show(boardLines(latestKarts, track, names, myId), looks);
   } else if (race.phase !== "finished" && board.isShown()) {
@@ -353,7 +374,7 @@ function frame(now) {
     steps: shown.steps,
     lapSteps: shown.lapSteps,
     view,
-    message: board.isShown() ? "" : (warning ?? about.message),
+    message: board.isShown() || podiumAlone ? "" : (warning ?? about.message),
   });
 
   // The facts of this picture, for the sound: sound-cues.js decides from

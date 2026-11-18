@@ -10,6 +10,7 @@
 //   draw.js               the picture of the track and the kart
 //   buildings.js          the buildings standing up in the view behind the kart
 //   hud.js                the lap counter, the clock and the message
+//   podium.js, podium-view.js  the podium when the race is over
 //
 // The race runs entirely in this browser. Nothing is sent to the server.
 // The player races against computer karts, which drive by the same rules and
@@ -46,6 +47,8 @@ import { readSettings } from "./settings.js";
 import { recordFinishedRace } from "./records.js";
 import { createRaceSound } from "./sound.js";
 import { tileKindAt } from "../shared/track.js";
+import { podiumLineup, podiumKartsOf, singleRaceIsOver, podiumCaption } from "./podium.js";
+import { createPodiumView } from "./podium-view.js";
 
 const track = chooseTrack(window.location.search);
 const character = TEST_DRIVER;
@@ -55,7 +58,9 @@ document.getElementById("track-name").textContent = track.name; // as text, neve
 // The buildings of the track stand up in the race view, if the track says
 // how many storeys each one has (buildings.js). The test oval has none: it
 // gets low barriers along the edge of the road instead.
-const draw = createPainter(document.getElementById("track"), track, { storeys: storeysOf(track) });
+const trackCanvas = document.getElementById("track");
+const draw = createPainter(trackCanvas, track, { storeys: storeysOf(track) });
+const podium = createPodiumView(); // the podium, painted on the same picture when the race is over (podium-view.js)
 const showHud = createHud(document);
 const messageBox = document.getElementById("message");
 const placeBox = document.getElementById("place-box");
@@ -85,6 +90,8 @@ let started = false; //    the countdown starts at the first key press
 let lastFrameTime = null;
 let waitingSeconds = 0; // real time that has passed but is not yet turned into game steps
 let record = null; //      once the race is finished: did it beat your best times? (records.js)
+let youFinishedAt = null; // the step of the race when the player finished, or null
+let podiumSince = null; //   when the podium came up, in milliseconds of the page's clock, or null
 
 // ---- The state of the camera ----
 // The colours of the character the player chose in the menu (cast-choice.js).
@@ -118,6 +125,8 @@ function startAgain() {
   started = false;
   waitingSeconds = 0;
   record = null;
+  youFinishedAt = null;
+  podiumSince = null;
   camera = followTarget(race.racers[0].kart, track); // jump straight back, do not glide
 }
 
@@ -161,6 +170,13 @@ function frame(now) {
   // The moment the race is finished, compare it with your best times, once.
   if (racer.progress.finished && record === null) {
     record = recordFinishedRace(storage, track, racer.progress.lapSteps);
+    youFinishedAt = race.countdownSteps;
+  }
+
+  // When every kart has finished (or the others took too long), the podium
+  // comes up, and stays until R starts a new race (podium.js).
+  if (podiumSince === null && youFinishedAt !== null && singleRaceIsOver(race, race.countdownSteps - youFinishedAt)) {
+    podiumSince = now;
   }
 
   // The camera glides towards where it wants to be.
@@ -184,13 +200,20 @@ function frame(now) {
     air: racer.airSteps ?? 0,
     boost: racer.boostSteps ?? 0,
   };
-  draw(view, shownKart, camera, steer, computerKarts(), {
-    ...sceneFor(race.countdownSteps, started),
-    bananas: race.bananas,
-    walkers: walkersShown, // the people who walk across the track (shared/walkers.js)
-    // While the race is on, the next checkpoint is lit up in yellow.
-    nextCheckpoint: keysWork ? nextCheckpoint(progress, track) : undefined,
-  });
+  if (podiumSince !== null) {
+    // The podium instead of the track: the first three, the winner with the trophy.
+    const lineup = podiumLineup(podiumKartsOf(race, myCharacter), track);
+    const caption = `${podiumCaption(lineup, formatTime)}  ·  Press R to race again`;
+    podium.paint(trackCanvas.getContext("2d"), { width: trackCanvas.width, height: trackCanvas.height }, lineup, (now - podiumSince) / 1000, caption);
+  } else {
+    draw(view, shownKart, camera, steer, computerKarts(), {
+      ...sceneFor(race.countdownSteps, started),
+      bananas: race.bananas,
+      walkers: walkersShown, // the people who walk across the track (shared/walkers.js)
+      // While the race is on, the next checkpoint is lit up in yellow.
+      nextCheckpoint: keysWork ? nextCheckpoint(progress, track) : undefined,
+    });
+  }
 
   // A checkpoint that was left out, or driving against the arrows for a
   // moment, brings up a warning. A missed checkpoint comes first: going
@@ -213,7 +236,7 @@ function frame(now) {
     steps: progress.steps,
     lapSteps: progress.lapSteps,
     view,
-    message: warning ?? messageFor(progress, countdown),
+    message: podiumSince !== null ? "" : (warning ?? messageFor(progress, countdown)),
   });
 
   // The facts of this picture, for the sound: sound-cues.js decides from
