@@ -65,7 +65,7 @@ describe("the cast", () => {
   });
 
   it("paints each character in the colours the team chose", () => {
-    expect(colourNames("dean")).toEqual(["Black", "White", "White"]);
+    expect(colourNames("dean")).toEqual(["Black", "Green", "White"]); // the helmet was white until 18 November 2026: Catarina asked for a pop of green
     expect(colourNames("ricardo")).toEqual(["Orange", "Blue", "Navy"]);
     expect(colourNames("ro")).toEqual(["Pink", "Yellow", "Yellow"]);
     expect(colourNames("cici")).toEqual(["Blue", "Pink", "Navy"]);

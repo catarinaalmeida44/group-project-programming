@@ -421,7 +421,8 @@
         <!-- The chosen one, like the poster of a race: the big picture is put
              on the left by kart-panel.js, in the light of a lamp and the
              colour of their kart. On the right their number, their name,
-             what they are known for, and the button that starts the race. -->
+             and the button that starts the race. Moving the mouse over
+             someone in the line-up puts them on the poster. -->
         <div id="character-hero" class="hero">
           <div id="kart-preview-place" class="hero-stage"></div>
           <div class="hero-card">
@@ -429,16 +430,7 @@
             <p id="character-lead" class="hero-kicker"></p>
             <p id="character-name" class="character-name"></p>
             <div class="hero-stripe" aria-hidden="true"></div>
-            <dl class="hero-facts">
-              <div>
-                <dt>Signature move</dt>
-                <dd id="character-move"></dd>
-              </div>
-              <div>
-                <dt>Colours</dt>
-                <dd id="character-colours"></dd>
-              </div>
-            </dl>
+            <p class="hero-move"><span class="hero-move-word">Signature move</span> <span id="character-move"></span></p>
             <a id="character-go" class="button button-primary button-wide" href="/race.html">Race</a>
             <p id="kart-status" class="note" role="status"></p>
           </div>

@@ -26,6 +26,11 @@ import {
   SIU_SECONDS,
   GANGNAM_SECONDS,
   GANGNAM_STEP,
+  GANGNAM_JUMP,
+  GANGNAM_BEATS,
+  GRIDDY_SECONDS,
+  FLOSS_SWINGS,
+  DISCO_SECONDS,
   LEG,
   legWith,
   CHOSEN_TIMES,
@@ -149,9 +154,11 @@ describe("the arms", () => {
 describe("every movement", () => {
   // Changed on 18 November 2026, said out loud in Catarina's diary: this
   // test pinned six dances. Catarina asked for a new dance for her own
-  // character, so the list now has a seventh, "gangnam", at its end.
-  it("is one of standing, arms crossed, and the seven dances", () => {
-    expect(DANCES).toEqual(["clap", "robot", "drive", "wave", "plane", "siu", "gangnam"]);
+  // character, so the list got a seventh, "gangnam", at its end. The same
+  // evening three more followed: "griddy" for Ro Versos (he asked), and
+  // "floss" and "disco" for Dean and Professor Ricardo Pereira.
+  it("is one of standing, arms crossed, and the ten dances", () => {
+    expect(DANCES).toEqual(["clap", "robot", "drive", "wave", "plane", "siu", "gangnam", "griddy", "floss", "disco"]);
     expect(MOVES).toEqual(["stand", "crossed", ...DANCES]);
   });
 
@@ -163,8 +170,10 @@ describe("every movement", () => {
     }
   });
 
-  it("keeps the feet on the ground, except during the jump of the siu", () => {
-    for (const move of MOVES.filter((one) => one !== "siu")) {
+  // Changed on 18 November 2026, said out loud in Catarina's diary: the
+  // gangnam now jumps too, on every beat ("more energy, jumping", she said).
+  it("keeps the feet on the ground, except during the jumps of the siu and the gangnam", () => {
+    for (const move of MOVES.filter((one) => one !== "siu" && one !== "gangnam")) {
       for (const seconds of MOMENTS) {
         const pilot = pilotParts(look, HAIR, poseAt(move, seconds));
         expect(sizeOf([part("left shoe", pilot), part("right shoe", pilot)]).minZ, `${move} at ${seconds}`).toBeCloseTo(0);
@@ -380,14 +389,14 @@ describe("a pilot on a small card", () => {
 });
 
 describe("the characters' heads and dances", () => {
-  it("gives every character their own dance, all different, PCP the siu and Ró Versos the driving", () => {
+  it("gives every character their own dance, all different, PCP the siu and Ró Versos the griddy", () => {
     const dances = CAST.map(({ id }) => danceOf(id));
     expect(new Set(dances).size).toBe(CAST.length);
     for (const one of dances) {
       expect(DANCES).toContain(one);
     }
     expect(danceOf("pcp")).toBe("siu");
-    expect(danceOf("ro")).toBe("drive");
+    expect(danceOf("ro")).toBe("griddy"); // "drive" until 18 November 2026: he asked Catarina for the griddy
     expect(danceOf("mario")).toBe(null);
   });
 
@@ -540,7 +549,7 @@ describe("the gangnam (added 18 November 2026)", () => {
     expect(Math.max(...forwards) - Math.min(...forwards)).toBeGreaterThan(3);
   });
 
-  it("keeps the feet apart and lifts them in turn, never both at once", () => {
+  it("keeps the feet apart, jumps on every beat, and has one knee higher and then the other", () => {
     const poses = every(0, GANGNAM_SECONDS);
     expect(poses.every((pose) => pose.feetApart > 1)).toBe(true);
     expect(Math.max(...poses.map((pose) => pose.hop))).toBeGreaterThan(GANGNAM_STEP * 0.95); // the right foot
@@ -549,9 +558,21 @@ describe("the gangnam (added 18 November 2026)", () => {
       const pilot = pilotParts(look, HAIR, pose);
       const left = sizeOf([part("left shoe", pilot)]).minZ;
       const right = sizeOf([part("right shoe", pilot)]).minZ;
-      expect(Math.min(left, right)).toBeCloseTo(0); // one foot always stands
-      expect(Math.max(left, right)).toBeCloseTo(Math.abs(pose.hop));
+      expect(Math.min(left, right)).toBeCloseTo(pose.jump); // the lower foot is as high as the jump
+      expect(Math.max(left, right) - Math.min(left, right)).toBeCloseTo(Math.abs(pose.hop)); // the other one is higher by the step
     }
+    // It leaves the ground on every beat and lands again: ten jumps a round.
+    const heights = poses.map((pose) => pose.jump);
+    expect(Math.max(...heights)).toBeGreaterThan(GANGNAM_JUMP * 0.95);
+    expect(Math.min(...heights)).toBeLessThan(0.2);
+    let landings = 0;
+    for (let i = 1; i < heights.length - 1; i++) {
+      if (heights[i] <= heights[i - 1] && heights[i] < heights[i + 1]) {
+        landings++;
+      }
+    }
+    expect(landings).toBeGreaterThanOrEqual(GANGNAM_BEATS - 2);
+    expect(landings).toBeLessThanOrEqual(GANGNAM_BEATS);
   });
 
   it("ends a round exactly as it began, so it can go round and round", () => {
@@ -583,7 +604,7 @@ describe("a leg (added 18 November 2026)", () => {
 
   it("is one straight piece when the pilot stands, as before", () => {
     expect(legWith([0, 1.7, 9.4], [0.3, 1.95, 1.2], colour)).toHaveLength(6); // one bar: six sides
-    for (const move of MOVES.filter((one) => one !== "gangnam")) {
+    for (const move of MOVES.filter((one) => one !== "gangnam" && one !== "griddy")) {
       for (const seconds of MOMENTS) {
         const pilot = pilotParts(look, HAIR, poseAt(move, seconds));
         expect(part("left leg", pilot).faces, `${move} at ${seconds}`).toHaveLength(6);
@@ -719,5 +740,100 @@ describe("the page of the character panel (added 18 November 2026)", () => {
 
   it("writes names as text, never as HTML, so a name can never become part of the page's code", () => {
     expect(code).not.toMatch(/innerHTML|insertAdjacentHTML|document\.write/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Added later on 18 November 2026: the griddy, the floss and the disco.
+// ---------------------------------------------------------------------------
+
+describe("the three dances added last (18 November 2026)", () => {
+  const every = (move, from, to) => {
+    const poses = [];
+    for (let t = from; t < to; t += 1 / 60) {
+      poses.push(poseAt(move, t));
+    }
+    return poses;
+  };
+  const range = (values) => Math.max(...values) - Math.min(...values);
+
+  it("gives the griddy to Ro Versos, the floss to Dean and the disco to Professor Ricardo Pereira", () => {
+    expect(danceOf("ro")).toBe("griddy");
+    expect(danceOf("dean")).toBe("floss");
+    expect(danceOf("ricardo")).toBe("disco");
+    expect(danceNameOf("ro")).toBe("The griddy");
+  });
+
+  it("griddy: both arms swing forwards and back together, beside the body, while the feet skip", () => {
+    const swinging = every("griddy", 0, GRIDDY_SECONDS * 0.5);
+    for (const pose of swinging) {
+      expect(pose.leftHand[0]).toBeCloseTo(pose.rightHand[0]); // together
+      expect(pose.leftHand[1]).toBeLessThan(-3.5); // beside the body, not in front of it
+      expect(pose.rightHand[1]).toBeGreaterThan(3.5);
+    }
+    expect(range(swinging.map((pose) => pose.leftHand[0]))).toBeGreaterThan(5);
+    expect(Math.max(...swinging.map((pose) => pose.hop))).toBeGreaterThan(1);
+    expect(Math.min(...swinging.map((pose) => pose.hop))).toBeLessThan(-1);
+    expect(swinging.every((pose) => pose.jump === 0)).toBe(true); // skipping, not jumping: one foot is always down
+  });
+
+  it("griddy: then both hands go up in front of the eyes, like glasses, and come down again", () => {
+    const beat = GRIDDY_SECONDS / 8;
+    const glasses = poseAt("griddy", beat * 6.2);
+    for (const hand of [glasses.leftHand, glasses.rightHand]) {
+      expect(hand[2]).toBeGreaterThan(20); //          as high as the eyes
+      expect(Math.abs(hand[1])).toBeLessThan(2.5); //  in front of the face
+      expect(hand[0]).toBeGreaterThan(1.6); //         and in front of the head
+    }
+    const end = poseAt("griddy", GRIDDY_SECONDS - 1e-6);
+    expect(distance(end.leftHand, poseAt("griddy", 0).leftHand)).toBeLessThan(0.05); // a round ends as it began
+    expect(end.leftHand[2]).toBeLessThan(13);
+  });
+
+  it("floss: both hands swing to the same side, low, and the hips go the other way", () => {
+    const poses = every("floss", 0, 2 / FLOSS_SWINGS);
+    for (const pose of poses) {
+      expect(pose.leftHand[2]).toBeLessThan(10);
+      expect(pose.rightHand[2]).toBeLessThan(10);
+      const armsSide = (pose.leftHand[1] + pose.rightHand[1]) / 2;
+      if (Math.abs(armsSide) > 1) {
+        expect(Math.sign(pose.sway)).toBe(-Math.sign(armsSide));
+      }
+    }
+    expect(range(poses.map((pose) => pose.leftHand[1]))).toBeGreaterThan(8);
+    expect(range(poses.map((pose) => pose.rightHand[1]))).toBeGreaterThan(8);
+  });
+
+  it("floss: the arm that crosses the body is in front of it, the arm on its own side goes behind", () => {
+    const quarter = 1 / FLOSS_SWINGS / 4;
+    const right = poseAt("floss", quarter); //     both arms on the right
+    const left = poseAt("floss", quarter * 3); //  both arms on the left
+    expect(right.leftHand[0]).toBeGreaterThan(1.6); // the left arm crossed over: in front of the suit
+    expect(right.rightHand[0]).toBeLessThan(-1.6); //  the right arm: behind
+    expect(left.rightHand[0]).toBeGreaterThan(1.6);
+    expect(left.leftHand[0]).toBeLessThan(-1.6);
+    // And no hand ever goes through the body: while a hand is in front of the chest or the back, it is clear of it.
+    for (const pose of every("floss", 0, 2 / FLOSS_SWINGS)) {
+      for (const hand of [pose.leftHand, pose.rightHand]) {
+        if (Math.abs(hand[1] + pose.sway) < 3.1) {
+          expect(Math.abs(hand[0])).toBeGreaterThan(1.6);
+        }
+      }
+    }
+  });
+
+  it("disco: the right arm points up to the side, then down across the body, the left hand on the hip", () => {
+    const up = poseAt("disco", 0);
+    const down = poseAt("disco", DISCO_SECONDS / 2);
+    expect(up.rightHand[2]).toBeGreaterThan(21);
+    expect(up.rightHand[1]).toBeGreaterThan(6); //  out to its own side
+    expect(down.rightHand[2]).toBeLessThan(11);
+    expect(down.rightHand[1]).toBeLessThan(0); //   across, on the other side
+    for (const pose of every("disco", 0, DISCO_SECONDS * 2)) {
+      expect(pose.leftHand).toEqual(poseAt("stand", 0).leftHand); // on the hip, where it is when standing
+    }
+    // It holds at each end for a moment, instead of swinging like a pendulum.
+    const nearUp = every("disco", 0, DISCO_SECONDS).filter((pose) => pose.rightHand[2] > 21.5).length;
+    expect(nearUp / 60).toBeGreaterThan(DISCO_SECONDS * 0.2);
   });
 });

@@ -59,7 +59,11 @@ export const HELMET_SPOT = Object.freeze([1.6, 7.4, HELMET_RADIUS]);
  * "gangnam" was added on 18 November 2026 for Cici Boss, who had "wave"
  * before: "wave" stays in the list, and nobody dances it at the moment.
  */
-export const DANCES = Object.freeze(["clap", "robot", "drive", "wave", "plane", "siu", "gangnam"]);
+export const DANCES = Object.freeze(["clap", "robot", "drive", "wave", "plane", "siu", "gangnam", "griddy", "floss", "disco"]);
+// (The last three were added the same evening: "griddy" for Ró Versos, who
+// asked for it, and "floss" for Dean and "disco" for Professor Ricardo
+// Pereira, because Catarina wanted better dances for them. Their old ones,
+// "drive", "clap" and "robot", stay in the list too, danced by nobody.)
 /** Every movement poseAt() knows: standing, arms crossed, and the dances. */
 export const MOVES = Object.freeze(["stand", "crossed", ...DANCES]);
 /** The movement of the winner on the podium (podium-shape.js): the trophy held high. */
@@ -73,8 +77,12 @@ export const SIU_SECONDS = 3.4;
  * of the chosen pilot shows exactly one round before the arms are crossed.
  */
 export const GANGNAM_SECONDS = SIU_SECONDS;
-/** How high a foot is lifted in the "gangnam", in units. */
+/** How high one foot is lifted above the other in the "gangnam", in units. */
 export const GANGNAM_STEP = 1.7;
+/** How many beats a round of the "gangnam" has: half of them riding, half with the lasso. Ten in 3.4 seconds is fast. */
+export const GANGNAM_BEATS = 10;
+/** How high the "gangnam" jumps on every beat, in units. (Catarina, the same evening: "more energy, jumping".) */
+export const GANGNAM_JUMP = 2.2;
 
 const TURN = Math.PI * 2;
 
@@ -113,6 +121,12 @@ function stand(seconds) {
  *   "gangnam"  riding an invisible horse: the wrists crossed in front, the
  *              feet apart and stepping in turn, then one arm up swinging a
  *              lasso (Cici Boss)
+ *   "griddy"   skipping feet, both arms swinging forwards and back, then
+ *              the hands in front of the eyes like glasses (Ró Versos)
+ *   "floss"    both straight arms swinging from side to side past the hips,
+ *              the hips going the other way (Dean)
+ *   "disco"    one arm pointing up to the side, then down across the body,
+ *              the other hand on the hip (Professor Ricardo Pereira)
  * Anything else is standing.
  */
 export function poseAt(move, seconds) {
@@ -213,49 +227,136 @@ export function poseAt(move, seconds) {
       return siuAt(t);
     case "gangnam":
       return gangnamAt(t);
+    case "griddy":
+      return griddyAt(t);
+    case "floss": {
+      // Both straight arms swing to one side and then to the other, fast,
+      // while the hips go the opposite way. The arm that crosses the body
+      // passes in front of it; the arm on its own side swings back behind it.
+      const side = Math.sin(t * TURN * FLOSS_SWINGS); // -1: the arms are on the left, 1: on the right
+      const behind = (share) => 3.4 - 5.6 * share * share; // in front of the body (3.4), or back behind it
+      return still({
+        lift: 0.25 * Math.abs(Math.cos(t * TURN * FLOSS_SWINGS)),
+        sway: -0.9 * side,
+        lean: 0.12 * side,
+        feetApart: 0.8,
+        leftHand: [behind(Math.max(0, -side)), -1.0 + 4.5 * side, 9.2],
+        leftBend: [-1, 0, 0],
+        rightHand: [behind(Math.max(0, side)), 1.0 + 4.5 * side, 9.2],
+        rightBend: [-1, 0, 0],
+      });
+    }
+    case "disco": {
+      // The famous point: the right arm straight up to the side, a moment's
+      // hold, then straight down across the body, a hold, and up again. The
+      // left hand stays on the hip, and the hips swing with the arm.
+      const round = (t / DISCO_SECONDS) % 1;
+      const there = round < 0.5 ? round * 2 : 2 - round * 2; // 0 up, 1 down, and back
+      const down = easeInOut(easeInOut(there)); // twice, so that it holds at each end
+      return still({
+        lift: 0.35 * Math.abs(Math.sin((t / DISCO_SECONDS) * TURN)),
+        sway: 0.8 - 1.6 * down,
+        lean: 0.1 - 0.2 * down,
+        feetApart: 1.0,
+        leftHand: [0.9, -3.7, 10.3],
+        leftBend: [-0.5, -1, 0.3],
+        rightHand: mixPoint([1.0, 8.0, 22.5], [4.0, -3.0, 9.5], down),
+        rightBend: [0, 1, 0],
+      });
+    }
     default:
       return stand(t);
   }
 }
 
+/** How many times a second the arms of the "floss" go there and back. */
+export const FLOSS_SWINGS = 1.5;
+/** How long the "disco" takes to point up, down, and up again, in seconds. */
+export const DISCO_SECONDS = 1.1;
+
+/** How long one round of the "griddy" takes: as long as the siu, for the same reason as the gangnam. */
+export const GRIDDY_SECONDS = SIU_SECONDS;
+
 /**
- * The horse-riding dance, eight beats a round. The whole time the feet are
- * apart and step in turn, a foot up between two beats, the body bouncing
- * and shifting over the foot that stands. For the first four beats the
- * wrists are crossed in front, as if holding reins, and pump down on every
- * beat. For the last four the right arm is up beside the head, swinging a
- * lasso round once a beat, the left fist held in front of the chest.
+ * The griddy, eight beats a round (Ró Versos). The feet skip, one up
+ * between two beats and then the other, the body bouncing. Both arms swing
+ * together, forwards and back, beside the body. Near the end of each round
+ * the hands go up in front of the eyes like a pair of glasses, stay there
+ * for a moment, and come down again.
  */
-function gangnamAt(seconds) {
-  const beats = (seconds / GANGNAM_SECONDS) * 8;
+function griddyAt(seconds) {
+  const beats = (seconds / GRIDDY_SECONDS) * 8;
   const inRound = ((beats % 8) + 8) % 8;
   const step = Math.sin(beats * Math.PI); // above zero the right foot is up, below zero the left
-  const pump = Math.cos(beats * TURN); // the hands, down and up once a beat
+  const swing = Math.sin(beats * Math.PI); // the arms: forwards, back, once every two beats
+  const body = {
+    lift: 0.4 * Math.abs(step),
+    sway: -0.3 * step,
+    feetApart: 0.3,
+    hop: 1.2 * step,
+  };
+  const swinging = still({
+    ...body,
+    leftHand: [3.5 * swing, -4.6, 10.5 + 1.2 * Math.abs(swing)],
+    leftBend: [-1, 0, 0],
+    rightHand: [3.5 * swing, 4.6, 10.5 + 1.2 * Math.abs(swing)],
+    rightBend: [-1, 0, 0],
+  });
+  const glasses = still({
+    ...body,
+    leftHand: [2.6, -1.5, 21.6],
+    leftBend: [0, -1, -0.3],
+    rightHand: [2.6, 1.5, 21.6],
+    rightBend: [0, 1, -0.3],
+  });
+  // The hands go up during the fifth beat and come down during the eighth.
+  const share = inRound < 6 ? easeInOut((inRound - 4.6) / 0.8) : 1 - easeInOut((inRound - 7.0) / 0.8);
+  return blendPoses(swinging, glasses, share);
+}
+
+/**
+ * The horse-riding dance, ten beats a round. The whole time the pilot
+ * jumps, once a beat, the feet apart, one knee higher than the other and
+ * then the other one, the body thrown from side to side. For the first half
+ * the wrists are crossed in front, as if holding reins, and pump hard, down
+ * on every beat. For the second half the right arm is up beside the head,
+ * swinging a lasso round once a beat, the left fist held in front of the
+ * chest.
+ */
+function gangnamAt(seconds) {
+  const beats = (seconds / GANGNAM_SECONDS) * GANGNAM_BEATS;
+  const half = GANGNAM_BEATS / 2;
+  const inRound = ((beats % GANGNAM_BEATS) + GANGNAM_BEATS) % GANGNAM_BEATS;
+  const step = Math.sin(beats * Math.PI); // above zero the right foot is up, below zero the left
+  const pump = 1.6 * Math.cos(beats * TURN); // the hands, down and up once a beat
   const swing = beats * TURN; // the lasso, round once a beat
   const body = {
-    lift: 0.45 * Math.abs(step),
-    sway: -0.7 * step, // over the foot that stands
-    lean: -0.07 * step,
-    feetApart: 1.3,
+    // A jump on every beat: both feet off the ground, landing on the beat,
+    // one knee higher than the other, the body thrown from side to side.
+    jump: GANGNAM_JUMP * Math.abs(step),
+    sway: -1.1 * step, // over the foot that lands first
+    lean: -0.12 * step,
+    feetApart: 1.5,
     hop: GANGNAM_STEP * step,
   };
   const reins = still({
     ...body,
-    leftHand: [4.6, 0.9, 13.4 + pump],
+    leftHand: [4.8, 0.9, 13.6 + pump],
     leftBend: [0, -1, -0.5],
-    rightHand: [5.0, -0.9, 13.0 + pump],
+    rightHand: [5.2, -0.9, 13.2 + pump],
     rightBend: [0, 1, -0.5],
   });
   const lasso = still({
     ...body,
     leftHand: [4.2, 0.6, 13.6 + pump * 0.5],
     leftBend: [0, -1, -0.5],
-    rightHand: [0.8 + 1.9 * Math.cos(swing), 6.6 + 1.9 * Math.sin(swing), 21.6 + 0.6 * Math.sin(swing)],
+    rightHand: [0.8 + 2.2 * Math.cos(swing), 6.8 + 2.2 * Math.sin(swing), 21.6 + 0.6 * Math.sin(swing)],
     rightBend: [0, 1, 0],
   });
-  // From the reins to the lasso during the fourth beat, and back during the
-  // eighth, so that a round ends exactly as it began.
-  const share = inRound < 4 ? easeInOut((inRound - 3.2) / 0.8) : 1 - easeInOut((inRound - 7.2) / 0.8);
+  // From the reins to the lasso during the last beat of the first half, and
+  // back during the last beat of the round, so that a round ends exactly as
+  // it began.
+  const share = inRound < half ? easeInOut(inRound - (half - 1)) : 1 - easeInOut(inRound - (GANGNAM_BEATS - 1));
   return blendPoses(reins, lasso, share);
 }
 

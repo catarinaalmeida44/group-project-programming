@@ -4,8 +4,9 @@
 // and then this panel opens. At the top is a poster of the chosen one, in
 // the colour of their kart: on the left the pilot, big, beside their kart,
 // dancing and then crossing arms, round and round; on the right their
-// number, their name, the name of their dance, the colours of their kart,
-// and the button that starts the race on the track that was picked. Under
+// number, their name, the name of their dance ("Signature move") and the
+// button that starts the race on the track that was picked. Moving the mouse over someone in the line-up puts them on the
+// poster to look at; a click chooses them. Under
 // the poster is the line-up: a tile for each character of shared/cast.js,
 // the pilot standing, with the person's own head (pilot-shape.js). When the
 // mouse passes over a tile, that pilot does their own dance.
@@ -74,7 +75,6 @@ export function connectCharacterChoice(page, storage) {
   const hero = page.getElementById("character-hero");
   const numberLine = page.getElementById("character-number");
   const moveLine = page.getElementById("character-move");
-  const coloursLine = page.getElementById("character-colours");
 
   const bigCanvas = makePart(page, "canvas", "kart-preview");
   bigCanvas.width = BIG_SIZE.width * SHARP;
@@ -89,7 +89,8 @@ export function connectCharacterChoice(page, storage) {
   const still = page.defaultView.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
 
   let chosen = CAST[0].id;
-  let chosenAt = 0; // when the chosen character was chosen, in milliseconds of the page's clock
+  let shown = null; // who is on the poster: the chosen one, or the one the mouse is over
+  let shownAt = 0; // since when, in milliseconds of the page's clock
   let cards = []; // [{ id, canvas, hovered, dancing }]: "dancing" goes from 0 to 1 and back
   let moving = false; // true while the panel is open and the pictures move
   let lastFrame = null;
@@ -121,37 +122,53 @@ export function connectCharacterChoice(page, storage) {
       const card = { id, canvas, hovered: false, dancing: 0 };
       cards.push(card);
       // The pilot dances while the mouse is over the tile, or the keyboard is on it.
-      label.addEventListener("pointerenter", () => (card.hovered = true));
-      label.addEventListener("pointerleave", () => (card.hovered = false));
-      box.addEventListener("focus", () => (card.hovered = true));
-      box.addEventListener("blur", () => (card.hovered = false));
+      // While it is there, that pilot is also the one on the poster. When
+      // it leaves, the poster shows the chosen one again.
+      const arrive = () => {
+        card.hovered = true;
+        showOnPoster(id);
+      };
+      const leave = () => {
+        card.hovered = false;
+        showOnPoster(chosen);
+      };
+      label.addEventListener("pointerenter", arrive);
+      label.addEventListener("pointerleave", leave);
+      box.addEventListener("focus", arrive);
+      box.addEventListener("blur", leave);
       label.append(box, canvas, makePart(page, "span", "face-name", name));
       group.append(label);
     }
     choices.append(group);
   }
 
-  function choose(id) {
-    chosen = id;
-    chosenAt = performance.now(); // the big pilot starts their dance from the beginning
+  /**
+   * Puts a character on the poster: their name, their number, and the
+   * colours of their kart. The big picture follows by itself, and their
+   * dance starts from the beginning. Looking is not choosing: nothing is
+   * saved here.
+   */
+  function showOnPoster(id) {
+    if (shown === id) {
+      return;
+    }
+    shown = id;
+    shownAt = performance.now();
     const character = CAST.find((one) => one.id === id);
     bigCanvas.setAttribute("aria-label", `${character.name} dancing beside their kart`);
     nameLine.textContent = character.name; // as text, never as HTML
-    // The poster takes the colours of the chosen one's kart (style.css mixes them in).
+    // The poster takes the colours of their kart (style.css mixes them in).
     const look = lookOfCharacter(id);
     hero.style.setProperty("--tint", look.body);
     hero.style.setProperty("--tint-two", look.helmet);
     numberLine.textContent = String(CAST.indexOf(character) + 1).padStart(2, "0"); // their place in the cast, as a race number
     moveLine.textContent = danceNameOf(id);
-    // A round dot of each colour, with the word for what has that colour.
-    coloursLine.replaceChildren();
-    for (const [word, colour] of [["Kart", look.body], ["Helmet", look.helmet], ["Suit", look.suit]]) {
-      const dot = makePart(page, "span", "colour-dot");
-      dot.style.setProperty("--dot", colour);
-      const one = makePart(page, "span", "colour-word");
-      one.append(dot, word);
-      coloursLine.append(one);
-    }
+  }
+
+  function choose(id) {
+    chosen = id;
+    shown = null; // so that the poster starts again, even if it showed this one already
+    showOnPoster(id);
     const saved = saveCharacter(storage, id);
     status.textContent = saved || storage === null ? "" : "This browser did not let the game save your choice.";
   }
@@ -164,8 +181,8 @@ export function connectCharacterChoice(page, storage) {
 
     // The chosen one, beside their kart: their dance, then arms crossed, round and round.
     const swing = still ? 0 : Math.sin((seconds * Math.PI * 2) / SECONDS_PER_SWING) * BIG_SWING;
-    const bigPose = still ? poseAt("crossed", 0) : chosenPose(danceOf(chosen), (now - chosenAt) / 1000);
-    paintOne(bigCanvas, BIG_SIZE, BIG_CAMERA, chosen, FACING_US + swing, bigPose, true);
+    const bigPose = still ? poseAt("crossed", 0) : chosenPose(danceOf(shown), (now - shownAt) / 1000);
+    paintOne(bigCanvas, BIG_SIZE, BIG_CAMERA, shown, FACING_US + swing, bigPose, true);
 
     for (const card of cards) {
       // Start or stop dancing smoothly.

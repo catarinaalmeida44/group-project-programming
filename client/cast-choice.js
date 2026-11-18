@@ -84,10 +84,10 @@ export function headOf(id) {
 
 /** Each character's own dance (the dances are in pilot-shape.js). */
 const DANCE = Object.freeze({
-  dean: "clap",
-  ricardo: "robot",
-  ro: "drive",
-  cici: "gangnam", // "wave" until 18 November 2026: she asked for this one
+  dean: "floss", //     "clap" until 18 November 2026
+  ricardo: "disco", //  "robot" until 18 November 2026
+  ro: "griddy", //      "drive" until 18 November 2026: he asked for this one
+  cici: "gangnam", //   "wave" until 18 November 2026: she asked for this one
   franfon: "plane",
   pcp: "siu",
 });
@@ -106,6 +106,9 @@ const DANCE_NAMES = Object.freeze({
   plane: "The aeroplane",
   siu: "The siu",
   gangnam: "Gangnam style",
+  griddy: "The griddy",
+  floss: "The floss",
+  disco: "Disco fever",
 });
 
 /** The name of a character's dance, to show on the page, or null for an id that is not in the cast. */

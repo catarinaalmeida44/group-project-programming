@@ -1945,48 +1945,23 @@ main:has(.status) canvas {
   transform: skewX(-20deg);
 }
 
-.hero-facts {
-  display: grid;
-  gap: 0.35rem;
-  margin: 0.25rem 0 0.5rem;
-}
-
-.hero-facts div {
+/* "Signature move" in small capitals, and the name of the dance after it. */
+.hero-move {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.15rem 0.7rem;
+  margin: 0.25rem 0 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 800;
 }
 
-.hero-facts dt {
-  min-width: 7.6rem;
+.hero-move-word {
   color: var(--text-quiet);
   font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-.hero-facts dd {
-  margin: 0;
-  font-weight: 700;
-}
-
-/* "Kart", "Helmet", "Suit", each after a round dot of its colour ("--dot"). */
-.colour-word {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  margin-right: 0.7rem;
-  font-size: 0.9rem;
-}
-
-.colour-dot {
-  width: 0.85rem;
-  height: 0.85rem;
-  border-radius: 50%;
-  background: var(--dot);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.45);
 }
 
 #character-go {
