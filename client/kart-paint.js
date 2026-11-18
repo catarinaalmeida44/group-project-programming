@@ -238,6 +238,27 @@ function kartReady(look, kart) {
   return parts;
 }
 
+/**
+ * Paints a whole scene of parts (the podium, podium-shape.js), furthest
+ * first, with patches of shadow on the ground under it. Each head carries
+ * its own picture ("picture" in the head). Parts that never move can be
+ * prepared once with prepareParts() and handed in again every picture.
+ */
+export function paintScene(context, viewer, { parts, shadows = [] }) {
+  if (viewer === null) {
+    return;
+  }
+  for (const shadow of shadows) {
+    paintShadowPatch(context, viewer, shadow);
+  }
+  paintParts(context, viewer, parts.map((part) => (part.prepared ? part : ready(part))), null);
+}
+
+/** Parts with what painting needs worked out once, for parts that never move. */
+export function prepareParts(parts) {
+  return parts.map((part) => ({ ...ready(part), prepared: true }));
+}
+
 /** Paints a list of parts, furthest first. */
 function paintParts(context, viewer, parts, face) {
   // Furthest part first. The low parts (the floor) come before all others.
@@ -253,7 +274,7 @@ function paintParts(context, viewer, parts, face) {
       continue;
     }
     if (part.head) {
-      paintHead(context, viewer, part.head, face);
+      paintHead(context, viewer, part.head, part.head.picture ?? face); // a head may carry its own picture (the podium)
       continue;
     }
     // Faces of one solid piece do not cover each other once the ones facing

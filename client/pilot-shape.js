@@ -31,6 +31,8 @@ const SHOE = "#1b1f24";
 const GLOVE = "#1b1f24";
 const VISOR = "#16202b";
 const WHEEL = "#3a4450";
+const GOLD = "#e8b923";
+const GOLD_DARK = "#a97c12";
 
 /** How tall the head picture is painted, from the chin to the top of the hair. A little big, like a toy figure, so the face can be seen. */
 export const HEAD_HEIGHT = 9.6;
@@ -56,6 +58,8 @@ export const HELMET_SPOT = Object.freeze([1.6, 7.4, HELMET_RADIUS]);
 export const DANCES = Object.freeze(["clap", "robot", "drive", "wave", "plane", "siu"]);
 /** Every movement poseAt() knows: standing, arms crossed, and the dances. */
 export const MOVES = Object.freeze(["stand", "crossed", ...DANCES]);
+/** The movement of the winner on the podium (podium-shape.js): the trophy held high. */
+export const PODIUM_MOVES = Object.freeze(["trophy"]);
 
 /** How long one round of the "siu" takes: a run, a jump with a spin, the landing, and back to standing. */
 export const SIU_SECONDS = 3.4;
@@ -64,7 +68,7 @@ const TURN = Math.PI * 2;
 
 /** A pose with nothing moving: every number at zero. The hands and elbows are filled in by each movement. */
 function still(pose) {
-  return { lift: 0, sway: 0, lean: 0, jump: 0, spin: 0, feetApart: 0, wheel: 0, ...pose };
+  return { lift: 0, sway: 0, lean: 0, jump: 0, spin: 0, feetApart: 0, wheel: 0, trophy: 0, ...pose };
 }
 
 /** The pose of standing: the left hand on the hip, the right arm down, breathing a little. */
@@ -171,6 +175,20 @@ export function poseAt(move, seconds) {
         rightHand: [0.8, 12, 15.4],
         rightBend: [-1, 0, 0],
       });
+    case "trophy": {
+      // The winner on the podium: the trophy held high in the right hand,
+      // beside the head, the left fist pumping, bouncing with joy.
+      const beat = t * Math.PI * 2 * 1.3;
+      return still({
+        lift: 0.5 * Math.abs(Math.sin(beat / 2)),
+        sway: 0.35 * Math.sin(beat / 4),
+        trophy: 1,
+        leftHand: [2.2, -4.6, 17.2 + 1.6 * Math.sin(beat / 2)],
+        leftBend: [0, -1, -0.6],
+        rightHand: [0.9, 7.2, 22.4 + 0.4 * Math.sin(beat / 2)],
+        rightBend: [0, 1, 0],
+      });
+    }
     case "siu":
       return siuAt(t);
     default:
@@ -240,6 +258,7 @@ export function blendPoses(from, to, share) {
     spin: mix(from.spin, to.spin),
     feetApart: mix(from.feetApart, to.feetApart),
     wheel: mix(from.wheel, to.wheel),
+    trophy: mix(from.trophy, to.trophy),
     leftHand: mixPoint(from.leftHand, to.leftHand, s),
     leftBend: mixPoint(from.leftBend, to.leftBend, s),
     rightHand: mixPoint(from.rightHand, to.rightHand, s),
@@ -335,8 +354,10 @@ export function armWith(shoulder, hand, bend) {
  *         the suit
  *   hair  the colour of the hair, for the back of the head
  *   pose  from poseAt() or blendPoses(). Left out: standing
+ *   withHelmet  false: no helmet anywhere (the podium). Left out: the
+ *               helmet lies on the ground beside the pilot
  */
-export function pilotParts(look, hair = "#2b2420", pose = poseAt("stand", 0)) {
+export function pilotParts(look, hair = "#2b2420", pose = poseAt("stand", 0), withHelmet = true) {
   const { body, suit, helmet, stripe } = look;
   const { lift, sway, lean, jump, spin, feetApart } = pose;
   const suitLight = shade(suit, 1.08);
@@ -397,6 +418,8 @@ export function pilotParts(look, hair = "#2b2420", pose = poseAt("stand", 0)) {
     { name: "right glove", faces: bar(towards(right.hand, right.elbow, 0.5), towards(right.hand, right.elbow, -1.0), 2.1, GLOVE) },
     // The steering wheel of the "drive" dance: a ring held by both hands, with a bar across.
     ...(pose.wheel > 0.5 ? steeringWheel(left.hand, right.hand) : []),
+    // The trophy of the winner, standing on the right hand.
+    ...(pose.trophy > 0.5 ? trophyParts(plus(right.hand, [0, 0, 0.9])) : []),
   ].map((part) => mapPart(part, upper));
 
   const lowerParts = [
@@ -415,8 +438,8 @@ export function pilotParts(look, hair = "#2b2420", pose = poseAt("stand", 0)) {
   return [
     ...lowerParts,
     ...upperParts,
-    // The helmet lies on the ground, in front of the pilot.
-    { name: "helmet", ball: { middle: [...HELMET_SPOT], radius: HELMET_RADIUS, colour: helmet, stripe, visor: VISOR } },
+    // The helmet lies on the ground, beside the pilot.
+    ...(withHelmet ? [{ name: "helmet", ball: { middle: [...HELMET_SPOT], radius: HELMET_RADIUS, colour: helmet, stripe, visor: VISOR } }] : []),
     { name: "head", head: { middle: headMiddle, height: HEAD_HEIGHT, hair, facing } },
   ];
 }
@@ -441,6 +464,28 @@ export function steeringWheel(leftHand, rightHand) {
   return [
     { name: "steering wheel", faces: ring },
     { name: "steering wheel bar", faces: bar(leftHand, rightHand, 0.6, WHEEL) },
+  ];
+}
+
+/**
+ * A gold trophy: a base, a stem, a cup that widens towards the top, and two
+ * handles. "bottom" is the middle of the bottom of the base. "size" makes it
+ * bigger: at the usual 1.45 it is about 8 units tall, so it shows well above
+ * a pilot's hand.
+ */
+export function trophyParts(bottom, size = 1.45) {
+  const [x, y, z] = bottom;
+  const at = (dx, dy, dz) => [x + dx * size, y + dy * size, z + dz * size];
+  const cup = (low, high, half) =>
+    box(x - half * size, x + half * size, y - half * size, y + half * size, z + low * size, z + high * size, GOLD, shade(GOLD, 1.15));
+  return [
+    { name: "trophy base", faces: box(x - 1.1 * size, x + 1.1 * size, y - 1.1 * size, y + 1.1 * size, z, z + 0.8 * size, GOLD_DARK) },
+    { name: "trophy stem", faces: bar(at(0, 0, 0.8), at(0, 0, 2.4), 0.7, GOLD) },
+    { name: "trophy cup low", faces: cup(2.4, 3.4, 0.7) },
+    { name: "trophy cup middle", faces: cup(3.4, 4.4, 1.05) },
+    { name: "trophy cup top", faces: cup(4.4, 5.6, 1.35) },
+    { name: "trophy left handle", faces: [...bar(at(0, -1.35, 5.2), at(0, -2.3, 4.6), 0.45, GOLD), ...bar(at(0, -2.3, 4.6), at(0, -1.0, 3.6), 0.45, GOLD)] },
+    { name: "trophy right handle", faces: [...bar(at(0, 1.35, 5.2), at(0, 2.3, 4.6), 0.45, GOLD), ...bar(at(0, 2.3, 4.6), at(0, 1.0, 3.6), 0.45, GOLD)] },
   ];
 }
 
@@ -487,7 +532,7 @@ export function movePart(part, { x, y, turn }) {
 }
 
 /** A part with every point moved by "move": its corners, the middle of a ball or a head. */
-function mapPart(part, move) {
+export function mapPart(part, move) {
   const moved = { ...part };
   if (part.faces) {
     moved.faces = part.faces.map((face) => ({ ...face, points: face.points.map(move) }));
