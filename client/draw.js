@@ -21,8 +21,13 @@
 //   4. smoke and dust
 //   5. the player's own kart, last, so that nothing ever hides it
 
-import { SCREEN, FOLLOW, CHASE, RACE, blendChase, chaseRow, chasePoint, eyeOf, seenFromKart, easeAngle } from "./camera.js";
+import { SCREEN, FOLLOW, CHASE, RACE, blendChase, chaseRow, chasePoint, eyeOf, seenFromKart, easeAngle, sideSeen } from "./camera.js";
 import { createBuildings, buildingsInView } from "./buildings.js";
+import { createScenery, sceneryInView, squaresWithScenery, rampBlocks, cutAtSquares, RAMP_FLAT_STYLES } from "./scenery.js";
+import { createSceneryPainter } from "./scenery-paint.js";
+import { trafficLanes, carsAt } from "./traffic.js";
+import { WALL_ART } from "./wall-art.js";
+import { jumpHeight } from "../shared/ramps.js";
 import { createGround } from "./ground.js";
 import { paintSky } from "./sky.js";
 import { paintProp, paintPropFromAbove, PROP_HEIGHT } from "./props.js";
@@ -92,10 +97,36 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
   const context = canvas.getContext("2d");
   const look = lookOfTrack(track);
   const grid = gridOf(track);
-  const buildings = createBuildings(track, storeys, { barrierHeight: look.barrierHeight });
-  const ground = createGround(track, look, grid, buildings);
+  // A track can have scenery of its own: buildings with real fronts, roofs
+  // to drive under, railings (scenery.js). A wall that has none still gets
+  // a plain barrier, so that no wall is ever invisible.
+  // The ramps of a track (shared/ramps.js) are scenery too: boxes with a
+  // sloping top, added to the track's own.
+  const ramps = rampBlocks(track);
+  const sceneryModel =
+    look.scenery || ramps.length > 0
+      ? {
+          unitsPerMetre: look.scenery?.unitsPerMetre ?? track.tileSize / 3,
+          fences: look.scenery?.fences ?? [],
+          blocks: [...(look.scenery?.blocks ?? []), ...ramps],
+          flatStyles: { ...RAMP_FLAT_STYLES, ...look.scenery?.flatStyles },
+        }
+      : null;
+  const scenery = sceneryModel ? createScenery(track, sceneryModel) : null;
+  const sceneryPainter = scenery ? createSceneryPainter(look.wallArt ?? WALL_ART, scenery, look.haze) : null;
   const props = propsOfTrack(track, look, storeys);
+  const ownScenery = scenery ? squaresWithScenery(scenery, track.tileSize) : null;
+  for (const prop of scenery ? props : []) {
+    // A square with a statue or a tree on it shows what is in the way, too.
+    ownScenery.add(`${Math.floor(prop.x / track.tileSize)} ${Math.floor(prop.y / track.tileSize)}`);
+  }
+  const buildings = createBuildings(track, storeys, {
+    barrierHeight: look.barrierHeight,
+    noBarrierAt: ownScenery ? (column, row) => ownScenery.has(`${column} ${row}`) : null,
+  });
+  const ground = createGround(track, look, grid, buildings);
   const gantry = gantryOf(track);
+  const traffic = trafficLanes(track, look.traffic);
   const mini = paintMiniPicture(ground.picture, track);
   // Every checkpoint as a line across the road, one piece per square of the map.
   const checkpointLights = track.checkpoints.map((checkpoint, number) => checkpointPieces(track, number));
@@ -131,7 +162,7 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
       drawRaceView(kart, others, bananas, scene, frameSeconds, seconds, light);
     } else {
       swing = null; // when the race view comes back, it starts straight behind the kart
-      drawFromAbove(view, kart, camera, others, bananas, light, seconds);
+      drawFromAbove(view, kart, camera, others, bananas, light, seconds, scene);
     }
 
     // The views that show only part of the track get a small map in the corner.
@@ -185,6 +216,7 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
     // camera and the kart, and shows a wall beside the camera for as long
     // as any of it can be seen.
     things.push(...buildingsInView(buildings, spot, settings, SCREEN));
+    things.push(...sceneryInView(scenery, spot, settings, SCREEN));
 
     const standing = (kind, x, y, scale, more = {}) => {
       const seen = seenFromKart(spot, x, y);
@@ -224,6 +256,17 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
     for (const banana of bananas) {
       standing("banana", banana.x, banana.y, 1);
     }
+    // Cars on the roads beside the track: each is a flat picture, chosen by
+    // which side of the car the camera sees (from behind, the front, a side).
+    for (const car of carsAt(traffic, seconds)) {
+      standing("car", car.x, car.y, 1, { label: `${sideSeen(spot.angle, car.angle)} ${car.colour}` });
+    }
+    // The people who walk across the track (shared/walkers.js), walking or
+    // sitting on the ground. Which side of them we see works as for the cars.
+    for (const walker of Array.isArray(scene.walkers) ? scene.walkers : []) {
+      const state = walker.down ? `down ${walker.downShare.toFixed(2)}` : "walk 0";
+      standing("walker", walker.x, walker.y, 1, { label: `${sideSeen(spot.angle, walker.angle)} ${walker.look} ${state}` });
+    }
     for (const other of others) {
       const seen = seenFromKart(spot, other.x, other.y);
       if (seen.ahead > settings.viewAhead) {
@@ -233,6 +276,7 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
       if (viewer !== null) {
         things.push({
           kind: "kart",
+          ground: chasePoint(seen.ahead, seen.sideways, settings), // where it touches the road, for when it is in the air
           kart: other,
           viewer,
           ahead: seen.ahead,
@@ -241,12 +285,17 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
         });
       }
     }
-    if (gantry !== null) {
+    // The start gantry, one piece for each square it crosses. (As one wide
+    // thing it was sorted by the square of its middle, and a far building
+    // in a row nearer the camera was then painted over part of it: the
+    // beam looked see-through. Found by Catarina on 17 November 2026.)
+    for (const piece of gantry?.pieces ?? []) {
       things.push({
         kind: "gantry",
-        ahead: seenFromKart(spot, gantry.middle.x, gantry.middle.y).ahead,
-        column: Math.floor(gantry.middle.x / size),
-        row: Math.floor(gantry.middle.y / size),
+        piece,
+        ahead: seenFromKart(spot, (piece.a.x + piece.b.x) / 2, (piece.a.y + piece.b.y) / 2).ahead,
+        column: piece.column,
+        row: piece.row,
       });
     }
     // The light on the next checkpoint: one low curtain for each square it crosses.
@@ -281,7 +330,8 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
     const eye = eyeOf(settings);
     const eyeColumn = Math.floor((spot.x - Math.cos(spot.angle) * eye.behind) / size);
     const eyeRow = Math.floor((spot.y - Math.sin(spot.angle) * eye.behind) / size);
-    const layer = (thing) => (thing.kind === "side" ? 0 : thing.kind === "roof" ? 1 : 2);
+    const layer = (thing) =>
+      thing.kind === "side" || thing.kind === "strip" ? 0 : thing.kind === "roof" || thing.kind === "flat" ? 1 : 2;
     things.sort(
       (a, b) =>
         Math.abs(b.row - eyeRow) - Math.abs(a.row - eyeRow) ||
@@ -293,11 +343,15 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
     for (const thing of things) {
       if (thing.kind === "side" || thing.kind === "roof") {
         paintBuildingPiece(thing);
+      } else if (thing.kind === "strip") {
+        sceneryPainter.paintStrip(context, thing, settings, SCREEN);
+      } else if (thing.kind === "flat") {
+        sceneryPainter.paintFlat(context, thing);
       } else if (thing.kind === "kart") {
-        paintKart(context, thing.viewer, lookOf(thing.kart), 0);
+        paintKartWithJump(thing.kart, thing.viewer, thing.ground, 0);
         paintNameAbove(thing, scene.names);
       } else if (thing.kind === "gantry") {
-        paintGantry(spot, settings, near, scene.lights);
+        paintGantry(thing.piece, spot, settings, near, scene.lights);
       } else if (thing.kind === "light") {
         paintLight(thing, seconds);
       } else {
@@ -311,7 +365,29 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
 
     // Our own kart last: always in the same spot and never hidden.
     const own = viewerBehind({ ahead: 0, sideways: 0 }, kart.angle + (kart.spinTurn ?? 0) - spot.angle, kart.angle, settings, SCREEN);
-    paintKart(context, own, lookOf(kart), steerShown);
+    paintKartWithJump(kart, own, chasePoint(0, 0, settings), steerShown);
+  }
+
+  /**
+   * Paints a kart in the race view. A kart that is in the air after a ramp
+   * ("air" is how many more steps it flies, shared/ramps.js) is painted
+   * higher up, and its shadow stays on the road under it.
+   *   ground  where the kart touches the road on the screen: { x, y, scale }
+   */
+  function paintKartWithJump(someKart, viewer, ground, steer) {
+    const height = jumpHeight(someKart.air);
+    if (!(height > 0) || ground === null) {
+      paintKart(context, viewer, lookOf(someKart), steer);
+      return;
+    }
+    context.fillStyle = "rgba(8, 14, 22, 0.32)";
+    context.beginPath();
+    context.ellipse(ground.x, ground.y, 11 * ground.scale, 3.4 * ground.scale, 0, 0, Math.PI * 2);
+    context.fill();
+    context.save();
+    context.translate(0, -height * ground.scale);
+    paintKart(context, viewer, lookOf(someKart), steer);
+    context.restore();
   }
 
   /** One side or roof of a building or barrier, as placed on the screen by buildings.js. */
@@ -453,24 +529,28 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
    * The start gantry: two posts with a beam across the road above the
    * start line, chequered, with the start lights on it.
    */
-  function paintGantry(spot, settings, near, lights) {
-    const ends = [gantry.left, gantry.right].map((post) => {
-      const seen = seenFromKart(spot, post.x, post.y);
+  function paintGantry(piece, spot, settings, near, lights) {
+    const placeOf = (point) => {
+      const seen = seenFromKart(spot, point.x, point.y);
       return seen.ahead < near + 2 ? null : chasePoint(seen.ahead, seen.sideways, settings);
-    });
-    // The posts, each as far as it can be seen.
-    for (const end of ends) {
+    };
+    // The two ends of this piece of the beam. The first piece also has the
+    // left post of the gantry, the last piece the right one.
+    const a = placeOf(piece.a);
+    const b = placeOf(piece.b);
+    for (const end of [piece.first ? a : null, piece.last ? b : null]) {
       if (end !== null) {
         context.fillStyle = "#39434d";
         const half = (GANTRY.post / 2) * end.scale;
         context.fillRect(end.x - half, end.y - (GANTRY.clear + GANTRY.tall) * end.scale, half * 2, (GANTRY.clear + GANTRY.tall) * end.scale);
       }
     }
-    if (ends[0] === null || ends[1] === null) {
-      return; // one end is behind us: we are driving under the beam
+    if (a === null || b === null) {
+      return; // one end of this piece is behind us: we are driving under the beam
     }
-    const [a, b] = ends;
-    // A spot on the beam: "along" from 0 (left post) to 1 (right post), "up" in units above the road.
+    // Where a share of the WHOLE beam (0 at the left post, 1 at the right) lies on this piece.
+    const onPiece = (share) => (share - piece.from) / (piece.to - piece.from);
+    // A spot on this piece: "along" from 0 (its left end) to 1 (its right end), "up" in units above the road.
     const at = (along, up) => [
       a.x + (b.x - a.x) * along,
       a.y - up * a.scale + (b.y - up * b.scale - (a.y - up * a.scale)) * along,
@@ -486,26 +566,35 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
     const low = GANTRY.clear;
     const high = GANTRY.clear + GANTRY.tall;
     patch(0, 1, low, high, DARK);
-    // Two rows of chequers along the top and bottom edges of the beam.
+    // Two rows of chequers along the top and bottom edges of the beam. They
+    // are counted along the whole beam, so they line up from piece to piece.
     const squares = 40;
-    for (let i = 0; i < squares; i++) {
-      const white = "#f4f6f8";
-      if (i % 2 === 0) {
-        patch(i / squares, (i + 1) / squares, low, low + 2.2, white);
-        patch(i / squares, (i + 1) / squares, high - 2.2, high, white);
+    const white = "#f4f6f8";
+    for (let i = Math.floor(piece.from * squares); i < Math.ceil(piece.to * squares); i++) {
+      const from = Math.max(0, onPiece(i / squares));
+      const to = Math.min(1, onPiece((i + 1) / squares));
+      if (i % 2 === 0 && to > from) {
+        patch(from, to, low, low + 2.2, white);
+        patch(from, to, high - 2.2, high, white);
       }
     }
-    // The start lights, in the middle of the beam: red while the countdown
-    // runs, one more for each number, then all green at GO.
+    // The start lights, in the middle of the whole beam, 9 units apart: red
+    // while the countdown runs, one more for each number, then all green at
+    // GO. A lamp that lies on the join of two pieces is painted by both, so
+    // that neither covers half of it.
     const red = lights?.red ?? 0;
     const green = lights?.green === true;
     const lamps = 3;
-    const middle = at(0.5, low + GANTRY.tall / 2);
-    const scale = (a.scale + b.scale) / 2;
+    const reach = 3 / (gantry.long * (piece.to - piece.from)); // the size of a lamp, as a share of this piece
     for (let lamp = 0; lamp < lamps; lamp++) {
-      const x = middle[0] + (lamp - (lamps - 1) / 2) * 9 * scale;
+      const along = onPiece(0.5 + ((lamp - (lamps - 1) / 2) * 9) / gantry.long);
+      if (along < -reach || along > 1 + reach) {
+        continue;
+      }
+      const [x, y] = at(along, low + GANTRY.tall / 2);
+      const scale = a.scale + (b.scale - a.scale) * along;
       context.beginPath();
-      context.arc(x, middle[1], 2.7 * scale, 0, Math.PI * 2);
+      context.arc(x, y, 2.7 * scale, 0, Math.PI * 2);
       context.fillStyle = green ? "#39d353" : lamp < red ? "#ff3b30" : "#3a2326";
       context.fill();
     }
@@ -513,7 +602,7 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
 
   // ---- The two views from above ----
 
-  function drawFromAbove(view, kart, camera, others, bananas, light, seconds) {
+  function drawFromAbove(view, kart, camera, others, bananas, light, seconds, scene) {
     context.save();
     if (view === "follow") {
       // Put the camera's spot in the middle of the screen and zoom in around it.
@@ -545,8 +634,28 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
       const turned = { x: each.x, y: each.y, angle: each.angle + (each.spinTurn ?? 0) };
       paintKart(context, viewerAbove(turned), lookOf(each), each === kart ? steerShown : 0);
     }
+    // The people who walk across the track: a dot in the colour of their jumper, a star when they sit on the ground.
+    for (const walker of Array.isArray(scene.walkers) ? scene.walkers : []) {
+      context.fillStyle = walker.down ? "#ffd23f" : WALKER_COLOURS_ABOVE[walker.look % WALKER_COLOURS_ABOVE.length];
+      context.beginPath();
+      context.arc(walker.x, walker.y, 5, 0, Math.PI * 2);
+      context.fill();
+    }
     for (const prop of props) {
       paintPropFromAbove(context, prop.kind, prop.x, prop.y, prop.size);
+    }
+    // The cars on the roads, each as a small rounded box pointing the way it drives.
+    for (const car of carsAt(traffic, seconds)) {
+      context.save();
+      context.translate(car.x, car.y);
+      context.rotate(car.angle);
+      context.fillStyle = CAR_COLOURS_ABOVE[car.colour];
+      context.beginPath();
+      context.roundRect(-24, -10, 48, 20, 5);
+      context.fill();
+      context.fillStyle = "rgba(20, 30, 40, 0.75)";
+      context.fillRect(-10, -8, 20, 16);
+      context.restore();
     }
     context.restore();
   }
@@ -695,12 +804,29 @@ function gantryOf(track) {
   // Seen by a driver, "left" is the post on the driver's left.
   const [low, high] = [point(first), point(last)];
   const leftIsLow = alongX ? forwards : !forwards;
-  return {
-    left: leftIsLow ? low : high,
-    right: leftIsLow ? high : low,
-    middle: point((first + last) / 2),
-  };
+  const left = leftIsLow ? low : high;
+  const right = leftIsLow ? high : low;
+  const long = Math.hypot(right.x - left.x, right.y - left.y); // how long the beam is, in units
+  // The beam, cut where it crosses from one square of the map into the
+  // next. Each piece is painted in its own turn, among the other things on
+  // its square (see drawRaceView). "from" and "to" say which share of the
+  // whole beam a piece is: 0 at the left post, 1 at the right.
+  const cuts = cutAtSquares([left.x / size, left.y / size], [right.x / size, right.y / size]);
+  const pieces = cuts.map((cut, number) => ({
+    a: { x: cut.a[0] * size, y: cut.a[1] * size },
+    b: { x: cut.b[0] * size, y: cut.b[1] * size },
+    from: (cut.fromStart * size) / long,
+    to: (cut.toStart * size) / long,
+    first: number === 0,
+    last: number === cuts.length - 1,
+    column: Math.floor((cut.a[0] + cut.b[0]) / 2),
+    row: Math.floor((cut.a[1] + cut.b[1]) / 2),
+  }));
+  return { left, right, middle: point((first + last) / 2), long, pieces };
 }
+
+const WALKER_COLOURS_ABOVE = ["#d8473f", "#2f66b3", "#3fa35a", "#e9b92c", "#8d5aa8", "#f08a3c"];
+const CAR_COLOURS_ABOVE = { red: "#c8372f", blue: "#2f66b3", white: "#eef0f1", grey: "#7d858c", black: "#23272b", yellow: "#e9b92c" };
 
 /** A small copy of the track picture for the corner of the screen, painted once. */
 function paintMiniPicture(picture, track) {
@@ -767,6 +893,10 @@ function addPuffsFor(puffs, track, kart, seconds) {
     add(26, "#b8a070", 0.45, 3, 0.6, 14);
   } else if (speed > 20 && speed < 150) {
     add(9, "#dfe5ea", 0.3, 2, 0.5, 5);
+  }
+  // Extra speed after a ramp: a trail of orange sparks, once the kart is back on the road.
+  if (kart.boost > 0 && !(kart.air > 0)) {
+    add(70, Math.random() < 0.5 ? "#ffb23f" : "#ffe27a", 0.7, 2.2, 0.32, 7);
   }
 }
 

@@ -33,6 +33,7 @@ import { introShare, startLights, spinTurnOf } from "./scene.js";
 import { lookFromChoice, readChoice } from "./kart-choice.js";
 import { readCharacter, lookOfCharacter } from "./cast-choice.js";
 import { lookOfTrack } from "./track-looks.js";
+import { walkersToShow, walkersDownNear } from "./street-life.js";
 import { routePoints, watchForWrongWay, WRONG_WAY_MESSAGE } from "./route.js";
 import { placeLine } from "./standings.js";
 import { watchForMissedCheckpoint, missedCheckpointMessage } from "./checkpoints.js";
@@ -174,10 +175,19 @@ function frame(now) {
   // The kart as it is drawn: in the colours the player chose, and turning
   // round and round while it spins after a banana. (The rules do not turn
   // it: after the spin it points where it pointed before.)
-  const shownKart = { ...racer.kart, look: myLook, spinTurn: spinTurnOf(racer.spinSteps, SPIN_STEPS) };
+  // "air" and "boost": it is drawn in the air after a ramp, and with sparks while it has extra speed (shared/ramps.js).
+  const walkersShown = walkersToShow(track, race.walkers);
+  const shownKart = {
+    ...racer.kart,
+    look: myLook,
+    spinTurn: spinTurnOf(racer.spinSteps, SPIN_STEPS),
+    air: racer.airSteps ?? 0,
+    boost: racer.boostSteps ?? 0,
+  };
   draw(view, shownKart, camera, steer, computerKarts(), {
     ...sceneFor(race.countdownSteps, started),
     bananas: race.bananas,
+    walkers: walkersShown, // the people who walk across the track (shared/walkers.js)
     // While the race is on, the next checkpoint is lit up in yellow.
     nextCheckpoint: keysWork ? nextCheckpoint(progress, track) : undefined,
   });
@@ -220,6 +230,8 @@ function frame(now) {
       finished: progress.finished,
       warning: warning !== null,
       others: race.racers.slice(1).map((other) => other.kart),
+      air: racer.airSteps ?? 0,
+      walkersDownNear: walkersDownNear(walkersShown, racer.kart),
     },
     frameSeconds,
   );
@@ -249,6 +261,8 @@ function computerKarts() {
     ...other.kart,
     look: lookOfCharacter(race.drivers[index].character.id),
     spinTurn: spinTurnOf(other.spinSteps, SPIN_STEPS),
+    air: other.airSteps ?? 0,
+    boost: other.boostSteps ?? 0,
   }));
 }
 

@@ -116,6 +116,27 @@ What this means for you: prefer finished, reliable features over many half-finis
 
   **[OPEN]** A lap of the campus loop takes about 20 seconds for the test kart, not 30 to 40, because at this scale a kart drives at about 200 km/h. Rodrigo proposes making all karts about 40% slower (the numbers at the top of `shared/physics.js`). This also makes laps of the test oval longer. For the team, and the owner of the driving physics, to decide.
 
+  *17 Nov 2026, at Catarina's request: a new track, the **Nova lap** (`shared/tracks/nova-lap.js`). The team filmed the lap it wants on campus (nine minutes of walking: the entrance avenue, through the Hovione Atrium, the terrace, under the library, the promenade, the stairs, past the beach tunnel, the coast road, the west street), because the campus loop, made from a map, was not recognisable. The agent went through the film picture by picture. Built so far is the base she asked for: the ground and the buildings. Benches, lamps, trees along the way and tables come later. How it is built is in `WALKTHROUGH.md`, "What is the Nova lap".*
+
+  *Decisions made by the agent on 17 Nov 2026, please confirm:*
+  - *The campus loop stays in the list of tracks for now, untouched, with its tests. Catarina said the new track replaces it. Taking it out means deleting Rodrigo's track and its tests, which is for the team, and Rodrigo, to say.*
+  - *3 metres a square instead of 6, so buildings are twice as big beside a kart. A lap is about 690 metres. The simple robot of the tests needs about 25 seconds for one, the computer karts about 29.*
+  - *The coast road runs straight along the bottom of the map, although the real one runs at a slant, so that walls follow the squares. The halls and lawns were placed to fit.*
+  - *The names on the walls are the names on the real walls, sponsors included, drawn as letters by our code. The school's name on the entrance is drawn with lines, not taken from a logo file. The banner on the entrance has our own words ("We race the times"), because the real one is an advertisement. Say if a name should go.*
+  - *A sunny afternoon, although the film was shot on a grey day.*
+  - *A page for the team that flies the camera round a track: `track-tour.html?track=nova-lap`. It is not linked from the menu.*
+
+  *17 Nov 2026, evening, after Catarina drove it: the beach tunnel was rebuilt, the Moon Café got its sign and tables, the atrium got black letters in the middle and tables, the avenue its trees and benches, and cars now drive along the two roads beside the track (a picture only, see `WALKTHROUGH.md`). Decisions made by the agent, please confirm: tables, letters, trees and benches stand on squares that karts cannot cross; the coffee cup on the café's sign is our own drawing.*
+
+  ***[DECIDED 17 Nov 2026 by Catarina]** How the Nova lap is made more fun. Built the same evening:*
+  - ***Walkers.** Students walk across the terrace and the promenade, each from one door to another and back. The doors are the ones in the film: the café, the library's sliding doors, the entrance of the main building, the glass entrance opposite. A kart that drives into one loses most of its speed, and the student sits down on the ground, seeing stars, for about two seconds, then gets up and walks on. "In a fun way and not in a grotesque way." **Changed the same night, after she played it:** losing speed alone was hardly a delay, so the kart now also spins out, exactly as on a banana.*
+  - ***Ramps.** On the two long straights. A kart that drives over one the right way, fast enough, jumps and gets extra speed for a moment. She asked that nobody can get them all by driving straight on: the first ramp of each straight is where everybody drives, the others are in the outer lanes.*
+  - ***Things in the way.** Parked bikes, recycling bins and cones on the straights, the grey benches on the promenade.*
+  - *The café is called MON CAFFE. The statue of the woman with the surfboard is bigger. No jump at the stairs: they go down.*
+  - *She wants one pull request with everything, not several.*
+
+  *Decisions made by the agent on 17 Nov 2026, please confirm: all the numbers of the two rules (how long a jump lasts, how much faster, how fast a student walks, how long they sit: they are named at the top of `shared/ramps.js` and `shared/walkers.js`); a kart in the air cannot steer, flies over bananas and students, but is still stopped by a wall or a parked bike; a student who is inside a building or already sitting cannot be bumped; a kart that only creeps into a student does not topple them; the computer karts try to steer round students as they do round bananas; a jump has a rising "whoop" and a toppled student a silly two-note sound; a kart that has finished can still jump; the students keep walking after a race is over, until the next start.*
+
 ### Driving physics
 
 - [DECIDED] Our own physics code. This is required, not just a preference: the server runs the races, and game libraries' physics only runs inside a browser.

@@ -43,9 +43,9 @@ Everything the browser shows and does: the web page, the drawing of the track an
 | `sound-test.html`, `sound-test.js` | The sound check page: every sound on a button and an engine to rev with a slider. For the team, to tune the sounds by ear. Not linked from the menu |
 | `camera.js` | The arithmetic of the camera: which part of the track is on the screen, and where things land on it. Two cameras for the view behind the kart: high above the grid, and low behind the kart with the horizon on the screen. No painting |
 | `draw.js` | Puts the picture together on the canvas, in one of the three views: the sky, the ground, everything that stands on it from the furthest to the nearest, smoke and dust, the player's own kart, and the small map in the corner |
-| `ground.js` | Paints the whole track once from straight above (road, grass, kerbs, roofs, shadows, the start line, the grid, arrows) and lays that picture flat for the race view, row by row, up to the horizon |
+| `ground.js` | Paints the whole track once from straight above (road, grass, kerbs, roofs, shadows, the start line, the grid, arrows) and lays that picture flat for the race view, row by row, up to the horizon. On a track whose ground is drawn as shapes it also keeps a second, sharper picture of the ground close to the kart |
 | `sky.js` | The sky of the race view and what is on the horizon in each direction: hills, the sea, a town, a fort, a lighthouse |
-| `props.js` | The things that stand beside the road or lie on it, each as a flat picture that faces the camera: trees, pines, palms, arrow boards, name signs, cones, banana peels |
+| `props.js` | The things that stand beside the road or lie on it, each as a flat picture that faces the camera: trees, pines, palms, olive trees, arrow boards, name signs, cones, banana peels, and for the Nova lap the Christmas tree, the statue and the flags |
 | `track-looks.js` | How each track looks: its colours, the route for the arrows, its sky, and where its trees and signs stand. Changes nothing about how a kart moves |
 | `route.js` | Which way round a track is driven: the direction of the road at a spot, the bends for the arrow boards, and the "wrong way" warning. For the picture only: laps are counted by the rules |
 | `checkpoints.js` | Which checkpoint comes next and where its yellow light stands, and noticing when the kart has left a checkpoint out, so the page can say why a lap does not count. For the picture and the words only: laps are counted by the rules |
@@ -59,6 +59,16 @@ Everything the browser shows and does: the web page, the drawing of the track an
 | `cast-choice.js` | Your character: remembering it in the browser, where its face is, its colours, and what the online page says when someone else already is it |
 | `faces/` | One photo of each character, head and shoulders, 256 by 256 pixels, for the cards. Shown only when choosing a character, never in the race |
 | `buildings.js` | Makes the buildings of a track stand up in the view behind the kart: works out their sides and roofs from the storeys of each square, and which of them can be seen from the kart. Walls without storeys that touch open ground become low banks. No painting; `draw.js` paints them |
+| `scenery.js` | Scenery for a track that has more than plain blocks: boxes with a picture on each side, roofs and bridges to drive under, railings and other thin things. Cuts every wall into strips one square wide and works out which can be seen from the kart. No painting, so it has tests |
+| `scenery-paint.js` | Puts those strips on the screen: lays the right part of a wall's picture on each strip, in thin upright slices so the wall runs away into the distance. Keeps every picture in four sizes |
+| `wall-art.js` | The pictures on the walls of the Nova lap, each painted once by code: the entrance front with its banner, the halls, the library, the Westmont hall, the auditorium, the mouth of the beach tunnel, the inside of the atrium. No image files |
+| `ground-art.js` | The ground of a track that is drawn as shapes: each kind of paving, lawn and road as a small repeating picture, the lines on the roads, the shadows of the buildings |
+| `nova-lap-ground.js` | The ground of the Nova lap as a list of shapes (which paving lies where), and the function that turns such shapes into the letters of a track |
+| `nova-lap-buildings.js` | The buildings of the Nova lap: where each box stands, how tall it is in metres, which picture is on each side, and the fences. Also which squares are solid |
+| `nova-lap-look.js` | The look of the Nova lap put together: the way round, sky and horizon, the lines on the roads, and the single things (Christmas tree, statue, flags, palms) |
+| `traffic.js` | The cars that drive along the roads beside a track: where each one is at a given moment. Only a picture: no kart can reach those roads and the server knows nothing of them. No painting, so it has tests |
+| `street-life.js` | The people who walk across a track, as the picture shows them: which are outside, where, walking or sitting on the ground, and how many sit close to the player's kart (for the sound). The rules are in `shared/walkers.js`. No painting, so it has tests |
+| `track-tour.html`, `track-tour.js` | The track tour: the race camera flies round a track by itself, so the buildings can be looked at without driving. For the team. Not linked from the menu: `track-tour.html?track=nova-lap` |
 | `format.js` | Turns a number of seconds into a race time such as `1:23.45` |
 
 ## The three camera views

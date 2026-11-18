@@ -4,6 +4,257 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 17 November 2026, night: after Catarina played it
+
+**What she said**
+
+She played the new version and sent three screenshots. One complaint about the students: "when you go against a student, you don't get delayed, and it should somehow be like a banana." A sound for hitting a student: she may do that later herself. And in the screenshots the gantry over the start line, the one with the 3, 2, 1 lights, had a hole in its beam where the buildings behind showed through.
+
+**What was done**
+
+| What | Where |
+|---|---|
+| A kart that topples a student now spins out exactly as on a banana, on top of the speed it loses: for 1.2 seconds its keys do nothing and it slides. It is the banana's own code that is called, so the two cannot drift apart. A kart that cannot be spun at that moment (it is already spinning) only loses the speed | `shared/walkers.js` (it calls `spinOut` from `shared/hazards.js`) |
+| The hole in the gantry | `client/draw.js` |
+
+**Why the gantry had a hole**
+
+The picture is painted from the furthest thing to the nearest, and what is "furthest" is worked out from the square of the map a thing stands on. That works for anything that stands on one square. The gantry stands across several. It was sorted by the square under its middle, so a far building in a row of squares nearer to the camera than that middle was painted after the gantry, over part of its beam. On the old track there was no building straight behind the start. On the Nova lap the entrance front is exactly there. The gantry is now cut into one piece for each square it crosses, and each piece takes its own turn. The squares along the beam and the three lights are counted along the whole beam, so they still line up.
+
+**A sound for hitting a student**
+
+There already is one since this evening: a silly two-note sound (`oops` in `client/sound.js`), and now the banana's slip sound plays with it, because the kart spins. Catarina can hear and change both on http://localhost:3000/sound-test.html. The agent cannot hear.
+
+**Three tests were changed, because the rule changed**
+
+All three are from this same evening and this same pull request.
+
+| Test | It said | It says now |
+|---|---|---|
+| `tests/walkers.test.js`, "is not moved or turned, and its laps, clock and spin are left as they were" | the spin of the kart is untouched | the same, for a kart that cannot be spun at that moment. Two new tests after it pin the new rule: it spins out as on a banana, and a kart that drove past or only nudged does not |
+| `tests/walkers.test.js`, "drives on afterwards: the walker on the ground is not a wall" | 30 steps later the kart is faster again | it first sits out its spin with the gas doing nothing, then drives on through the spot |
+| `tests/room-street-life.test.js`, "keeps its laps and its clock: a walker costs speed and nothing else" | `spin` is 0 after the bump | the server reports the spin to every browser, the laps and the clock are still untouched, and the keys work again when the spin is over |
+
+**What was checked, and what was not**
+
+- The tests: 1,806 pass, 5 skipped.
+- The gantry, in the agent's browser, from the two places her screenshots were taken from: the beam is whole.
+- Not checked: the spin after a student in a real race on a real screen, and how it feels. The rule itself is tested, and it is the same spin as the banana's.
+
+### 17 November 2026, late evening: students who walk, ramps to jump, things in the way
+
+**What she said**
+
+After the first round of fixes: "The nova logo in the atrium is buggy." "It is MON caffe, not moon." Make the statue of the lady with the surfboard bigger. One pull request with everything. And on the ideas for making the lap fun:
+
+1. People walking: yes. They must come in and out of doors that make sense: "look at the video to see entry ways that students could possibly come out of."
+2. Speed boosts: yes, but as ramps you jump, with a new animation, and placed so that a player "cannot just go straight and hit all of them".
+3. Things in the way: yes, "and trashcans and things like that".
+4. A jump at the stairs: no. The stairs go down. Ramps along the boring part instead.
+
+**What was done**
+
+| What | Where |
+|---|---|
+| The letters N O V A were smeared out to the side. Their picture was narrower than the stand it was put on, and the last column of the picture was repeated to fill the gap. A picture that "fits" is now stretched along its whole stand. The letters also got a long black base, which is what a kart bumps into | `client/scenery-paint.js`, `client/scenery.js`, `client/nova-lap-buildings.js` |
+| MON CAFFE on the roof sign and the board by the door, with a coffee cup instead of a moon | `client/wall-art.js` |
+| The statue: redrawn as a woman standing with her surfboard, and one and three quarter times as big | `client/props.js`, `client/nova-lap-buildings.js` |
+| **Walkers.** Five students, each walking between two doors and back. The agent went back to the film for the doors: the library's sliding doors under its bridge (with the red sticker), the entrance of the main building halfway down the promenade, the tall glass entrance opposite in its frame of pale stone, and the café. Two doors the agent had drawn on the main building without having seen them in the film were taken out again | `shared/walkers.js` (the rule), `shared/tracks/nova-lap.js` (the five paths), `client/street-life.js`, `client/props.js` (the drawing) |
+| **Ramps.** Four: one on the coast road, three on the west street. The first of each straight is in the middle, where everybody drives. The other two are in the outer lanes of the west street, with a parked bike or bins some way after them, so whoever wants them has to change lanes at speed | `shared/ramps.js` (the rule), `shared/tracks/nova-lap.js` (where they are), `client/scenery.js` (the wedge), `client/ground.js` (the arrows), `client/draw.js` (the kart in the air, the sparks) |
+| **Things in the way.** Parked blue bikes, recycling bins with blue, yellow and green lids (as beside the library in the film), cones, and two of the grey benches of the promenade | `client/nova-lap-buildings.js` (`NOVA_LAP_FURNITURE`), `client/props.js` |
+| Sounds: a rising whoop for a jump, a silly two-note sound when a student near you topples | `client/sound.js`, `client/sound-cues.js` |
+| The track tour shows the students walking, each sitting down every 25 seconds so the sit-down can be looked at, and hops when it crosses a ramp | `client/track-tour.js` |
+
+**How the two rules work, in short**
+
+- A ramp is one square of road with a direction. Drive over it that way, fast enough, and the kart is in the air for 0.7 seconds: the keys do nothing, it flies over bananas and students, a wall still stops it. Then one second of higher top speed.
+- A walker's place follows from its path and its own clock. A kart that drives into one keeps 40% of its speed. The walker sits for 2.2 seconds, its clock standing still, and nobody can bump it again until it is up. A walker inside a building cannot be bumped. A kart that only creeps into one does nothing.
+- Both run on the server, like the bananas. A browser sends only its keys.
+
+**Why it was done this way**
+
+- **Two agents again.** A helper wrote the rules in `shared/` and `server/` with their tests, in its own folder, while the main agent drew them in `client/`. They agreed first on two small files that say what a ramp and a walker are (`shared/ramps.js`, `shared/walkers.js`), and neither touched the other's folders.
+- **The walkers need almost nothing sent.** Because a walker's place follows from its clock, the server sends two numbers for each, and every browser draws the same place.
+- **Fun, not grotesque.** A toppled student sits up straight, legs out, with stars going round their head and their coffee cup beside them, and gets up again. Karts cannot hit someone who is sitting.
+
+**A mistake of the agent's, found and repaired**
+
+One commit of this evening (`a4c1080`) left both race pages broken: a script that edits files dropped an import and three lines from `client/main.js` and `client/online.js` without saying so, and the pages stopped with an error. The tests did not notice, because no test loads those two pages. The agent found it a few minutes later, repaired it in the next commit and opened both pages to check. Nothing of it was ever on `main`. What it shows: the pages themselves have no automatic test, so every change to them has to be opened in a browser.
+
+**One existing test was changed, and why**
+
+`tests/scenery.test.js`, "slopes the top of a box along x": it said that a sloping top is not painted. Ramps need a sloping top that is painted, so the rule changed, and the test now says that a sloping top is painted with each corner at its own height. The test file is one day old and from this same pull request.
+
+**What the helper reported at the end, and what was done about it**
+
+- It changed no existing test. It broke its own rules on purpose 15 times (a flying kart that can steer, a sitting student who can be hit again, walkers that walk during 3, 2, 1, and so on): a test failed every time, and the code was put back.
+- **Two landings were too tight.** A kart that had just landed from the ramp on the coast road had only five squares before the cones, and on the west street the bins stood level with the landing. The robot of the tests clipped both. The cones and bins of the coast road moved to the start of the corner, the bins of the west street moved on, the two outer ramps of the west street moved, and one bike was taken out. The rule for placing them is now written in `client/nova-lap-buildings.js`: the lane a kart flies along and the lanes beside it stay clear, and the next thing in its lane comes at least six squares after the landing.
+- **The computer karts got stuck at single obstacles.** Measured with five computer karts over three laps, on four different races: before the move they stood nearly still for 9 to 18 seconds a race, most of it at those bins. After the move: 0.4 to 4.3 seconds. They finish in 80 to 90 seconds.
+- **Tried and taken out again:** telling the computer karts where single obstacles stand, so that they steer round them as they do round bananas. Measured the same way, it did not help (1.5 to 5 seconds stuck), so it was removed rather than left in as code that does nothing useful.
+- **The helper's own choices, please confirm:** a kart that has finished can still jump; a kart that lands on a ramp takes off again; a student can be toppled again in the very step they get up; the students keep walking after a race is over, until the next start, as the bananas stay.
+
+**What was checked, and what was not**
+
+Checked:
+
+- The tests: 1,804 pass, 5 are skipped (the ones that need the database address). Before this round there were 1,605. Of the 199 new ones, 179 are the helper's (ramps, walkers, the room) and 20 are for the picture side.
+- The new rules have their own tests, written by the helper: a kart takes off only when it drives over a ramp the right way and fast enough, cannot steer in the air, lands after exactly the time the rule says, is still stopped by a wall, and flies over a banana; a walker is toppled by a fast kart and not by a slow one, not when inside a building, not when already sitting, not by a kart in the air; the server sends the walkers only on a track that has them; nothing a browser sends can make a kart jump or move a walker. On the real track: every walker's whole path is on open ground, and the flight after every ramp is clear of walls.
+- The picture side has its own tests too (`tests/street-life.test.js`): a walker is drawn exactly where the rules say it is.
+- A robot drove a whole lap in the real single race page, in the agent's browser: it took the ramp on the coast road, its speed went from about 300 to 409 units a second, and the picture taken at that moment shows the kart in the air above its shadow, with a computer kart ahead of it jumping too.
+- The online room, in the agent's browser: the server sends the five walkers, their clocks stand still during 3, 2, 1 and run from GO. No error on the page.
+- The agent looked at the students walking, at one sitting on the ground with its stars, at the ramps, bikes, bins and cones, at the letters, the café sign and the statue.
+
+Not checked:
+
+- **How it feels.** Whether the jump is fun, whether the students are too many or too few, whether the bikes are fair. The numbers are first guesses. Catarina or a teammate has to play it.
+- Two people online on two laptops, and the live server.
+- The sounds: the agent cannot hear. Catarina asked for the sound to be switched off during the agent's own test drive, which had left an engine humming in the hidden browser.
+- Whether the lag she felt near the café is gone.
+
+**What was done in git**
+
+- Everything is on the one branch `nova-track`, for one pull request, as she asked.
+- The helper worked on the branch `nova-track-rules` in the folder `.worktrees/nova-rules`. Its work was merged into `nova-track` in two steps (ramps first, then walkers and the server). The folder and the branch were removed once it had reported.
+- Small commits, pushed to GitHub as a backup. Nothing was merged into `main`.
+
+**How to check it yourself**
+
+1. `npm start`, then http://localhost:3000/track-tour.html?track=nova-lap: the students walk, the tour hops over each ramp.
+2. Menu, Single race, Nova lap. Drive over the yellow ramp on the coast road. On the west street, try to get the two ramps in the outer lanes. On the promenade, drive into a student.
+3. `npm test`.
+
+### 17 November 2026, evening: Catarina's first feedback on the Nova lap
+
+**What she said**
+
+She drove it full screen. "A great base to start off with." She likes the entrance, the atrium, the statue. What she asked for:
+
+- The NOVA letters more in the middle of the atrium, and black. Some tables and chairs, to show it is a sitting area.
+- Around the Moon Café it felt laggy and the ceiling was weird. The café should stand out more: tables, a logo.
+- The Sagres beach entrance was lazy and did not look like the real one.
+- After the tunnel, a block of grass that is "one sheet", not something with depth.
+- More details in parts of the map.
+- The second half of the lap is boring: one long straight. She wants ideas to make it fun (obstacles, a bike in the way, a jump with a speed boost). While the agent was working she added one more: people walking in and out of the buildings along the promenade, who fall over, in a funny way, when a kart bumps them.
+
+**What was done**
+
+| What | Where |
+|---|---|
+| The beach tunnel was rebuilt. Its mouth now runs along the path, as the real one does: a long concrete beam with "Sagres Beach Way", a real hollow two squares deep with painted walls, the tunnel running away to the daylight of the beach at the back, reeds on top, and the sloping side wall of the ramp | `client/nova-lap-buildings.js` (seven boxes), `client/wall-art.js` (`tunnel-beam`, `tunnel-mural`, `tunnel-back`, `reeds`) |
+| The Moon Café: a navy sign on its roof with a crescent moon, a board with its name beside the door, a counter and shelves seen through the glass, three tables outside | `client/wall-art.js` (`cafe-front`, `moon-sign`), `client/nova-lap-buildings.js` |
+| The ceiling by the café. The roof over the terrace was drawn 4.6 metres up, barely above the camera, so it filled the top of the screen like a lid. It is now 8.6 metres up, on two slim posts, with panels and lamps on its underside | `client/nova-lap-buildings.js` |
+| The atrium: big black letters N O V A in the middle of the hall (karts have to go round them), eight tables with chairs, two boxes of plants | `client/nova-lap-buildings.js` (`NOVA_LAP_FURNITURE`), `client/props.js` |
+| The sheet of grass became a low stone edge with round lavender bushes behind it | `client/nova-lap-look.js`, `client/props.js` (`shrub`) |
+| Details: the young red trees and stone benches of the avenue, lamp posts along both roads, doors on the long building beside the promenade | the same files |
+| Cars drive along the coast road and the west street, round the roundabout. They are only a picture: no kart can reach them and the server knows nothing of them | `client/traffic.js` (new), `client/draw.js`, `client/props.js` (`car`) |
+| Lighter to draw: walls are cut into fewer slices, the ground close to the kart is painted again less often and reuses its patterns | `client/scenery-paint.js`, `client/ground.js`, `client/ground-art.js` |
+
+**About the lag**
+
+The agent could not make it lag: at the café a picture took about 6 thousandths of a second in its browser, and a screen needs one every 16. So this was not measured as fixed. Three things were made lighter anyway (the last row above), and the low ceiling, which made that spot look wrong, is gone. If it still stutters there on Catarina's laptop, the next step is to measure on her laptop, not to guess.
+
+**Decisions made by the agent, please confirm**
+
+- Tables, plants, the letters, the trees and the benches each stand on a square that karts cannot cross. They are at the sides, away from the driving line, so they only matter when karts are side by side.
+- The café's name is on it because that is its name. The crescent moon is our own drawing, not the café's logo.
+- The fun ideas (people walking, speed boosts, obstacles on the straights) were NOT built. They are new rules of the game, they have to run on the server as well, and they need tests. The agent described them to Catarina and asked which to build.
+
+**What was checked, and what was not**
+
+- `npm test`: 1,605 tests pass, 5 skipped. 11 are new, for the cars (`tests/traffic.test.js`): every car stays on its lane, and no lane crosses ground a kart can drive on. The tests of the track itself ran again on the changed layout: letters match the shapes, no checkpoint can be driven round, the robot and the five computer karts finish three laps, no wall is invisible.
+- The agent looked at each changed place in its browser: the tunnel from two sides, the café, the terrace, the atrium, the bushes, the avenue, the cars.
+- Not checked: how it feels in motion, and whether the lag is gone on Catarina's laptop.
+
+**What comes next**
+
+Catarina chooses among the fun ideas. Then they are built as rules, with tests, for the single race and for online.
+
+### 17 November 2026: the Nova lap, a new track made from the video filmed on campus
+
+**What was asked**
+
+Catarina sent a nine-minute video of the lap the team wants, walked on campus, and described it in words: start at the entrance, through the Hovione Atrium (the only part indoors, a big square hall with a Christmas tree), out past the cafe and the library, everything else outdoors, down a ramp, with the tunnel to the street on the left, and back to where the video started. The old campus track, made from a map, was not recognisable: "the buildings were just a white wall with windows painted on", and everything round the campus looked like a forest. She asked for the base only (ground and buildings; tables, bikes, lamps and trees later), at a bigger scale, and for it to look like Nova. "Do not settle for less."
+
+**What was done**
+
+A new track, the **Nova lap**, and new drawing code for it. The campus loop was not touched.
+
+How the video was read: the laptop has no program for cutting a video into pictures, so the agent made a small page that steps through the video (muted) in its own browser and saves still pictures. It looked at one picture every two seconds, then at about 130 pictures of the important places at full size, and wrote down what is there: which paving, which building on which side, what is written on the walls. Nothing was installed and the video was not sent anywhere.
+
+What a player sees now, in the order of the lap:
+
+1. The avenue: small cobbles, a band of smooth slabs, the residence with its balconies on the left, the Cascais hall with its tall white frame on the right. At the end the entrance: the white wall with the school's name, the glass front, the white steel roof edge and the blue banner.
+2. Through the doors into the atrium: a polished floor, the white letters N O V A, the Christmas tree, a gallery with red-brown wooden beams underneath, a ceiling with a long skylight, the wall with the strokes of colour.
+3. Out onto the terrace: the roof overhead, the cafe behind glass, the sea-green glass floor, the turquoise statue.
+4. Under the library and down the promenade on ochre concrete: the long building with the deep white roof edge and the coloured rooms on the right, the Westmont Hospitality Hall on the left.
+5. The terracotta stairs (driven as a ramp), the lower plaza, the white Grand Auditorium.
+6. West along the path: brown slats, the tall white wall, and on the left the mouth of the beach tunnel with "Sagres Beach Way" over it.
+7. The coast road: flagstones, the low stone wall, the road with its white lines, palms and the sea.
+8. Up the west street past the lawns, the Santander hall and the Cascais hall, round the flags, back into the avenue.
+
+| Where | What it is for |
+|---|---|
+| `shared/tracks/nova-lap.js` | The track for the driving rules: letters for wall, road and grass, the start, eight checkpoints |
+| `client/nova-lap-ground.js` | The ground as shapes: which paving, lawn or road lies where |
+| `client/nova-lap-buildings.js` | Every building as a box: where it stands, how tall, which picture on which side. Also the railings and letters |
+| `client/nova-lap-look.js` | Sky, horizon, the way round, lines on the roads, the tree, the statue, the flags |
+| `client/wall-art.js` | The 45 pictures that go on walls, each painted by code |
+| `client/ground-art.js` | The 16 kinds of ground, each a small repeating picture, and the shadows of buildings |
+| `client/scenery.js`, `client/scenery-paint.js` | The new drawing code: where each strip of wall lands on the screen, and painting its picture there |
+| `client/ground.js`, `client/draw.js`, `client/buildings.js`, `client/props.js`, `client/track-looks.js` | Changed, to use the above. Other tracks are drawn as before |
+| `client/track-tour.html`, `client/track-tour.js` | A page that flies the camera round a track, to look without racing |
+| `tests/nova-lap.test.js`, `tests/nova-lap-look.test.js`, `tests/scenery.test.js` | The new tests |
+
+**Why it was done this way**
+
+- **A new track beside the old one, not instead of it.** The campus loop is Rodrigo's, and many tests are written against it. Removing it is for the team to decide.
+- **Twice the scale** (3 metres a square instead of 6). Beside a kart, a 12-metre front now looks like a 12-metre front. A lap is about 690 metres.
+- **Pictures on walls** are what makes a building recognisable: a name, a banner, a row of coloured rooms. The old code could only paint every wall the same. The pictures are painted by our own code when the page opens, so there are still no image files for buildings.
+- **Boxes that start above the ground** give the atrium a ceiling, the gallery its wooden underside and the library its bridge, with one idea instead of three.
+- **The ground as shapes** lets a path run at a slant and lets each place have its own paving. The letters of the track are made from the same shapes and a test checks they agree, so the picture cannot lie about where a wall is.
+- **The coast road was straightened.** The real one runs at a slant to the buildings. Walls at a slant are bumpy to drive along, because the rules only know squares.
+
+**Decisions made by the agent, please confirm**
+
+They are listed in `PROJECT_BRIEF.md` under the tracks: keeping the campus loop for now, the scale, the straightened coast road, the names on the walls and our own words on the banner, the sunny afternoon, and the track tour page.
+
+**What was checked, and what was not**
+
+Checked:
+
+- The agent flew the camera round the whole lap and looked at each place, and at each hall, the cafe, the auditorium and the inside of the atrium from the side, comparing with the pictures from the video.
+- A race in the agent's browser: holding the gas from the grid drives through the doors and across the atrium.
+- How long one picture takes to draw, in the agent's browser: 7 to 12 thousandths of a second on the new track, against 5 to 15 on the campus loop. So it is not slower than what the team already has.
+- `npm test`: 1,594 tests pass, 5 are skipped (the ones that need the database address). Before this work there were 1,488. The 106 new ones were written by the helper agent and run again by the main agent after the merge.
+- What the new tests showed about the track: its letters match the shapes on every square; no checkpoint can be driven round (a search over the squares, which was also tried on a checkpoint shortened on purpose, and caught it); a simple robot drives the three laps in 74 seconds without touching a wall; the five computer karts all finish three laps, in about 88 seconds; the wrong way round counts no lap; no wall beside the road is invisible.
+- The helper noticed three small things, all corrected: a lap is about 690 metres, not 730 as first written; one comment named the wrong test file; and the scenery code accepted a text or an endless number where it needs a real number.
+- The menu shows the Nova lap as a third card with its small map, and the server has an online room for it (it answered "welcome" with the track's name).
+
+Not checked:
+
+- **How it feels to race it.** The agent's browser was not on screen, where nothing moves smoothly. Catarina or a teammate needs to drive three laps and say what is wrong.
+- Whether it is smooth on a slow laptop or a phone.
+- Online, with two laptops, and the live server (nothing is merged yet).
+- Heights and sizes are estimates from the video. The halls and lawns west of the main building were placed to fit, not measured.
+
+**What was done in git**
+
+- A branch `nova-track` was made from `main` as it was after pull request 26.
+- A helper agent wrote the tests in a separate folder, `.worktrees/nova-tests`, on the branch `nova-track-tests`. That branch was merged into `nova-track` and the folder removed.
+- Small commits, one per step, pushed to GitHub as a backup. Nothing was merged into `main`.
+
+**How to check it yourself**
+
+1. Run `npm start` and open http://localhost:3000/track-tour.html?track=nova-lap. The camera flies round the lap by itself. Space stops it, the arrow keys move it, V shows the map from above.
+2. Open the menu, Single race, choose "Nova lap", choose a character, and drive.
+3. Run `npm test`.
+
+**What comes next**
+
+- Catarina says what does not look like Nova yet. Each building's front is one small piece of `client/wall-art.js`, so one can be changed without touching the others.
+- The things left out on purpose: the trees and benches of the avenue, lamp posts, tables, plants in the atrium, cars on the roads.
+- The team decides whether the campus loop leaves the menu.
+
 ### 15 November 2026: no email after all, decisions for the week, and sound
 
 **Email: built, then decided against**

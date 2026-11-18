@@ -30,12 +30,13 @@ import { chooseTrackName } from "./track-choice.js";
 import { createKeyboard } from "./keyboard.js";
 import { createPainter } from "./draw.js";
 import { createHud } from "./hud.js";
-import { createPlayback, readServerMessage, bananasOf, statusLine, accountLine, othersLine, QUIET_AFTER_MS } from "./net.js";
+import { createPlayback, readServerMessage, bananasOf, walkersOf, statusLine, accountLine, othersLine, QUIET_AFTER_MS } from "./net.js";
 import { introShare, startLights, spinTurnOf } from "./scene.js";
 import { COLOURS, lookFromChoice, readChoice } from "./kart-choice.js";
 import { readCharacter, characterNote } from "./cast-choice.js";
 import { characterById } from "../shared/cast.js";
 import { lookOfTrack } from "./track-looks.js";
+import { walkersToShow, walkersDownNear } from "./street-life.js";
 import { routePoints, watchForWrongWay, WRONG_WAY_MESSAGE } from "./route.js";
 import { nextCheckpointNumber, watchForMissedCheckpoint, missedCheckpointMessage } from "./checkpoints.js";
 import { placeLine, resultLines, boardLines } from "./standings.js";
@@ -89,6 +90,8 @@ let account = null; //                 who the server says we are signed in as (
 let saved = null; //                   what the server said about saving our last finished race
 let names = new Map(); //              the user names of the signed-in players in the room, by player number
 let bananas = []; //                   the banana peels on the track, as of the latest update
+let walkers = []; //                   the people who walk across the track, as of the latest update (shared/walkers.js)
+let walkersAt = 0; //                  when that update arrived
 let othersShown = ""; //               the "With you: ..." line as it is on the page now
 
 // ---- What the player chose in the menu ----
@@ -158,6 +161,8 @@ connection.addEventListener("message", (event) => {
     playback.add(message, performance.now());
     latestKarts = message.karts;
     bananas = bananasOf(message);
+    walkers = walkersOf(message);
+    walkersAt = performance.now();
     const raceBefore = race;
     race = readRace(message);
     endsIn = readEndsIn(message);
@@ -308,10 +313,13 @@ function frame(now) {
   const counting = race.phase === "countdown";
   // While our own kart is being driven, its next checkpoint is lit up in yellow.
   const driving = keysDoSomething && Number.isInteger(mine.passed) && !about.big;
+  // The walkers keep walking between two updates from the server, but only while a race runs.
+  const walkersShown = walkersToShow(track, walkers, race.phase === "racing" ? ((performance.now() - walkersAt) / 1000) * 60 : 0);
   const scene = {
     intro: introShare(counting, race.countdownSteps),
     lights: startLights(counting || race.phase === "racing", race.countdownSteps),
     bananas,
+    walkers: walkersShown,
     names,
     nextCheckpoint: driving ? nextCheckpointNumber(mine.passed, track) : undefined,
   };
@@ -363,6 +371,8 @@ function frame(now) {
       finished: shown.finished === true,
       warning: warning !== null,
       others,
+      air: shown.air,
+      walkersDownNear: walkersDownNear(walkersShown, shown),
     },
     frameSeconds,
   );

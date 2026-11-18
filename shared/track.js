@@ -136,6 +136,69 @@ export function createTrack(description) {
     throw new Error("Track: the start says it is behind the finish line, but the line is not just ahead of it");
   }
 
+  // Ramps: squares of road that throw a kart into the air and give it extra
+  // speed (ramps.js). Each says which way it is driven. Most tracks have none.
+  if (description.ramps !== undefined && !Array.isArray(description.ramps)) {
+    throw new Error("Track: ramps must be a list");
+  }
+  track.ramps = (description.ramps ?? []).map((ramp, number) => {
+    const { column, row, angle } = ramp ?? {};
+    if (!isTileInside(track, column, row) || map[row][column] !== ".") {
+      throw new Error(`Track: ramp ${number} must stand on a square of road`);
+    }
+    if (typeof angle !== "number" || Number.isNaN(angle)) {
+      throw new Error(`Track: ramp ${number} needs an angle (the direction it is driven in)`);
+    }
+    return {
+      x: (column + 0.5) * tileSize,
+      y: (row + 0.5) * tileSize,
+      angle,
+      left: column * tileSize,
+      top: row * tileSize,
+      right: (column + 1) * tileSize,
+      bottom: (row + 1) * tileSize,
+    };
+  });
+
+  // Walkers: people who walk to and fro along a path, from one door to
+  // another (walkers.js). A path is a list of points, in squares, and every
+  // point has to be on ground a kart can drive on. "startShare" (from 0 to 1)
+  // says how far into its round a walker is when the race starts, so that
+  // they do not all set off together.
+  if (description.walkers !== undefined && !Array.isArray(description.walkers)) {
+    throw new Error("Track: walkers must be a list");
+  }
+  track.walkers = (description.walkers ?? []).map((walker, number) => {
+    const path = walker?.path;
+    if (!Array.isArray(path) || path.length < 2) {
+      throw new Error(`Track: walker ${number} needs a path of at least two points`);
+    }
+    const points = path.map((point) => {
+      const [column, row] = Array.isArray(point) ? point : [];
+      if (typeof column !== "number" || typeof row !== "number" || Number.isNaN(column) || Number.isNaN(row)) {
+        throw new Error(`Track: walker ${number} has a point that is not [column, row]`);
+      }
+      const spot = { x: column * tileSize, y: row * tileSize };
+      if (tileKindAt(track, spot.x, spot.y) === "wall") {
+        throw new Error(`Track: walker ${number} has a point inside a wall`);
+      }
+      return spot;
+    });
+    let length = 0;
+    for (let i = 1; i < points.length; i++) {
+      const stretch = Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+      if (!(stretch > 0)) {
+        throw new Error(`Track: walker ${number} has two points on the same spot`);
+      }
+      length += stretch;
+    }
+    const startShare = walker.startShare ?? 0;
+    if (typeof startShare !== "number" || !(startShare >= 0 && startShare <= 1)) {
+      throw new Error(`Track: walker ${number} has a startShare that is not from 0 to 1`);
+    }
+    return { points, length, startShare };
+  });
+
   return track;
 }
 

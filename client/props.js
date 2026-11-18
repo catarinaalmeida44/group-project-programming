@@ -45,7 +45,24 @@ export const PROP_HEIGHT = {
   totem: 34,
   tunnel: 30,
   bench: 5,
+  "christmas-tree": 66,
+  statue: 48,
+  "banner-flag": 86,
+  olive: 36,
+  "table-set": 12,
+  planter: 15,
+  shrub: 13,
+  "avenue-tree": 44,
+  car: 20,
+  bike: 13,
+  bins: 13,
+  cones: 9,
+  "lounge-bench": 9,
+  walker: 20,
 };
+
+/** The colours a car on the road can have. */
+const CAR_COLOURS = { red: "#c8372f", blue: "#2f66b3", white: "#eef0f1", grey: "#7d858c", black: "#23272b", yellow: "#e9b92c" };
 
 /** An arrow board at a bend: a dark board on two legs with three chevrons that point the way. "way" is 1 for right, -1 for left. */
 function arrowBoard(context, way) {
@@ -134,6 +151,486 @@ const STANDING = {
     context.fillRect(-8, -4.6, 16, 4.6);
     context.fillStyle = "#e3e0d8";
     context.fillRect(-8, -5.6, 16, 1.4);
+  },
+
+  // The Christmas tree in the atrium: tall, dark green, hung with gold
+  // lights and coloured stars, a star on top.
+  "christmas-tree"(context, seconds) {
+    shadow(context, 16);
+    context.fillStyle = "#5a3d28";
+    context.fillRect(-2, -5, 4, 5);
+    // Four tiers of branches, each a wide triangle, the lowest the widest.
+    const tiers = [
+      [-58, -38, 9],
+      [-46, -24, 13],
+      [-33, -11, 16.5],
+      [-20, -3, 20],
+    ];
+    tiers.forEach(([top, bottom, half], i) => {
+      context.fillStyle = i % 2 === 0 ? "#1f5a33" : "#246639";
+      context.beginPath();
+      context.moveTo(0, top);
+      context.lineTo(half, bottom);
+      context.lineTo(-half, bottom);
+      context.closePath();
+      context.fill();
+    });
+    // Lights: they twinkle, each in its own time.
+    const colours = ["#ffd866", "#fff2b0", "#ff7a59", "#ffffff", "#ffc23f"];
+    for (let i = 0; i < 46; i++) {
+      const height = 5 + ((i * 37) % 50);
+      const reach = (58 - height) * 0.33;
+      const x = (((i * 53) % 100) / 50 - 1) * reach;
+      const bright = 0.55 + 0.45 * Math.sin(seconds * 3 + i * 1.7);
+      context.globalAlpha *= bright;
+      context.fillStyle = colours[i % colours.length];
+      context.beginPath();
+      context.arc(x, -height, i % 5 === 0 ? 1.3 : 0.8, 0, TURN);
+      context.fill();
+      context.globalAlpha /= bright;
+    }
+    // The star on top.
+    context.fillStyle = "#ffd23f";
+    context.beginPath();
+    for (let point = 0; point < 10; point++) {
+      const radius = point % 2 === 0 ? 4.2 : 1.8;
+      const angle = (point / 10) * TURN - Math.PI / 2;
+      context.lineTo(Math.cos(angle) * radius, -61 + Math.sin(angle) * radius);
+    }
+    context.closePath();
+    context.fill();
+  },
+
+  // The turquoise statue beside the library: a woman standing with her
+  // surfboard, on a block, all in one colour.
+  statue(context) {
+    shadow(context, 9);
+    const dark = "#2a9891";
+    const middle = "#35b5ad";
+    const light = "#4fd0c7";
+    context.fillStyle = "#2fa9a2"; // the block, with a lit side and a pale top edge
+    context.fillRect(-6.5, -13, 13, 13);
+    context.fillStyle = "#3cc0b8";
+    context.fillRect(-6.5, -13, 4.4, 13);
+    context.fillStyle = light;
+    context.fillRect(-6.5, -13.9, 13, 1.1);
+    // The surfboard, standing on its tail beside her, taller than she is.
+    context.fillStyle = dark;
+    context.beginPath();
+    context.moveTo(5.6, -13.9);
+    context.quadraticCurveTo(9.4, -30, 6.3, -46.5);
+    context.quadraticCurveTo(2.8, -30, 4.6, -13.9);
+    context.closePath();
+    context.fill();
+    context.fillStyle = light; // the line down the middle of the board
+    context.fillRect(5.7, -42, 0.5, 26);
+    // The woman: legs, a short dress, shoulders, head, hair tied up.
+    context.fillStyle = middle;
+    context.fillRect(-3.2, -23, 1.9, 9.1);
+    context.fillRect(-0.4, -23, 1.9, 9.1);
+    context.beginPath();
+    context.moveTo(-4.4, -22.5);
+    context.lineTo(2.9, -22.5);
+    context.lineTo(1.9, -30);
+    context.lineTo(2.6, -34.5);
+    context.lineTo(-3.8, -34.5);
+    context.lineTo(-3.2, -30);
+    context.closePath();
+    context.fill();
+    blob(context, -0.6, -37.4, 2.4, middle);
+    blob(context, -2.6, -39.2, 1.5, dark); // her hair, in a knot
+    // One arm round the board, the other on her hip.
+    context.strokeStyle = middle;
+    context.lineWidth = 1.5;
+    context.lineCap = "round";
+    context.beginPath();
+    context.moveTo(2.4, -33.5);
+    context.lineTo(5.9, -29.5);
+    context.moveTo(-3.6, -33.5);
+    context.lineTo(-6.2, -29.2);
+    context.lineTo(-3.6, -26.2);
+    context.stroke();
+  },
+
+  // A tall narrow flag on a white pole, as at the corner of the avenue.
+  // The label says which: "white", "blue", "portugal" or "europe".
+  "banner-flag"(context, seconds, label) {
+    shadow(context, 3);
+    context.fillStyle = "#e9ecee";
+    context.fillRect(-0.55, -84, 1.1, 84);
+    const sway = Math.sin(seconds * 2.4 + label.length) * 1.4;
+    if (label === "portugal" || label === "europe") {
+      // An ordinary flag, flying from the top of the pole.
+      const parts = label === "portugal" ? [["#1f7a3f", 0, 6], ["#d8322a", 6, 15]] : [["#2f55a8", 0, 15]];
+      for (const [colour, from, wide] of parts) {
+        context.fillStyle = colour;
+        context.beginPath();
+        context.moveTo(0.5 + from, -83 + from * 0.05 * sway);
+        context.lineTo(0.5 + wide, -83 + wide * 0.08 * sway);
+        context.lineTo(0.5 + wide, -73 + wide * 0.08 * sway);
+        context.lineTo(0.5 + from, -73 + from * 0.05 * sway);
+        context.closePath();
+        context.fill();
+      }
+      return;
+    }
+    // A long banner down the pole, bellying in the wind.
+    context.fillStyle = label === "blue" ? "#5f8fb8" : "#f4f5f3";
+    context.beginPath();
+    context.moveTo(0.5, -83);
+    context.quadraticCurveTo(13 + sway, -80, 11 + sway, -64);
+    context.quadraticCurveTo(9 + sway * 1.6, -50, 10 + sway * 0.6, -38);
+    context.lineTo(0.5, -36);
+    context.closePath();
+    context.fill();
+    context.fillStyle = label === "blue" ? "rgba(255, 255, 255, 0.75)" : "rgba(60, 80, 100, 0.55)";
+    for (let mark = 0; mark < 4; mark++) {
+      context.fillRect(3.4 + sway * 0.4, -76 + mark * 8, 3.8, 3.2);
+    }
+  },
+
+  // A round white table with three chairs, as in the atrium and outside the cafe.
+  "table-set"(context) {
+    shadow(context, 14);
+    const chair = (x, colour) => {
+      context.fillStyle = "#39434d"; // two thin legs
+      context.fillRect(x - 2.3, -4.6, 0.6, 4.6);
+      context.fillRect(x + 1.7, -4.6, 0.6, 4.6);
+      context.fillStyle = colour;
+      context.fillRect(x - 2.7, -5.7, 5.4, 1.2); //  the seat
+      context.fillRect(x - 2.7, -10.6, 5.4, 3.8); // the back
+    };
+    chair(0, "#27406b"); // the chair behind the table
+    context.fillStyle = "#aeb3b7"; // the table: one leg, a foot, a round top
+    context.fillRect(-0.6, -7.8, 1.2, 7.8);
+    context.fillRect(-3, -0.7, 6, 0.7);
+    ellipse(context, 0, -7.4, 7.4, 1.9, "#cfd2d3");
+    ellipse(context, 0, -8, 7.4, 1.9, "#f6f5f1");
+    ellipse(context, 2.4, -8.3, 1.1, 0.5, "#7a4a2c"); // a cup of coffee
+    chair(-10.5, "#e9b92c");
+    chair(10.5, "#27406b");
+  },
+
+  // A long dark box with plants in it, as in the atrium.
+  planter(context) {
+    shadow(context, 14);
+    blob(context, -7, -9.5, 4.6, "#2f7d3a");
+    blob(context, 0, -11, 5.2, "#37893f");
+    blob(context, 7, -9.5, 4.6, "#2a7135");
+    blob(context, -3.5, -12.5, 3.4, "#47994a");
+    blob(context, 4, -12.8, 3.2, "#47994a");
+    context.fillStyle = "#3d4247";
+    context.fillRect(-12, -7, 24, 7);
+    context.fillStyle = "#565c62";
+    context.fillRect(-12, -7, 24, 1.2);
+  },
+
+  // A low round bush with purple tips, like the lavender on the banks of the campus.
+  shrub(context) {
+    shadow(context, 12);
+    blob(context, -6, -4.5, 5.6, "#5d7a55");
+    blob(context, 5.5, -4.8, 6, "#688a60");
+    blob(context, 0, -7, 6.6, "#6f9166");
+    context.fillStyle = "#8f7ab8";
+    for (const [x, y] of [[-8, -9], [-4, -12.2], [0, -13.4], [4.5, -12], [8.5, -9.6], [-1.5, -10.5], [2.4, -9.4]]) {
+      context.fillRect(x, y, 0.9, 2.4);
+    }
+  },
+
+  // A young tree of the avenue in autumn: a thin trunk in a square of soil, few leaves, all red.
+  "avenue-tree"(context) {
+    context.fillStyle = "rgba(70, 55, 40, 0.5)"; // the soil it stands in
+    context.beginPath();
+    context.ellipse(0, 0, 9, 2.6, 0, 0, TURN);
+    context.fill();
+    context.strokeStyle = "#5b463a";
+    context.lineCap = "round";
+    context.lineWidth = 1.5;
+    context.beginPath();
+    context.moveTo(0, 0);
+    context.lineTo(0.4, -24);
+    context.stroke();
+    context.lineWidth = 0.8;
+    for (const [fromY, toX, toY] of [[-20, -8, -32], [-22, 8.5, -33], [-24, -3, -41], [-24, 4.5, -40], [-18, 6, -26], [-17, -6.5, -25]]) {
+      context.beginPath();
+      context.moveTo(0.3, fromY);
+      context.lineTo(toX, toY);
+      context.stroke();
+    }
+    for (const [x, y, radius, colour] of [
+      [-7, -31, 4.2, "#8a3b34"], [7.5, -32, 4.4, "#a4483c"], [-2.5, -39, 4.6, "#96413a"], [4.5, -38.5, 4, "#7c332f"],
+      [5.5, -26, 3.2, "#a4483c"], [-6, -25, 3, "#8a3b34"], [0.5, -33, 3.6, "#b3564a"],
+    ]) {
+      blob(context, x, y, radius, colour);
+    }
+  },
+
+  // A student walking across the track, or sitting on the ground after a
+  // kart bumped into them (shared/walkers.js). The label says everything,
+  // as four words: which side we see ("back", "front", "left" or "right"),
+  // which jumper (a number), "walk" or "down", and for "down" how far
+  // through the sit-down they are, from 0 (just toppled) to 1 (getting up).
+  walker(context, seconds, label) {
+    const [view, lookText, state, shareText] = label.split(" ");
+    const look = Number(lookText) || 0;
+    const jumper = ["#d8473f", "#2f66b3", "#3fa35a", "#e9b92c", "#8d5aa8", "#f08a3c"][look % 6];
+    const skin = ["#f1c9a5", "#c98f62", "#8d5b3c"][look % 3];
+    const hair = ["#3a2a1e", "#1d1a18", "#7a4a2c", "#c9a24b"][look % 4];
+    const trousers = "#3b4656";
+    shadow(context, 5.5);
+    context.lineCap = "round";
+    const limb = (colour, width, points) => {
+      context.strokeStyle = colour;
+      context.lineWidth = width;
+      context.beginPath();
+      points.forEach(([x, y], i) => (i === 0 ? context.moveTo(x, y) : context.lineTo(x, y)));
+      context.stroke();
+    };
+
+    if (state === "down") {
+      const share = Number(shareText) || 0;
+      // Sitting on the ground: legs straight out, leaning back on both hands.
+      // In the last tenth of the time they are already half up.
+      const rising = share > 0.9 ? (share - 0.9) / 0.1 : 0;
+      context.translate(0, -rising * 3);
+      limb(trousers, 2.3, [[-1.5, -1.8], [6.5, -1.6]]);
+      limb(trousers, 2.3, [[-1.5, -1.2], [7, -0.6]]);
+      limb(jumper, 1.9, [[-2.2, -7.2], [-6.2, -1.2]]);
+      context.fillStyle = jumper;
+      context.beginPath();
+      context.moveTo(-3.6, -1.2);
+      context.lineTo(1.2, -1.2);
+      context.lineTo(0.6, -9);
+      context.lineTo(-4.6, -8.4);
+      context.closePath();
+      context.fill();
+      blob(context, -2.4, -11.4, 2.5, skin);
+      context.fillStyle = hair;
+      context.beginPath();
+      context.arc(-2.4, -11.9, 2.6, Math.PI, 0);
+      context.fill();
+      // What they were carrying: a paper cup on its side, and a sheet of paper.
+      context.fillStyle = "#f4f2ec";
+      context.fillRect(8.4, -1.6, 3.2, 1.7);
+      context.fillStyle = "#7a4a2c";
+      context.fillRect(11.6, -1.3, 2.2, 1);
+      context.fillStyle = "#f4f2ec";
+      context.fillRect(-10.5, -0.8, 3.4, 0.7);
+      // Stars going round their head, until they get up.
+      if (share < 0.9) {
+        for (let star = 0; star < 3; star++) {
+          const turn = seconds * 4 + (star * TURN) / 3;
+          const x = -2.4 + Math.cos(turn) * 4.6;
+          const y = -15.6 + Math.sin(turn) * 1.3;
+          context.fillStyle = Math.sin(turn) > 0 ? "#ffd23f" : "#f0b92a"; // a little darker when it is behind the head
+          context.beginPath();
+          for (let point = 0; point < 10; point++) {
+            const radius = point % 2 === 0 ? 1.25 : 0.5;
+            const angle = (point / 10) * TURN - Math.PI / 2;
+            context.lineTo(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius);
+          }
+          context.closePath();
+          context.fill();
+        }
+      }
+      return;
+    }
+
+    // Walking. The legs and arms swing, and the body bobs up and down a little.
+    const swing = Math.sin(seconds * 9 + look * 1.7);
+    const bob = Math.abs(swing) * 0.5;
+    const sideways = view === "left" || view === "right";
+    if (view === "left") {
+      context.scale(-1, 1); // drawn walking to the right, turned over for the other way
+    }
+    if (sideways) {
+      limb(trousers, 2.2, [[0, -8.5], [swing * 3.6, -0.6]]);
+      limb(trousers, 2.2, [[0, -8.5], [-swing * 3.6, -0.6]]);
+      context.fillStyle = "#4a3f6b"; // a rucksack on their back
+      context.fillRect(-4.6, -15.2 - bob, 2.4, 5.4);
+    } else {
+      limb(trousers, 2.2, [[-1.4, -8.5], [-1.5, -0.6 - Math.max(0, swing) * 1.4]]);
+      limb(trousers, 2.2, [[1.4, -8.5], [1.5, -0.6 - Math.max(0, -swing) * 1.4]]);
+    }
+    context.fillStyle = jumper;
+    context.beginPath();
+    context.roundRect(-3, -16 - bob, 6, 8.2, 1.6);
+    context.fill();
+    if (sideways) {
+      limb(jumper, 1.7, [[0.2, -14.6 - bob], [swing * -2.6, -9.2 - bob]]);
+    } else {
+      limb(jumper, 1.7, [[-3.2, -14.8 - bob], [-4, -9.6 - bob - swing * 0.6]]);
+      limb(jumper, 1.7, [[3.2, -14.8 - bob], [4, -9.6 - bob + swing * 0.6]]);
+      if (view === "back") {
+        context.fillStyle = "#4a3f6b";
+        context.fillRect(-2.2, -15.2 - bob, 4.4, 5.6);
+      }
+    }
+    blob(context, 0, -18.3 - bob, 2.5, skin);
+    context.fillStyle = hair;
+    context.beginPath();
+    if (view === "back") {
+      context.arc(0, -18.3 - bob, 2.6, 0, TURN); //                  seen from behind: all hair
+    } else if (sideways) {
+      context.arc(-0.4, -18.7 - bob, 2.6, Math.PI * 0.75, Math.PI * 1.95); // hair on top and at the back
+    } else {
+      context.arc(0, -18.8 - bob, 2.6, Math.PI, 0); //               seen from the front: a fringe
+    }
+    context.fill();
+    // A paper cup of coffee in one hand.
+    context.fillStyle = "#f4f2ec";
+    context.fillRect(sideways ? swing * -2.6 - 0.2 : 3.6, -10.4 - bob, 1.5, 2);
+  },
+
+  // A parked city bike, blue, leaning on its stand.
+  bike(context) {
+    shadow(context, 12);
+    context.strokeStyle = "#20252a";
+    context.lineWidth = 1.3;
+    for (const x of [-7.5, 7.5]) {
+      context.beginPath();
+      context.arc(x, -4.4, 4.2, 0, TURN);
+      context.stroke();
+    }
+    context.strokeStyle = "#2f7fd6"; // the frame
+    context.lineWidth = 1.5;
+    context.lineJoin = "round";
+    context.beginPath();
+    context.moveTo(-7.5, -4.4);
+    context.lineTo(-2.5, -10.5);
+    context.lineTo(5.2, -10.5);
+    context.lineTo(7.5, -4.4);
+    context.moveTo(-2.5, -10.5);
+    context.lineTo(0.6, -4.4);
+    context.lineTo(-7.5, -4.4);
+    context.moveTo(0.6, -4.4);
+    context.lineTo(5.2, -10.5);
+    context.lineTo(4.4, -12.6);
+    context.stroke();
+    context.fillStyle = "#20252a";
+    context.fillRect(-4.8, -12, 4.4, 1.2); // the saddle
+    context.fillRect(2.4, -13.2, 4.4, 1); //  the handlebar
+    context.fillStyle = "#2f7fd6";
+    context.fillRect(-10.2, -9.4, 5, 3.4); // the basket of a rental bike
+  },
+
+  // Three recycling bins, as beside the library: grey, with a blue, a yellow and a green lid.
+  bins(context) {
+    shadow(context, 12);
+    [["#2f7fd6", -8.2], ["#e9b92c", 0], ["#3fa35a", 8.2]].forEach(([lid, x]) => {
+      context.fillStyle = "#9aa2a8";
+      context.fillRect(x - 3.4, -9.6, 6.8, 9.6);
+      context.fillStyle = "#b9c0c5";
+      context.fillRect(x - 3.4, -9.6, 2, 9.6);
+      context.fillStyle = lid;
+      context.fillRect(x - 3.8, -12, 7.6, 2.6);
+      context.fillStyle = "rgba(20, 24, 29, 0.55)"; // the slot
+      context.fillRect(x - 1.8, -11.2, 3.6, 0.9);
+    });
+  },
+
+  // Three traffic cones in a row.
+  cones(context) {
+    for (const x of [-8.5, 0, 8.5]) {
+      context.save();
+      context.translate(x, 0);
+      context.scale(1.25, 1.25);
+      STANDING.cone(context);
+      context.restore();
+    }
+  },
+
+  // One of the dark grey benches of the promenade: a long block with a raised end at each side.
+  "lounge-bench"(context) {
+    shadow(context, 14);
+    context.fillStyle = "#4a4f55";
+    context.beginPath();
+    [[-13, 0], [-13, -8], [-8.5, -8], [-6, -4.2], [6, -4.2], [8.5, -8], [13, -8], [13, 0]].forEach(([x, y], i) =>
+      i === 0 ? context.moveTo(x, y) : context.lineTo(x, y),
+    );
+    context.closePath();
+    context.fill();
+    context.fillStyle = "#666c73"; // its lit top faces
+    context.fillRect(-13, -8, 4.5, 1.1);
+    context.fillRect(8.5, -8, 4.5, 1.1);
+    context.fillRect(-6, -4.2, 12, 1);
+  },
+
+  // A car on the road. It is a flat picture, so there are three of them:
+  // seen from behind, from the front, and from the side. The label says
+  // which, and the colour: for example "back red" or "left white".
+  car(context, seconds, label) {
+    const [view, colourName] = label.split(" ");
+    const body = CAR_COLOURS[colourName] ?? CAR_COLOURS.grey;
+    const glass = "#22313d";
+    if (view === "left" || view === "right") {
+      shadow(context, 27);
+      if (view === "left") {
+        context.scale(-1, 1); // drawn with its nose to the right, turned over for the other way
+      }
+      blob(context, -15, -3.4, 3.5, "#1b1e21");
+      blob(context, 15, -3.4, 3.5, "#1b1e21");
+      context.fillStyle = body;
+      context.beginPath();
+      [[-25, -4], [-25, -10.5], [-17, -12], [-10, -18], [8, -18], [15, -12], [24, -10.5], [25, -4]].forEach(([x, y], i) =>
+        i === 0 ? context.moveTo(x, y) : context.lineTo(x, y),
+      );
+      context.closePath();
+      context.fill();
+      context.fillStyle = glass;
+      context.beginPath();
+      [[-15.5, -12.2], [-9.4, -16.8], [-1.5, -16.8], [-1.5, -12.2]].forEach(([x, y], i) => (i === 0 ? context.moveTo(x, y) : context.lineTo(x, y)));
+      context.closePath();
+      context.fill();
+      context.beginPath();
+      [[0, -12.2], [0, -16.8], [7.4, -16.8], [12.8, -12.2]].forEach(([x, y], i) => (i === 0 ? context.moveTo(x, y) : context.lineTo(x, y)));
+      context.closePath();
+      context.fill();
+      context.fillStyle = "#f7e9a8";
+      context.fillRect(23, -9.6, 2, 2.2);
+      context.fillStyle = "#d8382f";
+      context.fillRect(-25, -9.8, 1.6, 2.4);
+      return;
+    }
+    shadow(context, 13);
+    context.fillStyle = "#1b1e21"; // the two wheels that show
+    context.fillRect(-10.5, -4.4, 4, 4.4);
+    context.fillRect(6.5, -4.4, 4, 4.4);
+    context.fillStyle = body;
+    context.fillRect(-11, -11.5, 22, 8.5);
+    context.beginPath();
+    [[-9.5, -11.5], [-7.5, -18], [7.5, -18], [9.5, -11.5]].forEach(([x, y], i) => (i === 0 ? context.moveTo(x, y) : context.lineTo(x, y)));
+    context.closePath();
+    context.fill();
+    context.fillStyle = glass;
+    context.beginPath();
+    [[-8, -12], [-6.5, -16.8], [6.5, -16.8], [8, -12]].forEach(([x, y], i) => (i === 0 ? context.moveTo(x, y) : context.lineTo(x, y)));
+    context.closePath();
+    context.fill();
+    context.fillStyle = view === "front" ? "#f7e9a8" : "#d8382f"; // headlights in front, red lights behind
+    context.fillRect(-10.4, -9.8, 3.6, 2.2);
+    context.fillRect(6.8, -9.8, 3.6, 2.2);
+    context.fillStyle = "#e9ecee"; // the number plate
+    context.fillRect(-3.2, -6.6, 6.4, 2);
+    context.fillStyle = "rgba(0, 0, 0, 0.25)";
+    context.fillRect(-11, -4.2, 22, 1.2);
+  },
+
+  // An old olive tree: a thick twisted trunk and a low, round, grey-green crown.
+  olive(context) {
+    shadow(context, 14);
+    context.fillStyle = "#6a5a48";
+    context.beginPath();
+    context.moveTo(-3.6, 0);
+    context.quadraticCurveTo(-1.2, -9, -3, -16);
+    context.lineTo(2.6, -16);
+    context.quadraticCurveTo(1.4, -8, 3.8, 0);
+    context.closePath();
+    context.fill();
+    blob(context, 0, -24, 13, "#5f7d57");
+    blob(context, -8, -20, 8.5, "#56724f");
+    blob(context, 8, -21, 9, "#688a60");
+    blob(context, -2, -30, 7.5, "#74966b");
   },
 
   // A round leafy tree: a short trunk and three overlapping balls of leaves.
@@ -298,7 +795,17 @@ function ellipse(context, x, y, halfWidth, halfHeight, colour) {
  * The canvas is already set up so that one unit of drawing is one unit of track.
  */
 export function paintPropFromAbove(context, kind, x, y, size = 1) {
-  const crown = { tree: [14, "#2f7d3a"], pine: [19, "#23633a"], palm: [15, "#2f8a45"] }[kind];
+  const crown = {
+    tree: [14, "#2f7d3a"],
+    pine: [19, "#23633a"],
+    palm: [15, "#2f8a45"],
+    olive: [12, "#5f7d57"],
+    "christmas-tree": [14, "#1f5a33"],
+    "avenue-tree": [8, "#96413a"],
+    shrub: [9, "#688a60"],
+    planter: [9, "#37893f"],
+    "table-set": [8, "#f6f5f1"],
+  }[kind];
   if (crown !== undefined) {
     context.fillStyle = "rgba(8, 14, 22, 0.2)";
     context.beginPath();

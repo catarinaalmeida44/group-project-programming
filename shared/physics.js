@@ -19,11 +19,17 @@
 //           This can differ from the direction it points: that is a slide.
 //
 // WHAT IS IN OTHER FILES
-// Walls (track.js), karts bumping each other (bumps.js), and what makes a
-// kart spin out (hazards.js). How a spinning kart moves is here: slideKart().
+// Walls (track.js), karts bumping each other (bumps.js), what makes a kart
+// spin out (hazards.js) and what makes it jump (ramps.js). How a spinning
+// kart moves is here: slideKart(). How a kart in the air moves: flyKart().
+//
+// EXTRA SPEED
+// The ground a kart is on can carry a "boost": a number its top speed is
+// multiplied by. A kart that came off a ramp has one for a moment (race.js
+// puts it there). Ground without a boost counts as 1: the usual top speed.
 //
 // WHAT IS NOT WRITTEN YET
-// Drifting and boosts, sand and sea.
+// Drifting, sand and sea.
 
 import { clamp } from "./numbers.js";
 import { STAT_LOWEST, STAT_HIGHEST } from "./characters.js";
@@ -75,13 +81,18 @@ export function speedOf(kart) {
   return Math.hypot(kart.vx, kart.vy);
 }
 
-/** The highest speed this driver can reach on this kind of ground. */
+/**
+ * The highest speed this driver can reach on this kind of ground.
+ *
+ * If the ground carries a boost (see EXTRA SPEED at the top), the answer is
+ * multiplied by it, on road and on grass alike. A boost that is left out,
+ * or is not a number above zero, counts as 1: nothing changes.
+ */
 export function topSpeedOf(character, surface = ROAD) {
   const onRoad = fromScore(character.speed, TOP_SPEED);
-  if (!surface.offRoad) {
-    return onRoad;
-  }
-  return onRoad * fromScore(character.offRoad, SPEED_KEPT_ON_GRASS);
+  const usual = surface.offRoad ? onRoad * fromScore(character.offRoad, SPEED_KEPT_ON_GRASS) : onRoad;
+  const boost = Number.isFinite(surface.boost) && surface.boost > 0 ? surface.boost : 1;
+  return usual * boost;
 }
 
 /**
@@ -90,7 +101,8 @@ export function topSpeedOf(character, surface = ROAD) {
  *   kart       the kart now
  *   input      which keys are pressed: { gas, brake, left, right }
  *   character  the driver's scores (see characters.js)
- *   surface    the kind of ground under the kart (see surfaces.js)
+ *   surface    the kind of ground under the kart (see surfaces.js). It may
+ *              carry a boost, which raises the top speed (see topSpeedOf)
  */
 export function stepKart(kart, input, character, surface = ROAD) {
   // Only an exact "true" counts as a pressed key. Anything else (missing,
@@ -165,6 +177,23 @@ export function slideKart(kart) {
     y: kart.y + vy * STEP_SECONDS,
     vx,
     vy,
+  };
+}
+
+/**
+ * Moves a kart that is in the air forward in time by one step, and gives
+ * back the new kart.
+ *
+ * A kart in the air touches nothing: it keeps exactly the speed and the
+ * direction of travel it took off with. There are no keys here at all, so
+ * no key can steer it, speed it up or brake it. The ground under it makes
+ * no difference, and the direction it points is not changed.
+ */
+export function flyKart(kart) {
+  return {
+    ...kart,
+    x: kart.x + kart.vx * STEP_SECONDS,
+    y: kart.y + kart.vy * STEP_SECONDS,
   };
 }
 
