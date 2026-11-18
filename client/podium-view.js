@@ -24,7 +24,7 @@ const CONFETTI_PIECES = 160;
  * closer than the race camera and a little higher, so the drivers are big
  * and the school's name on the wall behind them is in the picture.
  */
-const TRACK_CAMERA = Object.freeze({ kartScreenY: 580, kartScale: 12, horizonY: 185, depth: 600, viewAhead: 1700 }); // kartScale was 9: bigger drivers since the evening of 18 November 2026
+const TRACK_CAMERA = Object.freeze({ kartScreenY: 625, kartScale: 12, horizonY: 230, depth: 600, viewAhead: 1700 }); // both heights 45 lower than at first, so the school's name on the wall is whole, with room above it; // kartScale was 9: bigger drivers since the evening of 18 November 2026
 /** The camera turns this far to each side, slowly, so the scene feels alive. In radians. */
 const SWING = 0.08;
 

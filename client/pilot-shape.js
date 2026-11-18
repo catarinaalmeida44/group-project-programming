@@ -92,10 +92,12 @@ const TURN = Math.PI * 2;
  * are filled in by each movement. "hop" lifts one foot off the ground, the
  * knee bending forwards: above zero the right foot, below zero the left,
  * by that many units. "kick" puts one foot out in front, flat on the
- * ground, the same way: above zero the right foot, below zero the left.
+ * ground with its toe up, the same way: above zero the right foot, below
+ * zero the left. "pitch" leans the upper body back round the hips, in
+ * radians.
  */
 function still(pose) {
-  return { lift: 0, sway: 0, lean: 0, jump: 0, spin: 0, feetApart: 0, hop: 0, kick: 0, wheel: 0, trophy: 0, ...pose };
+  return { lift: 0, sway: 0, lean: 0, jump: 0, spin: 0, feetApart: 0, hop: 0, kick: 0, pitch: 0, wheel: 0, trophy: 0, ...pose };
 }
 
 /** The pose of standing: the left hand on the hip, the right arm down, breathing a little. */
@@ -299,8 +301,9 @@ function griddyAt(seconds) {
     turn = GRIDDY_TURN;
   }
   const body = {
-    lift: 0.5 * Math.abs(tap),
-    sway: -0.45 * tap, // rocking over the foot that stands
+    lift: 0.9 * Math.abs(tap), // a big bounce on every tap
+    sway: -0.7 * tap, // rocking over the foot that stands
+    pitch: 0.2, // leaning back, as the griddy is danced
     spin: turn,
     feetApart: 0.2,
     kick: GRIDDY_KICK * tap,
@@ -308,9 +311,9 @@ function griddyAt(seconds) {
   // Side-on: both arms swing together, back and low, then forwards and up.
   const swinging = still({
     ...body,
-    leftHand: mixPoint([-3.5, -4.4, 9.5], [4.5, -4.2, 13.5], reach),
+    leftHand: mixPoint([-4.6, -4.8, 9.4], [5.4, -4.4, 12.6], reach),
     leftBend: [-0.6, 0, -1],
-    rightHand: mixPoint([-3.5, 4.4, 9.5], [4.5, 4.2, 13.5], reach),
+    rightHand: mixPoint([-4.6, 4.8, 9.4], [5.4, 4.4, 12.6], reach),
     rightBend: [-0.6, 0, -1],
   });
   // To the front: the hands in front of the eyes like a pair of glasses, the elbows out, still tapping.
@@ -327,9 +330,9 @@ function griddyAt(seconds) {
 }
 
 /** How far the "griddy" turns to each side, in radians: far enough for the heels and the arms to be seen from the side. */
-export const GRIDDY_TURN = 0.95;
+export const GRIDDY_TURN = 0.8;
 /** How far a heel taps out in front in the "griddy", in units. */
-export const GRIDDY_KICK = 3.4;
+export const GRIDDY_KICK = 4.2;
 
 /**
  * The dab (Professor Ricardo Pereira): one arm straight up to the side, the
@@ -350,17 +353,22 @@ function dabAt(seconds) {
     rightHand: [3.2, 2.2, 13.8],
     rightBend: [0, 1, -0.6],
   });
-  const up = [0.5, 10 * side, 21.5]; //      out of reach on purpose: the arm is straight
-  const across = [2.6, 3.4 * side, 21]; //   the other arm, in front of the face
+  const up = [0.5, 10 * side, 22.5]; //      out of reach on purpose: the arm is straight
+  // The other arm, bent, its forearm the same way as the straight arm. It
+  // crosses under the eyes, over the mouth and chin: the eyes stay in the
+  // picture, so that it is still clear who is dabbing. (The first dab put
+  // the arm right across the face, and nobody could be recognised.)
+  const across = [2.4, 2.8 * side, 19.3];
   const dab = still({
-    lift: 0.15,
-    lean: 0.25 * side,
-    sway: 0.5 * side,
-    feetApart: 1.2,
+    lift: 0.7, // up on the toes into it
+    lean: 0.3 * side,
+    sway: 0.7 * side,
+    spin: 0.22 * side, // turning into it a little
+    feetApart: 1.6,
     leftHand: side === 1 ? across : up,
-    leftBend: side === 1 ? [1, -0.3, 0.6] : [0, -1, 0],
+    leftBend: side === 1 ? [1, 0, -0.5] : [0, -1, 0],
     rightHand: side === 1 ? up : across,
-    rightBend: side === 1 ? [0, 1, 0] : [1, 0.3, 0.6],
+    rightBend: side === 1 ? [0, 1, 0] : [1, 0, -0.5],
   });
   return blendPoses(fists, dab, into);
 }
@@ -474,6 +482,7 @@ export function blendPoses(from, to, share) {
     feetApart: mix(from.feetApart, to.feetApart),
     hop: mix(from.hop ?? 0, to.hop ?? 0),
     kick: mix(from.kick ?? 0, to.kick ?? 0),
+    pitch: mix(from.pitch ?? 0, to.pitch ?? 0),
     wheel: mix(from.wheel, to.wheel),
     trophy: mix(from.trophy, to.trophy),
     leftHand: mixPoint(from.leftHand, to.leftHand, s),
@@ -593,10 +602,16 @@ export function pilotParts(look, hair = "#2b2420", pose = poseAt("stand", 0), wi
   // pilot spins round their upright line and jumps.
   const leanCos = Math.cos(lean);
   const leanSin = Math.sin(lean);
+  // Leaning back comes first: the upper body tips backwards round the hips.
+  const pitch = pose.pitch ?? 0;
+  const pitchCos = Math.cos(pitch);
+  const pitchSin = Math.sin(pitch);
   const leanPoint = ([x, y, z]) => {
+    const up = z - hip[2];
+    const backX = x * pitchCos - up * pitchSin;
     const dy = y - hip[1];
-    const dz = z - hip[2];
-    return [x, hip[1] + dy * leanCos + dz * leanSin, hip[2] - dy * leanSin + dz * leanCos];
+    const dz = x * pitchSin + up * pitchCos;
+    return [backX, hip[1] + dy * leanCos + dz * leanSin, hip[2] - dy * leanSin + dz * leanCos];
   };
   const spinCos = Math.cos(spin);
   const spinSin = Math.sin(spin);
@@ -650,8 +665,8 @@ export function pilotParts(look, hair = "#2b2420", pose = poseAt("stand", 0), wi
 
   const lowerParts = [
     // Shoes and legs: the legs reach from the feet up to the hips.
-    { name: "left shoe", faces: box(leftFoot[0] - 1.3, leftFoot[0] + 2.5, leftFoot[1] - 1.15, leftFoot[1] + 1.15, leftUp, leftUp + 1.3, SHOE) },
-    { name: "right shoe", faces: box(rightFoot[0] - 1.3, rightFoot[0] + 2.5, rightFoot[1] - 1.15, rightFoot[1] + 1.15, rightUp, rightUp + 1.3, SHOE) },
+    { name: "left shoe", faces: shoeFaces(leftFoot, leftUp, Math.max(0, -kick)) },
+    { name: "right shoe", faces: shoeFaces(rightFoot, rightUp, Math.max(0, kick)) },
     { name: "left leg", faces: legWith([0, -1.7 + hip[1], hipZ], leftFoot, shade(suit, 0.92)) },
     { name: "right leg", faces: legWith([0, 1.7 + hip[1], hipZ], rightFoot, shade(suit, 0.92)) },
   ].map((part) => mapPart(part, lower));
@@ -668,6 +683,18 @@ export function pilotParts(look, hair = "#2b2420", pose = poseAt("stand", 0), wi
     ...(withHelmet ? [{ name: "helmet", ball: { middle: [...HELMET_SPOT], radius: HELMET_RADIUS, colour: helmet, stripe, visor: VISOR } }] : []),
     { name: "head", head: { middle: headMiddle, height: HEAD_HEIGHT, hair, facing, ...(longHair ? { long: longHair } : {}) } },
   ];
+}
+
+/**
+ * A shoe. Flat as a rule. A foot that is kicked out in front by "out" units
+ * stands on its heel with the toe pointing up: a heel tap.
+ */
+function shoeFaces(foot, up, out) {
+  if (out < 0.4) {
+    return box(foot[0] - 1.3, foot[0] + 2.5, foot[1] - 1.15, foot[1] + 1.15, up, up + 1.3, SHOE);
+  }
+  const toe = Math.min((out - 0.4) * 0.7, 2); // how high the toe is
+  return bar([foot[0] - 1.1, foot[1], up + 0.85], [foot[0] + 2.3, foot[1], up + 0.85 + toe], 1.7, SHOE);
 }
 
 /** The length of a leg, from the hip to the ankle, standing straight. */

@@ -787,14 +787,26 @@ describe("the three dances added last (18 November 2026)", () => {
     expect(Math.max(...poses.map((pose) => pose.kick))).toBeGreaterThan(GRIDDY_KICK * 0.95); // the right heel
     expect(Math.min(...poses.map((pose) => pose.kick))).toBeLessThan(-GRIDDY_KICK * 0.95); //  the left heel
     expect(poses.every((pose) => pose.jump === 0 && pose.hop === 0)).toBe(true); // tapping, not jumping
-    // Standing square to the front, the kicked foot is that far in front of the other, and both are on the ground.
+    // Standing square to the front, the kicked foot is about that far in
+    // front of the other. It stands on its heel with the toe up: a heel tap.
+    // The other shoe is flat on the ground, as always.
     for (const kick of [GRIDDY_KICK, -GRIDDY_KICK]) {
       const pilot = pilotParts(look, HAIR, { ...poseAt("stand", 0), kick });
-      const front = (name) => sizeOf([part(name, pilot)]).maxX;
-      expect(front("right shoe") - front("left shoe")).toBeCloseTo(kick);
-      expect(sizeOf([part("left shoe", pilot), part("right shoe", pilot)]).minZ).toBeCloseTo(0);
-      expect(sizeOf([part("left shoe", pilot), part("right shoe", pilot)]).maxZ).toBeCloseTo(1.3);
+      const [kicked, standing] = kick > 0 ? ["right shoe", "left shoe"] : ["left shoe", "right shoe"];
+      const ahead = middleOf(part(kicked, pilot))[0] - middleOf(part(standing, pilot))[0];
+      expect(Math.abs(ahead - GRIDDY_KICK)).toBeLessThan(0.7);
+      expect(sizeOf([part(kicked, pilot)]).minZ).toBeGreaterThanOrEqual(0); // the heel is on the ground, not in it
+      expect(sizeOf([part(kicked, pilot)]).minZ).toBeLessThan(0.4);
+      expect(sizeOf([part(kicked, pilot)]).maxZ).toBeGreaterThan(2.5); //    the toe is up
+      expect(sizeOf([part(standing, pilot)]).minZ).toBeCloseTo(0);
+      expect(sizeOf([part(standing, pilot)]).maxZ).toBeCloseTo(1.3);
     }
+    // And the upper body leans back while the arms swing: the head is behind the hips.
+    const leaning = pilotParts(look, HAIR, poseAt("griddy", BEAT * 1.3));
+    const upright = pilotParts(look, HAIR, { ...poseAt("griddy", BEAT * 1.3), pitch: 0 });
+    const turned = poseAt("griddy", BEAT * 1.3).spin;
+    const forwards = ([x, y]) => x * Math.cos(turned) + y * Math.sin(turned); // how far along the way the pilot faces
+    expect(forwards(part("head", leaning).head.middle)).toBeLessThan(forwards(part("head", upright).head.middle) - 1.5);
   });
 
   it("griddy: side-on, both arms swing together, back and low, then forwards and up", () => {

@@ -83,6 +83,15 @@ What she asked for instead: more people or people further apart, a small animati
 
 Checked: `npm test`, 1,915 pass, 5 skipped. The start, a moment on the way and the end of the camera's move, on the Nova lap, and the hall of the Test oval, in the agent's browser, as single pictures. NOT checked: the move itself in motion, and whether 80 students slow a slow laptop down.
 
+**After she raced it: the griddy and the dab a third time, and the school's name**
+
+She drove a race to the podium and sent a screenshot: the podium looks good, the name on the wall behind it looks weird, and "neither the dab is good nor the griddy".
+
+- **The name.** In her screenshot its top was cut off by the edge of the picture. The podium's camera now sits 45 dots lower on the screen (`TRACK_CAMERA` in `client/podium-view.js`), so the whole name is in the picture with room above it. If "weird" meant something else about the name, she has to say what.
+- **The dab.** The arm lay right across the face, so nobody could tell who was dabbing. The bent arm now crosses under the eyes, over the mouth and chin, its forearm the same way as the straight arm; the pilot goes up on the toes and turns into it a little.
+- **The griddy.** Three things it lacked: the upper body leans back (a pose can now lean back, "pitch"), the foot that taps stands on its heel with the toe up (`shoeFaces()`), and the bounce is nearly twice as big. It turns a little less far to the side, so the face stays wider.
+- Checked: `npm test`, and eight moments of each dance side by side, and the end of the podium's camera move, in the agent's browser. NOT checked: in motion. These two dances have now been judged "not good" twice by her eye after the agent thought they were fine in still pictures, so the agent's own look at them is worth little here.
+
 **Git**
 
 Same branch, `atrium-screen-and-characters`, pushed. No pull request yet.
