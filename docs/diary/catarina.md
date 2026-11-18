@@ -4,6 +4,64 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 18 November 2026, late evening: the podium inside the atrium, a white screen, more dances
+
+**What she said, after looking at the entry below**
+
+- The podium should be inside the Hovione Atrium, on the floor the race drives over. She drew where on a screenshot. (She had meant this from the start: the agent had taken "inside the atrium" for the Moodle screen only.)
+- The Moodle screen: white with black letters, in the lettering Nova uses for announcements.
+- "Choose your character": moving the mouse over a driver should show them in the big picture. No colours listed. The signature move stays, "it's fun".
+- Rodrigo asked her for the griddy as his dance. Better dances for Professor Ricardo and the Dean. Her own gangnam was underwhelming: more energy, jumping.
+- A pop of green somewhere in the Dean's colours.
+
+**What was done**
+
+| What | Where |
+|---|---|
+| The podium of the Nova lap stands in the atrium, a little past the black letters, seen from nearer the entrance, so the letters are behind the drivers and the Moodle screen is at the edge of the picture | one line, `podium: { at, camera }`, in `client/nova-lap-look.js` |
+| The screen is white with black letters: the school's name in a corner (drawn with lines by our code, as on the walls), "IT HELP DESK", a thin line, the sentence, "MOODLE IS DOWN." in heavy capitals | `it-screen` in `client/wall-art.js` |
+| Moving the mouse over a driver (or the keyboard) puts them on the poster. It does not choose them: a click does, and "YOU" stays on the chosen one. When the mouse leaves, the chosen one is back | `showOnPoster()` in `client/kart-panel.js` |
+| The dots of colour are gone from the poster; the signature move is there | `client/index.html`, `client/style.css`, `danceNameOf()` in `client/cast-choice.js` |
+| Three new dances: "griddy" (Ró Versos: skipping feet, both arms swinging forwards and back, then the hands in front of the eyes like glasses), "floss" (Dean: straight arms from side to side past the hips, hips the other way), "disco" (Professor Ricardo Pereira: one arm up to the side, then down across the body) | `client/pilot-shape.js`, `client/cast-choice.js` |
+| The gangnam jumps on every beat, ten beats a round instead of eight, with bigger arms | `gangnamAt()` in `client/pilot-shape.js` |
+| Dean's helmet is green | `shared/cast.js` |
+
+**About Nova's lettering**
+
+The agent searched for the school's brand book and did not find which typeface it uses. So the screen has what could be seen without it: white, black, plain heavy capitals, the name in a corner. The letters are the browser's own Helvetica or Arial, because the game has no font files. If she has a photo of a real notice on that screen, it can be matched more closely.
+
+**Six existing tests were changed, because the rules changed**
+
+All six were Pedro's, from 17 and 18 November. He should know, and say if he disagrees.
+
+| Test | It said | It says now |
+|---|---|---|
+| `tests/pilot-shape.test.js`, the list of dances | six dances (seven since this afternoon) | ten: "griddy", "floss" and "disco" were added at the end |
+| `tests/pilot-shape.test.js`, "keeps the feet on the ground, except during the jump of the siu" | only the siu leaves the ground | the siu and the gangnam do |
+| `tests/pilot-shape.test.js`, "...PCP the siu and Ró Versos the driving" | Ró Versos pretends to drive | Ró Versos does the griddy |
+| `tests/cast.test.js`, "paints each character in the colours the team chose" | Dean: black, white, white | Dean: black, green, white |
+| `tests/podium.test.js`, "stands right in front of the white wall with the name" | the podium is on the lawn at the end of the avenue | the podium and its camera are inside the atrium, away from the walls |
+| `tests/podium.test.js`, "stands on the lawn and not in the way of the karts" | no part of the podium on a road square | every step and every student stands on the floor of the hall, none inside a wall, the letters or a table |
+
+One more of his tests kept its checks and lost the word "lawn" in its name. Two of the agent's own tests from this afternoon were changed too (the gangnam's feet, and which dances bend a leg).
+
+**Decisions made by the agent, please confirm**
+
+- The exact spot of the podium in the atrium, and that it replaces Pedro's lawn.
+- The floss for Dean and the disco point for the Professor. She asked for "better" ones and left the choice open.
+- The green is Dean's helmet.
+- On the Test oval and the Campus loop the podium is still in Pedro's separate hall. It could be shown in the real atrium after every track: not done, to be asked.
+
+**What was checked, and what was not**
+
+- `npm test`: 1,901 pass, 5 skipped.
+- In the agent's browser: the podium in the atrium with a pretend top three; the white screen from the kart; the poster while the mouse is over Dean and over Ró Versos, and that the saved choice stays Cici Boss; six moments of each of the four new or changed dances side by side.
+- NOT checked: the new rules were not broken on purpose this time. NOT checked: anything in motion, a race driven by hand to the podium, a phone, the live site.
+
+**Git**
+
+Same branch, `atrium-screen-and-characters`, pushed. No pull request yet.
+
 ### 18 November 2026, evening: where the podium was, the Moodle screen, a new "Choose your character", and Cici Boss
 
 **What she asked**
