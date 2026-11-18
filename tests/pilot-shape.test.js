@@ -870,14 +870,31 @@ describe("the three dances added last (18 November 2026)", () => {
     }
   });
 
-  it("dab: one arm straight up to the side, the other across the face, leaning into it", () => {
-    const right = poseAt("dab", DAB_SECONDS * 0.25); // the middle of the dab to the right
+  // Rewritten with the dab itself, twice, on 18 November 2026: the first two
+  // dabs crossed the wrong arm over the face and kept the head upright.
+  it("dab: one arm straight up and out, the other elbow out beside the head, the head dropped into it", () => {
+    const right = poseAt("dab", DAB_SECONDS * 0.25); // the middle of the dab that points to the right
     expect(right.rightHand[1]).toBeGreaterThan(8); //   the right arm: far out to its own side
     expect(right.rightHand[2]).toBeGreaterThan(20); //  and up
-    expect(right.leftHand[1]).toBeGreaterThan(2); //    the left arm: across, on the right of the face
-    expect(right.leftHand[2]).toBeGreaterThan(19); //   as high as the face
-    expect(right.leftHand[0]).toBeGreaterThan(1.6); //  and in front of it
-    expect(right.lean).toBeGreaterThan(0.15); //        leaning to the right
+    expect(right.leftHand[1]).toBeLessThan(-2); //      the hand of the bent left arm: on its own side of the face
+    expect(right.leftHand[2]).toBeGreaterThan(19); //   as high as the eyes
+    expect(right.leftHand[0]).toBeGreaterThan(1.6); //  and in front of the face
+    expect(right.lean).toBeLessThan(-0.15); //          the body leans towards the bent elbow, away from the pointing arm
+    expect(right.tilt).toBeLessThan(-0.3); //           and the head drops over that way too
+    // The bent elbow sticks out beside the head: further out than the shoulder, and above it.
+    const bentArm = pilotParts(look, HAIR, right);
+    const elbowOut = Math.min(...part("left upper arm", bentArm).faces.flatMap((face) => face.points.map((point) => point[1])));
+    const elbowUp = Math.max(...part("left upper arm", bentArm).faces.flatMap((face) => face.points.map((point) => point[2])));
+    expect(elbowOut).toBeLessThan(-6);
+    expect(elbowUp).toBeGreaterThan(17.5);
+    // The two arms are side by side: the forearm of the bent arm slants the same way as the straight arm.
+    const slant = (from, to) => Math.atan2(to[2] - from[2], to[1] - from[1]);
+    const straight = slant(middleOf(part("right upper arm", bentArm)), middleOf(part("right forearm", bentArm)));
+    const forearm = slant(middleOf(part("left upper arm", bentArm)), middleOf(part("left glove", bentArm)));
+    expect(Math.abs(straight - forearm)).toBeLessThan(0.6);
+    // The head carries the tilt, for the painter to turn the picture.
+    expect(part("head", bentArm).head.tilt).toBe(right.tilt);
+    expect("tilt" in part("head", pilotParts(look, HAIR, poseAt("stand", 0))).head).toBe(false);
     // The hand that points is asked for further away than an arm reaches, so
     // the arm is straight. Its glove ends up well above the shoulder (15.8),
     // beside the head.
@@ -900,7 +917,9 @@ describe("the three dances added last (18 November 2026)", () => {
       expect(hand[0]).toBeGreaterThan(1.6); // in front of it
     }
     // It holds each dab for a moment.
-    const held = every("dab", 0, DAB_SECONDS).filter((pose) => Math.abs(pose.lean) > 0.24).length;
+    expect(left.tilt).toBeCloseTo(-right.tilt);
+    expect(between.tilt).toBe(0);
+    const held = every("dab", 0, DAB_SECONDS).filter((pose) => Math.abs(pose.lean) > 0.19).length;
     expect(held / 60).toBeGreaterThan(DAB_SECONDS * 0.3);
   });
 });

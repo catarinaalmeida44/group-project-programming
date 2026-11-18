@@ -92,6 +92,12 @@ She drove a race to the podium and sent a screenshot: the podium looks good, the
 - **The griddy.** Three things it lacked: the upper body leans back (a pose can now lean back, "pitch"), the foot that taps stands on its heel with the toe up (`shoeFaces()`), and the bounce is nearly twice as big. It turns a little less far to the side, so the face stays wider.
 - Checked: `npm test`, and eight moments of each dance side by side, and the end of the podium's camera move, in the agent's browser. NOT checked: in motion. These two dances have now been judged "not good" twice by her eye after the agent thought they were fine in still pictures, so the agent's own look at them is worth little here.
 
+**The dab a fourth time, and the school's logo**
+
+- **The dab.** "Not recognizable as a dab at all." The cause, found at last: the wrong arm was bent. In a dab the straight arm points up and out to one side, the elbow of the other arm sticks out beside the head on the other side, its forearm runs the same way as the straight arm, and the head drops into that elbow. The earlier tries crossed an arm over the face from the pointing side and kept the head upright, which reads as someone covering their mouth. Now the arms are the right way round, and a pose can tip the head over towards a shoulder ("tilt"): `paintHead()` in `client/kart-paint.js` turns the head picture round the chin.
+- **The logo.** She meant the name on the wall itself: "the font is not like that, search online". The agent looked at the school's logo as Wikipedia shows it (the file `Nova_logo.png` on Wikimedia Commons). It is heavy: a bold N, a thick ring bigger than the letters and standing higher, with a long bar under it on the line, a V, and an A without a crossbar right beside the V. Ours had thin lines and a small ring. `novaName()` in `client/wall-art.js` now draws it with those shapes and sizes, measured on that picture. It is still drawn by our code: no picture file and no font. It changes everywhere the name stands: the white wall behind the podium, the glass doors, the Moodle screen.
+- Checked: `npm test`, 1,915 pass, 5 skipped. The wall behind the podium and six moments of the dab, in the agent's browser. NOT checked: in motion; the doors and the screen up close after the new logo.
+
 **Git**
 
 Same branch, `atrium-screen-and-characters`, pushed. No pull request yet.

@@ -93,50 +93,68 @@ function lettering(c, text, x, y, size, colour = LETTER_GREY, { align = "left", 
 }
 
 /**
- * The school's name as it stands on its walls and doors: N, a ring with a
- * short bar under it, V, and an A without its crossbar. Drawn with lines,
- * so it needs no font. "size" is the height of the letters, x the left edge,
- * y the foot of the letters.
+ * The school's name as it stands on its walls and doors, drawn after its
+ * real logo: heavy letters, an N, a thick ring that stands higher than the
+ * other letters with a long bar under it on the line, a V, and an A without
+ * its crossbar right beside the V. Drawn with shapes, so it needs no font
+ * and no picture file. "size" is the height of the N, x the left edge, y the
+ * foot of the letters. Gives how wide the whole name is.
+ * (Until 18 November 2026 it was drawn with thin lines and a small ring.
+ * Catarina said it did not look like the logo. The sizes below were
+ * measured on the logo as Wikipedia shows it.)
  */
 function novaName(c, x, y, size, colour) {
-  const thick = size * 0.2;
-  const wide = size * 0.78;
-  const gap = size * 0.34;
-  c.strokeStyle = colour;
+  const tall = size;
+  const thick = tall * 0.32; //                          how thick a stroke is
+  const slope = 0.44; //                                 how far a slanting stroke goes sideways for its height
+  const across = thick * Math.hypot(1, slope); //        how wide a slanting stroke is where it is cut level
+  const past = 0.4 * tall; //                            slanting strokes are drawn this far past the cut, so the cut is level
+  c.save();
   c.fillStyle = colour;
-  c.lineWidth = thick;
+  c.strokeStyle = colour;
   c.lineJoin = "miter";
+  c.miterLimit = 10;
   c.lineCap = "butt";
-  // N
+  // N: two uprights, and a slanting stroke from the top of the first to the foot of the second.
+  c.fillRect(x, y - tall, thick, tall);
+  c.fillRect(x + tall - thick, y - tall, thick, tall);
   c.beginPath();
-  c.moveTo(x + thick / 2, y);
-  c.lineTo(x + thick / 2, y - size);
-  c.lineTo(x + wide - thick / 2, y);
-  c.lineTo(x + wide - thick / 2, y - size);
-  c.stroke();
-  // The ring, raised a little, with its bar underneath.
-  const ringX = x + wide + gap + wide / 2;
+  c.moveTo(x, y - tall);
+  c.lineTo(x + thick * 1.15, y - tall);
+  c.lineTo(x + tall, y);
+  c.lineTo(x + tall - thick * 1.15, y);
+  c.closePath();
+  c.fill();
+  // The ring, bigger than the letters and standing higher, and its long bar on the line.
+  const barLeft = x + tall * 1.29;
+  const barWide = tall * 1.73;
+  c.lineWidth = tall * 0.3;
   c.beginPath();
-  c.arc(ringX, y - size * 0.62, size * 0.36, 0, Math.PI * 2);
+  c.arc(barLeft + barWide / 2, y - tall * 0.914, tall * 0.4, 0, Math.PI * 2);
   c.stroke();
-  c.fillRect(ringX - wide * 0.42, y - thick * 0.75, wide * 0.84, thick * 0.75);
-  // V
-  const vX = x + (wide + gap) * 2;
+  c.fillRect(barLeft, y - tall * 0.25, barWide, tall * 0.25);
+  // V, and the A without a crossbar beside it. Only what is between the top
+  // and the foot of the letters is kept, which cuts their points off level.
+  const vLeft = barLeft + barWide + tall * 0.3;
+  const aLeft = vLeft + across / 2 + slope * tall + across + tall * 0.07; // the middle of the A's left foot
+  const right = aLeft + slope * tall * 2 + across / 2;
   c.beginPath();
-  c.moveTo(vX + thick * 0.35, y - size);
-  c.lineTo(vX + wide / 2, y - thick * 0.2);
-  c.lineTo(vX + wide - thick * 0.35, y - size);
-  c.stroke();
-  // A without a crossbar: a V upside down.
-  const aX = x + (wide + gap) * 3;
+  c.rect(vLeft - tall, y - tall, right - vLeft + tall * 2, tall);
+  c.clip();
+  c.lineWidth = thick;
   c.beginPath();
-  c.moveTo(aX + thick * 0.35, y);
-  c.lineTo(aX + wide / 2, y - size + thick * 0.2);
-  c.lineTo(aX + wide - thick * 0.35, y);
+  c.moveTo(vLeft + across / 2 - slope * past, y - tall - past);
+  c.lineTo(vLeft + across / 2 + slope * tall, y);
+  c.lineTo(vLeft + across / 2 + slope * tall * 2 + slope * past, y - tall - past);
   c.stroke();
-  return (wide + gap) * 4 - gap; // how wide the whole name is
+  c.beginPath();
+  c.moveTo(aLeft - slope * past, y + past);
+  c.lineTo(aLeft + slope * tall, y - tall);
+  c.lineTo(aLeft + slope * tall * 2 + slope * past, y + past);
+  c.stroke();
+  c.restore();
+  return right - x; // how wide the whole name is
 }
-
 /** Colours that look random but are the same every time. */
 function chooser(seed) {
   let state = seed;
@@ -1413,7 +1431,7 @@ export const WALL_ART = {
       c.fillRect(left, top, wide, tall);
       // Along the top: the school's name on the left, who is speaking on the right, and a thin line under both.
       novaName(c, left + 0.45, top + 0.62, 0.36, black);
-      lettering(c, "SCHOOL OF BUSINESS & ECONOMICS", left + 2.25, top + 0.6, 0.13, black, { weight: 600 });
+      lettering(c, "SCHOOL OF BUSINESS & ECONOMICS", left + 2.7, top + 0.6, 0.13, black, { weight: 600 });
       lettering(c, "IT HELP DESK", left + wide - 0.45, top + 0.6, 0.26, black, { align: "right", weight: 800 });
       c.fillStyle = black;
       c.fillRect(left + 0.45, top + 0.82, wide - 0.9, 0.035);

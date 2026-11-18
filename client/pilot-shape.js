@@ -94,10 +94,11 @@ const TURN = Math.PI * 2;
  * by that many units. "kick" puts one foot out in front, flat on the
  * ground with its toe up, the same way: above zero the right foot, below
  * zero the left. "pitch" leans the upper body back round the hips, in
- * radians.
+ * radians. "tilt" tips the head over towards a shoulder, in radians: above
+ * zero towards the right shoulder, below zero towards the left.
  */
 function still(pose) {
-  return { lift: 0, sway: 0, lean: 0, jump: 0, spin: 0, feetApart: 0, hop: 0, kick: 0, pitch: 0, wheel: 0, trophy: 0, ...pose };
+  return { lift: 0, sway: 0, lean: 0, jump: 0, spin: 0, feetApart: 0, hop: 0, kick: 0, pitch: 0, tilt: 0, wheel: 0, trophy: 0, ...pose };
 }
 
 /** The pose of standing: the left hand on the hip, the right arm down, breathing a little. */
@@ -335,15 +336,20 @@ export const GRIDDY_TURN = 0.8;
 export const GRIDDY_KICK = 4.2;
 
 /**
- * The dab (Professor Ricardo Pereira): one arm straight up to the side, the
- * other across the face, the body leaning into it. To the right, a hold,
- * back to bouncing with both fists at the chest, to the left, a hold, back.
+ * The dab (Professor Ricardo Pereira). One arm is straight, up and out to
+ * one side. The other arm is bent: its elbow sticks out beside the head on
+ * the OTHER side, and its forearm runs across the face the same way as the
+ * straight arm, so the two are side by side. The head drops over into the
+ * bent elbow, and the body leans that way too. To the right, a hold, back
+ * to bouncing with both fists at the chest, to the left, a hold, back.
+ * (Two earlier tries crossed the wrong arm over the face and kept the head
+ * upright. Catarina: "not recognizable as a dab at all".)
  */
 function dabAt(seconds) {
   const round = (((seconds / DAB_SECONDS) % 1) + 1) % 1;
   const half = round < 0.5 ? round * 2 : round * 2 - 1; // 0 to 1 within the dab to one side
-  const into = half < 0.28 ? easeInOut(half / 0.28) : half < 0.72 ? 1 : 1 - easeInOut((half - 0.72) / 0.28);
-  const side = round < 0.5 ? 1 : -1; // first to the pilot's right, then to the left
+  const into = half < 0.22 ? easeInOut(half / 0.22) : half < 0.78 ? 1 : 1 - easeInOut((half - 0.78) / 0.22);
+  const side = round < 0.5 ? 1 : -1; // 1: the straight arm points to the pilot's right. -1: to the left
   const bounce = Math.abs(Math.sin((seconds / DAB_SECONDS) * TURN * 2));
   const fists = still({
     lift: 0.4 * bounce,
@@ -353,26 +359,22 @@ function dabAt(seconds) {
     rightHand: [3.2, 2.2, 13.8],
     rightBend: [0, 1, -0.6],
   });
-  const up = [0.5, 10 * side, 22.5]; //      out of reach on purpose: the arm is straight
-  // The other arm, bent, its forearm the same way as the straight arm. It
-  // crosses under the eyes, over the mouth and chin: the eyes stay in the
-  // picture, so that it is still clear who is dabbing. (The first dab put
-  // the arm right across the face, and nobody could be recognised.)
-  const across = [2.4, 2.8 * side, 19.3];
+  const straight = [0.5, 12 * side, 23.5]; //   out of reach on purpose: the arm is straight, up and out
+  const bent = [2.3, -2.9 * side, 21.2]; //     the hand of the bent arm, in front of the eye on its own side
+  const elbowOut = [0.1, -side, 0.15]; //       its elbow sticks out beside the head
   const dab = still({
-    lift: 0.7, // up on the toes into it
-    lean: 0.3 * side,
-    sway: 0.7 * side,
-    spin: 0.22 * side, // turning into it a little
-    feetApart: 1.6,
-    leftHand: side === 1 ? across : up,
-    leftBend: side === 1 ? [1, 0, -0.5] : [0, -1, 0],
-    rightHand: side === 1 ? up : across,
-    rightBend: side === 1 ? [0, 1, 0] : [1, 0, -0.5],
+    lift: 0.5,
+    lean: -0.2 * side, //  the body leans over towards the bent elbow
+    sway: -0.5 * side,
+    tilt: -0.5 * side, //  and the head drops into it
+    feetApart: 1.5,
+    leftHand: side === 1 ? bent : straight,
+    leftBend: side === 1 ? elbowOut : [0, -1, 0],
+    rightHand: side === 1 ? straight : bent,
+    rightBend: side === 1 ? [0, 1, 0] : elbowOut,
   });
   return blendPoses(fists, dab, into);
 }
-
 /**
  * The horse-riding dance, ten beats a round. The whole time the pilot
  * jumps, once a beat, the feet apart, one knee higher than the other and
@@ -483,6 +485,7 @@ export function blendPoses(from, to, share) {
     hop: mix(from.hop ?? 0, to.hop ?? 0),
     kick: mix(from.kick ?? 0, to.kick ?? 0),
     pitch: mix(from.pitch ?? 0, to.pitch ?? 0),
+    tilt: mix(from.tilt ?? 0, to.tilt ?? 0),
     wheel: mix(from.wheel, to.wheel),
     trophy: mix(from.trophy, to.trophy),
     leftHand: mixPoint(from.leftHand, to.leftHand, s),
@@ -681,7 +684,7 @@ export function pilotParts(look, hair = "#2b2420", pose = poseAt("stand", 0), wi
     ...upperParts,
     // The helmet lies on the ground, beside the pilot.
     ...(withHelmet ? [{ name: "helmet", ball: { middle: [...HELMET_SPOT], radius: HELMET_RADIUS, colour: helmet, stripe, visor: VISOR } }] : []),
-    { name: "head", head: { middle: headMiddle, height: HEAD_HEIGHT, hair, facing, ...(longHair ? { long: longHair } : {}) } },
+    { name: "head", head: { middle: headMiddle, height: HEAD_HEIGHT, hair, facing, ...(longHair ? { long: longHair } : {}), ...(pose.tilt ? { tilt: pose.tilt } : {}) } },
   ];
 }
 

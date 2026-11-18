@@ -435,7 +435,21 @@ function paintHead(context, viewer, head, picture) {
   const side = tip === null ? 0 : Math.sign(tip.x - middle.x);
   const width = pictureWide * towards;
   const x = middle.x - width / 2 + side * (pictureWide - width) * 0.35;
-  context.drawImage(picture, x, middle.y - tall / 2, width, whole);
+  if (!head.tilt) {
+    context.drawImage(picture, x, middle.y - tall / 2, width, whole);
+    return;
+  }
+  // A head tipped over towards a shoulder ("tilt" in the pose): the picture
+  // is turned round the chin. Which way that is on the screen depends on
+  // where the pilot's right shoulder is, seen from the eye.
+  const right = viewer.place(mx - fy, my + fx, mz); // one unit towards the pilot's right
+  const rightOnScreen = right === null ? 1 : Math.sign(right.x - middle.x) || 1;
+  const chin = middle.y + tall * 0.42;
+  context.save();
+  context.translate(middle.x, chin);
+  context.rotate(head.tilt * rightOnScreen);
+  context.drawImage(picture, x - middle.x, middle.y - tall / 2 - chin, width, whole);
+  context.restore();
 }
 
 /**
