@@ -58,6 +58,16 @@ One more of his tests kept its checks and lost the word "lawn" in its name. Two 
 - In the agent's browser: the podium in the atrium with a pretend top three; the white screen from the kart; the poster while the mouse is over Dean and over Ró Versos, and that the saved choice stays Cici Boss; six moments of each of the four new or changed dances side by side.
 - NOT checked: the new rules were not broken on purpose this time. NOT checked: anything in motion, a race driven by hand to the podium, a phone, the live site.
 
+**Later still: the griddy again, and the dab**
+
+She looked at the griddy and said it did not look like one, and chose the dab for the Professor.
+
+- **Why the first griddy did not work.** The pilot faced the camera the whole time, and the griddy is arms that swing forwards and back and heels that tap out in front. Anything that moves towards the camera hardly changes on the screen. So the new one turns to the side for the swinging and the tapping, turns to the front to put the hands in front of the eyes like glasses, and then turns to the other side (`griddyAt()` in `client/pilot-shape.js`).
+- **A foot out in front.** A pose can now put one foot forwards, flat on the ground ("kick"), next to lifting one ("hop").
+- **The dab** replaces the disco point, which is deleted: one arm straight up to the side, the other across the face, leaning into it, to the right, then to the left, with both fists at the chest in between (`dabAt()`).
+- The list of dances in `tests/pilot-shape.test.js` now ends with "dab" where it said "disco". The tests for the disco point, written an hour earlier, were replaced by tests for the dab, and the tests for the griddy were rewritten for the new one.
+- Checked: `npm test`, 1,904 pass, 5 skipped. Eight moments of each of the two dances side by side in the agent's browser. NOT checked: in motion.
+
 **Git**
 
 Same branch, `atrium-screen-and-characters`, pushed. No pull request yet.
