@@ -1,13 +1,14 @@
 // "Choose your character": the step between choosing a track and the race.
 //
 // The player picks Single race or Online, then a track (track-panel.js),
-// and then this panel opens. On the left the chosen pilot is shown big,
-// beside their kart, dancing and then crossing arms, round and round, with
-// their name and the button that starts the race on the track that was
-// picked. On the right there is a tile for each character of
-// shared/cast.js: the pilot standing, with the person's own head
-// (pilot-shape.js), on a floor in the colour of their kart. When the mouse
-// passes over a tile, that pilot does their own dance.
+// and then this panel opens. At the top is a poster of the chosen one, in
+// the colour of their kart: on the left the pilot, big, beside their kart,
+// dancing and then crossing arms, round and round; on the right their
+// number, their name, the name of their dance, the colours of their kart,
+// and the button that starts the race on the track that was picked. Under
+// the poster is the line-up: a tile for each character of shared/cast.js,
+// the pilot standing, with the person's own head (pilot-shape.js). When the
+// mouse passes over a tile, that pilot does their own dance.
 //
 // The faces are only shown here and on the podium. In the race every pilot
 // wears a helmet.
@@ -26,20 +27,20 @@
 // shown anywhere.
 
 import { CAST } from "../shared/cast.js";
-import { readCharacter, saveCharacter, headOf, lookOfCharacter, hairOf, longHairOf, danceOf } from "./cast-choice.js";
+import { readCharacter, saveCharacter, headOf, lookOfCharacter, hairOf, longHairOf, danceOf, danceNameOf } from "./cast-choice.js";
 import { paintPilotScene, viewerBehind } from "./kart-paint.js";
 import { poseAt, chosenPose, cardPose } from "./pilot-shape.js";
 import { makePart } from "./page-parts.js";
 
 // How big the pictures are, in the units the cameras below count in.
 const BIG_SIZE = { width: 360, height: 300 };
-const TILE_SIZE = { width: 120, height: 164 };
+const TILE_SIZE = { width: 120, height: 150 };
 /** Each picture is painted with this many dots for every unit, so that it stays sharp when the page shows it large. */
 const SHARP = 2;
 
 // The cameras of the pictures: in front of the pilot, a little above.
 const BIG_CAMERA = { kartScreenY: 256, kartScale: 7.3, horizonY: 36, depth: 900, viewAhead: 100 };
-const TILE_CAMERA = { kartScreenY: 154, kartScale: 4.9, horizonY: 30, depth: 900, viewAhead: 100 };
+const TILE_CAMERA = { kartScreenY: 142, kartScale: 4.55, horizonY: 30, depth: 900, viewAhead: 100 };
 /** Moves the big scene this many units to the left on the screen, so the kart is not cut off at the right. */
 const SCENE_SHIFT = 2.6;
 
@@ -70,6 +71,10 @@ export function connectCharacterChoice(page, storage) {
   const lead = page.getElementById("character-lead");
   const go = page.getElementById("character-go");
   const nameLine = page.getElementById("character-name");
+  const hero = page.getElementById("character-hero");
+  const numberLine = page.getElementById("character-number");
+  const moveLine = page.getElementById("character-move");
+  const coloursLine = page.getElementById("character-colours");
 
   const bigCanvas = makePart(page, "canvas", "kart-preview");
   bigCanvas.width = BIG_SIZE.width * SHARP;
@@ -132,6 +137,21 @@ export function connectCharacterChoice(page, storage) {
     const character = CAST.find((one) => one.id === id);
     bigCanvas.setAttribute("aria-label", `${character.name} dancing beside their kart`);
     nameLine.textContent = character.name; // as text, never as HTML
+    // The poster takes the colours of the chosen one's kart (style.css mixes them in).
+    const look = lookOfCharacter(id);
+    hero.style.setProperty("--tint", look.body);
+    hero.style.setProperty("--tint-two", look.helmet);
+    numberLine.textContent = String(CAST.indexOf(character) + 1).padStart(2, "0"); // their place in the cast, as a race number
+    moveLine.textContent = danceNameOf(id);
+    // A round dot of each colour, with the word for what has that colour.
+    coloursLine.replaceChildren();
+    for (const [word, colour] of [["Kart", look.body], ["Helmet", look.helmet], ["Suit", look.suit]]) {
+      const dot = makePart(page, "span", "colour-dot");
+      dot.style.setProperty("--dot", colour);
+      const one = makePart(page, "span", "colour-word");
+      one.append(dot, word);
+      coloursLine.append(one);
+    }
     const saved = saveCharacter(storage, id);
     status.textContent = saved || storage === null ? "" : "This browser did not let the game save your choice.";
   }
@@ -184,7 +204,7 @@ export function connectCharacterChoice(page, storage) {
       chosen = readCharacter(storage)?.id ?? CAST[0].id;
       showChoices();
       choose(chosen);
-      lead.textContent = `Who do you want to be on ${trackName}?`; // as text, never as HTML
+      lead.textContent = `Your driver for ${trackName}`; // as text, never as HTML
       go.textContent = goWord;
       go.href = address;
       if (storage === null) {

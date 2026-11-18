@@ -421,8 +421,8 @@ export function armWith(shoulder, hand, bend) {
  *   withHelmet  false: no helmet anywhere (the podium). Left out: the
  *               helmet lies on the ground beside the pilot
  *   longHair    for a character whose hair falls over the shoulders
- *               (longHairOf in cast-choice.js): { tips }, the colour of
- *               its ends. Left out: short hair, the head picture alone
+ *               (longHairOf in cast-choice.js): { below }, how far the
+ *               head picture goes on below the chin. Left out: short hair
  */
 export function pilotParts(look, hair = "#2b2420", pose = poseAt("stand", 0), withHelmet = true, longHair = null) {
   const { body, suit, helmet, stripe } = look;

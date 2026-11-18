@@ -55,17 +55,20 @@ export function hairOf(id) {
 }
 
 /**
- * The characters whose hair is longer than their head picture shows. The
- * head pictures end at the chin, so long hair is painted by our own code
- * (kart-paint.js): it falls from the head over both shoulders. "tips" is the
- * colour of its ends. Cici Boss has long fair hair with purple ends.
- * (Added on 18 November 2026: her head alone looked like an egg.)
+ * The characters with long hair. The other head pictures end at the chin.
+ * Theirs goes on below it, with the hair that hangs over the shoulders:
+ * "below" says how much of the picture is below the chin, as a share of the
+ * head (from the top of the hair to the chin). kart-paint.js paints the
+ * head as big as everybody else's and lets the rest hang down.
+ * Cici Boss: her head was first cut as an oval from a photo that ended
+ * under her lip, and looked like an egg. On 18 November 2026 she sent the
+ * whole photo, and her head was cut again from it, hair and chin included.
  */
 const LONG_HAIR = Object.freeze({
-  cici: Object.freeze({ tips: "#8d6cc4" }),
+  cici: Object.freeze({ below: 0.497 }),
 });
 
-/** How a character's long hair looks ({ tips }), or null for short hair or an id that is not in the cast. */
+/** How far a character's head picture goes on below the chin ({ below }), or null for short hair or an id that is not in the cast. */
 export function longHairOf(id) {
   return characterById(id) === null ? null : (LONG_HAIR[id] ?? null);
 }
@@ -92,6 +95,22 @@ const DANCE = Object.freeze({
 /** A character's own dance, or null for an id that is not in the cast. */
 export function danceOf(id) {
   return characterById(id) === null ? null : DANCE[id];
+}
+
+/** What each dance is called on the page ("Signature move" in "Choose your character"). */
+const DANCE_NAMES = Object.freeze({
+  clap: "The big clap",
+  robot: "The robot",
+  drive: "Hands on the wheel",
+  wave: "The wave",
+  plane: "The aeroplane",
+  siu: "The siu",
+  gangnam: "Gangnam style",
+});
+
+/** The name of a character's dance, to show on the page, or null for an id that is not in the cast. */
+export function danceNameOf(id) {
+  return characterById(id) === null ? null : DANCE_NAMES[DANCE[id]];
 }
 
 /** The colours of a character's kart, ready to paint, or null for an id that is not in the cast. */

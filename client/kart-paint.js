@@ -206,8 +206,8 @@ export function paintKart(context, viewer, look, steer = 0) {
  *               it has loaded, the head is painted in the colour of the hair
  *     pose      from poseAt(), blendPoses(), chosenPose() or cardPose()
  *     withKart  true: the kart stands beside the pilot. False: the pilot alone
- *     longHair  { tips } for a character with long hair (longHairOf in
- *               cast-choice.js). Left out: short hair
+ *     longHair  { below } for a character whose head picture goes on below
+ *               the chin (longHairOf in cast-choice.js). Left out: short hair
  */
 export function paintPilotScene(context, viewer, { look, hair, head, pose, withKart = true, longHair = null }) {
   if (viewer === null) {
@@ -388,6 +388,11 @@ function paintShadowPatch(context, viewer, { x, y, along, across, turn }) {
  * turned. When the pilot turns away (the "siu" spin), the picture gets
  * narrower and slides round, and from behind only the back of the head
  * shows, in the colour of the hair.
+ *
+ * A picture of someone with long hair goes on below the chin: "long.below"
+ * in the head says how far, as a share of the head (longHairOf in
+ * cast-choice.js). The head itself stays where it is and as big as
+ * everybody else's, and the hair hangs down over the shoulders.
  */
 function paintHead(context, viewer, head, picture) {
   const [mx, my, mz] = head.middle;
@@ -396,8 +401,11 @@ function paintHead(context, viewer, head, picture) {
     return;
   }
   const loaded = picture !== null && picture.complete && picture.naturalWidth > 0;
-  const tall = head.height * middle.scale;
-  const wide = loaded ? (tall * picture.naturalWidth) / picture.naturalHeight : tall * 0.78;
+  const tall = head.height * middle.scale; // from the top of the hair to the chin
+  const whole = tall * (1 + (head.long?.below ?? 0)); // the whole picture, hair below the chin included
+  const pictureWide = loaded ? (whole * picture.naturalWidth) / picture.naturalHeight : tall * 0.78;
+  // The head alone is never wider than this, however much hair is beside it.
+  const wide = Math.min(pictureWide, tall * 0.88);
 
   // How much the face looks towards the eye: 1 straight at it, 0 from the side, -1 away.
   const [fx, fy] = head.facing;
@@ -405,12 +413,6 @@ function paintHead(context, viewer, head, picture) {
   const ey = viewer.eye[1] - my;
   const lengths = Math.hypot(fx, fy) * Math.hypot(ex, ey);
   const towards = lengths === 0 ? 1 : (fx * ex + fy * ey) / lengths;
-
-  // Long hair is painted first, so that the head is in front of it. From
-  // behind it covers the neck as well.
-  if (head.long) {
-    paintLongHair(context, middle.x, middle.y - tall / 2, wide, tall, head.hair, head.long.tips ?? head.hair, towards < 0.15);
-  }
 
   // The back and sides of the head: an oval of hair, a little smaller than
   // the picture, so that from the front the picture covers it.
@@ -431,63 +433,9 @@ function paintHead(context, viewer, head, picture) {
   // Turned a little: the face gets narrower and slides towards the side it looks to.
   const tip = viewer.place(mx + fx, my + fy, mz);
   const side = tip === null ? 0 : Math.sign(tip.x - middle.x);
-  const width = wide * towards;
-  const x = middle.x - width / 2 + side * (wide - width) * 0.35;
-  context.drawImage(picture, x, middle.y - tall / 2, width, tall);
-}
-
-/**
- * Long hair: it starts at the top of the head, is a little wider than the
- * head picture, and falls in two locks over the shoulders, down to the
- * chest. Between the locks, under the chin, the neck and the suit show.
- * Towards the ends it takes the colour of the tips.
- *   x, top      the middle of the head across the screen, and its top
- *   wide, tall  how big the head picture is on the screen, in pixels
- *   fromBehind  true: no gap between the locks, the hair covers the neck
- */
-function paintLongHair(context, x, top, wide, tall, hair, tips, fromBehind) {
-  const chin = top + tall;
-  const ends = chin + tall * 0.58;
-  const out = wide * 0.58;
-  const gap = fromBehind ? 0 : wide * 0.2;
-  const colour = context.createLinearGradient(0, top, 0, ends + tall * 0.07);
-  colour.addColorStop(0, lit(hair, 1.02));
-  colour.addColorStop(0.6, lit(hair, 0.92));
-  colour.addColorStop(0.82, tips);
-  colour.addColorStop(1, lit(tips, 0.82));
-  context.beginPath();
-  context.moveTo(x, top - tall * 0.02);
-  // Down the right side of the picture, to the end of that lock.
-  context.bezierCurveTo(x + out * 0.75, top - tall * 0.02, x + out * 1.05, top + tall * 0.3, x + out, top + tall * 0.75);
-  context.quadraticCurveTo(x + out * 1.04, chin + tall * 0.3, x + out * 0.9, ends);
-  context.quadraticCurveTo(x + (out + gap) * 0.5, ends + tall * 0.07, x + gap, ends - tall * 0.06);
-  if (gap > 0) {
-    // Up beside the neck, across behind the chin, and down again.
-    context.lineTo(x + gap, chin - tall * 0.1);
-    context.lineTo(x - gap, chin - tall * 0.1);
-  }
-  context.lineTo(x - gap, ends - tall * 0.06);
-  // The lock on the left, and up that side to the top again.
-  context.quadraticCurveTo(x - (out + gap) * 0.5, ends + tall * 0.07, x - out * 0.9, ends);
-  context.quadraticCurveTo(x - out * 1.04, chin + tall * 0.3, x - out, top + tall * 0.75);
-  context.bezierCurveTo(x - out * 1.05, top + tall * 0.3, x - out * 0.75, top - tall * 0.02, x, top - tall * 0.02);
-  context.closePath();
-  context.fillStyle = colour;
-  context.fill();
-  // A few thin strands, so that it does not look like a flat cloth.
-  context.save();
-  context.strokeStyle = "rgba(70, 55, 35, 0.2)";
-  context.lineWidth = Math.max(1, tall * 0.012);
-  for (const side of [-1, 1]) {
-    for (const share of [0.4, 0.68]) {
-      const strand = x + side * (gap + (out - gap) * share);
-      context.beginPath();
-      context.moveTo(strand, chin - tall * 0.05);
-      context.quadraticCurveTo(strand + side * tall * 0.03, chin + tall * 0.3, strand - side * tall * 0.01, ends - tall * 0.05);
-      context.stroke();
-    }
-  }
-  context.restore();
+  const width = pictureWide * towards;
+  const x = middle.x - width / 2 + side * (pictureWide - width) * 0.35;
+  context.drawImage(picture, x, middle.y - tall / 2, width, whole);
 }
 
 /**

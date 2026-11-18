@@ -418,19 +418,33 @@
         </form>
       </div>
       <div class="panel-body character-step">
-        <p id="character-lead" class="panel-lead"></p>
-        <div class="character-stage">
-          <!-- The chosen one: the big picture is put here by kart-panel.js,
-               with the name and the button that starts the race under it. -->
-          <div class="character-chosen">
-            <div id="kart-preview-place" class="character-floor"></div>
+        <!-- The chosen one, like the poster of a race: the big picture is put
+             on the left by kart-panel.js, in the light of a lamp and the
+             colour of their kart. On the right their number, their name,
+             what they are known for, and the button that starts the race. -->
+        <div id="character-hero" class="hero">
+          <div id="kart-preview-place" class="hero-stage"></div>
+          <div class="hero-card">
+            <p id="character-number" class="hero-number" aria-hidden="true"></p>
+            <p id="character-lead" class="hero-kicker"></p>
             <p id="character-name" class="character-name"></p>
+            <div class="hero-stripe" aria-hidden="true"></div>
+            <dl class="hero-facts">
+              <div>
+                <dt>Signature move</dt>
+                <dd id="character-move"></dd>
+              </div>
+              <div>
+                <dt>Colours</dt>
+                <dd id="character-colours"></dd>
+              </div>
+            </dl>
             <a id="character-go" class="button button-primary button-wide" href="/race.html">Race</a>
             <p id="kart-status" class="note" role="status"></p>
           </div>
-          <!-- One tile for each character goes here. -->
-          <div id="kart-choices" class="kart-choices"></div>
         </div>
+        <!-- The line-up: one tile for each character goes here. -->
+        <div id="kart-choices" class="kart-choices"></div>
         <p class="note">Each character has its own kart colours. Online, only one player in a room can be each character: if someone already is yours, you get the first free one. In the race the pilot wears a helmet, so the face is not shown.</p>
       </div>
     </dialog>

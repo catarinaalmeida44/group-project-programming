@@ -31,7 +31,7 @@ import {
   CHOSEN_TIMES,
 } from "../client/pilot-shape.js";
 import { kartParts, LOOKS } from "../client/kart-shape.js";
-import { lookOfCharacter, hairOf, longHairOf, headOf, danceOf } from "../client/cast-choice.js";
+import { lookOfCharacter, hairOf, longHairOf, headOf, danceOf, danceNameOf } from "../client/cast-choice.js";
 import { CAST } from "../shared/cast.js";
 
 const look = lookOfCharacter("pcp");
@@ -630,8 +630,19 @@ describe("a leg (added 18 November 2026)", () => {
 });
 
 describe("long hair (added 18 November 2026)", () => {
-  it("is only Cici Boss's, with the colour of its ends; everybody else has short hair", () => {
-    expect(longHairOf("cici")).toEqual({ tips: expect.stringMatching(/^#[0-9a-f]{6}$/) });
+  it("is only Cici Boss's: her head picture goes on below the chin; everybody else has short hair", () => {
+    // (First written the same day with painted hair and the colour of its
+    // ends. Catarina did not like the painted hair, sent her whole photo,
+    // and the hair now comes from the photo: the rule is how far the
+    // picture hangs below the chin.)
+    expect(Object.keys(longHairOf("cici"))).toEqual(["below"]);
+    expect(longHairOf("cici").below).toBeGreaterThan(0.2); // clearly longer than a head
+    expect(longHairOf("cici").below).toBeLessThan(0.8); //    and not down to the belt
+    // Her picture is taller for its width than a head alone would be.
+    const bytes = readFileSync(new URL("../client/heads/cici.png", import.meta.url));
+    const wide = bytes.readUInt32BE(16);
+    const tall = bytes.readUInt32BE(20);
+    expect(tall / wide).toBeGreaterThan(1.3);
     for (const { id } of CAST.filter((one) => one.id !== "cici")) {
       expect(longHairOf(id), id).toBe(null);
     }
@@ -673,5 +684,40 @@ describe("the photos beside the pilots (taken out on 18 November 2026)", () => {
     expect(code).toMatch(/headOf/); // the head on the pilot is still the person's own
     const page = readFileSync(new URL("../client/index.html", import.meta.url), "utf8");
     expect(page).not.toMatch(/faces\//);
+  });
+});
+
+describe("the name of each dance on the page (added 18 November 2026)", () => {
+  it("has a name for every dance, each different, and the gangnam for Cici Boss", () => {
+    const names = CAST.map(({ id }) => danceNameOf(id));
+    for (const name of names) {
+      expect(typeof name).toBe("string");
+      expect(name.length).toBeGreaterThan(3);
+    }
+    expect(new Set(names).size).toBe(CAST.length);
+    expect(danceNameOf("cici")).toBe("Gangnam style");
+  });
+
+  it("has none for someone who is not in the cast", () => {
+    for (const notAnId of ["mario", "", null, undefined, "PCP", {}]) {
+      expect(danceNameOf(notAnId), JSON.stringify(notAnId)).toBe(null);
+    }
+  });
+});
+
+describe("the page of the character panel (added 18 November 2026)", () => {
+  const page = readFileSync(new URL("../client/index.html", import.meta.url), "utf8");
+  const code = readFileSync(new URL("../client/kart-panel.js", import.meta.url), "utf8");
+
+  it("has every part the panel's code fills in, once each", () => {
+    const ids = [...code.matchAll(/getElementById\("([^"]+)"\)/g)].map((match) => match[1]);
+    expect(ids.length).toBeGreaterThan(8);
+    for (const id of ids) {
+      expect(page.split(`id="${id}"`).length - 1, id).toBe(1);
+    }
+  });
+
+  it("writes names as text, never as HTML, so a name can never become part of the page's code", () => {
+    expect(code).not.toMatch(/innerHTML|insertAdjacentHTML|document\.write/);
   });
 });

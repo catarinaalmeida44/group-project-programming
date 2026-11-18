@@ -1840,80 +1840,196 @@ main:has(.status) canvas {
   box-shadow: 0 0 0 2px var(--line);
 }
 
-/* -- Choose your character: the chosen pilot big, and a tile for each -- */
+/* -- Choose your character: a poster of the chosen one, and the line-up -- */
 
-/* The chosen one on the left and the tiles on the right on a wide screen;
-   on a narrow one the chosen one is above the tiles. */
-.character-stage {
+/* The poster. kart-panel.js sets "--tint" to the colour of the chosen
+   character's kart and "--tint-two" to the colour of their helmet. Three
+   layers, the top one first: the light of a lamp on the floor where the
+   pilot stands, slanting stripes as on a racing flag, and a wash of the
+   kart's colour that fades into the dark of the panel. */
+.hero {
+  --tint: #6f8597;
+  --tint-two: #f0c330;
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-  gap: 1.1rem;
-  align-items: stretch;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  overflow: hidden;
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse 46% 42% at 30% 84%, color-mix(in srgb, var(--tint) 45%, #b9c8d6) 0%, transparent 72%),
+    repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.04) 0 22px, transparent 22px 44px),
+    linear-gradient(118deg, color-mix(in srgb, var(--tint) 48%, #1a3042) 0%, #142838 56%, var(--navy-deep) 100%);
 }
 
-@media (max-width: 52rem) {
-  .character-stage {
-    grid-template-columns: minmax(0, 1fr);
-  }
+/* A slanting band of the helmet's colour down the middle, behind the name. */
+.hero::before {
+  content: "";
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  left: 52%;
+  width: 0.9rem;
+  background: var(--tint-two);
+  opacity: 0.85;
+  transform: skewX(-14deg);
+  box-shadow: 1.5rem 0 0 -0.3rem color-mix(in srgb, var(--tint) 70%, #ffffff);
 }
 
-/* The left side: the big picture, the name, the button, one under the other. */
-.character-chosen {
-  display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
+/* The left side: the pilot and the kart stand on the floor. */
+.hero-stage {
+  position: relative;
+  display: grid;
+  place-items: end center;
   min-width: 0;
 }
 
-/* The floor the chosen pilot and the kart stand on. It takes the room that
-   is left over, with the picture in its middle. */
-.character-floor {
-  display: grid;
-  flex: 1;
-  place-items: center;
-  border-radius: 14px;
-  background: radial-gradient(ellipse at 50% 72%, #7389a0, #2c3f50 72%);
-  box-shadow: 0 0 0 2px var(--line);
-}
-
 .character-step .kart-preview {
-  max-width: none;
+  width: 100%;
+  max-width: 23.5rem;
   margin: 0;
-  border-radius: 14px;
+  border-radius: 0;
   background: none;
   box-shadow: none;
+}
+
+/* The right side: who it is. */
+.hero-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 1.1rem 1.3rem 1.1rem 2.6rem;
+}
+
+/* Their number, huge and faint, behind the name. */
+.hero-number {
+  position: absolute;
+  top: -0.4rem;
+  right: 0.8rem;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.09);
+  font-size: 7rem;
+  font-style: italic;
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.hero-kicker {
+  margin: 0;
+  color: var(--yellow);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 /* The name of the chosen character, in the game's own lettering. */
 .character-name {
   margin: 0;
-  font-size: 1.55rem;
-  line-height: 1.15;
-  text-align: center;
+  font-size: clamp(1.7rem, 3.3vw, 2.6rem);
+  line-height: 1;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
   text-wrap: balance;
 }
 
+/* A short slanting bar under the name, in the two colours. */
+.hero-stripe {
+  width: 7.5rem;
+  height: 0.4rem;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--tint-two) 0 34%, color-mix(in srgb, var(--tint) 70%, #ffffff) 34% 100%);
+  transform: skewX(-20deg);
+}
+
+.hero-facts {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.hero-facts div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.7rem;
+}
+
+.hero-facts dt {
+  min-width: 7.6rem;
+  color: var(--text-quiet);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero-facts dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+/* "Kart", "Helmet", "Suit", each after a round dot of its colour ("--dot"). */
+.colour-word {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-right: 0.7rem;
+  font-size: 0.9rem;
+}
+
+.colour-dot {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  background: var(--dot);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.45);
+}
+
 #character-go {
+  font-size: 1.1rem;
   font-weight: 800;
 }
 
-.character-chosen .note:empty {
+.hero-card .note:empty {
   display: none;
 }
 
-/* Three tiles in a row, two rows. (".panel" in front, so that this wins
+/* The line-up: all six in one row. (".panel" in front, so that this wins
    over the frame every other group of choices in a panel has.) */
 .panel .faces {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.7rem;
-  margin: 0;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0.8rem 0 0;
   padding: 0;
   border: 0;
 }
 
-/* A tile: the pilot standing on a floor that has a little of the colour of
-   their kart ("--tint", set by kart-panel.js), and the name on a dark band. */
+/* On a narrow screen the poster is one column and the line-up two rows. */
+@media (max-width: 52rem) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hero::before {
+    display: none;
+  }
+
+  .hero-card {
+    padding: 0.4rem 1.1rem 1.1rem;
+  }
+
+  .panel .faces {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* A tile: the pilot in front of the colour of their kart ("--tint", set by
+   kart-panel.js), which fades to dark at the foot, and the name on a band. */
 .face {
   position: relative;
   display: flex;
@@ -1921,8 +2037,10 @@ main:has(.status) canvas {
   overflow: hidden;
   border: 2px solid var(--line);
   border-radius: 14px;
-  /* A lighter floor than the panel, so dark suits (FranFon is all black) stand out. */
-  background: radial-gradient(ellipse at 50% 74%, color-mix(in srgb, var(--tint, #6f8597) 38%, #7d91a3), #2c3f50 74%);
+  /* Lighter than the panel, so dark suits (FranFon is all black) stand out. */
+  background:
+    linear-gradient(115deg, transparent 0 58%, rgba(255, 255, 255, 0.07) 58% 70%, transparent 70%),
+    linear-gradient(172deg, color-mix(in srgb, var(--tint, #6f8597) 58%, #9fb2c3) 0%, color-mix(in srgb, var(--tint, #6f8597) 30%, #22374a) 82%);
   cursor: pointer;
   text-align: center;
   transition:
@@ -1941,9 +2059,10 @@ main:has(.status) canvas {
   display: grid;
   flex: 1;
   place-items: center;
-  min-height: 2.9em;
-  padding: 0.3rem 0.4rem;
-  background: rgba(11, 24, 32, 0.82);
+  min-height: 2.7em;
+  padding: 0.25rem 0.35rem;
+  border-top: 3px solid color-mix(in srgb, var(--tint, #6f8597) 70%, #ffffff);
+  background: rgba(11, 24, 32, 0.88);
   font-weight: 700;
 }
 
@@ -1951,9 +2070,27 @@ main:has(.status) canvas {
    this file switches the gliding off: the tile then changes at once.) */
 .face:hover {
   border-color: var(--text);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
 }
 
+/* The chosen one stands out of the row, with a small flag that says so. */
+.panel .face:has(input:checked) {
+  transform: translateY(-5px);
+}
+
+.panel .face:has(input:checked)::after {
+  content: "YOU";
+  position: absolute;
+  top: 0.4rem;
+  left: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 6px;
+  background: var(--yellow);
+  color: var(--navy);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
 /* As with the colours: the round choice is there for the keyboard and for
    screen readers, but the face is what a player sees. */
 .panel .face input {
