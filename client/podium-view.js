@@ -15,15 +15,16 @@
 import { paintScene, prepareParts, viewerBehind } from "./kart-paint.js";
 import { hallParts, hallLabels, podiumMoving, podiumGroups, crowdSpots } from "./podium-shape.js";
 import { lookOfTrack } from "./track-looks.js";
+import { cameraPullBack } from "./podium.js";
 
 const CONFETTI_COLOURS = ["#e23d3d", "#f0c330", "#2f7fe0", "#3fb563", "#e667a8", "#f4f6f8"];
-const CONFETTI_PIECES = 90;
+const CONFETTI_PIECES = 160;
 /**
  * The camera for the podium on a track, in the form of RACE in camera.js:
  * closer than the race camera and a little higher, so the drivers are big
  * and the school's name on the wall behind them is in the picture.
  */
-const TRACK_CAMERA = Object.freeze({ kartScreenY: 580, kartScale: 9, horizonY: 185, depth: 600, viewAhead: 1700 });
+const TRACK_CAMERA = Object.freeze({ kartScreenY: 580, kartScale: 12, horizonY: 185, depth: 600, viewAhead: 1700 }); // kartScale was 9: bigger drivers since the evening of 18 November 2026
 /** The camera turns this far to each side, slowly, so the scene feels alive. In radians. */
 const SWING = 0.08;
 
@@ -83,14 +84,17 @@ export function createPodiumView(track = null, draw = null) {
     const [column, row] = spot.at;
     const [cameraColumn, cameraRow] = spot.camera;
     const middle = { x: column * size, y: row * size };
-    const watcher = { x: cameraColumn * size, y: cameraRow * size };
+    // The camera comes in: it starts several times further away along the
+    // same line, and ends at the spot's "camera" (cameraPullBack in podium.js).
+    const back = cameraPullBack(seconds);
+    const watcher = { x: (column + (cameraColumn - column) * back) * size, y: (row + (cameraRow - row) * back) * size };
     const facing = Math.atan2(middle.y - watcher.y, middle.x - watcher.x); // from the camera to the podium
-    const back = facing + Math.PI; //                                     the podium looks back at the camera
-    const cos = Math.cos(back);
-    const sin = Math.sin(back);
+    const towardsCamera = facing + Math.PI; //                            the podium looks back at the camera
+    const cos = Math.cos(towardsCamera);
+    const sin = Math.sin(towardsCamera);
     const groups = podiumGroups(drivers, seconds, crowd).map((group) => {
       const [x, y] = group.at;
-      return { ...group, x: middle.x + x * cos - y * sin, y: middle.y + x * sin + y * cos, angle: back };
+      return { ...group, x: middle.x + x * cos - y * sin, y: middle.y + x * sin + y * cos, angle: towardsCamera };
     });
     const cameraKart = { ...watcher, angle: facing, vx: 0, vy: 0, place: 0 };
     draw("chase", cameraKart, cameraKart, 0, [], { intro: 1, lights: { red: 0, green: true }, podium: groups, hideOwnKart: true, camera: TRACK_CAMERA });
@@ -108,7 +112,8 @@ export function createPodiumView(track = null, draw = null) {
     // The camera: in front of the podium, a little above the drivers' heads.
     const camera = {
       kartScreenY: screen.height * 0.9,
-      kartScale: screen.height / 52,
+      // Smaller at first and growing: the camera comes in here too.
+      kartScale: screen.height / 52 / (1 + (cameraPullBack(seconds) - 1) * 0.45),
       horizonY: screen.height * 0.1,
       depth: 900,
       viewAhead: 100,

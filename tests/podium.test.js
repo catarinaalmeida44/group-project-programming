@@ -39,6 +39,7 @@ import { NOVA_LAP_LOOK } from "../client/nova-lap-look.js";
 import { lookOfTrack } from "../client/track-looks.js";
 import { poseAt, trophyParts } from "../client/pilot-shape.js";
 import { lookOfCharacter, hairOf, longHairOf, headOf, danceOf } from "../client/cast-choice.js";
+import { cameraPullBack, CAMERA_IN_SECONDS, CAMERA_STARTS } from "../client/podium.js";
 import { LOOKS } from "../client/kart-shape.js";
 import { createPracticeRace, stepPracticeRace } from "../shared/practice-race.js";
 import { createComputerDriver, decide, personalityOf } from "../shared/computer-driver.js";
@@ -377,14 +378,7 @@ describe("the crowd's cheering on the podium", () => {
   });
 });
 
-// Changed on 18 November 2026, said out loud in Catarina's diary: Pedro put
-// the podium on the lawn in front of the white wall with the school's name.
-// Catarina asked for it inside the Hovione Atrium, on the floor the race
-// drives over. Two tests below pinned the lawn and now pin the atrium, and
-// one kept its checks and lost the word "lawn" in its name.
-describe("the podium on the Nova lap, inside the Hovione Atrium", () => {
-  /** The inside of the atrium, in squares: [left, top, right, bottom] (client/nova-lap-ground.js). */
-  const ATRIUM = [54, 4, 76, 20];
+describe("the podium on the Nova lap, in front of the school's name", () => {
   const track = TRACKS["nova-lap"];
   const spot = NOVA_LAP_LOOK.podium;
 
@@ -392,45 +386,36 @@ describe("the podium on the Nova lap, inside the Hovione Atrium", () => {
     expect(lookOfTrack(track).podium).toBe(spot);
   });
 
-  it("stands inside the atrium, and so does its camera, well away from the walls", () => {
-    for (const [column, row] of [spot.at, spot.camera]) {
-      expect(column).toBeGreaterThan(ATRIUM[0] + 2);
-      expect(column).toBeLessThan(ATRIUM[2] - 2);
-      expect(row).toBeGreaterThan(ATRIUM[1] + 2);
-      expect(row).toBeLessThan(ATRIUM[3] - 2);
-    }
+  it("stands right in front of the white wall with the name, at the end of the avenue", () => {
+    const [column, row] = spot.at;
+    // The white wall with the name is column 53, from row 4 to row 9 (client/nova-lap-buildings.js).
+    expect(column).toBeGreaterThan(48);
+    expect(column).toBeLessThan(53);
+    expect(row).toBeGreaterThanOrEqual(4);
+    expect(row).toBeLessThanOrEqual(9);
   });
 
-  it("is looked at from the west, from nearer the entrance", () => {
+  it("is looked at from the west, the camera on the same lawn, closer than the wall", () => {
     const [column, row] = spot.at;
     const [cameraColumn, cameraRow] = spot.camera;
     expect(cameraColumn).toBeLessThan(column);
     expect(Math.abs(cameraRow - row)).toBeLessThan(1);
   });
 
-  it("stands on the floor of the hall: no step and no student inside a wall, the letters or a table", () => {
-    // Where each group stands on the map, worked out as client/podium-view.js
-    // does: the podium faces its camera.
+  it("stands on the lawn and not in the way of the karts: no part of it on a road square", () => {
     const size = track.tileSize;
     const [column, row] = spot.at;
-    const [cameraColumn, cameraRow] = spot.camera;
-    const back = Math.atan2(row - cameraRow, column - cameraColumn) + Math.PI;
-    const groups = podiumGroups([], 1);
-    expect(groups.length).toBeGreaterThan(20);
-    for (const group of groups) {
-      const x = column * size + group.at[0] * Math.cos(back) - group.at[1] * Math.sin(back);
-      const y = row * size + group.at[0] * Math.sin(back) + group.at[1] * Math.cos(back);
-      // The floor of the atrium counts as road for the driving rules. A wall,
-      // the base of the letters and a square with a table are all "wall".
-      expect(tileKindAt(track, x, y), `${group.at}`).toBe("road");
-      expect(x / size, `${group.at}`).toBeGreaterThan(ATRIUM[0]);
-      expect(x / size, `${group.at}`).toBeLessThan(ATRIUM[2]);
-      expect(y / size, `${group.at}`).toBeGreaterThan(ATRIUM[1]);
-      expect(y / size, `${group.at}`).toBeLessThan(ATRIUM[3]);
+    for (const group of podiumGroups([], 1)) {
+      // Facing the camera in the west: the podium's own directions turned half round.
+      const x = column * size - group.at[0];
+      const y = row * size - group.at[1];
+      if (Math.abs(group.at[1]) < 20) {
+        // The steps, and the crowd close to them.
+        expect(tileKindAt(track, x, y), `${group.at}`).not.toBe("road");
+      }
     }
   });
 });
-
 describe("the podium as groups, for a track", () => {
   const driver = (place) => ({ place, look: lookOfCharacter("pcp"), hair: hairOf("pcp"), picture: null, dance: "clap" });
 
@@ -577,5 +562,104 @@ describe("long hair on the podium (added 18 November 2026)", () => {
       return Math.abs(shoe(parts, "left shoe") - shoe(parts, "right shoe"));
     });
     expect(Math.max(...gaps)).toBeGreaterThan(1.2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Added late on 18 November 2026, for Catarina: a crowd that looks like a
+// lot of people, and a camera that comes in to the podium.
+// ---------------------------------------------------------------------------
+
+describe("a big crowd, spread wide (added 18 November 2026)", () => {
+  const crowd = crowdSpots();
+
+  it("is 80 students, where there were 28", () => {
+    expect(CROWD_SIZE).toBe(80);
+    expect(crowd).toHaveLength(80);
+  });
+
+  it("reaches far out to both sides and well behind the podium", () => {
+    const across = crowd.map((spot) => spot.y);
+    const deep = crowd.map((spot) => spot.x);
+    expect(Math.max(...across)).toBeGreaterThan(50);
+    expect(Math.min(...across)).toBeLessThan(-50);
+    expect(Math.min(...deep)).toBeLessThan(-25); //  four rows deep behind
+    expect(Math.max(...deep)).toBeGreaterThan(10); // and forwards at the sides, towards the camera
+  });
+
+  it("stays on the floor of the hall of the other tracks: in front of its back wall, inside its sides", () => {
+    for (const spot of crowd) {
+      expect(spot.x, `${spot.x}, ${spot.y}`).toBeGreaterThan(-29.5); // the wall is at -30
+      expect(Math.abs(spot.y)).toBeLessThan(68); //                    the floor ends at 70
+    }
+  });
+
+  it("leaves a way through on each side of the block behind the steps, where nobody stands", () => {
+    for (const spot of crowd) {
+      const inAWay = Math.abs(spot.y) > 18.5 && Math.abs(spot.y) < 30.5;
+      expect(inAWay, `${spot.x.toFixed(1)}, ${spot.y.toFixed(1)}`).toBe(false);
+    }
+  });
+
+  it("has as many students on one side as on the other, give or take a few", () => {
+    const left = crowd.filter((spot) => spot.y > 0).length;
+    expect(Math.abs(left - (crowd.length - left))).toBeLessThan(8);
+  });
+
+  it("keeps everybody apart: no two students stand in the same place", () => {
+    for (let i = 0; i < crowd.length; i++) {
+      for (let j = i + 1; j < crowd.length; j++) {
+        expect(Math.hypot(crowd[i].x - crowd[j].x, crowd[i].y - crowd[j].y), `${i} and ${j}`).toBeGreaterThan(1);
+      }
+    }
+  });
+});
+
+describe("the camera comes in to the podium (added 18 November 2026)", () => {
+  it("starts several times further away than it ends", () => {
+    expect(cameraPullBack(0)).toBe(CAMERA_STARTS);
+    expect(CAMERA_STARTS).toBeGreaterThan(2);
+  });
+
+  it("comes nearer all the time, fast at first and gently at the end", () => {
+    let before = cameraPullBack(0);
+    for (let seconds = 0.05; seconds <= CAMERA_IN_SECONDS; seconds += 0.05) {
+      const now = cameraPullBack(seconds);
+      expect(now).toBeLessThanOrEqual(before);
+      before = now;
+    }
+    const firstTenth = cameraPullBack(0) - cameraPullBack(CAMERA_IN_SECONDS * 0.1);
+    const lastTenth = cameraPullBack(CAMERA_IN_SECONDS * 0.9) - cameraPullBack(CAMERA_IN_SECONDS);
+    expect(firstTenth).toBeGreaterThan(lastTenth * 5);
+  });
+
+  it("has arrived after a few seconds, and then stays where it is", () => {
+    expect(cameraPullBack(CAMERA_IN_SECONDS)).toBe(1);
+    expect(cameraPullBack(CAMERA_IN_SECONDS + 5)).toBe(1);
+    expect(cameraPullBack(1000)).toBe(1);
+    expect(CAMERA_IN_SECONDS).toBeLessThan(5); // "a small animation": not a long wait
+  });
+
+  it("is never nearer than its end, and counts a strange time as the start", () => {
+    for (let seconds = 0; seconds < 10; seconds += 0.1) {
+      expect(cameraPullBack(seconds)).toBeGreaterThanOrEqual(1);
+    }
+    for (const strange of [-1, NaN, Infinity, null, undefined, "2", {}]) {
+      expect(cameraPullBack(strange), String(strange)).toBe(CAMERA_STARTS);
+    }
+  });
+
+  it("starts on the lawn of the Nova lap: still west of the podium, on the same row", () => {
+    const [column, row] = NOVA_LAP_LOOK.podium.at;
+    const [cameraColumn, cameraRow] = NOVA_LAP_LOOK.podium.camera;
+    const startColumn = column + (cameraColumn - column) * CAMERA_STARTS;
+    const startRow = row + (cameraRow - row) * CAMERA_STARTS;
+    expect(startColumn).toBeLessThan(cameraColumn);
+    expect(startColumn).toBeGreaterThan(40); // not back on the start grid
+    expect(startRow).toBeCloseTo(row);
+    // Not on the avenue: it looks at the podium over the lawn. (The lawn is
+    // "wall" for the driving rules, because no kart can go there.)
+    const track = TRACKS["nova-lap"];
+    expect(tileKindAt(track, startColumn * track.tileSize, startRow * track.tileSize)).not.toBe("road");
   });
 });

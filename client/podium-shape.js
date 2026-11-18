@@ -42,18 +42,23 @@ const HAIRS = ["#2b2019", "#4a3324", "#d8c07a", "#1d1a18", "#7a4a2a", "#e3dccb"]
 const SHIRTS = ["#2f7fe0", "#e23d3d", "#f0c330", "#3fb563", "#9a55d6", "#ef8a2b", "#f4f6f8", "#1c2f5a", "#e667a8", "#2fc4c4"];
 const TROUSERS = ["#2c343d", "#1c2f5a", "#4a4f57", "#6b5a45"];
 
-/** How many students cheer round the podium. */
-export const CROWD_SIZE = 28;
+/**
+ * How many students cheer round the podium. (28 at first. Catarina asked for
+ * a crowd that looks like a lot of people, spread further out: 80 since the
+ * evening of 18 November 2026.)
+ */
+export const CROWD_SIZE = 80;
 /** The ways a student cheers: waving both arms, jumping, or clapping over the head. */
 export const CROWD_CHEERS = Object.freeze(["wave", "jump", "clap"]);
 /** How high a jumping student gets off the ground, in units. */
-export const CROWD_JUMP = 1.8;
+export const CROWD_JUMP = 2.4;
 
 /**
  * Where each student of the crowd stands, and in which colours: always the
  * same, so the crowd does not change from one picture to the next.
- * Gives [{ x, y, turn, skin, hair, shirt, trousers, phase }]. The crowd
- * stands on both sides of the podium and in two rows behind it, never on it.
+ * Gives [{ x, y, turn, skin, hair, shirt, trousers, phase, cheer }]. The
+ * crowd stands in four rows behind the podium and in a group on each side
+ * of it, never on it or in front of it.
  */
 export function crowdSpots() {
   let seed = 7;
@@ -78,17 +83,25 @@ export function crowdSpots() {
       cheer: CROWD_CHEERS[spots.length % CROWD_CHEERS.length],
     });
   };
-  // Two rows behind the podium.
-  for (let i = 0; i < 9; i++) {
-    place(-11 - next() * 1.5, -26 + i * 6.5 + next() * 1.5);
+  // Four rows behind the podium, in three blocks with a way through
+  // between them: one block behind the steps, and one further out on each
+  // side. (On the Nova lap the low wall along the avenue runs through one of
+  // the ways through, so nobody stands in it.)
+  for (const x of [-10, -15.5, -21, -26.5]) {
+    for (let i = 0; i < 6; i++) {
+      place(x - next() * 1.5, -16 + i * 6.4 + (next() - 0.5) * 1.6);
+    }
+    for (const side of [1, -1]) {
+      for (let i = 0; i < 5; i++) {
+        place(x - next() * 1.5, side * (32 + i * 6 + next() * 1.5));
+      }
+    }
   }
-  for (let i = 0; i < 8; i++) {
-    place(-17 - next() * 1.5, -23 + i * 6.5 + next() * 1.5);
-  }
-  // A group on each side, a little in front of the podium.
-  for (let i = 0; i < 11; i++) {
+  // A group on each side that reaches forwards, towards the camera, so that
+  // the podium stands in the middle of the crowd. Never in front of the steps.
+  for (let i = 0; i < 16; i++) {
     const side = i % 2 === 0 ? 1 : -1;
-    place(-4 + next() * 12, side * (24 + next() * 8));
+    place(-4 + next() * 20, side * (32 + next() * 26));
   }
   return spots.slice(0, CROWD_SIZE);
 }

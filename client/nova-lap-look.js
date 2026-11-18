@@ -29,16 +29,16 @@ export const NOVA_LAP_LOOK = {
   kerbColours: ["#d8473f", "#f2f5f7"],
   edgeLines: false,
 
-  // The podium at the end of a race (podium-view.js), as [column, row]:
-  // inside the Hovione Atrium, on the open floor that the race drives over,
-  // a little past the big black letters. The camera stands nearer the
-  // entrance and looks across the hall, so the letters are in the picture
-  // behind the drivers. The podium is only a picture, shown when the race is
-  // over: nothing stands there during a race.
-  // (Pedro put it on the lawn in front of the white wall with the school's
-  // name on 18 November 2026: at [50.8, 6.1], the camera at [49.1, 6.1].
-  // Catarina asked for it inside the atrium the same evening.)
-  podium: { at: [63.2, 14.3], camera: [62.1, 14.92] },
+  // The podium at the end of a race (podium-view.js): on the lawn in front
+  // of the white wall with the school's name, at the end of the avenue, as
+  // [column, row]. The camera ends up further west on the lawn and looks
+  // east, at the podium and the name above it. (Pedro, 18 November 2026.
+  // The same evening Catarina tried it inside the atrium, at [63.2, 14.3]
+  // with the camera at [62.1, 14.92], and liked it better out here.)
+  // (Pedro's camera stood at [49.1, 6.1]. It ends about where his did, shows
+  // everything bigger, and comes in from far away when the podium comes up:
+  // TRACK_CAMERA in podium-view.js and cameraPullBack in podium.js.)
+  podium: { at: [50.8, 6.1], camera: [49.15, 6.1] },
 
   // The way round, through the middle of the road, as [column, row]. The
   // arrows on the ground follow it, and so do the computer karts.

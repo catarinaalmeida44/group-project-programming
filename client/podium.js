@@ -23,6 +23,27 @@ import { placeText } from "./net.js";
 /** How long the podium is shown on its own before the results board comes up online, in seconds. */
 export const PODIUM_SECONDS = 10;
 
+/** How long the camera takes to come in to the podium when it comes up, in seconds. */
+export const CAMERA_IN_SECONDS = 2.8;
+/** How many times further away than in the end the camera starts. */
+export const CAMERA_STARTS = 4;
+
+/**
+ * How far back the camera of the podium is, "seconds" after the podium came
+ * up, as a multiple of where it ends: it starts far away, with the whole
+ * crowd in the picture, and comes in to the podium, fast at first and
+ * gently at the end. 1 once it has arrived. A strange time counts as the
+ * start.
+ */
+export function cameraPullBack(seconds) {
+  if (typeof seconds !== "number" || !Number.isFinite(seconds) || seconds <= 0) {
+    return CAMERA_STARTS;
+  }
+  const share = Math.min(seconds / CAMERA_IN_SECONDS, 1);
+  const arrived = 1 - (1 - share) ** 3; // fast at first, gently at the end
+  return CAMERA_STARTS + (1 - CAMERA_STARTS) * arrived;
+}
+
 /** In a single race: the longest the player waits for the computer karts after finishing, in seconds. */
 export const WAIT_AFTER_YOU_SECONDS = 30;
 
