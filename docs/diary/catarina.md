@@ -68,6 +68,21 @@ She looked at the griddy and said it did not look like one, and chose the dab fo
 - The list of dances in `tests/pilot-shape.test.js` now ends with "dab" where it said "disco". The tests for the disco point, written an hour earlier, were replaced by tests for the dab, and the tests for the griddy were rewritten for the new one.
 - Checked: `npm test`, 1,904 pass, 5 skipped. Eight moments of each of the two dances side by side in the agent's browser. NOT checked: in motion.
 
+**Last of the evening: the podium back outside, and "more exaggerated"**
+
+She looked at the podium in the atrium and liked it better outside, where Pedro had it. So it is back on the lawn in front of the school's name, and his three tests about that spot are again exactly as he wrote them. That leaves four of his tests changed this evening, not six: the list of dances, the jump of the gangnam, Ró Versos's dance, and Dean's colours.
+
+What she asked for instead: more people or people further apart, a small animation of the camera coming in, more exaggerated.
+
+| What | Where |
+|---|---|
+| 80 students instead of 28: four rows behind the podium in three blocks, with a way through on each side, and a group that reaches forwards on each side. On the Nova lap one block stands on the avenue, and the low wall runs through a way through | `crowdSpots()` in `client/podium-shape.js` |
+| They jump higher | `CROWD_JUMP` |
+| The camera starts four times further away, with the whole crowd in the picture, and comes in to the podium in 2.8 seconds, fast at first and gently at the end. In the hall of the other tracks the picture grows the same way | `cameraPullBack()` in `client/podium.js`, used in `client/podium-view.js` |
+| The drivers are shown bigger, and there is more confetti | `TRACK_CAMERA` and `CONFETTI_PIECES` in `client/podium-view.js` |
+
+Checked: `npm test`, 1,915 pass, 5 skipped. The start, a moment on the way and the end of the camera's move, on the Nova lap, and the hall of the Test oval, in the agent's browser, as single pictures. NOT checked: the move itself in motion, and whether 80 students slow a slow laptop down.
+
 **Git**
 
 Same branch, `atrium-screen-and-characters`, pushed. No pull request yet.
