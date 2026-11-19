@@ -16,25 +16,32 @@
         <a href="/online.html">Online</a>
       </nav>
 
-      <!-- The numbers above the track. main.js fills them in. -->
-      <div class="hud">
-        <span>Lap <strong id="lap">1</strong> of <strong id="laps">3</strong></span>
-        <span>Time <strong id="time">0:00.00</strong></span>
-        <span id="place-box" hidden>Place <strong id="place"></strong></span>
-        <span>Camera <strong id="view"></strong></span>
-        <span id="lap-times" class="lap-times"></span>
-      </div>
+      <!-- The play area: what goes on the whole screen when F or the button is
+           pressed (full-screen.js): the numbers above the track and the picture. -->
+      <div id="play-area" class="play-area">
+        <!-- The numbers above the track. main.js fills them in. -->
+        <div class="hud">
+          <span>Lap <strong id="lap">1</strong> of <strong id="laps">3</strong></span>
+          <span>Time <strong id="time">0:00.00</strong></span>
+          <span id="place-box" hidden>Place <strong id="place"></strong></span>
+          <span>Camera <strong id="view"></strong></span>
+          <span id="lap-times" class="lap-times"></span>
+          <!-- The game on the whole screen, or back (full-screen.js). Hidden in a browser that cannot. -->
+          <button id="full-screen" class="full-screen-button" type="button" hidden>Full screen</button>
+        </div>
 
-      <!-- The track is drawn on the canvas. The message sits on top of it. -->
-      <div class="screen">
-        <canvas id="track" width="960" height="576">Your browser cannot show the game.</canvas>
-        <p id="message" class="message" role="status"></p>
+        <!-- The track is drawn on the canvas. The message sits on top of it. -->
+        <div class="screen">
+          <canvas id="track" width="960" height="576">Your browser cannot show the game.</canvas>
+          <p id="message" class="message" role="status"></p>
+        </div>
       </div>
 
       <p class="help">
         Arrow keys: <kbd>↑</kbd> gas, <kbd>↓</kbd> brake and reverse, <kbd>←</kbd> <kbd>→</kbd> steer.
         <kbd>R</kbd> starts again. <kbd>V</kbd> changes the camera. Drive clockwise.
         <kbd>M</kbd> switches the sound off and on: it is <strong id="sound">on</strong>.
+        <kbd>F</kbd> puts the game on the whole screen, and back (<kbd>Esc</kbd> also leaves it).
       </p>
       <p class="note">
         A race on <span id="track-name">the test track</span>. It runs in your browser. Your best
