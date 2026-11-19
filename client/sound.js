@@ -371,6 +371,7 @@ export const SOUND_NAMES = ["count", "go", "lap", "lastLap", "finish", "spin", "
  *   toggle()               switches the sound off or on, remembers it, and
  *                          says which it is now
  *   isOn()                 is the sound switched on?
+ *   cheer()                the crowd cheers once (the podium, podium.js)
  */
 export function createRaceSound(browserWindow, storage) {
   const watch = watchForSounds();
@@ -430,6 +431,12 @@ export function createRaceSound(browserWindow, storage) {
         machine?.setVolume(0);
       }
       return on;
+    },
+
+    cheer() {
+      if (on && machine !== null) {
+        machine.play({ name: "cheer" });
+      }
     },
 
     frame(facts, frameSeconds) {

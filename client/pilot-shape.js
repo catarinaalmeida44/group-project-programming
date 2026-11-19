@@ -31,6 +31,8 @@ const SHOE = "#1b1f24";
 const GLOVE = "#1b1f24";
 const VISOR = "#16202b";
 const WHEEL = "#3a4450";
+const GOLD = "#e8b923";
+const GOLD_DARK = "#a97c12";
 
 /** How tall the head picture is painted, from the chin to the top of the hair. A little big, like a toy figure, so the face can be seen. */
 export const HEAD_HEIGHT = 9.6;
@@ -52,19 +54,51 @@ export const FOREARM = 4.0;
 /** Where the helmet lies: on the ground beside the pilot's right foot. */
 export const HELMET_SPOT = Object.freeze([1.6, 7.4, HELMET_RADIUS]);
 
-/** The dances, one for each character (see danceOf in cast-choice.js). */
-export const DANCES = Object.freeze(["clap", "robot", "drive", "wave", "plane", "siu"]);
+/**
+ * The dances. Each character has their own (see danceOf in cast-choice.js).
+ * "gangnam" was added on 18 November 2026 for Cici Boss, who had "wave"
+ * before: "wave" stays in the list, and nobody dances it at the moment.
+ */
+export const DANCES = Object.freeze(["clap", "robot", "drive", "wave", "plane", "siu", "gangnam", "griddy", "floss", "dab"]);
+// (The last three were added the same evening: "griddy" for Ró Versos, who
+// asked for it, and "floss" for Dean and "dab" for Professor Ricardo
+// Pereira, because Catarina wanted better dances for them. (The Professor
+// had a "disco" point for an hour: she chose the dab instead.) Their old ones,
+// "drive", "clap" and "robot", stay in the list too, danced by nobody.)
 /** Every movement poseAt() knows: standing, arms crossed, and the dances. */
 export const MOVES = Object.freeze(["stand", "crossed", ...DANCES]);
+/** The movement of the winner on the podium (podium-shape.js): the trophy held high. */
+export const PODIUM_MOVES = Object.freeze(["trophy"]);
 
 /** How long one round of the "siu" takes: a run, a jump with a spin, the landing, and back to standing. */
 export const SIU_SECONDS = 3.4;
+/**
+ * How long one round of the "gangnam" takes: four beats of riding, four
+ * beats of swinging the lasso. As long as the siu, so that the big picture
+ * of the chosen pilot shows exactly one round before the arms are crossed.
+ */
+export const GANGNAM_SECONDS = SIU_SECONDS;
+/** How high one foot is lifted above the other in the "gangnam", in units. */
+export const GANGNAM_STEP = 1.7;
+/** How many beats a round of the "gangnam" has: half of them riding, half with the lasso. Ten in 3.4 seconds is fast. */
+export const GANGNAM_BEATS = 10;
+/** How high the "gangnam" jumps on every beat, in units. (Catarina, the same evening: "more energy, jumping".) */
+export const GANGNAM_JUMP = 2.2;
 
 const TURN = Math.PI * 2;
 
-/** A pose with nothing moving: every number at zero. The hands and elbows are filled in by each movement. */
+/**
+ * A pose with nothing moving: every number at zero. The hands and elbows
+ * are filled in by each movement. "hop" lifts one foot off the ground, the
+ * knee bending forwards: above zero the right foot, below zero the left,
+ * by that many units. "kick" puts one foot out in front, flat on the
+ * ground with its toe up, the same way: above zero the right foot, below
+ * zero the left. "pitch" leans the upper body back round the hips, in
+ * radians. "tilt" tips the head over towards a shoulder, in radians: above
+ * zero towards the right shoulder, below zero towards the left.
+ */
 function still(pose) {
-  return { lift: 0, sway: 0, lean: 0, jump: 0, spin: 0, feetApart: 0, wheel: 0, ...pose };
+  return { lift: 0, sway: 0, lean: 0, jump: 0, spin: 0, feetApart: 0, hop: 0, kick: 0, pitch: 0, tilt: 0, wheel: 0, trophy: 0, ...pose };
 }
 
 /** The pose of standing: the left hand on the hip, the right arm down, breathing a little. */
@@ -89,6 +123,17 @@ function stand(seconds) {
  *   "plane"    arms out like the wings of a plane, banking left and right (FranFon)
  *   "siu"      a little run, a jump with a full turn, and landing with the
  *              arms spread down and the feet apart (PCP)
+ *   "gangnam"  riding an invisible horse: the wrists crossed in front, the
+ *              feet apart and stepping in turn, then one arm up swinging a
+ *              lasso (Cici Boss)
+ *   "griddy"   turned to the side: the heels tapping out in front in turn,
+ *              both arms swinging back and forwards; then to the front,
+ *              the hands in front of the eyes like glasses (Ró Versos)
+ *   "floss"    both straight arms swinging from side to side past the hips,
+ *              the hips going the other way (Dean)
+ *   "dab"      one arm straight up to the side, the other across the face,
+ *              leaning into it, to one side and then the other
+ *              (Professor Ricardo Pereira)
  * Anything else is standing.
  */
 export function poseAt(move, seconds) {
@@ -171,11 +216,209 @@ export function poseAt(move, seconds) {
         rightHand: [0.8, 12, 15.4],
         rightBend: [-1, 0, 0],
       });
+    case "trophy": {
+      // The winner on the podium: the trophy held high in the right hand,
+      // beside the head, the left fist pumping, bouncing with joy.
+      const beat = t * Math.PI * 2 * 1.3;
+      return still({
+        lift: 0.5 * Math.abs(Math.sin(beat / 2)),
+        sway: 0.35 * Math.sin(beat / 4),
+        trophy: 1,
+        leftHand: [2.2, -4.6, 17.2 + 1.6 * Math.sin(beat / 2)],
+        leftBend: [0, -1, -0.6],
+        rightHand: [0.9, 7.2, 22.4 + 0.4 * Math.sin(beat / 2)],
+        rightBend: [0, 1, 0],
+      });
+    }
     case "siu":
       return siuAt(t);
+    case "gangnam":
+      return gangnamAt(t);
+    case "griddy":
+      return griddyAt(t);
+    case "floss": {
+      // Both straight arms swing to one side and then to the other, fast,
+      // while the hips go the opposite way. The arm that crosses the body
+      // passes in front of it; the arm on its own side swings back behind it.
+      const side = Math.sin(t * TURN * FLOSS_SWINGS); // -1: the arms are on the left, 1: on the right
+      const behind = (share) => 3.4 - 5.6 * share * share; // in front of the body (3.4), or back behind it
+      return still({
+        lift: 0.25 * Math.abs(Math.cos(t * TURN * FLOSS_SWINGS)),
+        sway: -0.9 * side,
+        lean: 0.12 * side,
+        feetApart: 0.8,
+        leftHand: [behind(Math.max(0, -side)), -1.0 + 4.5 * side, 9.2],
+        leftBend: [-1, 0, 0],
+        rightHand: [behind(Math.max(0, side)), 1.0 + 4.5 * side, 9.2],
+        rightBend: [-1, 0, 0],
+      });
+    }
+    case "dab":
+      return dabAt(t);
     default:
       return stand(t);
   }
+}
+
+/** How many times a second the arms of the "floss" go there and back. */
+export const FLOSS_SWINGS = 1.5;
+/** How long the "dab" takes to dab to one side and then to the other, in seconds. */
+export const DAB_SECONDS = 1.7;
+
+/** How long one round of the "griddy" takes: as long as the siu, for the same reason as the gangnam. */
+export const GRIDDY_SECONDS = SIU_SECONDS;
+
+/**
+ * The griddy, eight beats a round (Ró Versos). The whole time the heels
+ * tap out in front, the right one and then the left, the body bouncing and
+ * rocking over the foot that stands. For the first beats the pilot is
+ * turned to one side, so that this is seen from the side, and both arms
+ * swing together: back and low, then forwards and up. Then they turn to the
+ * front and put the hands in front of the eyes like a pair of glasses, hold
+ * it, turn to the other side and swing again. (The first griddy, an hour
+ * earlier, faced the front the whole time: arms and feet that move towards
+ * you can hardly be seen, and Catarina said it did not look like one.)
+ */
+function griddyAt(seconds) {
+  const beats = (seconds / GRIDDY_SECONDS) * 8;
+  const inRound = ((beats % 8) + 8) % 8;
+  const tap = Math.sin(beats * Math.PI); // above zero the right heel is out in front, below zero the left
+  const reach = 0.5 * (1 + tap); // the arms: 0 back and low, 1 forwards and up
+  // Which way the pilot is turned: to one side, to the front for the
+  // glasses, to the other side, and round again past the front, where a
+  // round ends and begins.
+  let turn;
+  if (inRound < 0.4 || inRound >= 7.6) {
+    turn = GRIDDY_TURN * (1 - 2 * easeInOut((inRound < 0.4 ? inRound + 0.4 : inRound - 7.6) / 0.8));
+  } else if (inRound < 2.2) {
+    turn = -GRIDDY_TURN;
+  } else if (inRound < 3.2) {
+    turn = -GRIDDY_TURN * (1 - easeInOut(inRound - 2.2));
+  } else if (inRound < 4.8) {
+    turn = 0;
+  } else if (inRound < 5.8) {
+    turn = GRIDDY_TURN * easeInOut(inRound - 4.8);
+  } else {
+    turn = GRIDDY_TURN;
+  }
+  const body = {
+    lift: 0.9 * Math.abs(tap), // a big bounce on every tap
+    sway: -0.7 * tap, // rocking over the foot that stands
+    pitch: 0.2, // leaning back, as the griddy is danced
+    spin: turn,
+    feetApart: 0.2,
+    kick: GRIDDY_KICK * tap,
+  };
+  // Side-on: both arms swing together, back and low, then forwards and up.
+  const swinging = still({
+    ...body,
+    leftHand: mixPoint([-4.6, -4.8, 9.4], [5.4, -4.4, 12.6], reach),
+    leftBend: [-0.6, 0, -1],
+    rightHand: mixPoint([-4.6, 4.8, 9.4], [5.4, 4.4, 12.6], reach),
+    rightBend: [-0.6, 0, -1],
+  });
+  // To the front: the hands in front of the eyes like a pair of glasses, the elbows out, still tapping.
+  const glasses = still({
+    ...body,
+    leftHand: [2.6, -1.5, 21.6],
+    leftBend: [0, -1, -0.3],
+    rightHand: [2.6, 1.5, 21.6],
+    rightBend: [0, 1, -0.3],
+  });
+  // The hands go up as the pilot turns to the front, and come down as they turn away again.
+  const share = inRound < 4 ? easeInOut(inRound - 2.2) : 1 - easeInOut(inRound - 4.8);
+  return blendPoses(swinging, glasses, share);
+}
+
+/** How far the "griddy" turns to each side, in radians: far enough for the heels and the arms to be seen from the side. */
+export const GRIDDY_TURN = 0.8;
+/** How far a heel taps out in front in the "griddy", in units. */
+export const GRIDDY_KICK = 4.2;
+
+/**
+ * The dab (Professor Ricardo Pereira). One arm is straight, up and out to
+ * one side. The other arm is bent: its elbow sticks out beside the head on
+ * the OTHER side, and its forearm runs across the face the same way as the
+ * straight arm, so the two are side by side. The head drops over into the
+ * bent elbow, and the body leans that way too. To the right, a hold, back
+ * to bouncing with both fists at the chest, to the left, a hold, back.
+ * (Two earlier tries crossed the wrong arm over the face and kept the head
+ * upright. Catarina: "not recognizable as a dab at all".)
+ */
+function dabAt(seconds) {
+  const round = (((seconds / DAB_SECONDS) % 1) + 1) % 1;
+  const half = round < 0.5 ? round * 2 : round * 2 - 1; // 0 to 1 within the dab to one side
+  const into = half < 0.22 ? easeInOut(half / 0.22) : half < 0.78 ? 1 : 1 - easeInOut((half - 0.78) / 0.22);
+  const side = round < 0.5 ? 1 : -1; // 1: the straight arm points to the pilot's right. -1: to the left
+  const bounce = Math.abs(Math.sin((seconds / DAB_SECONDS) * TURN * 2));
+  const fists = still({
+    lift: 0.4 * bounce,
+    feetApart: 0.9,
+    leftHand: [3.2, -2.2, 13.8],
+    leftBend: [0, -1, -0.6],
+    rightHand: [3.2, 2.2, 13.8],
+    rightBend: [0, 1, -0.6],
+  });
+  const straight = [0.5, 12 * side, 23.5]; //   out of reach on purpose: the arm is straight, up and out
+  const bent = [2.3, -2.9 * side, 21.2]; //     the hand of the bent arm, in front of the eye on its own side
+  const elbowOut = [0.1, -side, 0.15]; //       its elbow sticks out beside the head
+  const dab = still({
+    lift: 0.5,
+    lean: -0.2 * side, //  the body leans over towards the bent elbow
+    sway: -0.5 * side,
+    tilt: -0.5 * side, //  and the head drops into it
+    feetApart: 1.5,
+    leftHand: side === 1 ? bent : straight,
+    leftBend: side === 1 ? elbowOut : [0, -1, 0],
+    rightHand: side === 1 ? straight : bent,
+    rightBend: side === 1 ? [0, 1, 0] : elbowOut,
+  });
+  return blendPoses(fists, dab, into);
+}
+/**
+ * The horse-riding dance, ten beats a round. The whole time the pilot
+ * jumps, once a beat, the feet apart, one knee higher than the other and
+ * then the other one, the body thrown from side to side. For the first half
+ * the wrists are crossed in front, as if holding reins, and pump hard, down
+ * on every beat. For the second half the right arm is up beside the head,
+ * swinging a lasso round once a beat, the left fist held in front of the
+ * chest.
+ */
+function gangnamAt(seconds) {
+  const beats = (seconds / GANGNAM_SECONDS) * GANGNAM_BEATS;
+  const half = GANGNAM_BEATS / 2;
+  const inRound = ((beats % GANGNAM_BEATS) + GANGNAM_BEATS) % GANGNAM_BEATS;
+  const step = Math.sin(beats * Math.PI); // above zero the right foot is up, below zero the left
+  const pump = 1.6 * Math.cos(beats * TURN); // the hands, down and up once a beat
+  const swing = beats * TURN; // the lasso, round once a beat
+  const body = {
+    // A jump on every beat: both feet off the ground, landing on the beat,
+    // one knee higher than the other, the body thrown from side to side.
+    jump: GANGNAM_JUMP * Math.abs(step),
+    sway: -1.1 * step, // over the foot that lands first
+    lean: -0.12 * step,
+    feetApart: 1.5,
+    hop: GANGNAM_STEP * step,
+  };
+  const reins = still({
+    ...body,
+    leftHand: [4.8, 0.9, 13.6 + pump],
+    leftBend: [0, -1, -0.5],
+    rightHand: [5.2, -0.9, 13.2 + pump],
+    rightBend: [0, 1, -0.5],
+  });
+  const lasso = still({
+    ...body,
+    leftHand: [4.2, 0.6, 13.6 + pump * 0.5],
+    leftBend: [0, -1, -0.5],
+    rightHand: [0.8 + 2.2 * Math.cos(swing), 6.8 + 2.2 * Math.sin(swing), 21.6 + 0.6 * Math.sin(swing)],
+    rightBend: [0, 1, 0],
+  });
+  // From the reins to the lasso during the last beat of the first half, and
+  // back during the last beat of the round, so that a round ends exactly as
+  // it began.
+  const share = inRound < half ? easeInOut(inRound - (half - 1)) : 1 - easeInOut(inRound - (GANGNAM_BEATS - 1));
+  return blendPoses(reins, lasso, share);
 }
 
 /** The famous jump and landing, in four parts, each flowing into the next. */
@@ -239,7 +482,12 @@ export function blendPoses(from, to, share) {
     jump: mix(from.jump, to.jump),
     spin: mix(from.spin, to.spin),
     feetApart: mix(from.feetApart, to.feetApart),
+    hop: mix(from.hop ?? 0, to.hop ?? 0),
+    kick: mix(from.kick ?? 0, to.kick ?? 0),
+    pitch: mix(from.pitch ?? 0, to.pitch ?? 0),
+    tilt: mix(from.tilt ?? 0, to.tilt ?? 0),
     wheel: mix(from.wheel, to.wheel),
+    trophy: mix(from.trophy, to.trophy),
     leftHand: mixPoint(from.leftHand, to.leftHand, s),
     leftBend: mixPoint(from.leftBend, to.leftBend, s),
     rightHand: mixPoint(from.rightHand, to.rightHand, s),
@@ -335,10 +583,18 @@ export function armWith(shoulder, hand, bend) {
  *         the suit
  *   hair  the colour of the hair, for the back of the head
  *   pose  from poseAt() or blendPoses(). Left out: standing
+ *   withHelmet  false: no helmet anywhere (the podium). Left out: the
+ *               helmet lies on the ground beside the pilot
+ *   longHair    for a character whose hair falls over the shoulders
+ *               (longHairOf in cast-choice.js): { below }, how far the
+ *               head picture goes on below the chin. Left out: short hair
  */
-export function pilotParts(look, hair = "#2b2420", pose = poseAt("stand", 0)) {
+export function pilotParts(look, hair = "#2b2420", pose = poseAt("stand", 0), withHelmet = true, longHair = null) {
   const { body, suit, helmet, stripe } = look;
   const { lift, sway, lean, jump, spin, feetApart } = pose;
+  const hop = pose.hop ?? 0;
+  const leftUp = Math.max(0, -hop); // how far each foot is off the ground
+  const rightUp = Math.max(0, hop);
   const suitLight = shade(suit, 1.08);
   const hipZ = HIP_Z + lift;
   const shoulderZ = SHOULDER_Z + lift;
@@ -349,10 +605,16 @@ export function pilotParts(look, hair = "#2b2420", pose = poseAt("stand", 0)) {
   // pilot spins round their upright line and jumps.
   const leanCos = Math.cos(lean);
   const leanSin = Math.sin(lean);
+  // Leaning back comes first: the upper body tips backwards round the hips.
+  const pitch = pose.pitch ?? 0;
+  const pitchCos = Math.cos(pitch);
+  const pitchSin = Math.sin(pitch);
   const leanPoint = ([x, y, z]) => {
+    const up = z - hip[2];
+    const backX = x * pitchCos - up * pitchSin;
     const dy = y - hip[1];
-    const dz = z - hip[2];
-    return [x, hip[1] + dy * leanCos + dz * leanSin, hip[2] - dy * leanSin + dz * leanCos];
+    const dz = x * pitchSin + up * pitchCos;
+    return [backX, hip[1] + dy * leanCos + dz * leanSin, hip[2] - dy * leanSin + dz * leanCos];
   };
   const spinCos = Math.cos(spin);
   const spinSin = Math.sin(spin);
@@ -365,8 +627,11 @@ export function pilotParts(look, hair = "#2b2420", pose = poseAt("stand", 0)) {
   const moveHand = ([x, y, z]) => [x, y + sway, z + lift];
   const left = armWith(leftShoulder, moveHand(pose.leftHand), pose.leftBend);
   const right = armWith(rightShoulder, moveHand(pose.rightHand), pose.rightBend);
-  const leftFoot = [0.3, -(FOOT_Y + feetApart), ANKLE];
-  const rightFoot = [0.3, FOOT_Y + feetApart, ANKLE];
+  // A lifted foot also comes a little forwards, as the knee does.
+  // A foot that is kicked out is further forwards still, flat on the ground.
+  const kick = pose.kick ?? 0;
+  const leftFoot = [0.3 + leftUp * 0.4 + Math.max(0, -kick), -(FOOT_Y + feetApart), ANKLE + leftUp];
+  const rightFoot = [0.3 + rightUp * 0.4 + Math.max(0, kick), FOOT_Y + feetApart, ANKLE + rightUp];
 
   const upperParts = [
     // The body of the racing suit, with a stripe down the front in the
@@ -397,14 +662,16 @@ export function pilotParts(look, hair = "#2b2420", pose = poseAt("stand", 0)) {
     { name: "right glove", faces: bar(towards(right.hand, right.elbow, 0.5), towards(right.hand, right.elbow, -1.0), 2.1, GLOVE) },
     // The steering wheel of the "drive" dance: a ring held by both hands, with a bar across.
     ...(pose.wheel > 0.5 ? steeringWheel(left.hand, right.hand) : []),
+    // The trophy of the winner, standing on the right hand.
+    ...(pose.trophy > 0.5 ? trophyParts(plus(right.hand, [0, 0, 0.9])) : []),
   ].map((part) => mapPart(part, upper));
 
   const lowerParts = [
     // Shoes and legs: the legs reach from the feet up to the hips.
-    { name: "left shoe", faces: box(-1.0, 2.8, leftFoot[1] - 1.15, leftFoot[1] + 1.15, 0, 1.3, SHOE) },
-    { name: "right shoe", faces: box(-1.0, 2.8, rightFoot[1] - 1.15, rightFoot[1] + 1.15, 0, 1.3, SHOE) },
-    { name: "left leg", faces: bar([0, -1.7 + hip[1], hipZ], leftFoot, 2.1, shade(suit, 0.92)) },
-    { name: "right leg", faces: bar([0, 1.7 + hip[1], hipZ], rightFoot, 2.1, shade(suit, 0.92)) },
+    { name: "left shoe", faces: shoeFaces(leftFoot, leftUp, Math.max(0, -kick)) },
+    { name: "right shoe", faces: shoeFaces(rightFoot, rightUp, Math.max(0, kick)) },
+    { name: "left leg", faces: legWith([0, -1.7 + hip[1], hipZ], leftFoot, shade(suit, 0.92)) },
+    { name: "right leg", faces: legWith([0, 1.7 + hip[1], hipZ], rightFoot, shade(suit, 0.92)) },
   ].map((part) => mapPart(part, lower));
 
   // The head sits on the collar, and turns with the body.
@@ -415,10 +682,42 @@ export function pilotParts(look, hair = "#2b2420", pose = poseAt("stand", 0)) {
   return [
     ...lowerParts,
     ...upperParts,
-    // The helmet lies on the ground, in front of the pilot.
-    { name: "helmet", ball: { middle: [...HELMET_SPOT], radius: HELMET_RADIUS, colour: helmet, stripe, visor: VISOR } },
-    { name: "head", head: { middle: headMiddle, height: HEAD_HEIGHT, hair, facing } },
+    // The helmet lies on the ground, beside the pilot.
+    ...(withHelmet ? [{ name: "helmet", ball: { middle: [...HELMET_SPOT], radius: HELMET_RADIUS, colour: helmet, stripe, visor: VISOR } }] : []),
+    { name: "head", head: { middle: headMiddle, height: HEAD_HEIGHT, hair, facing, ...(longHair ? { long: longHair } : {}), ...(pose.tilt ? { tilt: pose.tilt } : {}) } },
   ];
+}
+
+/**
+ * A shoe. Flat as a rule. A foot that is kicked out in front by "out" units
+ * stands on its heel with the toe pointing up: a heel tap.
+ */
+function shoeFaces(foot, up, out) {
+  if (out < 0.4) {
+    return box(foot[0] - 1.3, foot[0] + 2.5, foot[1] - 1.15, foot[1] + 1.15, up, up + 1.3, SHOE);
+  }
+  const toe = Math.min((out - 0.4) * 0.7, 2); // how high the toe is
+  return bar([foot[0] - 1.1, foot[1], up + 0.85], [foot[0] + 2.3, foot[1], up + 0.85 + toe], 1.7, SHOE);
+}
+
+/** The length of a leg, from the hip to the ankle, standing straight. */
+export const LEG = HIP_Z - ANKLE;
+
+/**
+ * A leg from the hip to the foot. Standing, it is one straight piece, as it
+ * always was. When the foot is lifted, the foot is nearer the hip than the
+ * leg is long, so the leg bends: the knee goes forwards, and the leg is two
+ * pieces that together keep its length.
+ */
+export function legWith(hip, foot, colour) {
+  const length = Math.hypot(foot[0] - hip[0], foot[1] - hip[1], foot[2] - hip[2]);
+  if (length >= LEG) {
+    return bar(hip, foot, 2.1, colour);
+  }
+  const forwards = Math.sqrt((LEG / 2) ** 2 - (length / 2) ** 2);
+  const middle = mixPoint(hip, foot, 0.5);
+  const knee = [middle[0] + forwards, middle[1], middle[2]];
+  return [...bar(hip, knee, 2.1, colour), ...bar(knee, foot, 2.1, colour)];
 }
 
 /**
@@ -444,6 +743,28 @@ export function steeringWheel(leftHand, rightHand) {
   ];
 }
 
+/**
+ * A gold trophy: a base, a stem, a cup that widens towards the top, and two
+ * handles. "bottom" is the middle of the bottom of the base. "size" makes it
+ * bigger: at the usual 1.45 it is about 8 units tall, so it shows well above
+ * a pilot's hand.
+ */
+export function trophyParts(bottom, size = 1.45) {
+  const [x, y, z] = bottom;
+  const at = (dx, dy, dz) => [x + dx * size, y + dy * size, z + dz * size];
+  const cup = (low, high, half) =>
+    box(x - half * size, x + half * size, y - half * size, y + half * size, z + low * size, z + high * size, GOLD, shade(GOLD, 1.15));
+  return [
+    { name: "trophy base", faces: box(x - 1.1 * size, x + 1.1 * size, y - 1.1 * size, y + 1.1 * size, z, z + 0.8 * size, GOLD_DARK) },
+    { name: "trophy stem", faces: bar(at(0, 0, 0.8), at(0, 0, 2.4), 0.7, GOLD) },
+    { name: "trophy cup low", faces: cup(2.4, 3.4, 0.7) },
+    { name: "trophy cup middle", faces: cup(3.4, 4.4, 1.05) },
+    { name: "trophy cup top", faces: cup(4.4, 5.6, 1.35) },
+    { name: "trophy left handle", faces: [...bar(at(0, -1.35, 5.2), at(0, -2.3, 4.6), 0.45, GOLD), ...bar(at(0, -2.3, 4.6), at(0, -1.0, 3.6), 0.45, GOLD)] },
+    { name: "trophy right handle", faces: [...bar(at(0, 1.35, 5.2), at(0, 2.3, 4.6), 0.45, GOLD), ...bar(at(0, 2.3, 4.6), at(0, 1.0, 3.6), 0.45, GOLD)] },
+  ];
+}
+
 /** Where the kart and the pilot stand in the scene: the kart behind and to one side, turned a little. */
 export const KART_SPOT = Object.freeze({ x: -6, y: -7, turn: 0.55 });
 export const PILOT_SPOT = Object.freeze({ x: 4, y: 8, turn: 0 });
@@ -456,12 +777,12 @@ export function emptyKartParts(look) {
 }
 
 /**
- * A scene for a character. Gives { kart, pilot, shadows }:
+ * A scene for a character ("longHair" as in pilotParts). Gives { kart, pilot, shadows }:
  *   kart     the parts of the empty kart, moved to its spot, or none when "withKart" is false
  *   pilot    the parts of the pilot, moved to their spot
  *   shadows  [{ x, y, across, along, turn }]: the patches of shadow on the ground
  */
-export function pilotScene(look, hair, pose, withKart = true) {
+export function pilotScene(look, hair, pose, withKart = true, longHair = null) {
   const spot = withKart ? PILOT_SPOT : ALONE_SPOT;
   const shadows = [{ x: spot.x + 0.6, y: spot.y, along: 4.4, across: 5.4 + (pose?.feetApart ?? 0), turn: 0 }];
   if (withKart) {
@@ -469,7 +790,7 @@ export function pilotScene(look, hair, pose, withKart = true) {
   }
   return {
     kart: withKart ? emptyKartParts(look).map((part) => movePart(part, KART_SPOT)) : [],
-    pilot: pilotParts(look, hair, pose).map((part) => movePart(part, spot)),
+    pilot: pilotParts(look, hair, pose, true, longHair).map((part) => movePart(part, spot)),
     shadows,
   };
 }
@@ -487,7 +808,7 @@ export function movePart(part, { x, y, turn }) {
 }
 
 /** A part with every point moved by "move": its corners, the middle of a ball or a head. */
-function mapPart(part, move) {
+export function mapPart(part, move) {
   const moved = { ...part };
   if (part.faces) {
     moved.faces = part.faces.map((face) => ({ ...face, points: face.points.map(move) }));

@@ -404,9 +404,10 @@
     </dialog>
 
     <!-- Choose your character: the step after choosing a track. kart-panel.js
-         paints every character as their pilot in their kart, with their face,
-         and sets the button below to the race on the chosen track. The faces
-         are only shown here, never in the race. -->
+         paints the chosen pilot big beside their kart, and every character
+         as a pilot on a tile, and sets the button to the race on the chosen
+         track. The faces are only shown here and on the podium, never in
+         the race. -->
     <dialog id="your-kart" class="panel panel-wide" aria-labelledby="your-kart-title" closedby="any">
       <div class="panel-head">
         <h2 id="your-kart-title">Choose your character</h2>
@@ -417,15 +418,25 @@
         </form>
       </div>
       <div class="panel-body character-step">
-        <p id="character-lead" class="panel-lead"></p>
-        <div class="character-stage">
-          <!-- The big picture of the chosen pilot is put here by kart-panel.js. -->
-          <div id="kart-preview-place"></div>
-          <!-- One card for each character goes here. -->
-          <div id="kart-choices" class="kart-choices"></div>
+        <!-- The chosen one, like the poster of a race: the big picture is put
+             on the left by kart-panel.js, in the light of a lamp and the
+             colour of their kart. On the right their number, their name,
+             and the button that starts the race. Moving the mouse over
+             someone in the line-up puts them on the poster. -->
+        <div id="character-hero" class="hero">
+          <div id="kart-preview-place" class="hero-stage"></div>
+          <div class="hero-card">
+            <p id="character-number" class="hero-number" aria-hidden="true"></p>
+            <p id="character-lead" class="hero-kicker"></p>
+            <p id="character-name" class="character-name"></p>
+            <div class="hero-stripe" aria-hidden="true"></div>
+            <p class="hero-move"><span class="hero-move-word">Signature move</span> <span id="character-move"></span></p>
+            <a id="character-go" class="button button-primary button-wide" href="/race.html">Race</a>
+            <p id="kart-status" class="note" role="status"></p>
+          </div>
         </div>
-        <p id="kart-status" class="note" role="status"></p>
-        <a id="character-go" class="button button-primary button-wide" href="/race.html">Race</a>
+        <!-- The line-up: one tile for each character goes here. -->
+        <div id="kart-choices" class="kart-choices"></div>
         <p class="note">Each character has its own kart colours. Online, only one player in a room can be each character: if someone already is yours, you get the first free one. In the race the pilot wears a helmet, so the face is not shown.</p>
       </div>
     </dialog>

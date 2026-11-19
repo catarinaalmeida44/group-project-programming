@@ -26,7 +26,7 @@ import { isLookChoice } from "./kart-looks.js";
 export const CAST = Object.freeze(
   [
     //                                                kart     helmet   suit
-    { id: "dean", name: "Dean", look: { body: 9, helmet: 8, suit: 0 } }, //  black, white, white
+    { id: "dean", name: "Dean", look: { body: 9, helmet: 3, suit: 0 } }, //  black, green, white (the helmet was white until 18 November 2026: Catarina asked for a pop of green)
     { id: "ricardo", name: "Professor Ricardo Pereira", look: { body: 5, helmet: 1, suit: 1 } }, // orange, blue, navy
     { id: "ro", name: "Ró Versos", look: { body: 7, helmet: 2, suit: 5 } }, //  pink, yellow, yellow
     { id: "cici", name: "Cici Boss", look: { body: 1, helmet: 7, suit: 1 } }, // blue, pink, navy

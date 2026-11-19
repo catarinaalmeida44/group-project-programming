@@ -55,6 +55,25 @@ export function hairOf(id) {
 }
 
 /**
+ * The characters with long hair. The other head pictures end at the chin.
+ * Theirs goes on below it, with the hair that hangs over the shoulders:
+ * "below" says how much of the picture is below the chin, as a share of the
+ * head (from the top of the hair to the chin). kart-paint.js paints the
+ * head as big as everybody else's and lets the rest hang down.
+ * Cici Boss: her head was first cut as an oval from a photo that ended
+ * under her lip, and looked like an egg. On 18 November 2026 she sent the
+ * whole photo, and her head was cut again from it, hair and chin included.
+ */
+const LONG_HAIR = Object.freeze({
+  cici: Object.freeze({ below: 0.497 }),
+});
+
+/** How far a character's head picture goes on below the chin ({ below }), or null for short hair or an id that is not in the cast. */
+export function longHairOf(id) {
+  return characterById(id) === null ? null : (LONG_HAIR[id] ?? null);
+}
+
+/**
  * Where the picture of a character's head is: the head cut out of the photo,
  * with the background made see-through. Painted on the standing pilot
  * (pilot-shape.js). Null for an id that is not in the cast.
@@ -65,10 +84,10 @@ export function headOf(id) {
 
 /** Each character's own dance (the dances are in pilot-shape.js). */
 const DANCE = Object.freeze({
-  dean: "clap",
-  ricardo: "robot",
-  ro: "drive",
-  cici: "wave",
+  dean: "floss", //     "clap" until 18 November 2026
+  ricardo: "dab", //    "robot" until 18 November 2026
+  ro: "griddy", //      "drive" until 18 November 2026: he asked for this one
+  cici: "gangnam", //   "wave" until 18 November 2026: she asked for this one
   franfon: "plane",
   pcp: "siu",
 });
@@ -76,6 +95,25 @@ const DANCE = Object.freeze({
 /** A character's own dance, or null for an id that is not in the cast. */
 export function danceOf(id) {
   return characterById(id) === null ? null : DANCE[id];
+}
+
+/** What each dance is called on the page ("Signature move" in "Choose your character"). */
+const DANCE_NAMES = Object.freeze({
+  clap: "The big clap",
+  robot: "The robot",
+  drive: "Hands on the wheel",
+  wave: "The wave",
+  plane: "The aeroplane",
+  siu: "The siu",
+  gangnam: "Gangnam style",
+  griddy: "The griddy",
+  floss: "The floss",
+  dab: "The dab",
+});
+
+/** The name of a character's dance, to show on the page, or null for an id that is not in the cast. */
+export function danceNameOf(id) {
+  return characterById(id) === null ? null : DANCE_NAMES[DANCE[id]];
 }
 
 /** The colours of a character's kart, ready to paint, or null for an id that is not in the cast. */

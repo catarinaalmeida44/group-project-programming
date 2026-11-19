@@ -206,12 +206,14 @@ export function paintKart(context, viewer, look, steer = 0) {
  *               it has loaded, the head is painted in the colour of the hair
  *     pose      from poseAt(), blendPoses(), chosenPose() or cardPose()
  *     withKart  true: the kart stands beside the pilot. False: the pilot alone
+ *     longHair  { below } for a character whose head picture goes on below
+ *               the chin (longHairOf in cast-choice.js). Left out: short hair
  */
-export function paintPilotScene(context, viewer, { look, hair, head, pose, withKart = true }) {
+export function paintPilotScene(context, viewer, { look, hair, head, pose, withKart = true, longHair = null }) {
   if (viewer === null) {
     return;
   }
-  const scene = pilotScene(look, hair, pose, withKart);
+  const scene = pilotScene(look, hair, pose, withKart, longHair);
   for (const shadow of scene.shadows) {
     paintShadowPatch(context, viewer, shadow);
   }
@@ -238,6 +240,27 @@ function kartReady(look, kart) {
   return parts;
 }
 
+/**
+ * Paints a whole scene of parts (the podium, podium-shape.js), furthest
+ * first, with patches of shadow on the ground under it. Each head carries
+ * its own picture ("picture" in the head). Parts that never move can be
+ * prepared once with prepareParts() and handed in again every picture.
+ */
+export function paintScene(context, viewer, { parts, shadows = [] }) {
+  if (viewer === null) {
+    return;
+  }
+  for (const shadow of shadows) {
+    paintShadowPatch(context, viewer, shadow);
+  }
+  paintParts(context, viewer, parts.map((part) => (part.prepared ? part : ready(part))), null);
+}
+
+/** Parts with what painting needs worked out once, for parts that never move. */
+export function prepareParts(parts) {
+  return parts.map((part) => ({ ...ready(part), prepared: true }));
+}
+
 /** Paints a list of parts, furthest first. */
 function paintParts(context, viewer, parts, face) {
   // Furthest part first. The low parts (the floor) come before all others.
@@ -253,7 +276,7 @@ function paintParts(context, viewer, parts, face) {
       continue;
     }
     if (part.head) {
-      paintHead(context, viewer, part.head, face);
+      paintHead(context, viewer, part.head, part.head.picture ?? face); // a head may carry its own picture (the podium)
       continue;
     }
     // Faces of one solid piece do not cover each other once the ones facing
@@ -365,6 +388,11 @@ function paintShadowPatch(context, viewer, { x, y, along, across, turn }) {
  * turned. When the pilot turns away (the "siu" spin), the picture gets
  * narrower and slides round, and from behind only the back of the head
  * shows, in the colour of the hair.
+ *
+ * A picture of someone with long hair goes on below the chin: "long.below"
+ * in the head says how far, as a share of the head (longHairOf in
+ * cast-choice.js). The head itself stays where it is and as big as
+ * everybody else's, and the hair hangs down over the shoulders.
  */
 function paintHead(context, viewer, head, picture) {
   const [mx, my, mz] = head.middle;
@@ -373,8 +401,11 @@ function paintHead(context, viewer, head, picture) {
     return;
   }
   const loaded = picture !== null && picture.complete && picture.naturalWidth > 0;
-  const tall = head.height * middle.scale;
-  const wide = loaded ? (tall * picture.naturalWidth) / picture.naturalHeight : tall * 0.78;
+  const tall = head.height * middle.scale; // from the top of the hair to the chin
+  const whole = tall * (1 + (head.long?.below ?? 0)); // the whole picture, hair below the chin included
+  const pictureWide = loaded ? (whole * picture.naturalWidth) / picture.naturalHeight : tall * 0.78;
+  // The head alone is never wider than this, however much hair is beside it.
+  const wide = Math.min(pictureWide, tall * 0.88);
 
   // How much the face looks towards the eye: 1 straight at it, 0 from the side, -1 away.
   const [fx, fy] = head.facing;
@@ -402,9 +433,23 @@ function paintHead(context, viewer, head, picture) {
   // Turned a little: the face gets narrower and slides towards the side it looks to.
   const tip = viewer.place(mx + fx, my + fy, mz);
   const side = tip === null ? 0 : Math.sign(tip.x - middle.x);
-  const width = wide * towards;
-  const x = middle.x - width / 2 + side * (wide - width) * 0.35;
-  context.drawImage(picture, x, middle.y - tall / 2, width, tall);
+  const width = pictureWide * towards;
+  const x = middle.x - width / 2 + side * (pictureWide - width) * 0.35;
+  if (!head.tilt) {
+    context.drawImage(picture, x, middle.y - tall / 2, width, whole);
+    return;
+  }
+  // A head tipped over towards a shoulder ("tilt" in the pose): the picture
+  // is turned round the chin. Which way that is on the screen depends on
+  // where the pilot's right shoulder is, seen from the eye.
+  const right = viewer.place(mx - fy, my + fx, mz); // one unit towards the pilot's right
+  const rightOnScreen = right === null ? 1 : Math.sign(right.x - middle.x) || 1;
+  const chin = middle.y + tall * 0.42;
+  context.save();
+  context.translate(middle.x, chin);
+  context.rotate(head.tilt * rightOnScreen);
+  context.drawImage(picture, x - middle.x, middle.y - tall / 2 - chin, width, whole);
+  context.restore();
 }
 
 /**

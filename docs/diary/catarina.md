@@ -4,6 +4,177 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 18 November 2026, late evening: the podium inside the atrium, a white screen, more dances
+
+**What she said, after looking at the entry below**
+
+- The podium should be inside the Hovione Atrium, on the floor the race drives over. She drew where on a screenshot. (She had meant this from the start: the agent had taken "inside the atrium" for the Moodle screen only.)
+- The Moodle screen: white with black letters, in the lettering Nova uses for announcements.
+- "Choose your character": moving the mouse over a driver should show them in the big picture. No colours listed. The signature move stays, "it's fun".
+- Rodrigo asked her for the griddy as his dance. Better dances for Professor Ricardo and the Dean. Her own gangnam was underwhelming: more energy, jumping.
+- A pop of green somewhere in the Dean's colours.
+
+**What was done**
+
+| What | Where |
+|---|---|
+| The podium of the Nova lap stands in the atrium, a little past the black letters, seen from nearer the entrance, so the letters are behind the drivers and the Moodle screen is at the edge of the picture | one line, `podium: { at, camera }`, in `client/nova-lap-look.js` |
+| The screen is white with black letters: the school's name in a corner (drawn with lines by our code, as on the walls), "IT HELP DESK", a thin line, the sentence, "MOODLE IS DOWN." in heavy capitals | `it-screen` in `client/wall-art.js` |
+| Moving the mouse over a driver (or the keyboard) puts them on the poster. It does not choose them: a click does, and "YOU" stays on the chosen one. When the mouse leaves, the chosen one is back | `showOnPoster()` in `client/kart-panel.js` |
+| The dots of colour are gone from the poster; the signature move is there | `client/index.html`, `client/style.css`, `danceNameOf()` in `client/cast-choice.js` |
+| Three new dances: "griddy" (Ró Versos: skipping feet, both arms swinging forwards and back, then the hands in front of the eyes like glasses), "floss" (Dean: straight arms from side to side past the hips, hips the other way), "disco" (Professor Ricardo Pereira: one arm up to the side, then down across the body) | `client/pilot-shape.js`, `client/cast-choice.js` |
+| The gangnam jumps on every beat, ten beats a round instead of eight, with bigger arms | `gangnamAt()` in `client/pilot-shape.js` |
+| Dean's helmet is green | `shared/cast.js` |
+
+**About Nova's lettering**
+
+The agent searched for the school's brand book and did not find which typeface it uses. So the screen has what could be seen without it: white, black, plain heavy capitals, the name in a corner. The letters are the browser's own Helvetica or Arial, because the game has no font files. If she has a photo of a real notice on that screen, it can be matched more closely.
+
+**Six existing tests were changed, because the rules changed**
+
+All six were Pedro's, from 17 and 18 November. He should know, and say if he disagrees.
+
+| Test | It said | It says now |
+|---|---|---|
+| `tests/pilot-shape.test.js`, the list of dances | six dances (seven since this afternoon) | ten: "griddy", "floss" and "disco" were added at the end |
+| `tests/pilot-shape.test.js`, "keeps the feet on the ground, except during the jump of the siu" | only the siu leaves the ground | the siu and the gangnam do |
+| `tests/pilot-shape.test.js`, "...PCP the siu and Ró Versos the driving" | Ró Versos pretends to drive | Ró Versos does the griddy |
+| `tests/cast.test.js`, "paints each character in the colours the team chose" | Dean: black, white, white | Dean: black, green, white |
+| `tests/podium.test.js`, "stands right in front of the white wall with the name" | the podium is on the lawn at the end of the avenue | the podium and its camera are inside the atrium, away from the walls |
+| `tests/podium.test.js`, "stands on the lawn and not in the way of the karts" | no part of the podium on a road square | every step and every student stands on the floor of the hall, none inside a wall, the letters or a table |
+
+One more of his tests kept its checks and lost the word "lawn" in its name. Two of the agent's own tests from this afternoon were changed too (the gangnam's feet, and which dances bend a leg).
+
+**Decisions made by the agent, please confirm**
+
+- The exact spot of the podium in the atrium, and that it replaces Pedro's lawn.
+- The floss for Dean and the disco point for the Professor. She asked for "better" ones and left the choice open.
+- The green is Dean's helmet.
+- On the Test oval and the Campus loop the podium is still in Pedro's separate hall. It could be shown in the real atrium after every track: not done, to be asked.
+
+**What was checked, and what was not**
+
+- `npm test`: 1,901 pass, 5 skipped.
+- In the agent's browser: the podium in the atrium with a pretend top three; the white screen from the kart; the poster while the mouse is over Dean and over Ró Versos, and that the saved choice stays Cici Boss; six moments of each of the four new or changed dances side by side.
+- NOT checked: the new rules were not broken on purpose this time. NOT checked: anything in motion, a race driven by hand to the podium, a phone, the live site.
+
+**Later still: the griddy again, and the dab**
+
+She looked at the griddy and said it did not look like one, and chose the dab for the Professor.
+
+- **Why the first griddy did not work.** The pilot faced the camera the whole time, and the griddy is arms that swing forwards and back and heels that tap out in front. Anything that moves towards the camera hardly changes on the screen. So the new one turns to the side for the swinging and the tapping, turns to the front to put the hands in front of the eyes like glasses, and then turns to the other side (`griddyAt()` in `client/pilot-shape.js`).
+- **A foot out in front.** A pose can now put one foot forwards, flat on the ground ("kick"), next to lifting one ("hop").
+- **The dab** replaces the disco point, which is deleted: one arm straight up to the side, the other across the face, leaning into it, to the right, then to the left, with both fists at the chest in between (`dabAt()`).
+- The list of dances in `tests/pilot-shape.test.js` now ends with "dab" where it said "disco". The tests for the disco point, written an hour earlier, were replaced by tests for the dab, and the tests for the griddy were rewritten for the new one.
+- Checked: `npm test`, 1,904 pass, 5 skipped. Eight moments of each of the two dances side by side in the agent's browser. NOT checked: in motion.
+
+**Last of the evening: the podium back outside, and "more exaggerated"**
+
+She looked at the podium in the atrium and liked it better outside, where Pedro had it. So it is back on the lawn in front of the school's name, and his three tests about that spot are again exactly as he wrote them. That leaves four of his tests changed this evening, not six: the list of dances, the jump of the gangnam, Ró Versos's dance, and Dean's colours.
+
+What she asked for instead: more people or people further apart, a small animation of the camera coming in, more exaggerated.
+
+| What | Where |
+|---|---|
+| 80 students instead of 28: four rows behind the podium in three blocks, with a way through on each side, and a group that reaches forwards on each side. On the Nova lap one block stands on the avenue, and the low wall runs through a way through | `crowdSpots()` in `client/podium-shape.js` |
+| They jump higher | `CROWD_JUMP` |
+| The camera starts four times further away, with the whole crowd in the picture, and comes in to the podium in 2.8 seconds, fast at first and gently at the end. In the hall of the other tracks the picture grows the same way | `cameraPullBack()` in `client/podium.js`, used in `client/podium-view.js` |
+| The drivers are shown bigger, and there is more confetti | `TRACK_CAMERA` and `CONFETTI_PIECES` in `client/podium-view.js` |
+
+Checked: `npm test`, 1,915 pass, 5 skipped. The start, a moment on the way and the end of the camera's move, on the Nova lap, and the hall of the Test oval, in the agent's browser, as single pictures. NOT checked: the move itself in motion, and whether 80 students slow a slow laptop down.
+
+**After she raced it: the griddy and the dab a third time, and the school's name**
+
+She drove a race to the podium and sent a screenshot: the podium looks good, the name on the wall behind it looks weird, and "neither the dab is good nor the griddy".
+
+- **The name.** In her screenshot its top was cut off by the edge of the picture. The podium's camera now sits 45 dots lower on the screen (`TRACK_CAMERA` in `client/podium-view.js`), so the whole name is in the picture with room above it. If "weird" meant something else about the name, she has to say what.
+- **The dab.** The arm lay right across the face, so nobody could tell who was dabbing. The bent arm now crosses under the eyes, over the mouth and chin, its forearm the same way as the straight arm; the pilot goes up on the toes and turns into it a little.
+- **The griddy.** Three things it lacked: the upper body leans back (a pose can now lean back, "pitch"), the foot that taps stands on its heel with the toe up (`shoeFaces()`), and the bounce is nearly twice as big. It turns a little less far to the side, so the face stays wider.
+- Checked: `npm test`, and eight moments of each dance side by side, and the end of the podium's camera move, in the agent's browser. NOT checked: in motion. These two dances have now been judged "not good" twice by her eye after the agent thought they were fine in still pictures, so the agent's own look at them is worth little here.
+
+**The dab a fourth time, and the school's logo**
+
+- **The dab.** "Not recognizable as a dab at all." The cause, found at last: the wrong arm was bent. In a dab the straight arm points up and out to one side, the elbow of the other arm sticks out beside the head on the other side, its forearm runs the same way as the straight arm, and the head drops into that elbow. The earlier tries crossed an arm over the face from the pointing side and kept the head upright, which reads as someone covering their mouth. Now the arms are the right way round, and a pose can tip the head over towards a shoulder ("tilt"): `paintHead()` in `client/kart-paint.js` turns the head picture round the chin.
+- **The logo.** She meant the name on the wall itself: "the font is not like that, search online". The agent looked at the school's logo as Wikipedia shows it (the file `Nova_logo.png` on Wikimedia Commons). It is heavy: a bold N, a thick ring bigger than the letters and standing higher, with a long bar under it on the line, a V, and an A without a crossbar right beside the V. Ours had thin lines and a small ring. `novaName()` in `client/wall-art.js` now draws it with those shapes and sizes, measured on that picture. It is still drawn by our code: no picture file and no font. It changes everywhere the name stands: the white wall behind the podium, the glass doors, the Moodle screen.
+- Checked: `npm test`, 1,915 pass, 5 skipped. The wall behind the podium and six moments of the dab, in the agent's browser. NOT checked: in motion; the doors and the screen up close after the new logo.
+
+**Git**
+
+Same branch, `atrium-screen-and-characters`, pushed. No pull request yet.
+
+### 18 November 2026, evening: where the podium was, the Moodle screen, a new "Choose your character", and Cici Boss
+
+**What she asked**
+
+1. Pedro said he had built a podium for the end of a race. She played a single race and an online race and did not see one. Did he really build it, why does it not show, how can it be better?
+2. A big screen in the corner of the Hovione Atrium, as on the real campus, with a message from the IT help desk that Moodle is down. An inside joke.
+3. "Choose your character": no photos beside the pilots, and a better layout. Her own character looked odd. Her dance should be the Gangnam Style dance.
+
+While the work was going on she looked at it and said more: the long hair the agent had painted looked awful, her face was off-centre and her chin was cut off, and the panel's design could be better still. She then sent her whole photo.
+
+**1. The podium: it exists, it was not merged**
+
+Pedro built it on 18 November on the branch `podium` and opened pull request 28. Rodrigo approved it. Nobody has pressed "Merge" yet. The live site and Catarina's copy both follow `main`, so neither had it. Nothing is broken.
+
+The agent looked at it on screen with a pretend top three, on the Nova lap (in front of the NOVA wall) and on the Test oval (in the hall): it works. This work is built on top of his branch, so it has the podium in it.
+
+One thing was made better, because she had described a crowd "cheering and jumping and applauding" and his all waved: one student in three now waves, one jumps, one claps over the head (`crowdPerson()` in `client/podium-shape.js`). Which one comes from the student's number in the crowd, so nobody stands anywhere else than before and Pedro's tests still pass unchanged.
+
+**2. The screen**
+
+| What | Where |
+|---|---|
+| The screen: a slanting "fence" in the south-east corner of the atrium, 4.2 metres tall, under the gallery | `client/nova-lap-buildings.js` ("IT help desk screen") |
+| What is on it: a black cabinet, a yellow band "IT HELP DESK · SERVICE NOTICE", "We regret to inform you that, unfortunately," and "MOODLE IS DOWN." in big letters, signed "Your IT Help Desk team" | `client/wall-art.js` (`it-screen`) |
+| The six squares behind it are wall, so no kart drives through it | `SCREEN_CORNER` in `client/nova-lap-buildings.js`; the letters in `shared/tracks/nova-lap.js` were made again with `node tests/nova-lap-letters.js` |
+
+It was made wider once after a first look, and the big line is written smaller by itself if the browser's font would make it too long.
+
+**3. "Choose your character"**
+
+- The photos are gone. Only the pilots are shown.
+- First design: the chosen one big on the left, six tiles on the right. She said it could be better. Second design, the one that is in: a poster of the chosen one on top (the colour of their kart, their number, name, "Signature move", colours, the Race button, which no longer needs scrolling) and the six in a line-up under it, the chosen one marked "YOU".
+- The pictures are painted with twice as many dots as before, so they stay sharp when shown large.
+
+All of it is in `client/kart-panel.js`, `client/index.html` and `client/style.css`.
+
+**Cici Boss**
+
+- **The dance.** "gangnam" in `client/pilot-shape.js`: the wrists crossed in front and pumping, the feet apart and stepping in turn, then one arm up swinging a lasso. For the stepping, a pose can now lift a foot, and a leg bends at the knee when its foot is lifted (`legWith()`). Every other dance is exactly as it was.
+- **The head.** Her old head picture was an oval cut from `client/faces/cici.jpg`, a square that ends under her lip: so the chin was never in it. The agent first painted long hair with code. She did not like it, and it was taken out again. The head was then cut again from the whole photo she sent (it was in her Downloads folder; the photo itself was not copied into the project): the wall, the clothes, the neck and the necklaces are taken away, the hair stays, with its purple and blue ends. `longHairOf()` in `client/cast-choice.js` says how far her picture goes on below the chin, and `paintHead()` in `client/kart-paint.js` lets that part hang over the shoulders. The cutting was done by a small program written for this, which is not part of the game. Only the pixels were copied, so nothing hidden in a phone photo is in the picture.
+
+**One existing test was changed, because the rule changed**
+
+| Test | It said | It says now |
+|---|---|---|
+| `tests/pilot-shape.test.js`, "is one of standing, arms crossed, and the six dances" | the list of dances is exactly six | the list has a seventh, "gangnam", at its end. Catarina asked for a new dance, so the list had to grow. Pedro wrote this test: he should know |
+
+No other existing test was changed or deleted.
+
+**Decisions made by the agent, please confirm**
+
+- The size, colours and extra words of the screen, and that the corner behind it is wall.
+- The design of the panel, the number of each character (their place in the cast) and the names of the dances.
+- The photo files stay in `client/faces/`, shown nowhere, because tests of 17 November check that they exist. The team says whether to delete them.
+- "wave" stays in the list of dances, danced by nobody.
+- Which students of the crowd wave, jump and clap.
+- This branch starts from Pedro's `podium`, not from `main`, because it changes the same files. It should be merged after his pull request 28.
+
+**What was checked, and what was not**
+
+- `npm test`: 1,895 pass, 5 skipped (on Pedro's branch before: 1,848 and 5). The 5 need the real database.
+- Nine rules were broken on purpose, one at a time (her dance back to the wave, the corner behind the screen open, "Moodle is up", the screen taller than the gallery, a leg that never bends, no foot lifted, long hair not passed on, nobody jumping, the photos back). Each made between 1 and 3 tests fail. This was before the head was cut again and the second design: the tests for those were run, not broken on purpose.
+- In the agent's browser: the screen from three places in the atrium, readable from the kart; both designs of the panel at 1280 by 800, where the whole panel fits without scrolling; her new head in the panel and on the podium; ten moments of the gangnam side by side; the podium on the Nova lap and in the hall. The single race and online pages load on the Nova lap. The only errors on the pages are the ones about accounts, which a laptop without the database always has.
+- NOT checked: anything in motion. The agent's browser shows single pictures, so how the dance and the crowd feel is for a person to judge. NOT checked: a race driven by hand to the podium. NOT checked: the panel on a phone or a small laptop screen (under about 830 dots wide it becomes one column, which was not looked at). NOT checked: the live site, where none of this is until it is merged.
+
+**How to check it yourself**
+
+Run `npm start` and open http://localhost:3000. Click Single race, then Race on the Nova lap: the new panel opens. Move the mouse over the six. Choose Cici Boss and watch the poster. Then race: after the doors of the atrium, the screen is ahead on the left. For the screen without racing: http://localhost:3000/track-tour.html?track=nova-lap. Finish the race to see the podium. `npm test` runs everything; `atrium-screen.test.js` is the new file.
+
+**Git**
+
+Branch `atrium-screen-and-characters`, made from Pedro's `origin/podium`, pushed to GitHub. No pull request yet.
+
 ### 17 November 2026, night: after Catarina played it
 
 **What she said**
