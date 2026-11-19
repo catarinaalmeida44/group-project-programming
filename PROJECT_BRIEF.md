@@ -200,6 +200,8 @@ What this means for you: prefer finished, reliable features over many half-finis
 
 - *19 Nov 2026, built by Rodrigo: full screen on both race pages, as Rodrigo asked: a button above the track and the F key; the picture is enlarged and keeps its shape (Rodrigo's choice, rather than drawing it sharper, which would have meant changing the drawing code). Files that are Catarina's changed: race.html, online.html, style.css, keyboard.js, main.js, online.js; she is asked to review.*
 
+- *19 Nov 2026, built by Rodrigo, **[PROPOSED]**: Easy / Normal / Hard for the computer karts, in a single race only (three buttons above the track). This reverses the team's 17 Nov decision "no difficulty levels", so the pull request asks the team to accept or close it. Online stays Normal. Decisions made by the agent, please confirm: the buttons on the race page rather than in the menu; how much each level moves the numbers; the browser remembers the level.*
+
 ### Characters and the selection menu
 
 - [PROPOSED] 8 original characters: 6 available from the start (2 light, 2 medium, 2 heavy) and 2 to unlock. *Changed on 12 Nov 2026 at Catarina's request (teammates confirm by approving the pull request that contains this change): the characters will be based on real people, not only on campus "types" as first proposed. Before a real person's name or face goes into the game or into this repository, which anyone on the internet can read, that person has to have said yes. Still no Nintendo characters, names or images.*

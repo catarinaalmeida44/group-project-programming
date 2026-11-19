@@ -355,6 +355,40 @@ h1 {
   font-size: 0.95rem;
 }
 
+/* The level of the computer karts: three small buttons; the one in use is yellow. */
+.level-switch {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-size: 0.95rem;
+}
+
+.level-switch button {
+  padding: 0.1rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--navy-raised);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.level-switch button:hover {
+  background: var(--navy-hover);
+}
+
+.level-switch button[aria-pressed="true"] {
+  border-color: var(--yellow-edge);
+  background: var(--yellow);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.level-switch button:focus-visible {
+  outline: 2px solid var(--yellow);
+  outline-offset: 2px;
+}
+
 /* The full screen button, at the right end of the numbers above the track
    (full-screen.js). Small and quiet, so the numbers stay what is seen first. */
 .full-screen-button {
