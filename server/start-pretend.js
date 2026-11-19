@@ -29,7 +29,7 @@ const port = Number(process.env.PORT) || 3000;
 
 const accounts = createAccounts(createMemoryStore());
 const app = createApp({ accounts });
-attachOnlinePlay(app, { track: TRACKS[DEFAULT_TRACK], tracks: TRACKS, character: TEST_DRIVER, accounts });
+attachOnlinePlay(app, { track: TRACKS[DEFAULT_TRACK], tracks: TRACKS, character: TEST_DRIVER, accounts, computerKarts: true });
 
 app.listen(port, "127.0.0.1", () => {
   console.log(`The server is running with PRETEND accounts. Open http://localhost:${port} in a browser.`);

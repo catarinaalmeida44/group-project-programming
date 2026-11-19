@@ -2,6 +2,48 @@
 
 Rodrigo Simeão Versos (GitHub rodrigosversos). Entries from 11 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 18 November 2026: computer karts online, and a mood for each race
+
+**What was done**
+- Online races are now filled with computer karts, as I wanted. When the host starts a race, the characters nobody in the room is become computer karts, up to 6 karts in all. The host can switch them off with a tick box under the track.
+- I saw the computer karts drive the same race over and over. That was because they used no chance and always started from the same place. Now each one gets a "mood of the day" for each race: its personality's numbers move a little. Branch `rodrigo-online-computer-karts`, first from `main` after Nova lap; on 19 November put on top of `main` again after the room of six and one kart per signed-in player were merged.
+
+| File | What changed |
+|---|---|
+| `server/computer-players.js` | New. Adds the computer karts to the room as ordinary players, presses their keys every step, and says when they must leave |
+| `server/online.js` | Fills a race at the start, the on/off switch (host only, no race on), sends them away at the right moments, tells every browser whether they are on |
+| `server/messages.js` | The new message: computer karts on or off |
+| `server/start.js`, `server/start-pretend.js` | Every room starts with computer karts on |
+| `client/computers-switch.js` | New. What the tick box shows, and the "(computer)" names |
+| `client/online.html`, `client/online.js` | The tick box, the names, and "players here" counting only people |
+| `shared/computer-driver.js` | The mood of the day (`moodFor`) |
+| `shared/practice-race.js` | Each computer kart of a single race gets a mood from the race's seed |
+| `tests/computer-players.test.js`, `tests/online-computers.test.js`, `tests/computers-switch.test.js`, `tests/computer-moods.test.js` | New. 25, 10, 13 and 10 tests |
+| `WALKTHROUGH.md`, `PROJECT_BRIEF.md`, the READMEs | Kept true |
+
+**Why it was done this way**
+- **A computer kart online is just a player whose keys the server presses.** So the room (`room.js`, not my area) did not change, the test that guards the bananas stays as it is, and a computer kart can do nothing a person could not.
+- **The server decides for them**, not a browser, so no one can steer a computer kart.
+- **Moods come from the race's random number.** Races differ, but the same number gives the same race, so the tests can still replay one exactly.
+- **A person comes before a computer kart.** Since 19 November a room takes six, so one person and five computer karts fill it. Someone who arrives then still gets in: between races the computer karts leave, during a race one makes way and the person watches.
+- **The test server keeps computer karts off** unless a test asks for them, so the older online tests (not mine) did not need to change.
+
+**Decisions**
+- Mine: computer karts fill empty places online; 6 karts in all, one per character; the host can switch them off; a mood for each race (not a shuffled grid, not mistakes).
+- Decision made by the agent, please confirm: the switch starts on in every room; computer karts leave before each start, when no person is racing any more, and if one would become the host; someone who arrives during a race still only watches; how much a mood can move each number (daring and care 0.15, pace 0.03, 10 units aside); the page names them "Dean (computer)" and counts only people in "players here".
+- Decision made by the agent, please confirm, and tell the owners: `server/online.js`, `server/messages.js`, `server/start.js`, `client/online.html` and `client/online.js` changed. They are not in my area.
+
+**What was checked, and what was not**
+- `npm test` on 19 November, on top of the newest `main`: 2,112 passed, 5 skipped (58 new tests). One of my online tests had to change after the rebase: its pretend accounts signed every browser in as the same player, which the new "one kart per signed-in player" rule (rightly) sends away; now each browser is its own player.
+- The new code was broken on purpose in 22 ways. 20 made a test fail. "Computer karts stay after the last person leaves" changes nothing you can see (the server sends them away on its next step anyway). "A person's result is never saved" is caught by the existing account tests. One of my new tests was too loose at first and was made strict.
+- 40 single races on each of the three tracks with moods: every computer kart finished, none was ever inside a wall, and the finishing order changed in 28 to 31 of the 40.
+- Two Chrome browsers without a screen, on the campus loop online: the host could use the tick box and the other could not; at the start the 4 free characters joined as computer karts; the line said "With you: Professor Ricardo Pereira (computer), Cici Boss (computer), FranFon (computer), PCP (computer) and 1 guest"; no page errors.
+- **Not checked:** a real online race between two laptops over the internet; how the server copes with six full rooms of computer karts at once (each computer kart is a little extra work, 60 times a second); a whole online race to the results board in a browser.
+- **Not handled:** a computer kart taking over the kart of someone who drops out (in the brief, not built); items; catch-up.
+
+**How to check it yourself**
+Run `npm start`, open http://localhost:3000, pick a character, choose Online and a track. Under the track the box "Computer karts fill the empty places" is ticked. Press Enter: the characters you did not pick line up in front of you and race. Race again: they drive differently. Untick the box (you are the host while alone) and press Enter after the race: you race alone. Open a second browser window to see that only the host can use the box.
+
 ### 17 November 2026: computer karts in a single race
 
 **What was done**

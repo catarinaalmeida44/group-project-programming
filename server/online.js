@@ -11,7 +11,8 @@
 // the room of the campus loop.
 //
 // What goes over the connection:
-//   browser -> server   which keys are held, "restart", or "start" (see messages.js)
+//   browser -> server   which keys are held, "restart", "start", a look, a
+//                       character, or computer karts on or off (see messages.js)
 //   server -> browser   "welcome" with your player number, then the state
 //                       of all karts, of the race and of the bananas on the
 //                       road 20 times a second.
@@ -28,6 +29,15 @@
 // the older one is told why and sent away. Before 19 November 2026 a
 // forgotten tab kept a second kart on the grid, under the same name. A
 // guest has no name to be recognised by, so two tabs of a guest are two karts.
+//
+// COMPUTER KARTS
+// When the host starts a race, the characters nobody in the room is become
+// computer karts for that race, up to 6 karts in all (computer-players.js).
+// The server presses their keys. The host can switch this off (and on again)
+// while no race is on. Every update says whether it is on and which karts are
+// computer karts. Their results are never saved. They leave before the next
+// start, and at once when no person is racing any more or one of them would
+// be the host.
 //
 // SAVING RESULTS
 // When a signed-in player finishes a race that began with the countdown,
@@ -48,6 +58,9 @@ import { WebSocketServer } from "ws";
 import { STEP_SECONDS } from "../shared/physics.js";
 import { createRoom, randomSeed, STEPS_PER_UPDATE } from "./room.js";
 import { createCastKeeper, mayChangeCharacter } from "./cast-keeper.js";
+import { createComputerPlayers, computersShouldLeave, KARTS_IN_A_FULL_RACE } from "./computer-players.js";
+import { lookOfTrack } from "../client/track-looks.js";
+import { routePoints } from "../client/route.js";
 import { readClientMessage, MAX_MESSAGE_LENGTH } from "./messages.js";
 import { ticketOf } from "./api.js";
 
@@ -98,6 +111,10 @@ export const GOODBYE_WAIT_MS = 2000;
  *   stillThereCheckMs  how often to check that every browser is still there.
  *               Normally left out. A test gives a short one, so it does not
  *               have to wait 10 seconds
+ *   computerKarts  whether computer karts fill the empty places of a race
+ *               when a room opens (the host can switch it later). Normally
+ *               true (start.js). Left out it is false, so tests that do not
+ *               ask for computer karts get none
  *   pickSeed    what every room calls when a race starts, to get the seed of
  *               that race's bananas (see room.js). Normally left out: then
  *               it is real chance. A test can give its own, to know where
@@ -116,6 +133,7 @@ export function attachOnlinePlay(
     goodbyeWaitMs = GOODBYE_WAIT_MS,
     stillThereCheckMs = STILL_THERE_CHECK_MS,
     pickSeed = randomSeed,
+    computerKarts = false,
   },
 ) {
   // "noServer" means: do not open a second server, share the web server we already have.
@@ -210,6 +228,45 @@ export function attachOnlinePlay(
     const cast = createCastKeeper(); // who in the room is which character
     const connections = new Set();
     const seats = new Map(); // player number in the room -> { connection, account, username, accountId, leave }
+    // The racing line the arrows on the road follow: the computer karts follow it too.
+    const line = routePoints(tableTrack, lookOfTrack(tableTrack).route);
+    const computers = createComputerPlayers(tableTrack, line, character);
+    let computersOn = computerKarts === true; // fill the next race with computer karts?
+    const wishes = new Map(); // player number -> the character that player asked for
+
+    /** No race is on: the room is open, or the last race is over. */
+    function noRaceOn() {
+      const phase = room.phase();
+      return phase === "open" || phase === "finished";
+    }
+
+    /**
+     * The computer karts leave. Each person then gets the character they
+     * asked for, if a computer kart had it and it is free now.
+     */
+    function sendComputersAway() {
+      if (computers.ids().length === 0) {
+        return;
+      }
+      computers.clear(room, cast);
+      for (const [id, wanted] of wishes) {
+        if (cast.characterOf(id) !== wanted) {
+          const character = cast.choose(id, wanted, mayChangeCharacter(room, id));
+          if (character !== null) {
+            room.setLook(id, character.look);
+          }
+        }
+      }
+      tellNames();
+    }
+
+    /** Sends the computer karts away if they should go now (computersShouldLeave). */
+    function tidyComputers() {
+      if (computersShouldLeave(room, computers)) {
+        sendComputersAway();
+        stopTheClockIfEmpty();
+      }
+    }
 
     /**
      * Tells every browser at this table the user names of the signed-in
@@ -244,7 +301,18 @@ export function attachOnlinePlay(
 
     /** Runs once for every browser that connects to this table. */
     function welcome(connection, request) {
-      const player = room.addPlayer();
+      let player = room.addPlayer();
+      // A person comes before a computer kart. If the room is full, while no
+      // race is on the computer karts leave (new ones fill the next race);
+      // during a race one of them makes way, and the person watches.
+      if (player === null && computers.ids().length > 0) {
+        if (noRaceOn()) {
+          sendComputersAway();
+        } else if (computers.makeWayForAPerson(room, cast)) {
+          tellNames();
+        }
+        player = room.addPlayer();
+      }
       if (player === null) {
         connection.send(JSON.stringify({ type: "full" }));
         sendAway(connection, TRY_AGAIN_LATER, "The room is full");
@@ -265,8 +333,10 @@ export function attachOnlinePlay(
         gone = true;
         connections.delete(connection);
         seats.delete(player.id);
+        wishes.delete(player.id);
         cast.forget(player.id); // their character is free again
         room.removePlayer(player.id);
+        tidyComputers(); // computer karts do not stay without people
         stopTheClockIfEmpty();
         tellNames();
       }
@@ -339,13 +409,28 @@ export function attachOnlinePlay(
         } else if (message.type === "character") {
           // The character chosen in the menu, or, if someone here already
           // is that character, the first one nobody is (cast-keeper.js).
+          wishes.set(player.id, message.character);
           const mayChange = mayChangeCharacter(room, player.id);
           const character =
             cast.choose(player.id, message.character, mayChange) ?? cast.giveFree(player.id, mayChange);
           if (character !== null) {
             room.setLook(player.id, character.look);
           }
+        } else if (message.type === "computers") {
+          // Only the host, and only while no race is on. It counts from the next start.
+          if (player.id === room.hostId() && noRaceOn()) {
+            computersOn = message.on;
+          }
         } else {
+          if (player.id === room.hostId() && noRaceOn()) {
+            // The computer karts of the last race leave, and, if they are
+            // switched on, new ones fill the race that starts now.
+            sendComputersAway();
+            // Each computer kart gets a mood for this race from a fresh random number.
+            if (computersOn && computers.fill(room, cast, KARTS_IN_A_FULL_RACE, pickSeed()) > 0) {
+              tellNames();
+            }
+          }
           room.startRace(player.id); // the room says no to anyone but the host
         }
       });
@@ -419,13 +504,20 @@ export function attachOnlinePlay(
       owedSeconds = Math.min(owedSeconds + (now - lastTick) / 1000, 0.25);
       lastTick = now;
       while (owedSeconds >= STEP_SECONDS) {
+        computers.drive(room); // the server presses the computer karts' keys
         room.step();
+        tidyComputers();
+        if (clock === null) {
+          return; // nobody is left
+        }
         owedSeconds -= STEP_SECONDS;
         for (const finish of room.takeFinishes()) {
           saveFinish(finish);
         }
         if (room.stepCount() % STEPS_PER_UPDATE === 0) {
-          tellEveryone(JSON.stringify(cast.dress(room.snapshot()))); // with each player's character
+          // With each player's character, and the computer karts.
+          const update = { ...cast.dress(room.snapshot()), computers: { on: computersOn, karts: computers.ids() } };
+          tellEveryone(JSON.stringify(update));
         }
       }
     }

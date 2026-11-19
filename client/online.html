@@ -69,6 +69,15 @@
       </div>
 
       <p id="status" class="status" role="status"></p>
+      <!-- Whether computer karts fill the empty places of the next race. Only
+           the host can change it, and only while no race is on. online.js keeps it up to date. -->
+      <p id="computers-line" class="status" hidden>
+        <label>
+          <input type="checkbox" id="computers" disabled>
+          Computer karts fill the empty places (up to 6 karts).
+        </label>
+        <span id="computers-who"></span>
+      </p>
       <!-- Who you are signed in as, and whether your last result was saved. online.js fills it in. -->
       <p id="account-line" class="status" role="status"></p>
       <!-- The names of the signed-in players in the room with you. online.js fills it in. -->
@@ -92,6 +101,8 @@
         minutes after the first kart has finished.
         If you are signed in, the server saves your time when you finish a race, and it appears
         on the leaderboard in the menu.
+        When the host starts a race, the characters nobody has taken become computer karts,
+        up to 6 karts in all, unless the host has switched them off. Their times are not saved.
       </p>
     </main>
 

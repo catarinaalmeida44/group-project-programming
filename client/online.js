@@ -40,6 +40,7 @@ import { createKeyboard } from "./keyboard.js";
 import { createPainter } from "./draw.js";
 import { createHud } from "./hud.js";
 import { createPlayback, readServerMessage, bananasOf, walkersOf, statusLine, accountLine, othersLine, QUIET_AFTER_MS } from "./net.js";
+import { computersSwitch, namesWithComputers } from "./computers-switch.js";
 import { introShare, startLights, spinTurnOf } from "./scene.js";
 import { COLOURS, lookFromChoice, readChoice } from "./kart-choice.js";
 import { readCharacter, characterNote } from "./cast-choice.js";
@@ -83,6 +84,9 @@ const placeBox = document.getElementById("place-box");
 const placeText = document.getElementById("place");
 const resultsBox = document.getElementById("results");
 const resultsList = document.getElementById("results-list");
+const computersLine = document.getElementById("computers-line");
+const computersBox = document.getElementById("computers");
+const computersWho = document.getElementById("computers-who");
 const board = createResultsBoard(document); // the big results board when a race is over (results-board.js)
 const podium = createPodiumView(track, draw); //           the podium, painted on the race picture when a race is over (podium-view.js)
 let podiumSince = null; //                      when the podium came up, in milliseconds of the page's clock, or null
@@ -121,6 +125,9 @@ let names = new Map(); //              the user names of the signed-in players i
 let bananas = []; //                   the banana peels on the track, as of the latest update
 let walkers = []; //                   the people who walk across the track, as of the latest update (shared/walkers.js)
 let walkersAt = 0; //                  when that update arrived
+let latestUpdate = null; //            the newest update, for the computer karts tick box
+let shownNames = new Map(); //         the names shown: user names, and the computer karts' (computers-switch.js)
+let computersHere = 0; //              how many computer karts are in the room now
 let othersShown = ""; //               the "With you: ..." line as it is on the page now
 
 // ---- What the player chose in the menu ----
@@ -332,6 +339,7 @@ function hear(text) {
     }
     playback.add(message, performance.now());
     latestKarts = message.karts;
+    latestUpdate = message;
     bananas = bananasOf(message);
     walkers = walkersOf(message);
     walkersAt = performance.now();
@@ -430,6 +438,29 @@ const keyboard = createKeyboard(window, {
   },
 });
 
+// ---- The computer karts tick box (computers-switch.js) ----
+// Only the host can use it, and the server checks that again: anyone else's
+// message is ignored. The box then shows what the server says, not what was clicked.
+computersBox.addEventListener("change", () => {
+  send({ type: "computers", on: computersBox.checked });
+  computersBox.blur(); // so the keys go back to driving
+});
+
+/** Puts what the server said about computer karts on the page. */
+function showComputersSwitch() {
+  const now = computersSwitch(latestUpdate, race, myId);
+  computersHere = now.count;
+  shownNames = namesWithComputers(names, latestUpdate);
+  computersLine.hidden = !now.shown;
+  computersBox.disabled = !now.canUse;
+  if (document.activeElement !== computersBox) {
+    computersBox.checked = now.on;
+  }
+  if (computersWho.textContent !== now.text) {
+    computersWho.textContent = now.text; // as text, never as HTML
+  }
+}
+
 // Tell the server which keys are held, but only when that changes. A held
 // key sends nothing more until it is released.
 let keysSent = "";
@@ -461,6 +492,7 @@ function frame(now) {
 
   const input = keyboard.input();
   sendKeysIfChanged(input);
+  showComputersSwitch();
 
   // The karts as they were a tenth of a second ago, glided between the
   // server's updates (see net.js).
@@ -502,7 +534,7 @@ function frame(now) {
   const line = statusLine({
     status,
     connected,
-    playerCount: karts === null ? 0 : karts.length + race.watching.length,
+    playerCount: karts === null ? 0 : karts.length + race.watching.length - computersHere, // people only
     sinceLastUpdateMs,
   });
   // While the card is up it does the talking, and the line under the picture is empty.
@@ -511,7 +543,7 @@ function frame(now) {
   // Who else is in the room: the user names of signed-in players, and how
   // many guests. Written to the page only when it changes.
   const everyoneHere = karts === null ? [] : [...karts.map((kart) => kart.id), ...race.watching];
-  const othersNow = allIsWell ? othersLine(names, everyoneHere, myId) : "";
+  const othersNow = allIsWell ? othersLine(shownNames, everyoneHere, myId) : "";
   if (othersNow !== othersShown) {
     othersShown = othersNow;
     othersText.textContent = othersNow; // as text, never as HTML
@@ -565,7 +597,7 @@ function frame(now) {
     lights: startLights(counting || race.phase === "racing", race.countdownSteps),
     bananas,
     walkers: walkersShown,
-    names,
+    names: shownNames,
     nextCheckpoint: driving ? nextCheckpointNumber(mine.passed, track) : undefined,
   };
   // When the race is over for everyone, the podium comes first: the first
@@ -612,7 +644,7 @@ function frame(now) {
     race.phase === "racing" && mine?.finished === true ? finishedWords(finishPlace(latestKarts, myId) ?? 1, mine.steps, formatTime) : null;
   if (race.phase === "finished" && !podiumAlone && !board.isShown()) {
     const looks = new Map(latestKarts.filter((kart) => kart !== null && typeof kart === "object").map((kart) => [kart.id, lookOf(dressed(kart))]));
-    board.show(boardLines(latestKarts, track, names, myId), looks);
+    board.show(boardLines(latestKarts, track, shownNames, myId), looks);
   } else if (race.phase !== "finished" && board.isShown()) {
     board.hide();
   }
@@ -661,7 +693,7 @@ function frame(now) {
   // The small list in the corner: for a racer who has finished while the
   // others are still driving. Once the race is over, the big board replaces it.
   const showResults = race.phase === "racing" && mine?.finished === true;
-  showResultsList(showResults ? resultLines(karts, track, names, myId, false) : []);
+  showResultsList(showResults ? resultLines(karts, track, shownNames, myId, false) : []);
 
   requestAnimationFrame(frame);
 }
