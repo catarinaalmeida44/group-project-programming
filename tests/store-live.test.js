@@ -97,6 +97,82 @@ if (haveDatabase) {
       expect((await pool.query("SELECT count(*)::int AS rows FROM test_visit_race_results")).rows[0].rows).toBe(0);
     }, WAIT);
   });
+
+  // Added on 19 November 2026. The live database already has a results
+  // table, made before the game noted which character a player drove. This
+  // makes such a table by hand, with a race in it, and then starts the store
+  // the way the server does: the table must get the new column, and the old
+  // race must still be there, exactly as it was.
+  describe("a results table that was made before 19 November 2026", () => {
+    const store = createStore(pool, { prefix: "test_old_" });
+    let playerId;
+
+    beforeAll(async () => {
+      await store.dropTables();
+      // The tables as server/store.js made them until 19 November 2026.
+      await pool.query(
+        `CREATE TABLE test_old_players (
+           id serial PRIMARY KEY,
+           username text NOT NULL,
+           username_key text NOT NULL UNIQUE,
+           password_hash text NOT NULL,
+           failed_logins integer NOT NULL DEFAULT 0,
+           locked_until timestamptz,
+           created_at timestamptz NOT NULL DEFAULT now()
+         )`,
+      );
+      await pool.query(
+        `CREATE TABLE test_old_race_results (
+           id serial PRIMARY KEY,
+           player_id integer NOT NULL REFERENCES test_old_players(id) ON DELETE CASCADE,
+           track text NOT NULL,
+           mode text NOT NULL,
+           race_steps integer NOT NULL CHECK (race_steps > 0),
+           best_lap_steps integer NOT NULL CHECK (best_lap_steps > 0),
+           position integer NOT NULL CHECK (position > 0),
+           created_at timestamptz NOT NULL DEFAULT now()
+         )`,
+      );
+      const made = await pool.query(
+        "INSERT INTO test_old_players (username, username_key, password_hash) VALUES ('Old_Ana', 'old_ana', 'h') RETURNING id",
+      );
+      playerId = made.rows[0].id;
+      await pool.query(
+        "INSERT INTO test_old_race_results (player_id, track, mode, race_steps, best_lap_steps, position) VALUES ($1, 'nova-lap', 'online', 9000, 2900, 2)",
+        [playerId],
+      );
+    }, WAIT * 2);
+
+    afterAll(async () => {
+      await store.dropTables();
+    }, WAIT);
+
+    it("has no character column before the server starts", async () => {
+      const columns = await pool.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'test_old_race_results'");
+      expect(columns.rows.map((row) => row.column_name)).not.toContain("character");
+    }, WAIT);
+
+    it("gets the column when the store starts, keeps the old race as it was, and is not harmed by starting twice", async () => {
+      await store.ensureTables();
+      await store.ensureTables();
+      const columns = await pool.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'test_old_race_results'");
+      expect(columns.rows.map((row) => row.column_name)).toContain("character");
+
+      const mine = await store.resultsOf(playerId, 10);
+      expect(mine.map(({ at, ...rest }) => rest)).toEqual([
+        { track: "nova-lap", mode: "online", raceSteps: 9000, bestLapSteps: 2900, position: 2, character: null },
+      ]);
+      // The old race still counts for the leaderboard.
+      expect(await store.bestRaces("nova-lap", 10)).toEqual([{ username: "Old_Ana", steps: 9000 }]);
+    }, WAIT);
+
+    it("then saves a new race with its character, next to the old one", async () => {
+      await store.addResult({ playerId, track: "nova-lap", mode: "single", raceSteps: 8000, bestLapSteps: 2500, position: 1, character: "cici" });
+      const mine = await store.resultsOf(playerId, 10);
+      expect(mine.map((row) => row.character)).toEqual(["cici", null]);
+      expect(await store.bestRaces("nova-lap", 10)).toEqual([{ username: "Old_Ana", steps: 9000 }]); // the single race is not on it
+    }, WAIT);
+  });
 }
 
 describe.skipIf(haveDatabase)("the real store (skipped)", () => {

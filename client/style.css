@@ -743,6 +743,37 @@ a.button {
   display: none;
 }
 
+/* The board is a column: the title and the winner at the top, the sentence
+   and the buttons at the bottom, and the list of everyone else between
+   them. When the picture is too low for all of it (six karts on a small
+   laptop), it is the list that scrolls: the buttons are always in view. */
+.finish-board {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.finish-board > * {
+  flex: none;
+}
+
+.finish-board > .finish-rest {
+  flex: 0 1 auto;
+  min-height: 2rem;
+  overflow-y: auto;
+}
+
+/* On a low screen the winner takes less room, so more of the list shows. */
+@media (max-height: 50rem) {
+  .finish-kart-big {
+    width: 7rem;
+  }
+
+  .finish-winner .finish-name {
+    font-size: 1.35rem;
+  }
+}
+
 /* The small pictures of karts are plain: no frame, no background. */
 .finish-board canvas {
   max-height: none;
@@ -921,9 +952,9 @@ a.button {
   top: 0.7rem;
   right: 0.7rem;
   z-index: 2;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: auto auto; /* the two buttons side by side */
+  justify-content: end;
   gap: 0.5rem;
   max-width: 60%;
   animation: finish-row-in 380ms ease-out 0.6s both;
@@ -937,8 +968,9 @@ a.button {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
 }
 
+/* Under the buttons, at the right, and only as wide as its words. */
 .race-over-note {
-  flex-basis: 100%;
+  grid-column: 1 / -1;
   justify-self: end;
   margin: 0;
   padding: 0.2rem 0.7rem;
