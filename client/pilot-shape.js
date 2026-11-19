@@ -59,7 +59,10 @@ export const HELMET_SPOT = Object.freeze([1.6, 7.4, HELMET_RADIUS]);
  * "gangnam" was added on 18 November 2026 for Cici Boss, who had "wave"
  * before: "wave" stays in the list, and nobody dances it at the moment.
  */
-export const DANCES = Object.freeze(["clap", "robot", "drive", "wave", "plane", "siu", "gangnam", "griddy", "floss", "dab"]);
+export const DANCES = Object.freeze(["clap", "robot", "drive", "wave", "plane", "siu", "gangnam", "griddy", "floss", "dab", "golf"]);
+// ("golf" was added on 19 November 2026 for FranFon, who had "plane"
+// before: Francisco asked for a golf swing, and watching the ball fly far.
+// "plane" stays in the list, danced by nobody.)
 // (The last three were added the same evening: "griddy" for Ró Versos, who
 // asked for it, and "floss" for Dean and "dab" for Professor Ricardo
 // Pereira, because Catarina wanted better dances for them. (The Professor
@@ -98,7 +101,7 @@ const TURN = Math.PI * 2;
  * zero towards the right shoulder, below zero towards the left.
  */
 function still(pose) {
-  return { lift: 0, sway: 0, lean: 0, jump: 0, spin: 0, feetApart: 0, hop: 0, kick: 0, pitch: 0, tilt: 0, wheel: 0, trophy: 0, ...pose };
+  return { lift: 0, sway: 0, lean: 0, jump: 0, spin: 0, feetApart: 0, hop: 0, kick: 0, pitch: 0, tilt: 0, wheel: 0, trophy: 0, club: 0, ball: 0, flight: 0, ...pose };
 }
 
 /** The pose of standing: the left hand on the hip, the right arm down, breathing a little. */
@@ -120,7 +123,8 @@ function stand(seconds) {
  *   "robot"    stiff robot arms, turning in steps (Professor Ricardo Pereira)
  *   "drive"    pretending to drive: hands on a wheel, leaning into the bends (Ró Versos)
  *   "wave"     both arms up, waving from side to side (Cici Boss)
- *   "plane"    arms out like the wings of a plane, banking left and right (FranFon)
+ *   "plane"    arms out like the wings of a plane, banking left and right
+ *              (FranFon until 19 November 2026; danced by nobody now)
  *   "siu"      a little run, a jump with a full turn, and landing with the
  *              arms spread down and the feet apart (PCP)
  *   "gangnam"  riding an invisible horse: the wrists crossed in front, the
@@ -134,6 +138,9 @@ function stand(seconds) {
  *   "dab"      one arm straight up to the side, the other across the face,
  *              leaning into it, to one side and then the other
  *              (Professor Ricardo Pereira)
+ *   "golf"     a golf swing with a club: standing over the ball, the slow
+ *              backswing, the fast swing that hits it, then holding the
+ *              finish, turned to watch the ball fly far away (FranFon)
  * Anything else is standing.
  */
 export function poseAt(move, seconds) {
@@ -255,6 +262,8 @@ export function poseAt(move, seconds) {
     }
     case "dab":
       return dabAt(t);
+    case "golf":
+      return golfAt(t);
     default:
       return stand(t);
   }
@@ -264,6 +273,103 @@ export function poseAt(move, seconds) {
 export const FLOSS_SWINGS = 1.5;
 /** How long the "dab" takes to dab to one side and then to the other, in seconds. */
 export const DAB_SECONDS = 1.7;
+
+/**
+ * How long one round of the "golf" takes: as long as the siu, so that the
+ * big picture of the chosen pilot shows exactly one swing before the arms
+ * are crossed.
+ */
+export const GOLF_SECONDS = SIU_SECONDS;
+/**
+ * The moments of one round of the "golf", in seconds from its start: the
+ * pilot is standing over the ball, at the top of the backswing, hits the
+ * ball, holds the finish, and starts to stand up again.
+ */
+export const GOLF_MOMENTS = Object.freeze({ address: 0.45, startBack: 0.65, top: 1.45, impact: 1.73, finish: 1.98, standUp: 2.85 });
+/**
+ * How long the ball flies after it is hit, in seconds, before it is too far
+ * away to see. (1.1 for a few minutes: in the browser the ball left the
+ * small picture of the character too fast to be seen.)
+ */
+export const GOLF_FLIGHT_SECONDS = 1.55;
+/** Where the ball waits to be hit: on the ground in front of the pilot's feet. */
+export const GOLF_TEE = Object.freeze([8.0, -0.3, 0.55]);
+
+/**
+ * The golf swing (FranFon), with a club and a ball. The pilot stands over
+ * the ball, bent forwards a little, both hands together low on the club.
+ * The backswing is slow: the club goes up behind the right shoulder and the
+ * shoulders turn away. The swing down is fast and hits the ball, and the
+ * club comes through and up over the left shoulder. The pilot holds that
+ * finish, turned towards where the ball went, and watches it fly away,
+ * high and far, until it is gone. Then they stand up again, so the dance
+ * can go round and round: each round a new ball.
+ * The feet stay on the ground the whole time, as a golfer's do.
+ */
+function golfAt(seconds) {
+  const u = (((seconds % GOLF_SECONDS) + GOLF_SECONDS) % GOLF_SECONDS);
+  const m = GOLF_MOMENTS;
+  const holding = { feetApart: 1.3, club: 1 };
+  const address = still({
+    ...holding,
+    pitch: -0.22, // bent forwards over the ball
+    leftHand: [4.0, -0.3, 8.6],
+    leftBend: [0, -1, -0.3],
+    rightHand: [4.0, 0.5, 8.0],
+    rightBend: [0, 1, -0.3],
+  });
+  const top = still({
+    ...holding,
+    pitch: -0.12,
+    spin: 0.45, // the shoulders turned away from where the ball will go
+    leftHand: [1.4, 4.0, 18.8],
+    leftBend: [0.4, -1, -0.4],
+    rightHand: [0.8, 5.0, 19.5],
+    rightBend: [-0.4, 1, -0.6],
+  });
+  const impact = { ...address, spin: -0.1 };
+  const finish = still({
+    ...holding,
+    pitch: 0.08, // a little back, as the swing ends
+    spin: -0.7, //  turned towards the ball, watching it
+    leftHand: [0.6, -5.0, 19.0],
+    leftBend: [-0.4, -1, -0.6],
+    rightHand: [1.2, -4.0, 19.5],
+    rightBend: [0.4, 1, -0.4],
+  });
+
+  let pose;
+  if (u < m.address) {
+    pose = blendPoses(stand(seconds), address, easeInOut(u / m.address));
+  } else if (u < m.startBack) {
+    pose = address;
+  } else if (u < m.top) {
+    pose = blendPoses(address, top, easeInOut((u - m.startBack) / (m.top - m.startBack)));
+  } else if (u < m.impact) {
+    pose = blendPoses(top, impact, easeInOut((u - m.top) / (m.impact - m.top)));
+  } else if (u < m.finish) {
+    pose = blendPoses(impact, finish, easeInOut((u - m.impact) / (m.finish - m.impact)));
+  } else if (u < m.standUp) {
+    pose = finish;
+  } else {
+    pose = blendPoses(finish, stand(seconds), easeInOut((u - m.standUp) / (GOLF_SECONDS - m.standUp)));
+  }
+
+  // The ball: on the ground until it is hit, then flying until it is out of sight.
+  const flight = u < m.impact ? 0 : (u - m.impact) / GOLF_FLIGHT_SECONDS;
+  return { ...pose, ball: flight < 1 ? 1 : 0, flight: Math.min(flight, 1) };
+}
+
+/**
+ * Where the golf ball is, "flight" of the way through its flight (0 on the
+ * ground, 1 out of sight): up in a high curve, off to the pilot's left,
+ * where the swing sends it, and away into the distance behind them. It
+ * stays in the picture long enough to be watched, as the pilot does.
+ */
+export function golfBallAt(flight) {
+  const f = Math.min(Math.max(flight, 0), 1);
+  return [GOLF_TEE[0] - 6 * f, GOLF_TEE[1] - 16 * f, GOLF_TEE[2] + 34 * f - 20 * f * f];
+}
 
 /** How long one round of the "griddy" takes: as long as the siu, for the same reason as the gangnam. */
 export const GRIDDY_SECONDS = SIU_SECONDS;
@@ -518,6 +624,9 @@ export function blendPoses(from, to, share) {
     tilt: mix(from.tilt ?? 0, to.tilt ?? 0),
     wheel: mix(from.wheel, to.wheel),
     trophy: mix(from.trophy, to.trophy),
+    club: mix(from.club ?? 0, to.club ?? 0),
+    ball: mix(from.ball ?? 0, to.ball ?? 0),
+    flight: mix(from.flight ?? 0, to.flight ?? 0),
     leftHand: mixPoint(from.leftHand, to.leftHand, s),
     leftBend: mixPoint(from.leftBend, to.leftBend, s),
     rightHand: mixPoint(from.rightHand, to.rightHand, s),
@@ -694,6 +803,8 @@ export function pilotParts(look, hair = "#2b2420", pose = poseAt("stand", 0), wi
     ...(pose.wheel > 0.5 ? steeringWheel(left.hand, right.hand) : []),
     // The trophy of the winner, standing on the right hand.
     ...(pose.trophy > 0.5 ? trophyParts(plus(right.hand, [0, 0, 0.9])) : []),
+    // The golf club of the "golf" dance, held in the hands.
+    ...((pose.club ?? 0) > 0.5 ? golfClub(rightShoulder, right.hand) : []),
   ].map((part) => mapPart(part, upper));
 
   const lowerParts = [
@@ -712,6 +823,8 @@ export function pilotParts(look, hair = "#2b2420", pose = poseAt("stand", 0), wi
   return [
     ...lowerParts,
     ...upperParts,
+    // The ball of the "golf" dance. It does not turn with the pilot: once hit, it flies on its own.
+    ...((pose.ball ?? 0) > 0.5 ? [golfBall(golfBallAt(pose.flight ?? 0))] : []),
     // The helmet lies on the ground, beside the pilot.
     ...(withHelmet ? [{ name: "helmet", ball: { middle: [...HELMET_SPOT], radius: HELMET_RADIUS, colour: helmet, stripe, visor: VISOR } }] : []),
     { name: "head", head: { middle: headMiddle, height: HEAD_HEIGHT, hair, facing, ...(longHair ? { long: longHair } : {}), ...(pose.tilt ? { tilt: pose.tilt } : {}) } },
@@ -771,6 +884,45 @@ export function steeringWheel(leftHand, rightHand) {
     { name: "steering wheel", faces: ring },
     { name: "steering wheel bar", faces: bar(leftHand, rightHand, 0.6, WHEEL) },
   ];
+}
+
+/** The colours of the golf club and the golf ball. */
+const CLUB_SHAFT = "#c9ced6";
+const CLUB_HEAD = "#3a3f47";
+const GOLF_BALL = "#f7f7f2";
+/** How long the shaft of the golf club is, from the hands to the head, in units. */
+export const CLUB_LENGTH = 8;
+/**
+ * How high the club head stays above the ground, before the pilot leans
+ * forwards over the ball. Leaning forwards lowers it by about two units
+ * more, so it ends just above the ball and never goes into the ground.
+ * (It was 1.8 for a few minutes, and the test "never puts anything below
+ * the ground" caught the club head going in.)
+ */
+const CLUB_HEAD_LOWEST = 2.7;
+
+/**
+ * A golf club held in the hands: a thin shaft that goes on from the
+ * shoulder through the hand, as if the arm went on, and a dark head at its
+ * end, the blade pointing forwards. Pointing down, it stops before the ground.
+ */
+export function golfClub(shoulder, hand) {
+  const along = minus(hand, shoulder);
+  const length = Math.hypot(...along) || 1;
+  const unit = along.map((value) => value / length);
+  const reach = unit[2] < 0 ? Math.min(CLUB_LENGTH, (hand[2] - CLUB_HEAD_LOWEST) / -unit[2]) : CLUB_LENGTH;
+  const end = plus(hand, unit.map((value) => value * Math.max(reach, 1)));
+  return [
+    { name: "golf club shaft", faces: bar(hand, end, 0.35, CLUB_SHAFT) },
+    { name: "golf club head", faces: bar(end, plus(end, [1.3, 0, 0]), 0.9, CLUB_HEAD) },
+  ];
+}
+
+/** The golf ball: a small white block at "middle". */
+export function golfBall(middle) {
+  const [x, y, z] = middle;
+  const half = 0.5;
+  return { name: "golf ball", faces: box(x - half, x + half, y - half, y + half, z - half, z + half, GOLF_BALL) };
 }
 
 /**
