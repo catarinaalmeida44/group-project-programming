@@ -4,6 +4,70 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 19 November 2026, late evening: less lag online, and a connection meter that stays out of the way
+
+**What she said**
+
+- "Yes lets build the small ones": the server sending positions more often with the page drawing less far in the past, and a little meter.
+- About the meter: "make sure this doesnt reduce the interface experience for a player".
+- "Some other pull request was merged so afterwards check that it is compatible with us."
+
+**The other pull request: Rodrigo's Easy, Normal and Hard (number 33)**
+
+- It was merged into `main` at 16:31. It gives the computer karts of a single race three levels, with three buttons above the track. It changed `client/main.js`, `client/race.html` and `client/style.css`, which the stats work also changes.
+- `main` was merged into `my-stats-and-results-buttons`. The code fitted together by itself. The one overlap was the number of tests in `WALKTHROUGH.md`. All tests pass on the combination (2,259 at that point), and the single race page loads with his three buttons and the new buttons for the end of the race.
+- His level buttons start a new race through the same `startAgain()` as the new "Race again" button, so the two cannot get out of step.
+- One thing to know, not changed: a win against Easy computer karts counts in "My stats" exactly like a win against Hard ones. The level is not saved with a race.
+- A small fix went onto the stats branch at the same time: a guest's finished single race is no longer sent to the server at all (before, it was sent and refused, which left a red line in the browser's console).
+
+**What was built** (branch `online-lag-small-fixes`, on top of the stats branch)
+
+| What | Where |
+|---|---|
+| The server sends every kart's position 30 times a second instead of 20 | `STEPS_PER_UPDATE` in `server/room.js` |
+| The online page shows the race 4 steps in the past on a steady connection instead of always 6. It measures how late updates arrive and keeps just enough spare, up to the 6 steps it always had | `createPlayback()`, `DELAY_STEPS`, `DELAY_STEPS_MOST`, `LATENESS_FADES` in `client/net.js` |
+| The connection meter: a small box in the bottom left corner of the picture with five numbers and one sentence. **Off until a player presses L**, and L hides it again | `client/meter.js` (counting and words), `client/online.js`, `client/online.html`, `client/style.css`, the L key in `client/keyboard.js` |
+| A part for the team's laptop test: checks 83 to 87, and a place to write each laptop's numbers | `docs/two-laptop-checklist.md` |
+
+**Why it was done this way**
+
+- **Where the lag comes from.** The page draws every kart, the player's own too, a little in the past, so it can glide between two updates. A key press therefore shows after: the way to the server and back (about 70 thousandths of a second from her laptop), the wait for the next update, and that step back in time. Before: about 200 thousandths. Now, on a steady connection: about 160. That is a fifth less. It is not gone: only the browser moving the player's own kart at once ("prediction") would do that, and that is a bigger piece of work that was not started.
+- **Never worse than before.** Drawing closer to the present leaves less spare when an update is late. So the page measures the lateness on each connection and, on an uneven one, goes back up to the 6 steps it always had. Measured the same evening against the live server (which still runs the old code): updates arrive at most about 15 to 18 thousandths of a second late, which is under one step, so there the page will stay at 4.
+- **The meter does not touch the experience** (her condition): it is hidden until asked for; hidden, the page looks exactly as before and asks the server nothing; shown, it is a small box that lets clicks through, sits where no kart is, and steps aside for the podium and the results. It is on the picture, not another line under it, and comes along on the whole screen.
+- **Its sentence is the point.** Three things can make a race feel slow, and they have different cures: the way to the server, uneven updates (both the connection), or the computer drawing too few pictures. The meter says which, in plain words, and never blames the game or the number of players.
+
+**Two existing tests were changed, because the rule changed (30 updates a second)**
+
+Each has a comment in its file that says what it said before. Whoever wrote them should know, and say if they disagree.
+
+| Test | It said | It says now |
+|---|---|---|
+| `tests/room.test.js`, "is sent every third step, which is 20 times a second" | `60 / STEPS_PER_UPDATE` is 20 | "is sent every second step, which is 30 times a second": it is 30 |
+| `tests/online.test.js`, "sends updates about 20 times a second" | from 5 to 15 updates in half a second | "sends updates about 30 times a second": from 8 to 22 |
+
+`tests/net.test.js` was not touched: it still plays updates back at the old rhythm, which the page must also cope with, and all of it passes.
+
+**Decisions made by the agent: please confirm**
+
+- The key is L ("lag"). Ctrl+L, Cmd+L and Alt+L are left to the browser.
+- The meter is only on the online page, bottom left, and is hidden while the podium and the results are up.
+- Its limits: more than 150 thousandths of a second to the server and back is "slow"; a wait of more than 120 between two updates, or fewer than 24 updates a second, is "uneven"; fewer than 40 pictures a second is "this computer is drawing slowly".
+- To time the server, the meter asks the address `/health` every two seconds while it is shown. That goes the normal web way, not through the race's own live connection, so it is a close estimate, not the exact same path.
+- The lateness of an update is forgotten slowly (it halves in a little over two seconds), so a connection that hiccups every few seconds keeps its spare.
+
+**Checked, and not checked**
+
+- `npm test`: 2,307 passed, 5 skipped (87 files). 48 are new: `tests/playback-delay.test.js` 16 and `tests/meter.test.js` 32. One of them found a slip in the meter before anyone saw it: 30 updates a second could read as 31.
+- Measured with a robot player (a guest, no account) and six karts, five of them computer karts:
+  - This laptop's server with the new code: 359 updates in 12 seconds (30 a second), usually 31 thousandths of a second apart, the game at 100% of real speed, 1,398 characters an update. That is about 42,000 characters a second for each player, half as much again as before.
+  - The live server, which still has the old code: usually 49 apart, 95 of 100 within 64, the worst 68, the game at 100% of real speed. So the server keeps its pace with Rodrigo's computer karts in the race.
+- In the browser pane, on the pretend server, sound off: the online page looks as before when the meter is off, and asks the server nothing; L shows the box (248 by 134 on a picture of 862 by 382, a tenth of it; a normal-sized picture is larger and the box is not); the numbers move twice a second; "Updates a second" read 30; L hides it and the questions stop. In the hidden pane the picture is drawn slowly, and the meter said so in its sentence, correctly.
+- **Not checked:** how it feels. The pane cannot show smoothness, and nobody has driven it. The live server with the new code (only after the merge). Real laptops on campus Wi-Fi: that is what checks 83 to 87 are for. How much more the server sends in a month (Render shows it on its dashboard).
+
+**How to check it yourself**
+
+Run `npm start`, open http://localhost:3000, choose Online and the Nova lap, press Enter and drive. Nothing new is on the screen. Press **L**: the small box appears bottom left; "Updates a second" says about 30 and the sentence says "All fine." Press L again: it is gone. Then drive and judge: does the kart answer the keys a little sooner than on the live site?
+
 ### 19 November 2026, evening: my stats in "Your account", single races that count, buttons on the results screens
 
 **What she said**

@@ -257,6 +257,8 @@ What this means for you: prefer finished, reliable features over many half-finis
   - The server runs the shared rules for all karts 60 times per second and sends everyone an update 20 times per second.
   - Browsers glide the other karts smoothly between updates.
   - Stretch goal, "prediction": your own kart reacts instantly in your browser and is corrected by the server.
+  - **[DECIDED 19 Nov 2026 by Catarina]** To shorten the lag online without prediction: the server sends an update 30 times per second (not 20), and the browser shows the race less far in the past on a steady connection (4 steps instead of always 6, and up to 6 again when updates arrive unevenly). This takes about a fifth off the wait between a key press and the picture. Prediction stays a stretch goal: it is the real fix and was offered, not started.
+  - **[DECIDED 19 Nov 2026 by Catarina]** A small connection meter on the online page, shown with the L key and hidden until then ("make sure this doesn't reduce the interface experience for a player"). It says whether a slow race is the connection or the computer.
 - [PROPOSED] Items: the browser sends "use item", and the server checks that you actually have one before applying it.
 - [PROPOSED] Disconnects:
   - A computer driver takes over the kart of a player who drops out. If they come back within 30 seconds, they get it back.

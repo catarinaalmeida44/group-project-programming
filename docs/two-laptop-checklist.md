@@ -174,16 +174,30 @@ This cannot be done at any moment. Do it the next time a pull request is merged 
 |---|---|---|---|
 | 14 | Keep both pages open while Render puts the new version online (a few minutes after the merge) | The karts stop. After two seconds a card on both pages says "The server has gone quiet", and some seconds later "Connection lost", counting the seconds. When the new version is up, both pages are back in a new, empty room by themselves, without a reload | |
 
+## Lag: the connection meter
+
+Added on 19 November 2026. Not run yet with real laptops. Do it on the public link, with as many laptops as you have (up to six), each on the connection it will really use (campus Wi-Fi, home, a phone's hotspot).
+
+| # | Do this | You should see | Result |
+|---|---|---|---|
+| 83 | Everyone: open "Online" on the Nova lap. Look at the picture before pressing anything | No meter anywhere. The page looks as it always did | |
+| 84 | The host starts a race. Everyone: press L while driving | A small box in the bottom left corner of the picture: "Connection", five numbers and one sentence. It covers no kart and no part of the road you need | |
+| 85 | Everyone: read out the five numbers and the sentence after about ten seconds of driving, and write them down below | "Updates a second" is about 30 on every laptop. The sentence is "All fine." or names the connection or the computer | |
+| 86 | Everyone: press L again | The box is gone. The race carries on as before | |
+| 87 | One player on a phone's hotspot or weak Wi-Fi, if there is one: press L | "Server and back" or "Longest wait" is higher than on the others and turns red, and the sentence says it is the connection | |
+
+Write the numbers of each laptop here (one line each): server and back, updates a second, longest wait, pictures a second, key to screen, and the sentence.
+
 ## Things to write down
 
-- How long after pressing a key does your own kart react? "Barely noticeable", "noticeable" or "annoying".
-- Did any kart jump or stutter? On which laptop, and on which connection?
+- How long after pressing a key does your own kart react? "Barely noticeable", "noticeable" or "annoying". Is it better than before 19 November?
+- Did any kart jump or stutter? On which laptop, and on which connection? What did the meter (L) say at that moment?
 - Anything else that looked wrong.
 
 ## Known limits, so you do not report them as mistakes
 
 - Your own kart reacts a moment late. Your key press travels to the server and the result travels back.
-- Other karts are shown a tenth of a second in the past, so that they move smoothly.
+- All karts are shown a little in the past (a fifteenth to a tenth of a second), so that they move smoothly.
 - A kart that spins into a wall can end up standing nose to the wall. Reverse with the down arrow to get away.
 - A kart can drive straight through a tree on a lawn. Only walls, banks and other karts are solid.
 - In a tight corner a building between the camera and your kart can vanish from the picture for a moment.
