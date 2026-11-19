@@ -26,6 +26,13 @@
           <span id="place-box" hidden>Place <strong id="place"></strong></span>
           <span>Camera <strong id="view"></strong></span>
           <span id="lap-times" class="lap-times"></span>
+          <!-- How good the computer karts are (difficulty.js). Pressing one starts the race again. -->
+          <span id="level-box" class="level-switch" role="group" aria-label="Computer karts">
+            Computer karts
+            <button type="button" data-level="easy">Easy</button>
+            <button type="button" data-level="normal">Normal</button>
+            <button type="button" data-level="hard">Hard</button>
+          </span>
           <!-- The game on the whole screen, or back (full-screen.js). Hidden in a browser that cannot. -->
           <button id="full-screen" class="full-screen-button" type="button" hidden>Full screen</button>
         </div>
@@ -41,6 +48,8 @@
         Arrow keys: <kbd>↑</kbd> gas, <kbd>↓</kbd> brake and reverse, <kbd>←</kbd> <kbd>→</kbd> steer.
         <kbd>R</kbd> starts again. <kbd>V</kbd> changes the camera. Drive clockwise.
         <kbd>M</kbd> switches the sound off and on: it is <strong id="sound">on</strong>.
+        The buttons <strong>Easy</strong>, <strong>Normal</strong> and <strong>Hard</strong> above the track
+        choose how good the computer karts are, and start the race again.
         <kbd>F</kbd> puts the game on the whole screen, and back (<kbd>Esc</kbd> also leaves it).
       </p>
       <p class="note">

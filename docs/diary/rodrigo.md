@@ -2,6 +2,41 @@
 
 Rodrigo Simeão Versos (GitHub rodrigosversos). Entries from 11 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 19 November 2026: Easy, Normal and Hard
+
+**What was done**
+In a single race the computer karts now have three levels, chosen with three buttons above the track: **Easy**, **Normal**, **Hard**. Pressing one starts the race again at that level, and the browser remembers it. Online stays Normal. Branch `rodrigo-difficulty`, from `main` after full screen (#32) was merged.
+
+| File | What changed |
+|---|---|
+| `shared/computer-driver.js` | The levels (`LEVELS`, `LEVEL_SHIFT`, `atLevel`) |
+| `shared/practice-race.js` | A single race at a level (Normal if none is given) |
+| `client/difficulty.js` | New. The remembered level and the buttons |
+| `client/race.html`, `client/main.js`, `client/style.css` | The three buttons, and a new race at the chosen level |
+| `tests/difficulty.test.js` | New. 17 tests |
+| `WALKTHROUGH.md`, `PROJECT_BRIEF.md`, the READMEs | Kept true |
+
+**Why it was done this way**
+- **A level moves the personality, never the kart.** On Easy they drive slower and more carefully, on Hard faster and bolder, but never faster than the kart can go: no cheating. PCP is still the Daredevil on Easy.
+- **Single race only** (my choice): online every room plays the same.
+- **Hard is only a little harder.** On Normal the computer karts already drive close to top speed; more would need a faster kart, which would be unfair.
+
+**Decisions**
+- Mine: bring levels back for the single race; build it now and propose it to the team in the pull request.
+- **The team decided on 17 November: no difficulty levels.** This reverses that, so the team must accept or close the pull request.
+- Decision made by the agent, please confirm: the buttons on the race page (not in the menu); how much each level moves the numbers; the browser remembers the level; the level buttons are hidden on a track without computer karts.
+- Decision made by the agent, please confirm, and tell the owner: `client/race.html`, `client/main.js` and `client/style.css` changed (Catarina's area).
+
+**What was checked, and what was not**
+- `npm test`: 2,143 passed, 5 skipped (17 new tests).
+- Broken on purpose in 7 ways; all 7 made a test fail. One of my tests was wrong at first: on Hard a kart went a little past top speed, but always with another kart within 40 units, so it was a bump (the shared bump rules, the same for players and on Normal too). The test now leaves out the moments right next to another kart.
+- 20 races per level on each track: everyone finished, never in a wall. The winning computer kart takes, on average: test oval 29.6 s / 26.0 s / 25.2 s (Easy / Normal / Hard), campus loop 71.2 / 63.5 / 60.9 s, Nova lap 89.6 / 76.5 / 74.7 s.
+- In Chrome without a screen: Normal pressed at first, Easy pressed and saved, still Easy after reloading the page, Hard pressed; no page errors.
+- **Not checked:** whether a beginner can really win on Easy.
+
+**How to check it yourself**
+Run `npm start`, open http://localhost:3000, choose Single race. Above the track: Computer karts **Easy · Normal · Hard**. Press Easy and race: they are slower. Reload the page: Easy is still chosen.
+
 ### 19 November 2026: full screen
 
 **What was done**
