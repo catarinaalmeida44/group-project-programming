@@ -4,6 +4,75 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 19 November 2026, midday: watching a race, one kart per player, a host who is away, and how many karts fit
+
+**What she said, after reading the entry below**
+
+- Two tabs giving two karts is a problem: one kart per signed-in player. A person using two different browsers on purpose is fine.
+- A password must not be the same as the user name.
+- Someone who arrives during a race must be told so in big letters on the picture: a race is on, you are watching, a new race starts soon and you join it. And they should see the kart that is in first place when they arrive.
+- If the host is inactive (their kart does not move and the race ends by the two minutes), the host passes to the next person, the one who entered the room second.
+- Later, in the clean-up: the race should fill more of the screen, without the little lines under the picture ("Connected. 3 players here."), or with them worked into the picture. Not now, but new things should be built with that in mind.
+- To think about and discuss: how many players the online room should hold (three felt boring, more than three felt laggy, never more than six because there are six characters); whether two players can be the same character; and a podium where the driver who came last stands down with the crowd and cries.
+
+**What was measured about the number of karts**
+
+| What | 1 kart | 3 karts | 6 karts | 8 karts |
+|---|---|---|---|---|
+| The live server at Render, robot karts driving for 15 seconds: the usual gap between two updates (it should be 50 thousandths of a second) | 49 | 49 | 49 | 49 |
+| The same: the worst gap | 70 | 66 | 97 | 98 |
+| The same: how fast the game ran, against real time | 100% | 100% | 100% | 100% |
+| The room's rules alone, on this laptop: work for one second of racing, in thousandths of a second | 0.6 | 0.6 | 1.4 | 2.2 |
+| This laptop painting one picture of the online page, all karts in view, in thousandths of a second (16 are allowed) | 3.3 | 3.9 | 4.4 | not measured |
+
+So neither the server nor the painting slows down with six karts: each extra kart costs about a fifth of a thousandth of a second to paint. What this does NOT show: six different laptops on the campus Wi-Fi. All the robots ran from one computer on one connection. Where "more than three is laggy" came from could not be found in the notes; the only record is three players on three laptops on 10 November.
+
+**Characters:** two players in a room are never the same character, already. The server gives the second one the first character nobody has, and their page says "Someone in this room is already Cici Boss, so you are Dean." (`server/cast-keeper.js`). What a player cannot do is see in the menu who is already taken.
+
+**What was built**
+
+| What | Where |
+|---|---|
+| A password cannot be the user name, whatever the capital letters. Asked when a password is chosen (sign-up, change of password), on the server and in the sign-up form. Not asked at sign-in, so an account made before today still opens | `checkPasswordIsNotName()` in `shared/account-rules.js`, `server/accounts.js`, `signUpFormErrors()` in `client/account-view.js` |
+| A banner in big letters across the top of the picture for someone who arrived during a race: "A RACE IS ON: YOU ARE WATCHING", then "The camera is on Dean. A new race starts when this one is over, and you join it." Pressing an arrow key makes it light up and say "Your keys do nothing yet: you drive in the next race." | `watchBanner()` in `client/race-view.js`, `client/online.js`, `client/online.html`, `client/style.css` |
+| The camera of someone watching is on the kart in first place when they arrive (by checkpoints passed, as the place "2nd of 4" is worked out). It stays with that kart, and moves to the new leader only when its kart has finished or left | `kartToFollow()` in `client/race-view.js` |
+| One kart for each signed-in player in a room. Joining again from another tab or computer keeps the new one; the older one is told why and closed, and its page shows "You are playing somewhere else" with "Play here instead" | `sendOlderOnesAway()` in `server/online.js`, `client/net.js`, `client/link.js`, `client/online.js` |
+| The host is whoever has been in the room longest AND has pressed a key in the last minute. One who is away passes the room to the next player in the order they arrived | `isAway()`, `hostId()`, `AWAY_AFTER_STEPS` in `server/room.js` |
+| The page sends "start" for Enter whenever no race is on, host or not, and the server decides. So a host who was counted as away gets the room back by pressing Enter | `client/online.js` |
+
+**Decisions made by the agent: please confirm**
+
+- "Inactive" is one minute without a key, counted all the time, not only at the end of a race. Her case (the host's kart never moved, the race ended by the two minutes) is covered: by then the host has long passed on. Counting all the time also covers the case she did not name: a host who is away before the first race, where no race ever ends.
+- Three things count as being there without a key: having just arrived; having finished the race that just ended (a host who won and then waited two minutes for the others keeps the room); and, for the host, a newcomer walking in (a host who waited for friends keeps the room for another minute).
+- Pressing any key, R or Enter brings an away player back at once. If everyone is away, the host is whoever has been here longest.
+- Of two connections of the same player, the newer one stays: a forgotten tab is the old one.
+- Guests are not limited: two tabs of a guest are still two karts. (The server has nothing to recognise a guest by. A rule inside the page, "one kart per browser", could cover it: not built, say if you want it.)
+- The camera stays with the kart it started on instead of jumping to each new leader.
+- The banner sits at the top of the picture and stops before the small map. It is on the picture, not under it, with the fuller screen in mind.
+
+**No existing test was changed.** All 1,960 from this morning pass as they were.
+
+**Still to decide together**
+
+1. The size of the room. Today eight fit. By the measurements six is safe; her limit is six, because there are six characters. Changing it means two existing tests that say "eight" change too.
+2. The driver who came last, crying among the crowd at the podium, when four or more raced.
+3. Whether to keep the server awake (asked this morning).
+
+**Checked, and not checked**
+
+- `npm test`: 2,024 passed, 5 skipped. 64 are new: `tests/password-not-name.test.js` (16), `tests/host-away.test.js` (20), `tests/watching.test.js` (16), `tests/one-kart-per-player.test.js` (12).
+- In the browser on the laptop, with the sound switched off: the banner with two robot karts racing and the camera on the one in front (the old rule would have shown the other); the banner answering a key; the sign-up form refusing a password equal to the name; a second tab of the same signed-in player putting the card on the first, and "Play here instead" putting it on the second.
+- On the laptop's real server: two robot players, the first silent, the second pressing a key every five seconds. The first was host at 2, 30 and 58 seconds, the second at 63 and 70, and the first again as soon as it pressed a key.
+- NOT checked: any of this on the live site (it runs the old version); real people on several laptops; how the banner looks on a small screen; a screen reader.
+- The agent's test drives in the browser pane played the engine sound on her speakers until she asked for mute. The pane's sound setting is now switched off before any test and put back afterwards.
+
+**How to check it yourself**
+
+1. `npm run start:pretend`. In one browser window open Online on the Nova lap and press Enter. In a second window (a private one, so it is a different player) open the same page: the banner is there.
+2. Create an account with the password equal to the name: the form says no.
+3. Signed in, open the online page in two tabs: the first one says "You are playing somewhere else".
+4. With two windows in the room, leave the first alone for a minute and press an arrow key in the second now and then: the second is told "You are the host".
+
 ### 19 November 2026, morning: bad inputs, a sleeping server, and a lost connection
 
 **What she asked for**

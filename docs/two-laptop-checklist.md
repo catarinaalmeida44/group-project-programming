@@ -190,5 +190,5 @@ This cannot be done at any moment. Do it the next time a pull request is merged 
 - There is no results screen yet. Each player sees their own finish time, and a signed-in player also their own place.
 - Each track has its own room. Two players who choose different tracks do not see each other.
 - A guest's results are not saved, and a guest has no name: others see "1 guest".
-- Only the host can start a race, and the host is whoever has been in the room longest.
+- Only the host can start a race, and the host is whoever has been in the room longest and has pressed a key in the last minute (new on 19 November: a host who is away passes the room on, and a signed-in player has one kart in a room).
 - On the test oval you can see a kart on the other side of the middle block, between the trees: the bank round the block is low.
