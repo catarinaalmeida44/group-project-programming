@@ -51,7 +51,7 @@ No raw error, code or stack of technical words was shown anywhere. What was miss
 - Render's own page about the free plan says: the server is switched off after 15 minutes without visitors, waking takes about a minute, and a browser that opens the site meanwhile is shown a loading page by Render itself. Messages of a race count as visitors, so a race is never cut off by this.
 - Measured on 19 November at 10:35: the sleeping server answered after 17 seconds.
 - So someone who opens the link cold sees Render's loading page, not a blank one, and we cannot change that page. Our own message is for a page that was already open: the menu left alone for a quarter of an hour, then "Sign in" or the leaderboard.
-- A second try to catch the server asleep, 17 minutes later, found it awake (it answered in a tenth of a second). So what an open page of ours gets from Render during the waking was not seen. The code copes with all three possibilities: the answer is held back (the "waking up" words after three seconds), the connection is refused (the page tries again), or Render answers in our place (the "starting up" sentence).
+- Two more tries to catch the server asleep, after leaving it alone for 17 and then 21 minutes, found it awake both times (it answered in a tenth of a second). Something else was visiting it: a teammate, or a program that scans the internet. So what an open page of ours gets from Render during the waking was not seen, and neither was Render's loading page. The code copes with all three possibilities: the answer is held back (the "waking up" words after three seconds), the connection is refused (the page tries again), or Render answers in our place (the "starting up" sentence).
 
 **Decisions made by the agent: please confirm**
 
