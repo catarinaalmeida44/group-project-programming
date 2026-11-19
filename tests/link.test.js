@@ -19,6 +19,7 @@ import {
   afterClose,
   retryWaitMs,
   CARD_AFTER_MS,
+  LONGER_THAN_USUAL_MS,
   GIVE_UP_AFTER_MS,
   LOST_AFTER_QUIET_MS,
   BROKE_THE_RULES,
@@ -138,6 +139,16 @@ describe("the online page: the card over the picture", () => {
     expect(connecting(100_000).share).toBe(1); // it stops at the end of the road
   });
 
+  it("says that it is taking longer than usual once the minute is well over, and keeps trying", () => {
+    expect(connecting(LONGER_THAN_USUAL_MS - 1).title).toBe("The server is waking up");
+    const card = connecting(LONGER_THAN_USUAL_MS);
+    expect(card.title).toBe("Still waking up");
+    expect(card.text).toContain("longer than usual");
+    expect(card.button).toBe(null);
+    expect(LONGER_THAN_USUAL_MS).toBeGreaterThan(WAKE_SECONDS * 1000);
+    expect(LONGER_THAN_USUAL_MS).toBeLessThan(GIVE_UP_AFTER_MS);
+  });
+
   it("says 'Connection lost' when the player was in the room before", () => {
     const soon = connecting(CARD_AFTER_MS, { wasInRoom: true });
     expect(soon.title).toBe("Connection lost");
@@ -228,6 +239,26 @@ describe("a question to the server that is never answered", () => {
     expect(answer.code).toBe("offline");
     expect(answer.message).toBe("The server could not be reached. Try again in a moment.");
     expect((await api.getMe()).available).toBe(false);
+  });
+
+  it("says the server is starting up when the hosting company answers in its place", async () => {
+    // Not our format, and one of the numbers a hosting company uses for "the server behind me is not up".
+    for (const status of [502, 503, 504]) {
+      const api = createAccountApi(async () => ({
+        status,
+        json: async () => {
+          throw new Error("this is a web page, not our format");
+        },
+      }));
+      const answer = await api.logIn("ana_1", "a-long-password");
+      expect(answer, String(status)).toEqual({ ok: false, code: "offline", message: "The server is starting up. Try again in a minute." });
+    }
+  });
+
+  it("still shows our own server's sentence when it is our server that says 'not available'", async () => {
+    const ours = { ok: false, code: "unavailable", message: "Accounts could not be reached just now. Try again in a moment." };
+    const api = createAccountApi(async () => ({ status: 503, json: async () => ours }));
+    expect(await api.logIn("ana_1", "a-long-password")).toEqual(ours);
   });
 
   it("waits long enough for a server that is waking up", () => {

@@ -32,6 +32,12 @@ const UNAVAILABLE = {
   code: "unavailable",
   message: "Accounts and the shared leaderboard are not available on this server right now.",
 };
+// While our server is starting, the hosting company can answer in its
+// place, with one of these numbers (502 "bad gateway", 503 "not available",
+// 504 "took too long") and a page of its own instead of our format. Our own
+// server also uses 503, but always in our format, with a sentence of its own.
+const STARTING_UP_NUMBERS = [502, 503, 504];
+const STARTING_UP = { ok: false, code: "offline", message: "The server is starting up. Try again in a minute." };
 
 /**
  * How long a question may stay without an answer, in thousandths of a
@@ -74,6 +80,10 @@ export function createAccountApi(fetchFunction, { answerWithinMs = ANSWER_WITHIN
     }
     clearTimeout(tooLong);
     if (answer === null || typeof answer !== "object" || typeof answer.ok !== "boolean") {
+      if (STARTING_UP_NUMBERS.includes(response.status)) {
+        // The hosting company answered in our server's place: it is not up yet.
+        return STARTING_UP;
+      }
       // Not an answer in our format: for example an older server that has no accounts.
       return UNAVAILABLE;
     }

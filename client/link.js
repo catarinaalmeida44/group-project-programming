@@ -22,6 +22,9 @@ import { QUIET_AFTER_MS } from "./net.js";
  */
 export const CARD_AFTER_MS = 700;
 
+/** Waking up should be over after WAKE_SECONDS. A quarter of a minute later the card says that it is taking longer than usual. */
+export const LONGER_THAN_USUAL_MS = (WAKE_SECONDS + 15) * 1000;
+
 /** The page keeps trying to connect for this long. Then it stops and offers a button. */
 export const GIVE_UP_AFTER_MS = 150_000;
 
@@ -135,11 +138,15 @@ export function linkCard({ state, waitedMs = 0, wasInRoom = false, quietMs = 0, 
           slow,
         );
   }
-  return waited < SLOW_AFTER_MS
-    ? card("Connecting…", "")
-    : card(
-        "The server is waking up",
-        "That can take up to a minute. It falls asleep when nobody has played for a while. Stay on this page: you join the room by itself.",
-        slow,
-      );
+  if (waited < SLOW_AFTER_MS) {
+    return card("Connecting…", "");
+  }
+  if (waited < LONGER_THAN_USUAL_MS) {
+    return card(
+      "The server is waking up",
+      "That can take up to a minute. It falls asleep when nobody has played for a while. Stay on this page: you join the room by itself.",
+      slow,
+    );
+  }
+  return card("Still waking up", "This is taking longer than usual. The page keeps trying: stay here, and you join the room by itself.", slow);
 }

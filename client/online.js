@@ -43,7 +43,6 @@ import { createPlayback, readServerMessage, bananasOf, walkersOf, statusLine, ac
 import { introShare, startLights, spinTurnOf } from "./scene.js";
 import { COLOURS, lookFromChoice, readChoice } from "./kart-choice.js";
 import { readCharacter, characterNote } from "./cast-choice.js";
-import { characterById } from "../shared/cast.js";
 import { lookOfTrack } from "./track-looks.js";
 import { walkersToShow, walkersDownNear } from "./street-life.js";
 import { routePoints, watchForWrongWay, WRONG_WAY_MESSAGE } from "./route.js";
@@ -296,9 +295,10 @@ function hear(text) {
     if (myCharacter !== null) {
       // Tell the server the character chosen in the menu. It answers in its
       // updates: that character, or the first free one if someone here
-      // already is it. The sentence below is then made more precise.
+      // already is it. Only then does the line say who we are: someone who
+      // arrives during a race has no kart yet, and may get another character.
       send({ type: "character", id: myCharacter });
-      status = `Connected. You are ${characterById(myCharacter).name}.`;
+      status = "Connected.";
     } else {
       // No character: tell the server the colours chosen in the menu before
       // characters existed, if any. Without them the kart has the colours of its place.
