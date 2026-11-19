@@ -17,8 +17,18 @@
 import { createHash, randomBytes } from "node:crypto";
 import { checkUsername, checkPassword, checkPasswordIsNotName, usernameKey, PASSWORD_MAX } from "../shared/account-rules.js";
 import { hashPassword, passwordMatches, pretendToCheck } from "./passwords.js";
+import { isCharacterId } from "../shared/cast.js";
+import { STEP_SECONDS } from "../shared/physics.js";
+import { statsFrom, ONLINE, SINGLE } from "./stats.js";
+import { singleResultProblem } from "./single-results.js";
 
 export const SESSION_DAYS = 7;
+/**
+ * A player's stats and their file of results are made from at most this
+ * many of their newest races. Nobody gets near it by playing: it is here so
+ * that one question to the database can never grow without end.
+ */
+export const RESULTS_READ = 5000;
 /** After this many wrong passwords in a row, the account is locked for a while. */
 export const WRONG_PASSWORDS_ALLOWED = 5;
 export const LOCK_MINUTES = 10;
@@ -67,6 +77,7 @@ export function createAccounts(
   { now = Date.now, passwords = { hash: hashPassword, matches: passwordMatches, pretend: pretendToCheck } } = {},
 ) {
   const boards = new Map(); // track -> { at, races, laps }: the leaderboards read a moment ago
+  const lastSingleAt = new Map(); // player number -> when their last single race was saved
   let tablesReady = null; //   a promise, so the tables are only created once
 
   /**
@@ -278,16 +289,19 @@ export function createAccounts(
         return refusal.code === "wrong_login" ? no("wrong_login", "That is not your password.") : refusal;
       }
       await store.deletePlayer(playerId);
+      lastSingleAt.delete(playerId);
       boards.clear(); // their times must leave every leaderboard at once
       return { ok: true };
     },
 
     /**
      * Saves the result of a race the server ran. Only server code calls
-     * this: there is no way for a browser to send a result. Says false, and
-     * saves nothing, for numbers that cannot be a real result.
+     * this: there is no way for a browser to send a result of this kind.
+     * Says false, and saves nothing, for numbers that cannot be a real
+     * result. "character" is the id of the character the player drove, for
+     * their own stats: anything that is not a character is saved as none.
      */
-    async saveResult({ playerId, track, raceSteps, bestLapSteps, position }) {
+    async saveResult({ playerId, track, raceSteps, bestLapSteps, position, character = null }) {
       const sensible =
         Number.isSafeInteger(playerId) &&
         typeof track === "string" &&
@@ -302,9 +316,76 @@ export function createAccounts(
         return false;
       }
       await ready();
-      await store.addResult({ playerId, track, mode: "online", raceSteps, bestLapSteps, position });
+      await store.addResult({
+        playerId,
+        track,
+        mode: ONLINE,
+        raceSteps,
+        bestLapSteps,
+        position,
+        character: isCharacterId(character) ? character : null,
+      });
       boards.delete(track); // the next visitor of this leaderboard sees the new result
       return true;
+    },
+
+    /**
+     * Saves a single race that the player's own browser ran and reported.
+     * The server did not see that race, so:
+     *   - the numbers must make sense (single-results.js), or it is refused
+     *   - a race cannot be over sooner than it lasted: a second report from
+     *     the same player is refused until as much time has passed as the
+     *     reported race took. Nobody can pour thousands of rows into the
+     *     database this way
+     *   - it is saved as "single", which never counts for the shared
+     *     leaderboard (store.js). It only shows in the player's own stats
+     * Gives { ok: true } or { ok: false, code, message }.
+     */
+    async saveSingleResult({ playerId, track, raceSteps, bestLapSteps, position, character = null }) {
+      const problem = singleResultProblem({ track, raceSteps, bestLapSteps, position, character });
+      if (!Number.isSafeInteger(playerId) || problem !== null) {
+        return no("invalid_result", "That is not a result of a single race.");
+      }
+      const before = lastSingleAt.get(playerId);
+      if (before !== undefined && now() - before < raceSteps * STEP_SECONDS * 1000) {
+        return no("too_soon", "That race cannot be over yet: your last one was only just saved.");
+      }
+      // Written down before the database is asked, so that two reports sent
+      // at the same moment cannot both get through.
+      lastSingleAt.set(playerId, now());
+      try {
+        await ready();
+        await store.addResult({ playerId, track, mode: SINGLE, raceSteps, bestLapSteps, position, character });
+      } catch (error) {
+        // Nothing was saved, so this report does not count as their last one.
+        if (before === undefined) {
+          lastSingleAt.delete(playerId);
+        } else {
+          lastSingleAt.set(playerId, before);
+        }
+        throw error;
+      }
+      return { ok: true };
+    },
+
+    /**
+     * One player's own stats on one track (stats.js), and where their best
+     * online race and lap stand on the shared leaderboard ("rank", or null
+     * without an online race). "playerId" always comes from the ticket of
+     * the browser that asks (api.js): there is no way to ask for someone else's.
+     */
+    async statsOf(playerId, track) {
+      await ready();
+      const rows = await store.resultsOf(playerId, RESULTS_READ);
+      const best = await store.myBest(track, playerId);
+      const rank = best.race === null || best.lap === null ? null : { race: best.race.rank, lap: best.lap.rank };
+      return { ...statsFrom(rows, track), rank };
+    },
+
+    /** One player's own saved races on every track, the newest first, for "Download my results". */
+    async resultsOf(playerId) {
+      await ready();
+      return store.resultsOf(playerId, RESULTS_READ);
     },
 
     /**

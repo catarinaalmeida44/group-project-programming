@@ -13,7 +13,10 @@
 //                 scrambled password, wrong-password count, locked until
 //   sessions      one row per signed-in browser: a scrambled ticket, whose
 //                 ticket it is, and when it stops working
-//   race_results  one row per finished online race of a signed-in player
+//   race_results  one row per finished race of a signed-in player: "online"
+//                 for a race the server ran, "single" for a single race that
+//                 the player's own browser ran and reported. Only "online"
+//                 rows ever count for the shared leaderboard
 //
 // Deleting a player also deletes their sessions and results: the database
 // does that by itself ("ON DELETE CASCADE").
@@ -49,11 +52,15 @@ export function createStore(pool, { prefix = "" } = {}) {
   const PLAYER_COLUMNS = `id, username, password_hash, failed_logins,
     (extract(epoch from locked_until) * 1000)::bigint AS locked_until_ms`;
 
+  // The shared leaderboard only counts races the server ran itself. A single
+  // race is run by the player's own browser, which the server cannot check,
+  // so those rows are left out of both questions below (mode = 'online').
+
   /** The best time of each player on a track, fastest first. "column" is one of our own two column names. */
   async function bestTimes(column, track, limit) {
     const answer = await pool.query(
       `SELECT p.username, b.steps
-         FROM (SELECT player_id, MIN(${column}) AS steps FROM ${results} WHERE track = $1 GROUP BY player_id) b
+         FROM (SELECT player_id, MIN(${column}) AS steps FROM ${results} WHERE track = $1 AND mode = 'online' GROUP BY player_id) b
          JOIN ${players} p ON p.id = b.player_id
         ORDER BY b.steps ASC, p.username_key ASC
         LIMIT $2`,
@@ -65,7 +72,7 @@ export function createStore(pool, { prefix = "" } = {}) {
   /** One player's best time on a track and its rank among all players, or null. */
   async function myBestTime(column, track, playerId) {
     const answer = await pool.query(
-      `WITH best AS (SELECT player_id, MIN(${column}) AS steps FROM ${results} WHERE track = $1 GROUP BY player_id)
+      `WITH best AS (SELECT player_id, MIN(${column}) AS steps FROM ${results} WHERE track = $1 AND mode = 'online' GROUP BY player_id)
        SELECT mine.steps,
               (SELECT count(*) FROM best faster WHERE faster.steps < mine.steps)::int + 1 AS rank
          FROM best mine
@@ -110,6 +117,10 @@ export function createStore(pool, { prefix = "" } = {}) {
          )`,
       );
       await pool.query(`CREATE INDEX IF NOT EXISTS ${results}_by_track ON ${results} (track, player_id)`);
+      // Added on 19 November 2026: which character the player drove, for
+      // "most played character" in their own stats. A table made before that
+      // day gets the column here. Races saved before it have none (NULL).
+      await pool.query(`ALTER TABLE ${results} ADD COLUMN IF NOT EXISTS character text`);
     },
 
     // ---- players ----
@@ -218,11 +229,39 @@ export function createStore(pool, { prefix = "" } = {}) {
 
     // ---- race results ----
 
-    async addResult({ playerId, track, mode, raceSteps, bestLapSteps, position }) {
+    /** Saves one finished race. "character" is the id of the character driven (shared/cast.js), or left out. */
+    async addResult({ playerId, track, mode, raceSteps, bestLapSteps, position, character = null }) {
       await pool.query(
-        `INSERT INTO ${results} (player_id, track, mode, race_steps, best_lap_steps, position) VALUES ($1, $2, $3, $4, $5, $6)`,
-        [playerId, track, mode, raceSteps, bestLapSteps, position],
+        `INSERT INTO ${results} (player_id, track, mode, race_steps, best_lap_steps, position, character) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [playerId, track, mode, raceSteps, bestLapSteps, position, character],
       );
+    },
+
+    /**
+     * One player's own saved races, the newest first, at most "limit" of them:
+     * [{ track, mode, raceSteps, bestLapSteps, position, character, at }].
+     * "at" is when it was saved, in milliseconds. Only ever asked for the
+     * signed-in player's own number: nobody reads someone else's list.
+     */
+    async resultsOf(playerId, limit) {
+      const answer = await pool.query(
+        `SELECT track, mode, race_steps, best_lap_steps, position, character,
+                (extract(epoch from created_at) * 1000)::bigint AS at_ms
+           FROM ${results}
+          WHERE player_id = $1
+          ORDER BY created_at DESC, id DESC
+          LIMIT $2`,
+        [playerId, limit],
+      );
+      return answer.rows.map((row) => ({
+        track: row.track,
+        mode: row.mode,
+        raceSteps: row.race_steps,
+        bestLapSteps: row.best_lap_steps,
+        position: row.position,
+        character: row.character,
+        at: Number(row.at_ms),
+      }));
     },
 
     /** The fastest whole race of each player on a track, fastest first: [{ username, steps }]. */

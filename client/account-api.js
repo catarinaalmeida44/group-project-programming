@@ -164,6 +164,43 @@ export function createAccountApi(fetchFunction, { answerWithinMs = ANSWER_WITHIN
     getLeaderboard(trackName) {
       return ask("GET", `/api/leaderboard?track=${encodeURIComponent(trackName)}`);
     },
+
+    /**
+     * The signed-in player's own stats on the Nova lap, for "Your account".
+     * The address names no player: the server knows who asks from the
+     * cookie, so nobody can read someone else's.
+     * Gives { ok: false, code, message }, or:
+     *   { ok: true,
+     *     track, trackName,            the short name and the name of the track
+     *     stats: {
+     *       races, online, single,     how many races, and of each kind
+     *       wins, podiums,             finished first, and in the first three
+     *       bestRaces: [{ steps, mode, at, character }],   the three fastest
+     *       bestLap: { steps, mode, at } or null,
+     *       favourite: { character, races, counted } or null,   the character driven most
+     *       lastAt,                    when the newest race was saved, or null
+     *       rank: { race, lap } or null } }   on the shared leaderboard (online races only)
+     * Times are in steps of the game, 60 to a second. "at" is a moment in
+     * milliseconds. "mode" is "online" or "single".
+     */
+    getStats() {
+      return ask("GET", "/api/stats");
+    },
+
+    /**
+     * Tells the server about a single race this browser has just run, so
+     * that it counts in the signed-in player's own stats.
+     *   result  { track, raceSteps, bestLapSteps, position, character }
+     *           "track" is the short name, "character" an id or null
+     * The server checks that the numbers make sense, and keeps the race
+     * apart from online races: it never counts for the shared leaderboard.
+     * Gives { ok: true } or { ok: false, code, message }. Codes of its own:
+     *   invalid_result   the numbers cannot be a real race
+     *   too_soon         the last race was only just saved
+     */
+    saveSingleResult(result) {
+      return ask("POST", "/api/single-result", result);
+    },
   };
 }
 

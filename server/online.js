@@ -457,13 +457,17 @@ export function attachOnlinePlay(
         return;
       }
       const { position, raceSteps, bestLapSteps } = finish;
+      // Which character they drove, for their own stats ("most played
+      // character"). Read now: by the time the database answers, they may
+      // have left the room.
+      const character = cast.characterOf(finish.id) ?? null;
       seat.account
         .then((account) => {
           if (account === null) {
             return; // a guest: nothing to save
           }
           return accounts
-            .saveResult({ playerId: account.id, track: shortName, raceSteps, bestLapSteps, position })
+            .saveResult({ playerId: account.id, track: shortName, raceSteps, bestLapSteps, position, character })
             .then((saved) => tell(seat.connection, { type: "saved", saved, position, raceSteps, bestLapSteps }));
         })
         .catch((error) => {
