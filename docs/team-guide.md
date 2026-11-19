@@ -29,7 +29,7 @@ The game is online at https://novasbe-kart.onrender.com
 | The server on the internet | Works. It updates itself a few minutes after every merge into `main` |
 | The database | Works. It holds the accounts, the sign-ins and the race results. See section 8 for a catch on the university Wi-Fi |
 | Six characters, chosen after the track, before each race, each shown standing beside their kart, helmet in hand, with their own head | Built on 17 November by Pedro. On 18 November Catarina redesigned the panel (a poster of the chosen one, a line-up under it, no photos beside the pilots), gave Cici Boss the gangnam as her dance and cut her head again from her whole photo. They change only the kart's colours: everyone still drives the same way. Online, one player per character in a room. Faces only when choosing and on the podium, never in the race. The podium is Pedro's pull request 28 |
-| Items, computer karts, cup, more campus tracks, email for accounts, different driving for each character | Not started. This is the work ahead |
+| Items, computer karts, more campus tracks, email for accounts, different driving for each character | Not started. This is the work ahead |
 
 The full story of how each part was built, and why, is in `docs/build-diary.md`. The answers to likely staff questions are in `WALKTHROUGH.md`.
 
@@ -114,7 +114,7 @@ The brief (section 10) proposes four areas. The owners are not decided yet. Fill
 | Accounts, email, security, database | | The database tables |
 | Driving physics, characters, items | | The rules in `shared/` |
 | Campus tracks, computer karts | Rodrigo, for the campus tracks (reported 11 Nov 2026). Computer karts not yet confirmed | The track files in `shared/tracks/` |
-| Game server and multiplayer: rooms, character selection, cup | | `server/online.js` and `server/room.js` |
+| Game server and multiplayer: rooms, character selection (the cup was dropped on 17 Nov 2026) | | `server/online.js` and `server/room.js` |
 
 Ask the owner before changing a file they look after. That is the main way we avoid two people rewriting the same thing.
 

@@ -2,6 +2,52 @@
 
 Francisco Fonseca (Fran, GitHub FranFon15). Entries from 11 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 19 November 2026: FranFon in green, a golf swing, and no Cup in the menu
+
+**What was done**
+Three things Francisco asked for, on the branch `franfon-look-and-no-cup`:
+- FranFon's colours: a green kart, a yellow helmet and a green suit (all black before).
+- FranFon's dance: a golf swing, "The hole in one". With a club in his hands he stands over the ball, swings slowly back, hits it fast, and holds the finish, turned to watch the ball fly up and far away until it is gone. A new ball each round.
+- The greyed-out Cup is gone from the main menu, because the team dropped the Cup on 17 November.
+
+| File | What changed |
+|---|---|
+| `shared/cast.js` | FranFon's three colour numbers |
+| `client/pilot-shape.js` | The new dance "golf", the club and the ball. "plane" stays in the list, danced by nobody |
+| `client/cast-choice.js` | FranFon dances "golf", called "The hole in one" |
+| `client/index.html`, `client/style.css` | The Cup tile and its styles taken out; "four" choices is now "three" in the comments |
+| `tests/golf-dance.test.js` | New. 19 tests |
+| `tests/cast.test.js`, `tests/pilot-shape.test.js`, `tests/menu.test.js` | 3 old tests changed, with Francisco's OK (below) |
+| `WALKTHROUGH.md`, `README.md`, `client/README.md`, `tests/README.md`, `docs/team-guide.md` | Kept true: the menu without the Cup, the dances, the tests |
+
+**The 3 old tests that were changed, with Francisco's OK**
+- `cast.test.js` › "paints each character in the colours the team chose": FranFon is now Green, Yellow, Green instead of Black, Black, Black.
+- `pilot-shape.test.js` › "is one of standing, arms crossed, and the ten dances": the list now ends with "golf" (eleven dances; the name of the test was kept so it is easy to find).
+- `menu.test.js` › "shows the Cup, but it cannot be clicked yet, and says why": replaced by "no longer has a Cup: the team dropped it".
+
+**Why it was done this way**
+- Francisco first asked for Fortnite's "Default Dance". That is Epic Games' own dance, and everything in our game is original, so it was not copied. A dance of our own ("bounce", with a jump) was made first; then Francisco chose a golf swing instead, and the bounce was replaced before anything was pushed.
+- A golfer does not jump, so the test "keeps the feet on the ground, except during the jumps of the siu and the gangnam" did not need to change.
+- The kart has one colour of your choice; its edges are picked automatically (white on a green kart), and the helmet's stripe takes the kart's colour. Yellow parts on the kart itself would mean changing how colours work for every character, so that was not done.
+
+**Decisions**
+- The colours are Francisco's: "green suit and yellow helmet", the kart green.
+- Decision made by the agent, please confirm: the name of the dance on the page, "The hole in one".
+- The characters and dances were built by Pedro; the area has no owner yet. Tell Pedro.
+
+**What was checked, and what was not**
+- Before changing any old test: 3 failed, listed with a reason each, and Francisco said OK.
+- One general test found a real mistake while building: the club head went into the ground when the pilot leant over the ball. Fixed by stopping the club higher.
+- The golf dance was broken on purpose in three ways; each made a test fail.
+- In the Claude app's browser: the menu has three choices; the character screen shows FranFon green with a yellow helmet, the club, the ball by his feet, the backswing and the finish. **Not seen there:** the ball in flight. That browser was narrow and redraws slowly, and the first try of the flight left the small picture too fast, so it was made slower and higher; the flight itself is checked by the tests only.
+- `npm test`: 2145 passed, 5 skipped.
+
+**How to check it yourself**
+`npm start`, open http://localhost:3000, Single race, any track, and click FranFon: watch one whole swing in the big picture, and the ball fly off to the side.
+
+**What comes next**
+The online lag question from 17 November is still open: which kind of glitch is it?
+
 ### 17 November 2026: no Cup, written into the brief
 
 **What was done**
