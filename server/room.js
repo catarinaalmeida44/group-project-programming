@@ -39,10 +39,19 @@
 //   "finished"   the race is over: every racer has finished, or the time
 //                ran out. The room waits for the next start.
 //
-// The host is the player who has been in the room longest. Only the host
-// can start a race, and only when no race is on: a race that has begun is
-// driven to its end. Someone who joins while a race is on does not get a
-// kart on the track: they watch, and join in at the next start.
+// The host is the player who has been in the room longest AND is at their
+// keyboard. Only the host can start a race, and only when no race is on: a
+// race that has begun is driven to its end. Someone who joins while a race
+// is on does not get a kart on the track: they watch, and join in at the
+// next start.
+//
+// "At their keyboard" (since 19 November 2026): a player who has pressed no
+// key for a minute counts as away, and the host passes to the next player
+// in the order they arrived. Before that, a tab someone had forgotten, or a
+// player who had walked off, stayed the host for ever, and nobody else
+// could start a race. Pressing any key brings a player back. Finishing a
+// race counts as being there, and so does having just arrived. If everyone
+// is away, the host is simply whoever has been here longest.
 //
 // So that a race always does end, it has two time limits. Once the first
 // racer has finished, the others have FINISH_WINDOW_STEPS left. And no race
@@ -61,6 +70,9 @@ import { cleanLookChoice } from "../shared/kart-looks.js";
 
 /** How many players fit in a room: one for each place on the starting grid (shared/grid.js). */
 export const MAX_PLAYERS = GRID_PLACES;
+
+/** A player who has pressed no key for this many steps counts as away from the keyboard: one minute. */
+export const AWAY_AFTER_STEPS = 60 * 60;
 
 /** The server sends everyone an update once every this many steps: 60 / 3 = 20 times a second. */
 export const STEPS_PER_UPDATE = 3;
@@ -101,7 +113,7 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
   if (![finishWindowSteps, raceLimitSteps].every((steps) => Number.isInteger(steps) && steps > 0)) {
     throw new RangeError("createRoom: the time limits of a race must be whole numbers of steps above zero");
   }
-  const players = new Map(); // player number -> { id, place, racer, keys, racing }
+  const players = new Map(); // player number -> { id, place, racer, keys, racing, activeAt }
   let nextId = 1;
   let step = 0;
   let phase = "open"; //      "open", "countdown", "racing" or "finished"
@@ -142,9 +154,32 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
     });
   }
 
-  /** The player who has been here longest, or null in an empty room. Numbers only go up, so that is the lowest one. */
+  /**
+   * Is this player away from the keyboard? Yes when they hold no key and
+   * the last sign of them (see iAmHere) is a minute old.
+   */
+  function isAway(player) {
+    const holdsAKey = player.keys.gas || player.keys.brake || player.keys.left || player.keys.right;
+    return !holdsAKey && step - player.activeAt >= AWAY_AFTER_STEPS;
+  }
+
+  /** A sign that a player is at the keyboard: they arrived, pressed or released a key, or finished a race. */
+  function iAmHere(player) {
+    player.activeAt = step;
+  }
+
+  /**
+   * The host, or null in an empty room: the player who has been here
+   * longest among those at their keyboard. Numbers only go up, so that is
+   * the lowest number. If everyone is away, it is the lowest number of all.
+   */
   function hostId() {
-    return players.size === 0 ? null : Math.min(...players.keys());
+    if (players.size === 0) {
+      return null;
+    }
+    const everyone = [...players.values()];
+    const present = everyone.filter((player) => !isAway(player));
+    return Math.min(...(present.length > 0 ? present : everyone).map((player) => player.id));
   }
 
   /** Back to waiting for a start, with every kart on its starting place, no bananas, and the walkers where they begin. */
@@ -177,14 +212,22 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
      * "id" is the player's number: it is never used again in this room.
      * "place" is the starting place, which also decides the kart's colour.
      * Someone who joins while a race is on watches until the next start.
+     *
+     * A newcomer gives the host a fresh minute before they can count as
+     * away: a host who has sat waiting for friends should not lose the
+     * room the moment the first friend walks in.
      */
     addPlayer() {
       const place = freePlace();
       if (place === null) {
         return null;
       }
+      const host = players.get(hostId());
+      if (host !== undefined) {
+        iAmHere(host);
+      }
       const id = nextId++;
-      players.set(id, { id, place, racer: createRacer(track, place), keys: NO_KEYS, racing: false });
+      players.set(id, { id, place, racer: createRacer(track, place), keys: NO_KEYS, racing: false, activeAt: step });
       return { id, place };
     },
 
@@ -223,6 +266,11 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
      * Nothing given to startRace can choose it.
      */
     startRace(id) {
+      // Asking for a start is a key press: whoever asks is at their keyboard.
+      // So a host who had been counted as away is the host again by asking.
+      if (players.has(id)) {
+        iAmHere(players.get(id));
+      }
       if (!players.has(id) || id !== hostId() || phase === "countdown" || phase === "racing") {
         return false;
       }
@@ -261,6 +309,7 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
       if (player === undefined) {
         return false;
       }
+      iAmHere(player); // a key went down or up
       // Copy only the four answers, and only an exact "true" counts.
       player.keys = {
         gas: keys?.gas === true,
@@ -296,6 +345,9 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
      */
     restart(id) {
       const player = players.get(id);
+      if (player !== undefined) {
+        iAmHere(player); // the R key
+      }
       if (player === undefined || phase !== "open") {
         return false;
       }
@@ -390,6 +442,12 @@ export function createRoom(track, character, maxPlayers = MAX_PLAYERS, pickSeed 
       countdownSteps++;
 
       if (inTheRace.every((player) => player.racer.progress.finished) || countdownSteps >= closesAt) {
+        if (phase !== "finished") {
+          // The race is over this very step. Whoever finished it was there,
+          // even if they then sat still while the others drove on: they are
+          // not counted as away for another minute.
+          inTheRace.filter((player) => player.racer.progress.finished).forEach(iAmHere);
+        }
         phase = "finished";
       } else if (countdownAt(countdownSteps).racing) {
         phase = "racing";
