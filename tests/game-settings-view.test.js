@@ -16,6 +16,12 @@ import {
   roomLabel,
 } from "../client/game-settings-view.js";
 import { readLevel } from "../client/difficulty.js";
+import { singleSavedText } from "../client/stats-view.js";
+import { createPracticeRace } from "../shared/practice-race.js";
+import { singleRaceIsOver, podiumLineup, podiumLoser, podiumKartsOf } from "../client/podium.js";
+import { TEST_OVAL } from "../shared/tracks/test-oval.js";
+import { lookOfTrack } from "../client/track-looks.js";
+import { routePoints } from "../client/route.js";
 
 /** A pretend browser storage: a Map behind getItem and setItem. */
 function pretendStorage(start = {}) {
@@ -220,5 +226,47 @@ describe("the label in the corner of an online room", () => {
   it("is not there before we know our number or who the host is", () => {
     expect(roomLabel({ race: open, myId: null, names, settings })).toBeNull();
     expect(roomLabel({ race: { ...open, host: null }, myId: 3, names, settings })).toBeNull();
+  });
+});
+
+describe("a single race with computer karts switched off", () => {
+  const line = routePoints(TEST_OVAL, lookOfTrack(TEST_OVAL).route);
+  const alone = () => createPracticeRace(TEST_OVAL, 3, line, 0, "ro", "hard");
+
+  it("has the player's kart only, on pole", () => {
+    const race = alone();
+    expect(race.racers).toHaveLength(1);
+    expect(race.drivers).toEqual([]);
+    const withOthers = createPracticeRace(TEST_OVAL, 3, line, 5, "ro", "hard");
+    expect(withOthers.racers).toHaveLength(6);
+    expect(race.racers[0].kart).toEqual(withOthers.racers[1].kart); // the place the first computer kart would have had
+  });
+
+  it("is over as soon as the player has finished: there is nobody to wait for", () => {
+    const race = alone();
+    expect(singleRaceIsOver(race, 0)).toBe(false);
+    const finished = { ...race, racers: [{ ...race.racers[0], progress: { ...race.racers[0].progress, finished: true, steps: 3000 } }] };
+    expect(singleRaceIsOver(finished, 0)).toBe(true);
+  });
+
+  it("puts the player alone on the podium, and nobody cries", () => {
+    const race = alone();
+    const finished = { ...race, racers: [{ ...race.racers[0], progress: { ...race.racers[0].progress, finished: true, steps: 3000 } }] };
+    const karts = podiumKartsOf(finished, "ro");
+    const lineup = podiumLineup(karts, TEST_OVAL);
+    expect(lineup).toHaveLength(1);
+    expect(lineup[0].place).toBe(1);
+    expect(lineup[0].character).toBe("ro");
+    expect(podiumLoser(karts, TEST_OVAL)).toBeNull();
+  });
+
+  it("is not counted in the player's stats, and the page says so", () => {
+    expect(singleSavedText({ ok: false, code: "alone" })).toBe(" Not counted in your stats: you raced without computer karts.");
+  });
+
+  it("leaves what the page says about a saved race as it was", () => {
+    expect(singleSavedText({ ok: true })).toBe(" Saved to your stats.");
+    expect(singleSavedText(null)).toBe("");
+    expect(singleSavedText({ ok: false, code: "not_signed_in" })).toBe("");
   });
 });

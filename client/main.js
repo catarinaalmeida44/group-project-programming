@@ -34,7 +34,8 @@ import { chooseTrack, chooseTrackName } from "./track-choice.js";
 import { storeysOf } from "../shared/tracks/index.js";
 import { createKeyboard } from "./keyboard.js";
 import { setUpFullScreen } from "./full-screen.js";
-import { readLevel, saveLevel, levelButtons } from "./difficulty.js";
+import { readGameChoice, saveGameChoice, settingsSummary } from "./game-settings-view.js";
+import { createSettingsCard } from "./game-settings-card.js";
 import { createPainter } from "./draw.js";
 import { introShare, startLights, spinTurnOf } from "./scene.js";
 import { lookFromChoice, readChoice } from "./kart-choice.js";
@@ -97,7 +98,9 @@ const missedCheckpoint = watchForMissedCheckpoint(track);
 // ---- The state of the race ----
 const storage = storageOf(window); // this browser's storage, for the settings and the best times
 const myCharacter = readCharacter(storage)?.id ?? null; // the character chosen in the menu, or null (cast-choice.js)
-let level = readLevel(storage); // how good the computer karts are: easy, normal or hard (difficulty.js)
+// The game settings this browser remembers (game-settings-view.js): do
+// computer karts race with the player, and how good are they (easy, normal or hard)?
+let choice = readGameChoice(storage);
 let race = newRace(); // the racers (the player is racers[0]), the computer drivers, the countdown and the bananas
 let started = false; //    the countdown starts at the first key press
 let lastFrameTime = null;
@@ -123,27 +126,41 @@ const sound = createRaceSound(window, storage);
 const soundText = document.getElementById("sound");
 soundText.textContent = sound.isOn() ? "on" : "off";
 
-// ---- The level of the computer karts: three buttons above the track (difficulty.js) ----
-const levelBox = document.getElementById("level-box");
+// ---- The game settings: a card over the picture (game-settings-card.js) ----
+// Computer karts on or off, and how good they are. The card comes up when
+// the page opens, and again with the button above the track. Confirming
+// remembers the choice in this browser and starts the race again with it.
+// (Until 19 November 2026 the level was three buttons above the track.)
+const settingsBox = document.getElementById("settings-box");
+const settingsSummaryText = document.getElementById("settings-summary");
+const settingsButton = document.getElementById("open-game-settings");
+// A track without a racing line has no computer karts (practice-race.js): nothing to choose there.
+const canHaveComputers = line.length >= 3;
 
-/** Shows which level is in use: that button is pressed. */
-function showLevel() {
-  for (const { level: each, pressed } of levelButtons(level)) {
-    levelBox.querySelector(`[data-level="${each}"]`).setAttribute("aria-pressed", String(pressed));
-  }
+const settingsCard = createSettingsCard(document, {
+  mode: "single",
+  onConfirm: (wanted) => {
+    choice = { computers: wanted.computers, level: wanted.level };
+    saveGameChoice(storage, choice); // remembered for next time
+    showChoice();
+    startAgain(); // a new race with these settings, as with R
+  },
+});
+
+/** Says above the track who the player races against: "Computer karts: Hard", or "No computer karts". */
+function showChoice() {
+  settingsSummaryText.textContent = settingsSummary({ ...choice, most: 0 });
 }
 
-for (const button of levelBox.querySelectorAll("button")) {
-  button.addEventListener("click", () => {
-    level = button.dataset.level;
-    saveLevel(storage, level); // remembered for next time
-    showLevel();
-    startAgain(); // a new race at this level, as with R
-    button.blur(); // so the arrow keys and Space go back to driving
-  });
+/** Opens the card. A race that is on is put back on the grid first: it cannot go on behind the card. */
+function openSettings(firstTime) {
+  startAgain();
+  settingsCard.open({ settings: choice, firstTime });
 }
-showLevel();
-levelBox.hidden = race.drivers.length === 0; // no computer karts on this track: nothing to choose
+
+settingsButton.addEventListener("click", () => openSettings(false));
+showChoice();
+settingsBox.hidden = !canHaveComputers;
 
 // The game on the whole screen: the button above the track, or F (full-screen.js).
 const fullScreen = setUpFullScreen(document, document.getElementById("play-area"), document.getElementById("full-screen"));
@@ -159,6 +176,9 @@ const keyboard = createKeyboard(window, {
 });
 
 function start() {
+  if (settingsCard.isOpen()) {
+    return; // the race waits behind the card until the settings are confirmed
+  }
   started = true;
 }
 
@@ -199,6 +219,12 @@ accountApi?.getMe().then((me) => {
 function reportFinish(progress) {
   const times = finishedRaceTimes(progress.lapSteps, track.laps);
   if (accountApi === null || times === null || signedIn === false) {
+    return;
+  }
+  // A race without computer karts is not sent: with nobody to beat it would
+  // count as a win every time. A signed-in player is told so (stats-view.js).
+  if (race.drivers.length === 0) {
+    savedAnswer = signedIn === true ? { ok: false, code: "alone" } : null;
     return;
   }
   const thisRace = raceNumber;
@@ -380,7 +406,7 @@ function sceneFor(countdownSteps, hasStarted) {
 
 /** A new race, before the countdown. The computer karts are the characters the player did not choose. */
 function newRace() {
-  return createPracticeRace(track, newSeed(), line, COMPUTER_KARTS, myCharacter, level);
+  return createPracticeRace(track, newSeed(), line, choice.computers ? COMPUTER_KARTS : 0, myCharacter, choice.level);
 }
 
 /** The computer karts as they are drawn: in their character's colours, turning while they spin. */
@@ -427,6 +453,8 @@ function newBestText() {
 window.kartGame = {
   state: () => ({
     started,
+    choice: { ...choice }, // the game settings in use
+    settingsCard: settingsCard.isOpen(),
     countdownSteps: race.countdownSteps,
     view,
     kart: { ...race.racers[0].kart },
@@ -442,5 +470,10 @@ window.kartGame = {
     })),
   }),
 };
+
+// The first thing on the page: the game settings, as they were left last time.
+if (canHaveComputers) {
+  settingsCard.open({ settings: choice, firstTime: true });
+}
 
 requestAnimationFrame(frame);
