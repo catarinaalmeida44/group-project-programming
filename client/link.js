@@ -29,7 +29,7 @@ export const LONGER_THAN_USUAL_MS = (WAKE_SECONDS + 15) * 1000;
 export const GIVE_UP_AFTER_MS = 150_000;
 
 /**
- * In the room the server sends news 20 times a second. If none has come
+ * In the room the server sends news 30 times a second. If none has come
  * for this long, the connection is dead, even if the browser has not
  * noticed yet (that can take it 20 seconds). The page then drops it and
  * joins the room again.

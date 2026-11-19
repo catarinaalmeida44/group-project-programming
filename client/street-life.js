@@ -29,7 +29,7 @@ export const WALKER_LOOKS = 6;
  *               (anything else, such as a race that has no walkers, gives
  *               an empty list)
  *   stepsSince  how many steps have passed since "walkers" was true. The
- *               online page gets news of the walkers 20 times a second and
+ *               online page gets news of the walkers 30 times a second and
  *               draws 60 pictures a second: with this, a walker keeps
  *               walking smoothly in between
  * Gives [{ x, y, angle, down, downShare, look }]. A walker that is inside a

@@ -15,7 +15,7 @@
 //                       character, or computer karts on or off (see messages.js)
 //   server -> browser   "welcome" with your player number, then the state
 //                       of all karts, of the race and of the bananas on the
-//                       road 20 times a second.
+//                       road 30 times a second.
 //                       Also "account" (who you are signed in as, if anyone),
 //                       "names" (the user names of the signed-in players in
 //                       the room), "saved" (your finished race was written

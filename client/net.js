@@ -1,14 +1,26 @@
 // Showing an online race smoothly.
 //
-// The server sends the state of all karts 20 times a second, but the screen
+// The server sends the state of all karts 30 times a second, but the screen
 // shows 60 pictures a second, and the internet delivers the updates at
 // slightly uneven moments. Drawing each update as it arrives would make the
 // karts jump.
 //
-// So the browser shows the race a tenth of a second in the past. For every
-// picture it finds the two updates on either side of that moment and draws
-// each kart at the right point between them. This is the "gliding" of karts
-// between updates.
+// So the browser shows the race a little in the past. For every picture it
+// finds the two updates on either side of that moment and draws each kart
+// at the right point between them. This is the "gliding" of karts between
+// updates.
+//
+// HOW FAR IN THE PAST
+// The further in the past, the later a key press shows on the screen: that
+// is the "lag" a player feels. But if the picture runs too close to the
+// present, one update that arrives late leaves nothing to glide towards,
+// and the karts stop for a moment. So the page measures how late updates
+// arrive on this connection and keeps just enough spare: 4 steps (a
+// fifteenth of a second) on a steady connection, where updates are at most
+// one step late, and up to 6 steps (a tenth of a second) on an uneven one.
+// Until 19 November 2026 it was always 6, with 20 updates a second.
+// (Measured that day from Catarina's laptop: the live server's updates
+// arrive at most about one step late.)
 //
 // This file is only arithmetic and bookkeeping, so it can be tested. The
 // connection itself is opened in online.js.
@@ -16,11 +28,23 @@
 import { STEP_SECONDS } from "../shared/physics.js";
 import { formatTime } from "./format.js";
 
-/** How far in the past the race is shown, in steps of the game. 6 steps = a tenth of a second. */
-export const DELAY_STEPS = 6;
+/** How far in the past the race is shown on a steady connection, in steps of the game. 4 steps = a fifteenth of a second. */
+export const DELAY_STEPS = 4;
+/** The furthest in the past it is ever shown, on a connection that delivers unevenly. 6 steps = a tenth of a second. */
+export const DELAY_STEPS_MOST = 6;
+/**
+ * How quickly a late update is forgotten: each update that arrives on time
+ * shrinks the remembered lateness to this share. It halves in a little over
+ * two seconds, and after ten seconds of steady updates almost nothing of it
+ * is left. Slow on purpose: a connection that hiccups every few seconds
+ * should keep its spare instead of stopping the karts at every hiccup.
+ */
+export const LATENESS_FADES = 0.99;
+/** Beyond the worst lateness seen lately, the page keeps this one step more. */
+const SPARE_STEPS = 1;
 
 const STEPS_PER_SECOND = 60;
-const UPDATES_TO_KEEP = 20; //  one second's worth
+const UPDATES_TO_KEEP = 30; //  one second's worth
 const COAST_STEPS = 12; //      if updates stop arriving, keep moving this long, then hold still
 const JUMP_STEPS = 30; //       if we are this far off, jump instead of gliding there
 const CATCH_UP = 0.1; //        share of a small timing error corrected in each picture
@@ -106,6 +130,8 @@ export function kartsAtStep(updates, step) {
  * "where are the karts now?".
  *   add(update, now)  store an update that just arrived
  *   advance(now)      the karts to draw at this moment, or null before the first update
+ *   delaySteps()      how far in the past the race is shown right now, in
+ *                     steps: from DELAY_STEPS to DELAY_STEPS_MOST
  * "now" is the browser's clock in thousandths of a second.
  */
 export function createPlayback() {
@@ -113,12 +139,46 @@ export function createPlayback() {
   let newestArrivedAt = 0;
   let showingStep = null; // the moment of game time being shown
   let lastAdvance = 0;
+  let lateSteps = 0; //      how late updates have been arriving lately, in steps
+  let stepsApart = 2; //     how many steps lie between two updates (the server sends every second step)
+
+  /**
+   * The delay in use. To always have an update to glide towards, the
+   * picture must be at least this far in the past: the steps between two
+   * updates, plus the worst lateness seen lately, plus one step to spare.
+   * Never less than DELAY_STEPS and never more than DELAY_STEPS_MOST.
+   */
+  function delaySteps() {
+    const needed = stepsApart + lateSteps + SPARE_STEPS;
+    return Math.min(Math.max(needed, DELAY_STEPS), DELAY_STEPS_MOST);
+  }
 
   return {
+    delaySteps,
+
     add(update, now) {
       const newest = updates[updates.length - 1];
       if (newest !== undefined && update.step <= newest.step) {
         return; // older than what we already have: ignore it
+      }
+      if (newest !== undefined) {
+        // How much later did this update arrive than its step number says
+        // it should, counting from the one before? On a steady connection:
+        // not at all. The worst lateness is remembered and fades slowly.
+        const arrivedAfterSteps = ((now - newestArrivedAt) / 1000) * STEPS_PER_SECOND;
+        const apart = update.step - newest.step;
+        const late = arrivedAfterSteps - apart;
+        lateSteps = Math.max(late, lateSteps * LATENESS_FADES, 0);
+        // A gap of seconds (the tab was asleep) says nothing about the connection.
+        if (late > JUMP_STEPS) {
+          lateSteps = 0;
+        }
+        // How far apart the server's updates are, counted in its own steps:
+        // 2 today. (An update that was lost on the way makes one pair look
+        // further apart; the next pair puts it right.)
+        if (apart <= DELAY_STEPS_MOST) {
+          stepsApart = apart;
+        }
       }
       updates.push(update);
       if (updates.length > UPDATES_TO_KEEP) {
@@ -136,7 +196,7 @@ export function createPlayback() {
       // Where the server probably is right now: the newest update, plus the
       // time since it arrived. Then step back by the delay.
       const sinceNewest = Math.min(((now - newestArrivedAt) / 1000) * STEPS_PER_SECOND, COAST_STEPS);
-      const wanted = newest.step + sinceNewest - DELAY_STEPS;
+      const wanted = newest.step + sinceNewest - delaySteps();
 
       if (showingStep === null || Math.abs(wanted - showingStep) > JUMP_STEPS) {
         showingStep = wanted;
@@ -152,7 +212,7 @@ export function createPlayback() {
 }
 
 /**
- * Updates normally arrive 20 times a second. If none has arrived for this
+ * Updates normally arrive 30 times a second. If none has arrived for this
  * long, something is wrong, and we say so.
  */
 export const QUIET_AFTER_MS = 2000;
