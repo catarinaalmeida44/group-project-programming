@@ -4,6 +4,75 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 19 November 2026, evening: my stats in "Your account", single races that count, buttons on the results screens
+
+**What she said**
+
+- From the feedback on the grading points: does the results screen offer "Race again" and "Back to menu" with one click? (It did not: only the R key, the host's Enter, and a small link above the picture.)
+- "We should do the profile page with your own stats, and maybe things like most played character. Best top 3 times, only for the track we have been working on."
+- The stats go into "Your account": "it has there my stats, and at the bottom of the page has the usual change password and all that."
+- Yes to "Download my results". "I would also put single races counting in the stats."
+- Mid-way: "Rodrigo did a pull request just a few moments ago, check if what we are doing does not break on what he did."
+
+**What was built** (branch `my-stats-and-results-buttons`)
+
+| What | Where |
+|---|---|
+| "Your account" starts with a driver's card: the character driven most, dancing beside their kart; the player's name; races, wins, podiums; the three best race times with medals; the best lap; the place on the shared leaderboard. Nova lap only. The account itself (password, delete) is at the bottom | `client/index.html`, `client/stats-panel.js`, the words in `client/stats-view.js`, the look in `client/style.css` |
+| The sums behind it, from the list of one player's saved races | `server/stats.js`, `statsOf()` in `server/accounts.js`, `resultsOf()` in `server/store.js` |
+| Three new addresses, each only for the signed-in player's own races: `/api/stats`, `/api/single-result`, `/api/my-results.csv` | `server/api.js`, asked from `client/account-api.js` |
+| The character driven is saved with every online result | `server/online.js` (`saveFinish`), a new column `character` in `race_results` (`server/store.js`) |
+| A finished single race is reported to the server once and saved as "single". It counts in the player's own stats and never for the shared leaderboard | `reportFinish()` in `client/main.js`, `saveSingleResult()` in `server/accounts.js`, the checks in `server/single-results.js` |
+| "Download my results": a ".csv" file of every saved race, for Excel | `resultsAsCsv()` in `server/stats.js`, the button in `client/stats-panel.js` |
+| Single race, on the podium: "Race again" and "Back to menu" as buttons, top right, with a small line "Saved to your stats." | `client/race.html`, `client/main.js` |
+| Online, on the results board: "Start next race" (host only) and "Back to menu". On a low screen the list scrolls and the buttons stay in view | `client/results-board.js`, `client/online.js`, `client/style.css` |
+
+**Why it was done this way**
+
+- **A single race cannot be checked by the server**, because it runs in the player's browser. So it is kept apart: marked "single", shown only to that player, and left out of the two questions that make the leaderboard. "The server decides the results" stays true for everything other players can see.
+- **Nobody can ask for someone else's stats.** The addresses take no name and no number: the server knows who asks from the cookie.
+- **The sums are in a file of their own with no database in it** (`server/stats.js`), so each rule (what a podium is, which character wins a tie) has a plain test.
+- **The card is the poster of "Choose your character" again**, in the colours of the most played character's kart, because a tidy table is not what a game looks like.
+
+**Rodrigo's two pull requests arrived underneath**
+
+- Number 31 (computer karts online) was already in `main` when this branch started.
+- Number 32 (full screen) was merged into `main` while this was being built. It changed four files this work also changes: `client/race.html`, `client/main.js`, `client/online.js`, `client/style.css`. `main` was merged into this branch. Three of the four fitted together by themselves. In `client/race.html` both had changed the same lines (his "play area" around the numbers and the picture, my buttons for the end of the race): the buttons now sit inside his play area, so they come along on the whole screen.
+- Nothing of his was removed or changed. All his 14 full-screen tests and his computer-kart tests pass on the combination.
+
+**Decisions made by the agent: please confirm**
+
+- `race_results` has a new column, `character`. Nobody owns the database tables yet, so the team should be told. The server adds it by itself the next time it starts on Render. Older races have no character: "most played" counts from today.
+- What makes a reported single race believable: a real track, whole numbers, a best lap that fits the race, a place from 1st to 6th, a character of the cast, no faster than all laps at twice top speed (36.5 seconds on the Nova lap), and not sooner after the last one than the race itself took.
+- The stats are about the Nova lap only, but the downloaded file has the races on every track.
+- The file is a ".csv" with commas. An extra first line that would make Excel split the columns in every country was tried and dropped: with it, Excel on this laptop wrote "RÃ³ Versos" for "Ró Versos".
+- The single race buttons are in the top right corner of the picture, where they cover nobody on the podium. "Your account" is now a wide panel. On a low screen the winner on the online results board is drawn smaller.
+- With the same number of races for two characters, "most played" is the one driven most recently.
+
+**Checked, and not checked**
+
+- `npm test`: 2,242 passed, 5 skipped (84 files). 109 are new: `tests/stats.test.js` 28, `tests/single-results.test.js` 14, `tests/my-stats.test.js` 44, `tests/stats-view.test.js` 23. The list of checks that the pretend store and the real database must both pass (`tests/store-contract.js`) got 7 more. No existing test was changed.
+- `npm audit` on 19 November 2026: 0 known vulnerabilities, in 75 packages (our three, `pg` 8.23.1, `ws` 8.22.2 and `vitest` 5.1.0, pinned to exact versions, and the helpers they bring). Newer small versions exist for `ws` (8.23.0) and `vitest` (5.1.1); not taken this close to the deadline.
+- In the browser pane, on the server with pretend accounts (`npm run start:pretend`), sound off, with a test account:
+  - "Your account": the card with no races, then with real saved single races; the tie between two characters; the account part at the bottom.
+  - A nonsense single race was refused (400), a second one sent at once was refused (429).
+  - "Download my results": the page got the file with the right name, the right lines and the mark for Excel. The file was caught before the browser saved it, so the very last step (the browser writing it to Downloads) was not seen.
+  - A robot drove a whole single race on the test oval through the real keyboard: "Saved to your stats." appeared, the podium came up with both buttons, "Race again" started a new race and the arrow keys worked at once.
+  - The same robot hosted an online race against five computer karts: the results board came up with "Start next race" and "Back to menu", and the button started the next race. At first the buttons were below the edge of the board on the small window of the pane; that is what the scrolling list fixes.
+  - A test version of the file opened in Excel on this laptop (not shown, read back by a script): nine columns, "Ró Versos" right.
+- The real database: `npm run test:database` ran from this laptop (the network of that evening let it through): 33 passed, 2 skipped. These tests only ever use tables whose names start with `test_`, and remove them afterwards. Ten of them are new: the 7 added to the shared list of checks, and 3 in `tests/store-live.test.js` that make a results table the old way, with a race in it, and check that it gets the `character` column when the store starts, keeps the old race exactly as it was, and then saves a new race with its character.
+- **Not checked:** the live site, which gets this only after the merge (there the real `race_results` table gets its column at the server's next start); full screen with the new buttons on a real screen (the pane cannot go full screen); a laptop set to Portuguese number format opening the file in Excel; a real person clicking the buttons; the card on a phone.
+
+**Online lag: what was measured** (she asked what can be done in practice)
+
+- From this laptop the live server answers in about 70 thousandths of a second, and it is in Frankfurt, Render's region closest to Portugal. Distance is not the problem.
+- The online page draws every kart, the player's own included, as it was a tenth of a second ago, so that movement between two updates is smooth (`DELAY_STEPS` in `client/net.js`). Add the way to the server and back and the wait for the next update (20 a second): a key press shows on the screen about a fifth of a second later. In a single race it is one picture later. That is the lag, and it is the same with one player or six. Worked out from those three numbers, not measured with a stopwatch.
+- Nothing was changed about it today. The options are in the chat of this day.
+
+**How to check it yourself**
+
+Run `npm run start:pretend` and open http://localhost:3000. Create an account, drive a single race on the Nova lap to the end: the podium has "Race again" and "Back to menu". Go back to the menu and click your name: your stats are at the top, "Download my results" under them, and the password and delete parts at the bottom. Sign in on a second browser as someone else: their card shows nothing of yours.
+
 ### 19 November 2026, afternoon: a room of six, a job that keeps the server awake, and the driver who cries
 
 **What she said**

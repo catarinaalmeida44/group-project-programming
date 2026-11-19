@@ -219,19 +219,44 @@ Only the server can put a time there, and only a time from a race it ran itself.
 
 1. When a browser opens the online page, it sends its cookie along with the request for the live connection. `server/online.js` looks up whose ticket that is and remembers it for that connection. No ticket, or one that does not work, means a guest. The page is told which ("Signed in as Ana" or "You are playing as a guest").
 2. The host starts a race. The room (`server/room.js`) moves every kart with the shared rules and notices the step on which each racer completes the last lap. It keeps the finishing order: position, race time in steps, fastest lap. Two racers who cross the line in the very same step share a position.
-3. For each finisher who is signed in, the server writes one row to `race_results`: the player, the track of that room, the two times and the position. Then it tells that browser "saved", and the page shows the place and the time.
+3. For each finisher who is signed in, the server writes one row to `race_results`: the player, the track of that room, the two times, the position and (since 19 November 2026) the character they drove. Then it tells that browser "saved", and the page shows the place and the time.
 4. The Leaderboard in the menu asks `/api/leaderboard?track=...` and gets, for that track, the ten fastest races and the ten fastest laps, one row per player, plus the signed-in player's own best and rank. Only user names and times are sent.
 
 Why it cannot be faked from a browser:
 
-- There is no address that accepts a result, and no message a browser may send that contains one. A browser that sends a made-up "saved" or "result" message is sent away. A made-up finish added to a real "keys" message is dropped. Both have tests.
+- There is no address that accepts an online result, and no message a browser may send that contains one. A browser that sends a made-up "saved" or "result" message is sent away. A made-up finish added to a real "keys" message is dropped. Both have tests.
 - The time, the track and the player all come from the server: the room's own count of steps, the room the connection is in, and the cookie.
 - Nothing can be driven while the room waits for the host, so there are no laps outside a race to save. Neither is anything a guest drives, or a race a player left before the line.
-- Practice races never count. They run in the browser, and their best times stay in that browser.
+- Single races never count. They run in the browser. Since 19 November 2026 a signed-in player's finished single race is reported to the server for that player's own stats (next question), through the one address that accepts a result, `/api/single-result`. It can only ever save a row marked "single", and both leaderboard questions in `server/store.js` leave those rows out (`mode = 'online'`). A test saves a single race faster than every online one and checks that the leaderboard does not move.
 
 What a player can still do: drive well. And two friends can agree that one of them wins, as in any game.
 
 The leaderboard is read from the database at most once every 30 seconds per track, however many people open it, and at once after a new result or a deleted account.
+
+## What are "My stats", and can they be faked or read by someone else?
+
+*Asked for by Catarina on 19 November 2026.* A signed-in player who clicks their name in the menu opens "Your account". At the top is a driver's card for the Nova lap, the one track of the finished game: the character they drove most, dancing beside their kart; their name; how many races, wins and podiums; their three best race times with a medal each; their best lap; and where they stand on the shared leaderboard. Under it is **Download my results**, and at the bottom the account itself: change the password, delete the account.
+
+**Where the numbers come from.** `server/store.js` gives the list of that one player's saved races (`resultsOf`). `server/stats.js` turns the list into the numbers, with no database and no internet in it, so it is tested with plain lists. `client/stats-view.js` turns the numbers into words ("1:23.45", "Driven in 5 of your 9 races"), and `client/stats-panel.js` puts them on the page.
+
+**Both kinds of race count** (her decision): online races, and single races against the computer karts. When a signed-in player finishes a single race, the page tells the server once (`reportFinish()` in `client/main.js`).
+
+**Can someone read another player's stats?** No. The addresses `/api/stats` and `/api/my-results.csv` take no name and no number. The server looks at the cookie, finds whose ticket it is, and answers about that player only. Tests ask with another player's name and number in the address and get nothing of theirs.
+
+**Can a player fake them?** Their online races: no, the server ran those. Their single races: partly, and only for themselves. A single race runs in the player's own browser, so the server cannot watch it. What the server does about that (`server/single-results.js`, `saveSingleResult` in `server/accounts.js`):
+
+- The race is saved as "single" and never reaches the shared leaderboard. Nobody else ever sees it.
+- The numbers must make sense, or nothing is saved: a track that exists, whole numbers, a best lap that fits into the race time, a place from 1st to 6th, a character of the cast, and a race no faster than all laps at twice the top speed of a kart. (On the Nova lap that is 36.5 seconds. The computer karts need more than a third longer on every track, which a test checks by driving a real race.)
+- A second race is refused until as much time has passed as the reported race took. Two hundred made-up races sent at once save one row.
+- The player is the one in the cookie. A player named in the message is ignored, and so is a message that calls itself "online".
+
+What is left: someone who knows how can report a believable time they did not drive. It changes only what they see about themselves.
+
+**Most played character** counts from 19 November 2026: races saved before that did not note the character. The card then says "of the N races that noted the character".
+
+**The file** (`resultsAsCsv()` in `server/stats.js`): one line for each saved race on any track, the newest first, with the day, the track, the kind of race, the place, both times and the character. It is a ".csv" file, which Excel and every other spreadsheet program open. Each time is there twice: as on the screen, and as a whole number of thousandths of a second, which sorts and adds up the same in every country. A text that a spreadsheet could take for a formula gets an apostrophe in front; every text comes from our own lists, so this is a second lock. Checked in Excel on Catarina's laptop: nine columns, and "Ró Versos" spelled right. Not checked: a laptop whose region writes numbers with a comma (as in Portugal), where Excel may put each line into one cell; "Data, From Text/CSV" in Excel reads it properly there.
+
+**The database** got one new column for this, `character` in `race_results`. The server adds it by itself when it starts (`ALTER TABLE ... ADD COLUMN IF NOT EXISTS`), which does nothing if it is already there and never touches what is saved.
 
 ## How does an online race start, and who may start it?
 
@@ -479,6 +504,8 @@ Tested in `tests/cast.test.js`, `tests/room-characters.test.js` and `tests/pilot
 
 **What it shows** (`client/podium-shape.js`, painted by `client/podium-view.js` with the same painter as the karts): three steps, 2nd on the left, 1st in the middle and highest, 3rd on the right; the drivers standing on them in their suits with no helmet; the winner lifting a gold trophy (`trophyParts()` and the "trophy" pose in `client/pilot-shape.js`); the other two doing their own dance; 28 students cheering round the podium with their arms up, always in the same places and colours; confetti; a line under the picture with the places, names and times; and the crowd cheering, once at once and then again every 2.3 seconds, 8 times (`cheersDue()`; the cheer is the one of the finish fanfare in `client/sound.js`).
 
+**What to do next, with one click** (19 November 2026): in a single race, two buttons come onto the picture with the podium, in the top right corner where they cover nobody: **Race again** (what R does) and **Back to menu**. Under them a small line says whether the race was saved for a signed-in player's stats. Online, the results board has **Start next race** for the host (what Enter does; the server obeys nobody else) and **Back to menu** for everyone. On a low screen the list of the board scrolls and the buttons stay in view. They sit inside the play area, so they come along on the whole screen (Rodrigo's full screen). Checked by eye in a browser, not by a test.
+
 **Tested in `tests/podium.test.js`**: who stands where; that a kart that did not finish is never on it; when a single race is over (never before the player finished, at once when everyone has, and at the latest after 30 seconds); a whole single race driven by the computer, including the player's kart, which ends with three different characters on the podium, fastest first; the drivers' feet on their own step; no helmet; the trophy only for the winner and high above the shoulders; and a crowd that never stands on or in front of the podium.
 ## How are laps counted, and can a player cheat?
 
@@ -507,7 +534,7 @@ In a Postgres database kept by a company called Neon, in Frankfurt, on its free 
 | `server_starts` | each time the server started (the newest 50 are kept) | a number, and the date and time. It exists to prove that the server can write to the database and read from it |
 | `players` | each account | the user name as typed, the same name in small letters (so "Ana" and "ana" cannot both exist), the scrambled password, how many wrong passwords in a row, locked until when, and the date joined |
 | `sessions` | each browser that is signed in | a scrambled copy of the ticket, whose it is, and when it stops working |
-| `race_results` | each finished online race of a signed-in player | the player, the track, the mode ("online"), the race time and the fastest lap in steps, the finishing position, and the date |
+| `race_results` | each finished race of a signed-in player | the player, the track, the mode ("online" for a race our server ran, "single" for a single race the player's browser reported), the race time and the fastest lap in steps, the finishing position, the character driven (since 19 November 2026; empty for older races), and the date |
 
 The only personal data is the user name a player chose. There is no email, no real name and no readable password. Deleting an account deletes that player's rows in all three tables: the database does that by itself, because sessions and results are tied to their player.
 
@@ -525,9 +552,11 @@ The only personal data is the user name a player chose. There is no email, no re
 
 ## What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 2,126 tests today, plus 23 that only run against the real database. They take about 40 seconds, most of it online races that run in real time.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 2,242 tests today, plus the ones that only run against the real database. They take about 40 seconds, most of it online races that run in real time.
 
 **Covered today**
+
+- A player's own stats, since 19 November 2026: `tests/stats.test.js` (28 tests: the sums, the three best times, the character driven most, and the file for a spreadsheet, cell by cell), `tests/single-results.test.js` (14: which reported single races are believed, mostly refusals, and a real race of computer karts on every track to prove no real result is refused), `tests/my-stats.test.js` (44: the rules and the three addresses with a real copy of the server: nobody reads or writes another player's races, a single race never reaches the leaderboard, a flood of made-up races saves one row, the character of an online race is saved) and `tests/stats-view.test.js` (23: the words on the card). The list of checks that the pretend store and the real database both have to pass (`tests/store-contract.js`) got 7 more.
 
 - Waiting for the host, in `tests/room-waiting.test.js` and `tests/keys-work.test.js`. Twenty-one tests. Most are things that must NOT happen: a kart moving, turning or starting its clock before the host starts, with every one of the sixteen ways of holding the arrow keys, for the host too and for someone who joins later, even after a minute; a start from anyone but the host or from a player who is not there; anyone moving during 3, 2, 1. Also: everyone moves from GO on the same step, nobody who waited is left watching, and what did not change (joining during a race means watching, the host starts the next race). And when the online page treats the keys as working: only in a race after GO. We broke this on purpose in three ways (free driving while waiting again, anyone allowed to start, the page treating the keys as working while waiting), and each made tests fail. On 17 November seventeen older tests that described free driving before a race were rewritten, with Francisco's OK for the team: seven kept what they check and now drive after GO, ten were replaced by a test of the new rule. Each says so in a comment above it.
 - Leaving online play, in `tests/leaving.test.js` and `tests/page-life.test.js`. Ten tests. With a real copy of the server: the kart goes as soon as the page says goodbye, a player who leaves and comes back three times has exactly one kart each time, a browser that stops answering is removed within two still-there checks, and a player who still answers is not removed with it. Without a browser: the online page closes its connection when it is left (also when the browser keeps it in its back/forward cache), does not close it while the player stays, reloads when it comes back from that cache, and does not reload after a normal load. We broke this on purpose in four ways (checking every 15 seconds again, never removing a silent browser, the page not saying goodbye, reloading on the wrong occasion), and each made a test fail.
