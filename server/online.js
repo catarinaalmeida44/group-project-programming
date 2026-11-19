@@ -17,8 +17,17 @@
 //                       road 20 times a second.
 //                       Also "account" (who you are signed in as, if anyone),
 //                       "names" (the user names of the signed-in players in
-//                       the room) and "saved" (your finished race was written
-//                       to the leaderboard, or could not be)
+//                       the room), "saved" (your finished race was written
+//                       to the leaderboard, or could not be) and "elsewhere"
+//                       (you joined this room again from another tab or
+//                       computer, so this connection is sent away)
+//
+// ONE KART FOR EACH SIGNED-IN PLAYER
+// A signed-in player has one kart in a room. When they join the room a
+// second time (another tab, another laptop), the new connection stays and
+// the older one is told why and sent away. Before 19 November 2026 a
+// forgotten tab kept a second kart on the grid, under the same name. A
+// guest has no name to be recognised by, so two tabs of a guest are two karts.
 //
 // SAVING RESULTS
 // When a signed-in player finishes a race that began with the countdown,
@@ -31,6 +40,7 @@
 //   - connections to any address other than /play, or to a track that does not exist
 //   - connections started by a page on someone else's website
 //   - a player when the room is full
+//   - the older of two connections of the same signed-in player in one room
 //   - any message that is not exactly what messages.js allows
 //   - more messages in a second than a real player could send
 
@@ -55,6 +65,8 @@ export const MAX_MESSAGES_PER_SECOND = 60;
 // WebSocket codes: 1008 "you broke the rules", 1013 "try again later".
 const BROKE_THE_RULES = 1008;
 const TRY_AGAIN_LATER = 1013;
+// 1000 is "closed normally, on purpose": nothing went wrong.
+const CLOSED_ON_PURPOSE = 1000;
 
 /**
  * Every so often we check that each browser is still there (see the end of
@@ -197,7 +209,7 @@ export function attachOnlinePlay(
     const room = createRoom(tableTrack, character, maxPlayers, pickSeed);
     const cast = createCastKeeper(); // who in the room is which character
     const connections = new Set();
-    const seats = new Map(); // player number in the room -> { connection, account, username }
+    const seats = new Map(); // player number in the room -> { connection, account, username, accountId, leave }
 
     /**
      * Tells every browser at this table the user names of the signed-in
@@ -212,6 +224,22 @@ export function attachOnlinePlay(
         }
       }
       tellEveryone(JSON.stringify({ type: "names", names }));
+    }
+
+    /**
+     * One kart for each signed-in player: sends away every other connection
+     * in this room that belongs to the same account as the one that has just
+     * joined. Its kart leaves the track at once, and it is told why first,
+     * so its page can say so instead of trying to come back by itself.
+     */
+    function sendOlderOnesAway(newcomerId, accountId) {
+      for (const [id, seat] of seats) {
+        if (id !== newcomerId && seat.accountId === accountId) {
+          tell(seat.connection, { type: "elsewhere" });
+          seat.leave();
+          sendAway(seat.connection, CLOSED_ON_PURPOSE, "Joined from somewhere else");
+        }
+      }
     }
 
     /** Runs once for every browser that connects to this table. */
@@ -257,13 +285,17 @@ export function attachOnlinePlay(
       // Find out who this is, and tell them. Asking the database takes a
       // moment, and the player can already drive meanwhile.
       const account = whoIsBehind(request);
-      const seat = { connection, account, username: null };
+      const seat = { connection, account, username: null, accountId: null, leave };
       seats.set(player.id, seat);
       account.then((found) => {
         if (gone) {
           return; // left before we knew who it was
         }
         seat.username = found === null ? null : found.username;
+        seat.accountId = found === null ? null : found.id;
+        if (found !== null) {
+          sendOlderOnesAway(player.id, found.id);
+        }
         tell(connection, { type: "account", username: seat.username });
         tellNames();
       });

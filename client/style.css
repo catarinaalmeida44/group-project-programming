@@ -436,6 +436,49 @@ main:has(.status) canvas {
   display: none;
 }
 
+/* The banner for someone who arrived during a race and is watching it: big
+   letters across the top of the picture. It stops short of the right edge,
+   where the small map is. */
+.watch-banner {
+  position: absolute;
+  left: 0.6rem;
+  top: 0.6rem;
+  right: 22%;
+  z-index: 2;
+  padding: 0.55rem 1rem 0.6rem;
+  border: 2px solid transparent;
+  border-left: 8px solid var(--yellow);
+  border-radius: 10px;
+  background: rgba(11, 24, 32, 0.88);
+}
+
+.watch-title {
+  margin: 0;
+  color: var(--yellow);
+  font-size: clamp(1.15rem, 3.1vw, 1.9rem);
+  font-style: italic;
+  font-weight: 900;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.watch-text {
+  margin: 0.25rem 0 0;
+  font-weight: 600;
+}
+
+/* A watcher pressed a driving key: the banner lights up, and says why nothing moves. */
+.watch-banner.nudged {
+  border-color: var(--yellow);
+}
+
+/* While the banner is up, the notice "The race ends in 42 s" moves from
+   the top of the picture to the bottom, out of its way. */
+.screen:has(.watch-banner:not([hidden])) .notice {
+  top: auto;
+  bottom: 0.6rem;
+}
+
 /* The card over the picture of the online page while the connection to the
    server is being made or is lost (link.js). The veil dims the picture
    behind it, so the card is the one thing to read. */

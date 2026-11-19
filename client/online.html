@@ -40,6 +40,13 @@
         <!-- The big results board, shown when the race is over for everyone:
              the winner on top, then everyone else. results-board.js fills it in, as text. -->
         <div id="finish-board" class="finish-board" role="status" hidden></div>
+        <!-- For someone who arrived during a race: a banner across the top of
+             the picture that says, in big letters, that they are watching.
+             online.js fills it in, as text; the words are in race-view.js. -->
+        <div id="watch-banner" class="watch-banner" role="status" hidden>
+          <p id="watch-title" class="watch-title"></p>
+          <p id="watch-text" class="watch-text"></p>
+        </div>
         <!-- A card over the picture while the connection to the server is being
              made, is lost, or cannot be made: "The server is waking up",
              "Connection lost", "The room is full". The page tries again by
@@ -76,9 +83,11 @@
       </p>
       <p class="note">
         Everyone who opens this page is in the same room on <span id="track-name">the test track</span>,
-        and our server moves all the karts. The host is whoever has been here longest, and only the
-        host can start a race. If you arrive
-        during a race, you watch it and join at the next start. Karts bump into each other.
+        and our server moves all the karts. The host is whoever has been here longest and is at
+        their keyboard, and only the host can start a race: a host who presses no key for a minute
+        passes it on to the next player. If you arrive
+        during a race, you watch it and join at the next start. A signed-in player has one kart
+        in a room. Karts bump into each other.
         A race that has started is driven to its end: it is over when everyone has finished, or two
         minutes after the first kart has finished.
         If you are signed in, the server saves your time when you finish a race, and it appears

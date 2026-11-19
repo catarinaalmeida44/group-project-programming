@@ -52,17 +52,25 @@ export function retryWaitMs(failedTries) {
  * What the page does when its connection has closed.
  *   code      the number the connection closed with
  *   toldFull  the server said "the room is full" before it closed
+ *   toldElsewhere  the server said "you joined this room from somewhere
+ *             else": a signed-in player has one kart in a room
  *   leaving   the player is leaving the page, so the page closed it itself
  * Gives:
  *   "stop"      nothing: the player is leaving
  *   "full"      show "the room is full", with a button to try again
+ *   "elsewhere" show "you are playing somewhere else", with a button to
+ *               play here instead. Coming back by itself would throw the
+ *               other tab out, which would come back, and so on
  *   "sentAway"  the server sent this browser away: show that, with a button.
  *               Trying again by itself could go round in circles
  *   "again"     try again by itself
  */
-export function afterClose({ code, toldFull, leaving }) {
+export function afterClose({ code, toldFull, toldElsewhere, leaving }) {
   if (leaving === true) {
     return "stop";
+  }
+  if (toldElsewhere === true) {
+    return "elsewhere";
   }
   if (toldFull === true) {
     return "full";
@@ -79,6 +87,8 @@ export function afterClose({ code, toldFull, leaving }) {
  *                            time or again after a loss
  *              "joined"      in the room
  *              "full"        the room is full
+ *              "elsewhere"   this player joined the room from another tab
+ *                            or computer, and this one was sent away
  *              "sentAway"    the server sent this browser away
  *              "gaveUp"      the page has stopped trying
  *   waitedMs   connecting: how long the page has been trying
@@ -107,6 +117,13 @@ export function linkCard({ state, waitedMs = 0, wasInRoom = false, quietMs = 0, 
     return card("The room is full", "Every place on the grid of this track is taken. Try again in a few minutes, or race on another track.", {
       button: "Try again",
     });
+  }
+  if (state === "elsewhere") {
+    return card(
+      "You are playing somewhere else",
+      "Your account joined this room from another tab or another computer, so this one has left it. There is one kart for each player.",
+      { button: "Play here instead" },
+    );
   }
   if (state === "sentAway") {
     return card("The server closed the connection", "It did not understand what this page sent. Join the room again to go on.", {

@@ -207,6 +207,9 @@ export function readServerMessage(text) {
   if (message.type === "full") {
     return message;
   }
+  if (message.type === "elsewhere") {
+    return { type: "elsewhere" }; // this player joined the room again from somewhere else
+  }
   if (message.type === "account" && (message.username === null || typeof message.username === "string")) {
     return message;
   }

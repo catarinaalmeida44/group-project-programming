@@ -10,6 +10,7 @@ import { countdownAt } from "../shared/countdown.js";
 import { STEP_SECONDS } from "../shared/physics.js";
 import { FINISH_WINDOW_STEPS } from "../shared/race-time.js";
 import { formatTime } from "./format.js";
+import { standings } from "./standings.js";
 
 const PHASES = ["open", "countdown", "racing", "finished"];
 
@@ -81,6 +82,59 @@ export function kartToWatch(karts) {
     }
   }
   return leader;
+}
+
+/**
+ * The kart a watcher's camera is on.
+ *
+ * It is the kart in first place at the moment the watcher arrives: the one
+ * that has passed the most checkpoints, as in standings.js. The camera then
+ * stays with that kart, so the picture does not jump from one kart to
+ * another each time two of them swap places. When that kart has finished or
+ * has left, the camera moves to whoever leads among the karts still
+ * driving, and when nobody is driving any more it shows the winner.
+ * (Until 19 November 2026 the page used kartToWatch() above, which took
+ * the first kart in the list whenever all were on the same lap.)
+ *   karts        the karts of the race
+ *   track        the track
+ *   followingId  the number of the kart the camera is on now, or null
+ * Gives the kart, or undefined when there are no karts.
+ */
+export function kartToFollow(karts, track, followingId) {
+  const usable = Array.isArray(karts) ? karts.filter((kart) => kart !== null && typeof kart === "object") : [];
+  const followed = usable.find((kart) => kart.id === followingId);
+  if (followed !== undefined && followed.finished !== true) {
+    return followed;
+  }
+  const order = standings(usable, track);
+  return order.find((kart) => kart.finished !== true) ?? order[0];
+}
+
+/** What the banner says for a moment when a watcher presses a driving key. */
+export const KEYS_LATER_TEXT = "Your keys do nothing yet: you drive in the next race.";
+
+/**
+ * The banner across the top of the picture for someone who arrived during a
+ * race. Without it the picture looks exactly as if they were driving: a
+ * kart from behind, in the middle of the screen. It is someone else's.
+ *   race, myId   as for raceView() below
+ *   watchedName  whose kart the camera is on: a player's user name or a
+ *                character's name, or null when it has no name
+ *   pressedKey   true for a moment after the watcher pressed a driving key
+ * Gives null when this player is not watching a race that is on, or
+ * { title, text }: the title goes in big letters.
+ */
+export function watchBanner({ race, myId, watchedName = null, pressedKey = false }) {
+  const raceIsOn = race.phase === "countdown" || race.phase === "racing";
+  if (!raceIsOn || !isWatching(race, myId)) {
+    return null;
+  }
+  const named = typeof watchedName === "string" && watchedName !== "";
+  const camera = named ? `The camera is on ${watchedName}. ` : "";
+  return {
+    title: "A race is on: you are watching",
+    text: pressedKey === true ? KEYS_LATER_TEXT : `${camera}A new race starts when this one is over, and you join it.`,
+  };
 }
 
 /**

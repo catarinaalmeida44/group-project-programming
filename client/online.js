@@ -53,7 +53,8 @@ import { lookOf } from "./kart-shape.js";
 import { createRaceSound } from "./sound.js";
 import { tileKindAt } from "../shared/track.js";
 import { SPIN_STEPS } from "../shared/hazards.js";
-import { readRace, readEndsIn, timeLeftNotice, raceView, kartToWatch, keysWork } from "./race-view.js";
+import { readRace, readEndsIn, timeLeftNotice, raceView, kartToFollow, watchBanner, keysWork } from "./race-view.js";
+import { characterById } from "../shared/cast.js";
 import { followTarget, easeTowards, nextView } from "./camera.js";
 import { storageOf } from "./storage.js";
 import { readSettings } from "./settings.js";
@@ -96,6 +97,13 @@ const cardWaited = document.getElementById("link-waited");
 const cardActions = document.getElementById("link-actions");
 const cardButton = document.getElementById("link-again");
 
+// The banner for someone who arrived during a race: "you are watching" (race-view.js).
+const bannerBox = document.getElementById("watch-banner");
+const bannerTitle = document.getElementById("watch-title");
+const bannerText = document.getElementById("watch-text");
+let followingId = null; // while watching: the number of the kart the camera is on
+let pressedKeyAt = null; // while watching: when a driving key was last pressed
+
 // ---- What we know from the server ----
 let playback = createPlayback(); //   the latest updates, for smooth drawing
 let race = readRace(null); //          the race as of the latest update: phase, countdown, host, who is watching
@@ -137,11 +145,12 @@ const secure = window.location.protocol === "https:";
 const roomAddress = `${secure ? "wss" : "ws"}://${window.location.host}/play?track=${trackName}`;
 
 let connection = null; //                the live connection, or null between two tries
-let linkState = "connecting"; //         "connecting", "joined", "full", "sentAway" or "gaveUp" (link.js)
+let linkState = "connecting"; //         "connecting", "joined", "full", "elsewhere", "sentAway" or "gaveUp" (link.js)
 let tryingSince = performance.now(); //  when the page began to try to connect, this time round
 let failedTries = 0; //                  how many tries in a row have failed
 let wasInRoom = false; //                true once the server has welcomed us: a later loss is "connection lost"
 let toldFull = false; //                 the server said the room is full
+let toldElsewhere = false; //            the server said we joined this room from somewhere else
 let leaving = false; //                  the player is leaving the page
 let retryTimer = null; //                the wait before the next try
 
@@ -152,6 +161,7 @@ let retryTimer = null; //                the wait before the next try
 function connect() {
   clearTimeout(retryTimer);
   toldFull = false;
+  toldElsewhere = false;
   const socket = new WebSocket(roomAddress);
   connection = socket;
   // A connection that the page has given up on may still say something
@@ -181,7 +191,7 @@ function connectionClosed(code) {
   connection = null;
   connected = false;
   forgetTheRoom();
-  const next = afterClose({ code, toldFull, leaving });
+  const next = afterClose({ code, toldFull, toldElsewhere, leaving });
   if (next === "stop") {
     return;
   }
@@ -242,6 +252,7 @@ function forgetTheRoom() {
   bananas = [];
   walkers = [];
   podiumSince = null;
+  followingId = null;
   camera = null;
   keysSent = ""; // the next connection is told afresh which keys are held
   status = "Connecting to the server...";
@@ -335,6 +346,12 @@ function hear(text) {
     // says the room is full, with a button to try again.
     toldFull = true;
     linkState = "full";
+  } else if (message.type === "elsewhere") {
+    // We are signed in, and joined this room again from another tab or
+    // computer: one kart for each player. The server closes this connection
+    // straight after. The card says so, with a button to play here instead.
+    toldElsewhere = true;
+    linkState = "elsewhere";
   } else if (message.type === "account") {
     account = message;
   } else if (message.type === "saved") {
@@ -394,15 +411,22 @@ const keyboard = createKeyboard(window, {
   onRestart: () => send({ type: "restart" }),
   // Anyone can press Enter, but the server only obeys the host, and only
   // when no race is on: a race that has begun is driven to its end. This
-  // page sends it only then, to spare the server pointless messages.
+  // page sends it whenever no race is on, host or not. The server decides:
+  // a host who was counted as away from the keyboard is the host again by
+  // pressing Enter (server/room.js), and this page cannot know that yet.
   onStart: () => {
-    if (race.host === myId && (race.phase === "open" || race.phase === "finished")) {
+    if (race.phase === "open" || race.phase === "finished") {
       send({ type: "start" });
     }
   },
   onView: () => {
     view = nextView(view);
     camera = null; // jump to the kart in the new view
+  },
+  // A driving key went down. For someone who is watching it does nothing,
+  // so the banner says so for a moment (see the picture loop below).
+  onDrive: () => {
+    pressedKeyAt = performance.now();
   },
 });
 
@@ -426,6 +450,9 @@ function sendKeysIfChanged(input) {
 function dressed(kart) {
   return { ...kart, look: lookFromChoice(kart.look), spinTurn: spinTurnOf(kart.spin, SPIN_STEPS) };
 }
+
+/** How long the banner of someone who is watching answers a key press, in thousandths of a second. */
+const PRESSED_KEY_MS = 2500;
 
 /** Runs once for every picture the screen shows. */
 function frame(now) {
@@ -491,8 +518,22 @@ function frame(now) {
   }
 
   // The kart in the middle of the picture: our own, or, when we joined
-  // during a race and are watching, the kart that is furthest ahead.
-  const shown = mine ?? (karts === null ? undefined : kartToWatch(karts));
+  // during a race and are watching, the kart that was in first place when
+  // we arrived (kartToFollow in race-view.js). A banner across the picture
+  // then says that we are watching, and whose kart that is.
+  const shown = mine ?? (karts === null ? undefined : kartToFollow(karts, track, followingId));
+  followingId = mine === undefined && shown !== undefined ? shown.id : null;
+  const pressedKey = pressedKeyAt !== null && performance.now() - pressedKeyAt < PRESSED_KEY_MS;
+  const banner =
+    mine !== undefined || shown === undefined
+      ? null
+      : watchBanner({ race, myId, watchedName: names.get(shown.id) ?? characterById(shown.character)?.name ?? null, pressedKey });
+  bannerBox.hidden = banner === null;
+  bannerBox.classList.toggle("nudged", banner !== null && pressedKey);
+  if (banner !== null) {
+    setText(bannerTitle, banner.title);
+    setText(bannerText, banner.text);
+  }
   if (shown === undefined) {
     // Nothing to draw yet: we are still connecting, or we were disconnected.
     sound.frame({ kart: null }, frameSeconds); // and nothing to hear
