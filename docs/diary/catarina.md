@@ -21,7 +21,7 @@ Everything built on 10 November is in `docs/build-diary.md`.
 | A job on GitHub opens the live server's `/health` every five minutes, so the server does not fall asleep. It needs nothing from the repository and can change nothing in it | `.github/workflows/keep-awake.yml` |
 | Who cries: with four or more karts, the driver on the last line of the results, finished or not. With five karts the fourth is neither on the podium nor crying. With three or fewer, nobody | `podiumLoser()` and `CRY_FROM_KARTS` in `client/podium.js` |
 | The pose: both fists at the eyes, rubbing, elbows out, shoulders shaking in bursts, bent forwards a little, the head rocking slowly. Not a dance: nobody can choose it | `cryingPose()` in `client/pilot-shape.js` |
-| The figure: the same pilot as on the podium, with their own head (or a helmet for a kart that is no character), and five blue tears from each eye flying out like a little fountain. It stands on the floor beside the step of third place, between the podium and the students at the side | `cryingDriver()`, `tearParts()`, `LOSER_SPOT` in `client/podium-shape.js` |
+| The figure: the same pilot as on the podium, with their own head (or a helmet for a kart that is no character), and five blue tears from each eye flying out like a little fountain. It stands on the lawn beside the step of second place, between the podium and the students at the side (see "Her first look" below: it was on the other side at first) | `cryingDriver()`, `tearParts()`, `LOSER_SPOT` in `client/podium-shape.js` |
 | Both race pages work out who came last and hand them to the podium, on the Nova lap and in the hall of the other tracks | `client/podium-view.js`, `client/online.js`, `client/main.js` |
 
 **Four existing tests were changed, because the rule changed (a room of six)**
@@ -41,15 +41,23 @@ They are not Catarina's alone: whoever wrote them should know, and say if they d
 
 **Decisions made by the agent: please confirm**
 
-- The crying driver stands on the camera's right, beside third place. The left would work as well.
+- The crying driver stands on the camera's left, beside second place, a little towards the camera (at first on the right: see "Her first look").
 - The fists cover the eyes of the head picture. The rest of the face, the hair and the suit stay visible, so it is still clear who it is.
 - The first tears (three small drops an eye) could not be seen at the size of the podium. They are now five an eye, bigger, in a higher arc.
 - GitHub visits every five minutes. Render switches off after fifteen, so two visits can be late before the server naps.
 - `MAX_PLAYERS` is worked out from the list of characters, not written as "6": a seventh character would make room for a seventh player.
 
+**Her first look: "the layer on the gray floor is weirdly over their feet"**
+
+She was right, and the agent had not seen it in its own pictures: it had looked at the face and the tears, not at the feet. The driver stood at the right of third place, and exactly there the low wall along the avenue runs (`avenue parapet` in `client/nova-lap-buildings.js`, rows 6.7 to 7 of the map; the podium is at row 6.1). The driver was standing inside the wall, so the wall was painted over the feet and shins.
+
+- Fixed: the driver now stands on the lawn at the camera's left, beside second place, a little towards the camera so that a dancing arm of second place passes behind them (`LOSER_SPOT` in `client/podium-shape.js`).
+- So that it cannot come back: a test works out where the spot is on the map of every track that has a podium, and fails if a wall, fence, tree or bench is within reach of it, elbows included. A second test puts the old spot in and expects it to be caught, to prove the first one can see such a mistake.
+- Found on the way, NOT changed: two of the eighty students of the crowd (numbers 8 and 9) stand right at the trunk of the tree behind second place. They have stood there since the crowd was made bigger on 18 November.
+
 **Checked, and not checked**
 
-- `npm test`: 2,050 passed, 5 skipped. 26 are new, in `tests/crying-driver.test.js`.
+- `npm test`: 2,054 passed, 5 skipped. 30 are new, in `tests/crying-driver.test.js`.
 - In the browser on the laptop, sound off: the podium of the Nova lap painted with five and with six drivers, with Cici Boss and with the Dean as the one crying, close up and whole; the hall of another track with a plain kart crying, and with three karts and nobody crying, without an error; six robot players filling the room and a seventh page told "The room is full"; the single race page and the online page still open without errors.
 - NOT checked: the crying driver at the end of a real race, driven to the finish (the pictures were made with the same code and made-up results). How the crying looks in motion: the agent only sees single pictures, and has been wrong about movement before. The GitHub job: it cannot run before it is on `main`. Anything on the live site.
 

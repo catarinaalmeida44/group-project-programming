@@ -30,6 +30,8 @@ import {
 import { MAX_PLAYERS } from "../server/room.js";
 import { CAST } from "../shared/cast.js";
 import { TEST_OVAL } from "../shared/tracks/test-oval.js";
+import { TRACKS } from "../shared/tracks/index.js";
+import { lookOfTrack } from "../client/track-looks.js";
 
 const read = (name) => readFileSync(new URL(`../client/${name}`, import.meta.url), "utf8");
 
@@ -261,6 +263,77 @@ describe("where the crying driver stands", () => {
     // The head rocks and the body bends forwards, so "at the spot" is within an arm's length.
     expect(Math.abs(helmet.ball.middle[1] - LOSER_SPOT.y)).toBeLessThan(2);
     expect(Math.abs(helmet.ball.middle[0] - LOSER_SPOT.x)).toBeLessThan(4);
+  });
+});
+
+describe("on a track with a podium of its own (the Nova lap)", () => {
+  // Where a spot of the podium is on the track, in squares of its map: the
+  // same sum as paintOnTrack() in client/podium-view.js, where the podium
+  // faces the camera.
+  function onTheTrack(track, spot) {
+    const { at, camera } = lookOfTrack(track).podium;
+    const towardsCamera = Math.atan2(at[1] - camera[1], at[0] - camera[0]) + Math.PI;
+    const cos = Math.cos(towardsCamera);
+    const sin = Math.sin(towardsCamera);
+    return {
+      column: at[0] + (spot.x * cos - spot.y * sin) / track.tileSize,
+      row: at[1] + (spot.x * sin + spot.y * cos) / track.tileSize,
+    };
+  }
+
+  /** The things that stand within reach of a spot: walls and other blocks, fences, trees, benches. */
+  function standingIn(track, spot) {
+    const look = lookOfTrack(track);
+    const here = onTheTrack(track, spot);
+    const reach = 7 / track.tileSize; // the elbows stick out about 6 units to each side
+    const found = [];
+    for (const block of look.scenery.blocks) {
+      if (!Array.isArray(block.rect)) {
+        continue;
+      }
+      const [left, top, right, bottom] = block.rect;
+      if (here.column > left - reach && here.column < right + reach && here.row > top - reach && here.row < bottom + reach) {
+        found.push(block.name);
+      }
+    }
+    for (const fence of look.scenery.fences) {
+      const [fromColumn, fromRow] = fence.from;
+      const [toColumn, toRow] = fence.to;
+      const length = Math.hypot(toColumn - fromColumn, toRow - fromRow);
+      const along = Math.max(0, Math.min(1, ((here.column - fromColumn) * (toColumn - fromColumn) + (here.row - fromRow) * (toRow - fromRow)) / length ** 2));
+      const away = Math.hypot(here.column - (fromColumn + along * (toColumn - fromColumn)), here.row - (fromRow + along * (toRow - fromRow)));
+      if (away < reach) {
+        found.push(fence.name);
+      }
+    }
+    for (const prop of look.props) {
+      if (Math.hypot(prop.column - here.column, prop.row - here.row) < reach + 0.3) {
+        found.push(prop.kind);
+      }
+    }
+    return found;
+  }
+
+  const tracksWithAPodium = Object.values(TRACKS).filter((track) => lookOfTrack(track).podium);
+
+  it("there is such a track", () => {
+    expect(tracksWithAPodium.map((track) => track.name)).toContain("Nova lap");
+  });
+
+  it("the crying driver stands clear of every wall, fence, tree and bench, elbows included", () => {
+    for (const track of tracksWithAPodium) {
+      expect(standingIn(track, LOSER_SPOT), track.name).toEqual([]);
+    }
+  });
+
+  it("which the first try did not: on the other side it stood inside the low wall along the avenue, and the wall was painted over the feet", () => {
+    // Kept as a check that the test above can see such a mistake at all.
+    const nova = tracksWithAPodium.find((track) => track.name === "Nova lap");
+    expect(standingIn(nova, { x: 7, y: -27 })).toContain("avenue parapet");
+  });
+
+  it("stands on the camera's left, on the lawn, away from that wall", () => {
+    expect(LOSER_SPOT.y).toBeGreaterThan(0);
   });
 });
 

@@ -55,12 +55,19 @@ export const CROWD_JUMP = 2.4;
 
 /**
  * Where the driver who came last stands and cries (see cryingDriver): on
- * the floor beside the step of third place, a little towards the camera,
+ * the floor beside the step of second place, a little towards the camera,
  * in the gap between the podium and the students at the side. In the
- * podium's own directions, as PODIUM_STEPS: "y" below zero is the camera's
- * right.
+ * podium's own directions, as PODIUM_STEPS: "y" above zero is the camera's
+ * left.
+ *
+ * Why the left and not the right: on the Nova lap the low wall along the
+ * avenue runs through the gap on the right, touching the step of third
+ * place. The first try stood the driver there, at y = -27, which is inside
+ * that wall: it was painted over their feet. Catarina saw it at once.
+ * tests/crying-driver.test.js now checks that the spot is clear of every
+ * wall, fence, tree and bench of a track that has a podium.
  */
-export const LOSER_SPOT = Object.freeze({ x: 7, y: -27 });
+export const LOSER_SPOT = Object.freeze({ x: 12, y: 27 });
 /** How many tears fly from each eye at a time, and their colour. */
 export const TEARS_EACH_EYE = 5;
 const TEAR = "#41b4ff";
