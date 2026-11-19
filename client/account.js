@@ -11,6 +11,7 @@
 import {
   readMe,
   accountFormErrors,
+  signUpFormErrors,
   deleteFormErrors,
   changeFormErrors,
   changeRefusalErrors,
@@ -100,7 +101,7 @@ export function createAccount({ api, onChange = () => {} }) {
     signUp(username, password) {
       const name = tidyName(username);
       return attempt(
-        accountFormErrors(name, password),
+        signUpFormErrors(name, password),
         () => api.signUp(name, password),
         (answer) => signedInAs(answer, name),
       );

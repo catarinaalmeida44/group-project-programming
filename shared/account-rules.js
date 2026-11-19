@@ -41,6 +41,25 @@ export function checkPassword(password) {
 }
 
 /**
+ * A password must not be the player's own user name: that is the first
+ * thing anyone would try. Capital letters make no difference, so "Ana_2026"
+ * with the password "ana_2026" is refused too. Gives null if it is fine, or
+ * a sentence for the player.
+ *
+ * Asked when a password is CHOSEN: at sign-up and when it is changed. It is
+ * not asked at sign-in, so an account made before 19 November 2026, when
+ * this rule was added, can still be opened with such a password.
+ */
+export function checkPasswordIsNotName(username, password) {
+  const same =
+    typeof username === "string" &&
+    typeof password === "string" &&
+    username !== "" &&
+    password.toLowerCase() === username.toLowerCase();
+  return same ? "A password cannot be the same as your user name." : null;
+}
+
+/**
  * The form of a user name used to decide whether two names are the same
  * player: "Ana", "ANA" and "ana" all give "ana". The name is still shown
  * the way its owner typed it.
