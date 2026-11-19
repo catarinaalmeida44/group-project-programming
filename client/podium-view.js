@@ -33,12 +33,14 @@ const SWING = 0.08;
  *   track  the track that was raced
  *   draw   the race view's painter (createPainter in draw.js), for a track
  *          with a spot for the podium
- * Gives { paint(context, screen, lineup, seconds, caption), onTrack }:
+ * Gives { paint(context, screen, lineup, seconds, caption, loser), onTrack }:
  *   context  the 2D drawing context of the race picture
  *   screen   { width, height } of the picture
  *   lineup   from podiumLineup() in podium.js
  *   seconds  how long the podium has been shown
  *   caption  the line of text under the picture, or ""
+ *   loser    the driver who came last, from podiumLoser() in podium.js, who
+ *            cries beside the podium, or null (also when left out)
  * "onTrack" says whether the podium stands on the track itself.
  */
 export function createPodiumView(track = null, draw = null) {
@@ -60,12 +62,13 @@ export function createPodiumView(track = null, draw = null) {
     return pictures.get(address);
   }
 
-  function paint(context, screen, lineup, seconds, caption) {
+  function paint(context, screen, lineup, seconds, caption, loser = null) {
     const drivers = lineup.map((driver) => ({ ...driver, picture: pictureOf(driver.head) }));
+    const crying = loser === null ? null : { ...loser, picture: pictureOf(loser.head) };
     if (spot !== null) {
-      paintOnTrack(drivers, seconds);
+      paintOnTrack(drivers, seconds, crying);
     } else {
-      paintInHall(context, screen, drivers, seconds);
+      paintInHall(context, screen, drivers, seconds, crying);
     }
     paintConfetti(context, screen, seconds);
     if (caption !== "") {
@@ -79,7 +82,7 @@ export function createPodiumView(track = null, draw = null) {
    * camera, behind a kart that is not painted, standing at the spot's
    * "camera" and looking at the podium.
    */
-  function paintOnTrack(drivers, seconds) {
+  function paintOnTrack(drivers, seconds, crying) {
     const size = track.tileSize;
     const [column, row] = spot.at;
     const [cameraColumn, cameraRow] = spot.camera;
@@ -92,7 +95,7 @@ export function createPodiumView(track = null, draw = null) {
     const towardsCamera = facing + Math.PI; //                            the podium looks back at the camera
     const cos = Math.cos(towardsCamera);
     const sin = Math.sin(towardsCamera);
-    const groups = podiumGroups(drivers, seconds, crowd).map((group) => {
+    const groups = podiumGroups(drivers, seconds, crowd, crying).map((group) => {
       const [x, y] = group.at;
       return { ...group, x: middle.x + x * cos - y * sin, y: middle.y + x * sin + y * cos, angle: towardsCamera };
     });
@@ -100,7 +103,7 @@ export function createPodiumView(track = null, draw = null) {
     draw("chase", cameraKart, cameraKart, 0, [], { intro: 1, lights: { red: 0, green: true }, podium: groups, hideOwnKart: true, camera: TRACK_CAMERA });
   }
 
-  function paintInHall(context, screen, drivers, seconds) {
+  function paintInHall(context, screen, drivers, seconds, crying) {
     context.setTransform(1, 0, 0, 1, 0, 0);
     // The atrium: light from the glass roof, a warm floor further down.
     const sky = context.createLinearGradient(0, 0, 0, screen.height);
@@ -121,7 +124,7 @@ export function createPodiumView(track = null, draw = null) {
     const turn = Math.PI + Math.sin(seconds * 0.35) * SWING;
     const viewer = viewerBehind({ ahead: 6, sideways: 0 }, turn, Math.PI, camera, screen);
 
-    const moving = podiumMoving(drivers, seconds, crowd);
+    const moving = podiumMoving(drivers, seconds, crowd, crying);
     paintScene(context, viewer, { parts: [...hall, ...moving.parts], shadows: moving.shadows });
     paintLabels(context, viewer);
   }

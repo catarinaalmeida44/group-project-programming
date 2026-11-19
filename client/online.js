@@ -33,7 +33,7 @@
 
 import { TRACKS, storeysOf } from "../shared/tracks/index.js";
 import { createPodiumView } from "./podium-view.js";
-import { podiumLineup, podiumCaption, cheersDue, finishPlace, finishedWords, PODIUM_SECONDS } from "./podium.js";
+import { podiumLineup, podiumLoser, podiumCaption, cheersDue, finishPlace, finishedWords, PODIUM_SECONDS } from "./podium.js";
 import { formatTime } from "./format.js";
 import { chooseTrackName } from "./track-choice.js";
 import { createKeyboard } from "./keyboard.js";
@@ -582,7 +582,9 @@ function frame(now) {
     const lineup = podiumLineup(latestKarts, track);
     const trackCanvas = document.getElementById("track");
     const shownFor = (now - podiumSince) / 1000;
-    podium.paint(trackCanvas.getContext("2d"), { width: trackCanvas.width, height: trackCanvas.height }, lineup, shownFor, podiumCaption(lineup, formatTime));
+    // With four or more karts, the driver who came last cries beside the podium.
+    const loser = podiumLoser(latestKarts, track);
+    podium.paint(trackCanvas.getContext("2d"), { width: trackCanvas.width, height: trackCanvas.height }, lineup, shownFor, podiumCaption(lineup, formatTime), loser);
     // The crowd cheers, again and again for a while.
     while (cheered < cheersDue(shownFor)) {
       sound.cheer();
