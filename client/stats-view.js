@@ -2,8 +2,8 @@
 //
 // The server sends numbers (server/stats.js): how many races, the three
 // best times in steps of the game, the id of the character driven most.
-// This file turns them into what the card shows: "12", "1:23.45",
-// "Online · 19 Nov 2026", "Driven in 5 of your 9 races". It decides nothing
+// This file turns them into what the card shows: "12", "1:23.45", the
+// little label "on Easy", "19 Nov 2026", "Driven in 5 of your 9 races". It decides nothing
 // and talks to nobody, so it is tested without a browser. stats-panel.js
 // puts the words on the page.
 
@@ -11,6 +11,8 @@ import { STEP_SECONDS } from "../shared/physics.js";
 import { characterById } from "../shared/cast.js";
 import { formatTime } from "./format.js";
 import { placeText } from "./net.js";
+import { isLevel, LEVELS } from "../shared/computer-driver.js";
+import { LEVEL_WORDS } from "./difficulty.js";
 
 /** What the card says while the server is asked. */
 export const STATS_LOADING_TEXT = "Loading your stats…";
@@ -43,9 +45,47 @@ export function dayText(at) {
   return `${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
 }
 
-/** "Online" or "Single race". */
-function kindText(mode) {
-  return mode === "online" ? "Online" : "Single race";
+/**
+ * The little label beside a time: what kind of race it was.
+ *   an online race                         "Online"
+ *   a single race at a level               "on Easy", "on Normal", "on Hard"
+ *                                          (the words on the buttons of the race page, difficulty.js)
+ *   a single race that noted no level      "Single race"
+ * Gives { text, kind }. "kind" is one short word for style.css to colour
+ * the label by: "online", "easy", "normal", "hard" or "single".
+ */
+export function raceTag(mode, level) {
+  if (mode === "online") {
+    return { text: "Online", kind: "online" };
+  }
+  if (isLevel(level)) {
+    return { text: `on ${LEVEL_WORDS[level]}`, kind: level };
+  }
+  return { text: "Single race", kind: "single" };
+}
+
+/**
+ * Where the wins come from, as one short line: "3 wins: 1 online · 1 on
+ * Easy · 1 on Hard". Only the kinds that have a win are named. Nothing for
+ * a player without a win.
+ */
+export function winsLine(wins, winsBy) {
+  if (!(wins >= 1) || winsBy === null || typeof winsBy !== "object") {
+    return "";
+  }
+  const parts = [];
+  if (winsBy.online >= 1) {
+    parts.push(`${winsBy.online} online`);
+  }
+  for (const level of LEVELS) {
+    if (winsBy[level] >= 1) {
+      parts.push(`${winsBy[level]} on ${LEVEL_WORDS[level]}`);
+    }
+  }
+  if (winsBy.other >= 1) {
+    parts.push(`${winsBy.other} in single races`);
+  }
+  return parts.length === 0 ? "" : `${count(wins, "win", "wins")}: ${parts.join(" · ")}`;
 }
 
 /** "1 race", "2 races". */
@@ -60,8 +100,10 @@ function count(number, one, many) {
  *   empty      true when there is no race yet: the card then only says so
  *   numbers    [{ label, value }]: the three big numbers
  *   kinds      "8 online · 4 single races", or ""
- *   best       [{ place, time, detail }]: the fastest races, "place" 1 to 3
- *   bestLap    { time, detail }, or null
+ *   winsLine   "3 wins: 1 online · 1 on Easy · 1 on Hard", or ""
+ *   best       [{ place, time, tag, detail }]: the fastest races, "place" 1
+ *              to 3. "tag" is the little label beside the time (raceTag)
+ *   bestLap    { time, tag, detail }, or null
  *   rank       one sentence about the shared leaderboard
  *   favourite  { id, name, line }, or null: the character driven most
  */
@@ -76,15 +118,17 @@ export function statsWords(stats) {
       { label: stats?.podiums === 1 ? "Podium" : "Podiums", value: String(stats?.podiums ?? 0) },
     ],
     kinds: races === 0 ? "" : `${stats.online} online · ${count(stats.single, "single race", "single races")}`,
+    winsLine: winsLine(stats?.wins ?? 0, stats?.winsBy ?? null),
     best: (stats?.bestRaces ?? []).map((best, index) => ({
       place: index + 1,
       time: timeText(best.steps),
-      detail: [kindText(best.mode), dayText(best.at), characterById(best.character)?.name].filter((part) => part).join(" · "),
+      tag: raceTag(best.mode, best.level),
+      detail: [dayText(best.at), characterById(best.character)?.name].filter((part) => part).join(" · "),
     })),
     bestLap:
       stats?.bestLap == null
         ? null
-        : { time: timeText(stats.bestLap.steps), detail: [kindText(stats.bestLap.mode), dayText(stats.bestLap.at)].filter((part) => part).join(" · ") },
+        : { time: timeText(stats.bestLap.steps), tag: raceTag(stats.bestLap.mode, stats.bestLap.level), detail: dayText(stats.bestLap.at) },
     rank: rankText(stats?.rank ?? null),
     favourite,
   };

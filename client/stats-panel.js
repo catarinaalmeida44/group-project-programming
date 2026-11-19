@@ -53,6 +53,7 @@ export function connectStats(page, { api, storage }) {
   const lapLine = page.getElementById("stats-lap");
   const rankLine = page.getElementById("stats-rank");
   const kindsLine = page.getElementById("stats-kinds");
+  const winsText = page.getElementById("stats-wins");
   const download = page.getElementById("download-results");
   const downloadStatus = page.getElementById("download-status");
   page.getElementById("stats-what-counts").textContent = WHAT_COUNTS_TEXT;
@@ -166,12 +167,16 @@ export function connectStats(page, { api, storage }) {
       return;
     }
     say("");
+    // The little label beside a time: "Online", or the level of the
+    // computer karts of a single race ("on Easy", "on Normal", "on Hard").
+    const tagPart = (tag) => makePart(page, "span", `best-tag tag-${tag.kind}`, tag.text);
     bestList.replaceChildren(
-      ...words.best.map(({ place, time, detail }) => {
+      ...words.best.map(({ place, time, tag, detail }) => {
         const row = makePart(page, "li", `best-row best-${place}`);
         row.append(
           makePart(page, "span", "best-medal", String(place)),
           makePart(page, "span", "best-time", time),
+          tagPart(tag),
           makePart(page, "span", "best-detail", detail),
         );
         return row;
@@ -179,8 +184,13 @@ export function connectStats(page, { api, storage }) {
     );
     lapLine.replaceChildren();
     if (words.bestLap !== null) {
-      lapLine.append(makePart(page, "span", "best-time", words.bestLap.time), makePart(page, "span", "best-detail", words.bestLap.detail));
+      lapLine.append(
+        makePart(page, "span", "best-time", words.bestLap.time),
+        tagPart(words.bestLap.tag),
+        makePart(page, "span", "best-detail", words.bestLap.detail),
+      );
     }
+    winsText.textContent = words.winsLine; // "3 wins: 1 online · 1 on Easy · 1 on Hard"
     rankLine.textContent = words.rank;
     kindsLine.textContent = words.kinds;
   }

@@ -2902,9 +2902,44 @@ a.button {
   text-align: right;
 }
 
-/* The best lap has no medal: the time, then the words. */
+/* The little label beside a time: "Online", or the level of the computer
+   karts in a single race ("on Easy", "on Normal", "on Hard"). Each kind has
+   its own colour, so it can be told at a glance. */
+.best-tag {
+  padding: 0.05rem 0.5rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  color: var(--text-quiet);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.best-tag.tag-online {
+  color: var(--sky);
+}
+
+.best-tag.tag-easy {
+  color: #9be3ac; /* a calm green */
+}
+
+.best-tag.tag-normal {
+  color: var(--yellow-light);
+}
+
+.best-tag.tag-hard {
+  color: var(--red-soft);
+}
+
+/* A row of best times: medal, time, label, and the small words at the right. */
+.best-rows .best-row {
+  grid-template-columns: auto auto auto minmax(0, 1fr);
+}
+
+/* The best lap has no medal: the time, the label, then the words. */
 .best-lap {
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto auto minmax(0, 1fr);
   min-height: 2.6rem;
 }
 

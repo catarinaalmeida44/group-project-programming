@@ -13,7 +13,7 @@ const START = Date.UTC(2026, 10, 19, 16, 5); // 19 November 2026, 16:05
 
 /** One saved race. Give only what matters for the test. */
 function race(change = {}) {
-  return { track: "nova-lap", mode: "online", raceSteps: 6000, bestLapSteps: 1900, position: 2, character: "dean", at: START, ...change };
+  return { track: "nova-lap", mode: "online", raceSteps: 6000, bestLapSteps: 1900, position: 2, character: "dean", level: null, at: START, ...change };
 }
 
 describe("a player's stats", () => {
@@ -24,6 +24,7 @@ describe("a player's stats", () => {
       single: 0,
       wins: 0,
       podiums: 0,
+      winsBy: { online: 0, easy: 0, normal: 0, hard: 0, other: 0 },
       bestRaces: [],
       bestLap: null,
       favourite: null,
@@ -57,16 +58,16 @@ describe("a player's stats", () => {
   it("list the three fastest races, fastest first, each with its kind, its day and its character", () => {
     const rows = [
       race({ raceSteps: 6100, at: START }),
-      race({ raceSteps: 5800, at: START + DAY, mode: "single", character: "pcp" }),
+      race({ raceSteps: 5800, at: START + DAY, mode: "single", level: "hard", character: "pcp" }),
       race({ raceSteps: 6400, at: START + 2 * DAY }),
       race({ raceSteps: 5900, at: START + 3 * DAY, character: "cici" }),
     ];
     const stats = statsFrom(rows, "nova-lap");
     expect(BEST_TIMES_SHOWN).toBe(3);
     expect(stats.bestRaces).toEqual([
-      { steps: 5800, mode: "single", at: START + DAY, character: "pcp" },
-      { steps: 5900, mode: "online", at: START + 3 * DAY, character: "cici" },
-      { steps: 6100, mode: "online", at: START, character: "dean" },
+      { steps: 5800, mode: "single", level: "hard", at: START + DAY, character: "pcp" },
+      { steps: 5900, mode: "online", level: null, at: START + 3 * DAY, character: "cici" },
+      { steps: 6100, mode: "online", level: null, at: START, character: "dean" },
     ]);
   });
 
@@ -82,9 +83,9 @@ describe("a player's stats", () => {
   it("give the fastest single lap, which can come from a slower race", () => {
     const rows = [
       race({ raceSteps: 5000, bestLapSteps: 1700, at: START }),
-      race({ raceSteps: 7000, bestLapSteps: 1500, at: START + DAY, mode: "single" }),
+      race({ raceSteps: 7000, bestLapSteps: 1500, at: START + DAY, mode: "single", level: "easy" }),
     ];
-    expect(statsFrom(rows, "nova-lap").bestLap).toEqual({ steps: 1500, mode: "single", at: START + DAY });
+    expect(statsFrom(rows, "nova-lap").bestLap).toEqual({ steps: 1500, mode: "single", level: "easy", at: START + DAY });
   });
 
   it("say when the newest race was saved", () => {
@@ -97,6 +98,55 @@ describe("a player's stats", () => {
     const before = JSON.stringify(rows);
     statsFrom(rows, "nova-lap");
     expect(JSON.stringify(rows)).toBe(before);
+  });
+});
+
+// Added the same evening: Rodrigo's Easy, Normal and Hard for the computer
+// karts of a single race. A win on Easy counts like any other (Catarina's
+// decision), and the stats say which were which.
+describe("the level of the computer karts", () => {
+  it("says where the wins come from: online, and on each level", () => {
+    const rows = [
+      race({ position: 1 }), // online
+      race({ position: 1 }), // online
+      race({ position: 1, mode: "single", level: "easy" }),
+      race({ position: 1, mode: "single", level: "hard" }),
+      race({ position: 1, mode: "single", level: "hard" }),
+      race({ position: 2, mode: "single", level: "normal" }), // not a win
+      race({ position: 4, mode: "single", level: "easy" }), //   not a win
+    ];
+    const stats = statsFrom(rows, "nova-lap");
+    expect(stats.wins).toBe(5); // a win on Easy counts like any other
+    expect(stats.winsBy).toEqual({ online: 2, easy: 1, normal: 0, hard: 2, other: 0 });
+  });
+
+  it("always adds up to the number of wins", () => {
+    const rows = [
+      race({ position: 1 }),
+      race({ position: 1, mode: "single", level: "normal" }),
+      race({ position: 1, mode: "single", level: null }), //    saved before levels existed
+      race({ position: 1, mode: "single", level: "medium" }), // not a level
+    ];
+    const { wins, winsBy } = statsFrom(rows, "nova-lap");
+    expect(winsBy).toEqual({ online: 1, easy: 0, normal: 1, hard: 0, other: 2 });
+    expect(Object.values(winsBy).reduce((sum, each) => sum + each, 0)).toBe(wins);
+  });
+
+  it("is passed on with a best time and the best lap, for a single race only", () => {
+    const rows = [
+      race({ raceSteps: 5000, bestLapSteps: 1600, mode: "single", level: "easy" }),
+      race({ raceSteps: 5100, bestLapSteps: 1500, mode: "online", level: "hard" }), // an online race has no level, whatever its row says
+    ];
+    const stats = statsFrom(rows, "nova-lap");
+    expect(stats.bestRaces.map((best) => best.level)).toEqual(["easy", null]);
+    expect(stats.bestLap.level).toBe(null);
+  });
+
+  it("is none for anything that is not exactly easy, normal or hard", () => {
+    for (const level of [null, undefined, "", "Easy", "HARD", "medium", "toString", 2, {}]) {
+      const stats = statsFrom([race({ mode: "single", level })], "nova-lap");
+      expect(stats.bestRaces[0].level, String(level)).toBe(null);
+    }
   });
 });
 
@@ -164,8 +214,8 @@ describe("the file of a player's results", () => {
     const lines = file.trimEnd().split("\r\n");
     expect(lines).toHaveLength(3);
     expect(lines[0]).toBe(CSV_COLUMNS.map((name) => `"${name}"`).join(","));
-    expect(cellsOf(file)[1][6]).toBe("83333");
-    expect(cellsOf(file)[2][6]).toBe("100000");
+    expect(cellsOf(file)[1][7]).toBe("83333");
+    expect(cellsOf(file)[2][7]).toBe("100000");
     expect(file.endsWith("\r\n")).toBe(true);
   });
 
@@ -173,12 +223,13 @@ describe("the file of a player's results", () => {
     expect(resultsAsCsv([], TRACK_NAMES).trimEnd().split("\r\n")).toHaveLength(1);
   });
 
-  it("writes each race as: day, track, kind, place, the two times as on the screen and as whole numbers, character", () => {
-    const row = race({ mode: "single", raceSteps: 5007, bestLapSteps: 1620, position: 3, character: "ro", at: START });
+  it("writes each race as: day, track, kind, level, place, the two times as on the screen and as whole numbers, character", () => {
+    const row = race({ mode: "single", level: "hard", raceSteps: 5007, bestLapSteps: 1620, position: 3, character: "ro", at: START });
     expect(cellsOf(resultsAsCsv([row], TRACK_NAMES))[1]).toEqual([
       '"2026-11-19 16:05"',
       '"Nova lap"',
       '"single race"',
+      '"Hard"',
       "3",
       '"1:23.45"',
       '"0:27.00"',
@@ -192,9 +243,24 @@ describe("the file of a player's results", () => {
     expect(cellsOf(resultsAsCsv([race({ mode: "online" })], TRACK_NAMES))[1][2]).toBe('"online"');
   });
 
+  it("names the level of the computer karts as on the buttons of the race page: Easy, Normal, Hard", () => {
+    const levelCell = (change) => cellsOf(resultsAsCsv([race({ mode: "single", ...change })], TRACK_NAMES))[1][3];
+    expect(levelCell({ level: "easy" })).toBe('"Easy"');
+    expect(levelCell({ level: "normal" })).toBe('"Normal"');
+    expect(levelCell({ level: "hard" })).toBe('"Hard"');
+  });
+
+  it("leaves the level empty for an online race, an older single race, and anything that is not a level", () => {
+    const levelCell = (change) => cellsOf(resultsAsCsv([race(change)], TRACK_NAMES))[1][3];
+    expect(levelCell({ mode: "online", level: "hard" })).toBe('""');
+    for (const level of [null, undefined, "medium", "=1+1", "toString"]) {
+      expect(levelCell({ mode: "single", level }), String(level)).toBe('""');
+    }
+  });
+
   it("leaves the character empty when the race has none or the name is not in the cast", () => {
     for (const character of [null, undefined, "mario", "=1+1"]) {
-      expect(cellsOf(resultsAsCsv([race({ character })], TRACK_NAMES))[1][8], String(character)).toBe('""');
+      expect(cellsOf(resultsAsCsv([race({ character })], TRACK_NAMES))[1][9], String(character)).toBe('""');
     }
   });
 

@@ -134,8 +134,8 @@ export function createMemoryStore() {
       sessions = sessions.filter((session) => session.expiresAt > nowMs);
     },
 
-    async addResult({ playerId, track, mode, raceSteps, bestLapSteps, position, character = null }) {
-      results.push({ playerId, track, mode, raceSteps, bestLapSteps, position, character, at: Date.now(), order: nextOrder++ });
+    async addResult({ playerId, track, mode, raceSteps, bestLapSteps, position, character = null, level = null }) {
+      results.push({ playerId, track, mode, raceSteps, bestLapSteps, position, character, level, at: Date.now(), order: nextOrder++ });
     },
 
     async resultsOf(playerId, limit) {
@@ -143,13 +143,14 @@ export function createMemoryStore() {
         .filter((result) => result.playerId === playerId)
         .sort((a, b) => b.at - a.at || b.order - a.order) // the newest first
         .slice(0, limit)
-        .map(({ track, mode, raceSteps, bestLapSteps, position, character, at }) => ({
+        .map(({ track, mode, raceSteps, bestLapSteps, position, character, level, at }) => ({
           track,
           mode,
           raceSteps,
           bestLapSteps,
           position,
           character,
+          level,
           at,
         }));
     },

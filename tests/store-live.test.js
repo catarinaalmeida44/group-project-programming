@@ -147,29 +147,32 @@ if (haveDatabase) {
       await store.dropTables();
     }, WAIT);
 
-    it("has no character column before the server starts", async () => {
+    it("has no character or level column before the server starts", async () => {
       const columns = await pool.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'test_old_race_results'");
       expect(columns.rows.map((row) => row.column_name)).not.toContain("character");
+      expect(columns.rows.map((row) => row.column_name)).not.toContain("level");
     }, WAIT);
 
-    it("gets the column when the store starts, keeps the old race as it was, and is not harmed by starting twice", async () => {
+    it("gets the two columns when the store starts, keeps the old race as it was, and is not harmed by starting twice", async () => {
       await store.ensureTables();
       await store.ensureTables();
       const columns = await pool.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'test_old_race_results'");
       expect(columns.rows.map((row) => row.column_name)).toContain("character");
+      expect(columns.rows.map((row) => row.column_name)).toContain("level");
 
       const mine = await store.resultsOf(playerId, 10);
       expect(mine.map(({ at, ...rest }) => rest)).toEqual([
-        { track: "nova-lap", mode: "online", raceSteps: 9000, bestLapSteps: 2900, position: 2, character: null },
+        { track: "nova-lap", mode: "online", raceSteps: 9000, bestLapSteps: 2900, position: 2, character: null, level: null },
       ]);
       // The old race still counts for the leaderboard.
       expect(await store.bestRaces("nova-lap", 10)).toEqual([{ username: "Old_Ana", steps: 9000 }]);
     }, WAIT);
 
-    it("then saves a new race with its character, next to the old one", async () => {
-      await store.addResult({ playerId, track: "nova-lap", mode: "single", raceSteps: 8000, bestLapSteps: 2500, position: 1, character: "cici" });
+    it("then saves a new race with its character and its level, next to the old one", async () => {
+      await store.addResult({ playerId, track: "nova-lap", mode: "single", raceSteps: 8000, bestLapSteps: 2500, position: 1, character: "cici", level: "hard" });
       const mine = await store.resultsOf(playerId, 10);
       expect(mine.map((row) => row.character)).toEqual(["cici", null]);
+      expect(mine.map((row) => row.level)).toEqual(["hard", null]);
       expect(await store.bestRaces("nova-lap", 10)).toEqual([{ username: "Old_Ana", steps: 9000 }]); // the single race is not on it
     }, WAIT);
   });

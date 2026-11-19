@@ -209,6 +209,7 @@ function reportFinish(progress) {
       bestLapSteps: times.lapSteps,
       position: finishPlace(placesInput(race), 0) ?? 1,
       character: myCharacter,
+      level: race.level, // how good the computer karts of this race were: easy, normal or hard
     })
     .then((answer) => {
       if (thisRace === raceNumber) {

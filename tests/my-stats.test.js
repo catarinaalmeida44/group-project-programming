@@ -73,12 +73,46 @@ describe("the rules for a player's own stats", () => {
       single: 0,
       wins: 0,
       podiums: 0,
+      winsBy: { online: 0, easy: 0, normal: 0, hard: 0, other: 0 },
       bestRaces: [],
       bestLap: null,
       favourite: null,
       lastAt: null,
       rank: null,
     });
+  });
+
+  // Added the same evening: the level of the computer karts (Easy, Normal, Hard).
+  it("a single race keeps the level of its computer karts, and a win on Easy counts like any other", async () => {
+    const ana = await player("Ana");
+    expect(await accounts.saveSingleResult({ playerId: ana.id, ...GOOD, position: 1, level: "easy" })).toEqual({ ok: true });
+    expect((await store.resultsOf(ana.id, 10))[0].level).toBe("easy");
+    const stats = await accounts.statsOf(ana.id, "nova-lap");
+    expect(stats.wins).toBe(1);
+    expect(stats.winsBy).toEqual({ online: 0, easy: 1, normal: 0, hard: 0, other: 0 });
+    expect(stats.bestRaces[0].level).toBe("easy");
+  });
+
+  it("a single race without a level is still saved: an older page does not send one", async () => {
+    const ana = await player("Ana");
+    expect((await accounts.saveSingleResult({ playerId: ana.id, ...GOOD })).ok).toBe(true);
+    expect((await store.resultsOf(ana.id, 10))[0].level).toBe(null);
+  });
+
+  it("a single race at a level that does not exist is refused, and nothing is saved", async () => {
+    const ana = await player("Ana");
+    for (const level of ["medium", "Easy", "HARD", "", "impossible", "toString", 2, {}, ["easy"]]) {
+      const answer = await accounts.saveSingleResult({ playerId: ana.id, ...GOOD, level });
+      expect(answer.code, String(level)).toBe("invalid_result");
+    }
+    expect(store.countResults()).toBe(0);
+  });
+
+  it("an online race never has a level", async () => {
+    const ana = await player("Ana");
+    await accounts.saveResult({ playerId: ana.id, track: "nova-lap", raceSteps: 9000, bestLapSteps: 2900, position: 1, character: "cici", level: "easy" });
+    expect((await store.resultsOf(ana.id, 10))[0].level).toBe(null);
+    expect((await accounts.statsOf(ana.id, "nova-lap")).winsBy).toEqual({ online: 1, easy: 0, normal: 0, hard: 0, other: 0 });
   });
 
   it("an online race the server ran is counted, with the character driven", async () => {
@@ -404,6 +438,24 @@ describe("the addresses for a player's own stats", () => {
       expect(answer.status).toBe(201);
       expect(answer.json).toEqual({ ok: true });
       expect(await store.resultsOf(ana.player.id, 10)).toMatchObject([{ ...GOOD, mode: "single" }]);
+    });
+
+    it("saves the level of the computer karts, and the file of results names it", async () => {
+      const ana = await signedIn("Ana");
+      expect((await ask("POST", "/api/single-result", { cookie: ana.cookie, body: { ...GOOD, position: 1, level: "hard" } })).status).toBe(201);
+      const stats = (await ask("GET", "/api/stats", { cookie: ana.cookie })).json.stats;
+      expect(stats.winsBy.hard).toBe(1);
+      expect(stats.bestRaces[0].level).toBe("hard");
+      const file = (await ask("GET", "/api/my-results.csv", { cookie: ana.cookie })).body;
+      expect(file).toContain('"single race","Hard",1,');
+    });
+
+    it("refuses a level that does not exist with 400", async () => {
+      const ana = await signedIn("Ana");
+      const answer = await ask("POST", "/api/single-result", { cookie: ana.cookie, body: { ...GOOD, level: "medium" } });
+      expect(answer.status).toBe(400);
+      expect(answer.json.code).toBe("invalid_result");
+      expect(store.countResults()).toBe(0);
     });
 
     it("saves nothing for a visitor who is not signed in", async () => {

@@ -339,10 +339,12 @@ export function createAccounts(
      *     database this way
      *   - it is saved as "single", which never counts for the shared
      *     leaderboard (store.js). It only shows in the player's own stats
+     * "level" is how good the computer karts were (easy, normal or hard),
+     * so the stats can say "on Easy" beside a time or a win.
      * Gives { ok: true } or { ok: false, code, message }.
      */
-    async saveSingleResult({ playerId, track, raceSteps, bestLapSteps, position, character = null }) {
-      const problem = singleResultProblem({ track, raceSteps, bestLapSteps, position, character });
+    async saveSingleResult({ playerId, track, raceSteps, bestLapSteps, position, character = null, level = null }) {
+      const problem = singleResultProblem({ track, raceSteps, bestLapSteps, position, character, level });
       if (!Number.isSafeInteger(playerId) || problem !== null) {
         return no("invalid_result", "That is not a result of a single race.");
       }
@@ -355,7 +357,7 @@ export function createAccounts(
       lastSingleAt.set(playerId, now());
       try {
         await ready();
-        await store.addResult({ playerId, track, mode: SINGLE, raceSteps, bestLapSteps, position, character });
+        await store.addResult({ playerId, track, mode: SINGLE, raceSteps, bestLapSteps, position, character, level });
       } catch (error) {
         // Nothing was saved, so this report does not count as their last one.
         if (before === undefined) {

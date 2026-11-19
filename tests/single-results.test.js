@@ -44,6 +44,12 @@ describe("a single race that could be real", () => {
     expect(singleResultProblem(withoutOne)).toBe(null);
   });
 
+  it("is believed at each of the three levels, and without one (an older page sends none)", () => {
+    for (const level of ["easy", "normal", "hard", null, undefined]) {
+      expect(singleResultProblem({ ...GOOD, level }), String(level)).toBe(null);
+    }
+  });
+
   it("is believed when every lap took exactly as long as the best one", () => {
     const raceSteps = NOVA.laps * 4000;
     expect(singleResultProblem({ ...GOOD, raceSteps, bestLapSteps: 4000 })).toBe(null);
@@ -94,9 +100,30 @@ describe("a single race that cannot be real is refused", () => {
     }
   });
 
+  it("at a level the computer karts do not have", () => {
+    for (const level of ["medium", "Easy", "HARD", " easy", "", "toString", 1, {}, ["hard"], true]) {
+      expect(refused({ level }), String(level)).toBe("no such level");
+    }
+  });
+
   it("with a character that is not in the cast", () => {
     for (const character of ["mario", "PCP", " pcp", "", "toString", 3, {}, ["dean"], true]) {
       expect(refused({ character }), String(character)).toBe("no such character");
+    }
+  });
+});
+
+describe("the level a single race reports", () => {
+  it("stays with the race from its first step to its last, so the page reports the level that was really driven", () => {
+    const track = TRACKS["test-oval"];
+    const line = routePoints(track, lookOfTrack(track).route);
+    for (const level of ["easy", "normal", "hard"]) {
+      let race = createPracticeRace(track, 3, line, COMPUTER_KARTS, "dean", level);
+      for (let step = 0; step < 400; step++) {
+        race = stepPracticeRace(track, race, { gas: true, brake: false, left: false, right: false }, TEST_DRIVER);
+      }
+      expect(race.level).toBe(level);
+      expect(singleResultProblem({ track: "test-oval", raceSteps: 2000, bestLapSteps: 600, position: 2, character: "dean", level: race.level })).toBe(null);
     }
   });
 });

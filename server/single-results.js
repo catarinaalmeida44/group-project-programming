@@ -18,6 +18,7 @@
 import { TRACKS } from "../shared/tracks/index.js";
 import { isCharacterId } from "../shared/cast.js";
 import { COMPUTER_KARTS } from "../shared/practice-race.js";
+import { isLevel } from "../shared/computer-driver.js";
 import { topSpeedOf, STEP_SECONDS } from "../shared/physics.js";
 import { TEST_DRIVER } from "../shared/characters.js";
 import { routePoints } from "../client/route.js";
@@ -66,14 +67,16 @@ const isWholeFrom1 = (value, highest) => Number.isSafeInteger(value) && value >=
 /**
  * Looks at a reported single race. Gives null if it could be real, or a
  * short reason (for our own log and the tests, not shown to players).
- *   result  { track, raceSteps, bestLapSteps, position, character }
+ *   result  { track, raceSteps, bestLapSteps, position, character, level }
+ *           "level" is how good the computer karts were: "easy", "normal"
+ *           or "hard" (shared/computer-driver.js). It may be left out
  *   tracks  the list of tracks. Only the tests change it
  */
 export function singleResultProblem(result, tracks = TRACKS) {
   if (result === null || typeof result !== "object") {
     return "not a result";
   }
-  const { track, raceSteps, bestLapSteps, position, character } = result;
+  const { track, raceSteps, bestLapSteps, position, character, level } = result;
   if (typeof track !== "string" || !Object.hasOwn(tracks, track)) {
     return "no such track";
   }
@@ -95,6 +98,9 @@ export function singleResultProblem(result, tracks = TRACKS) {
   }
   if (character !== null && character !== undefined && !isCharacterId(character)) {
     return "no such character";
+  }
+  if (level !== null && level !== undefined && !isLevel(level)) {
+    return "no such level";
   }
   return null;
 }

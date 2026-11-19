@@ -287,6 +287,7 @@ export function createApi({ accounts = null, now = Date.now } = {}) {
           bestLapSteps: body.bestLapSteps,
           position: body.position,
           character: body.character ?? null,
+          level: body.level ?? null,
         });
         if (!answer.ok) {
           return sendRefusal(response, answer);

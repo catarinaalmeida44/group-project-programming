@@ -12,7 +12,9 @@
 
 import { isCharacterId, characterById } from "../shared/cast.js";
 import { STEP_SECONDS } from "../shared/physics.js";
+import { isLevel, LEVELS } from "../shared/computer-driver.js";
 import { formatTime } from "../client/format.js";
+import { LEVEL_WORDS } from "../client/difficulty.js";
 
 /** How many of a player's best race times are shown. */
 export const BEST_TIMES_SHOWN = 3;
@@ -23,15 +25,22 @@ export const SINGLE = "single";
 
 /**
  * The stats of one track from a player's saved races.
- *   rows   [{ track, mode, raceSteps, bestLapSteps, position, character, at }]
+ *   rows   [{ track, mode, raceSteps, bestLapSteps, position, character, level, at }]
  *   track  the short name of the track, such as "nova-lap"
  *
  * Gives:
  *   races, online, single   how many races in all, and of each kind
  *   wins, podiums           how many were finished first, and in the first three
+ *   winsBy                  where the wins come from: { online, easy, normal,
+ *                           hard, other }. A win against Easy computer karts
+ *                           counts like any other (Catarina, 19 November
+ *                           2026), and this says which were which. "other"
+ *                           is single races saved without a level
  *   bestRaces               the fastest whole races, fastest first, at most
- *                           BEST_TIMES_SHOWN: [{ steps, mode, at, character }]
- *   bestLap                 the fastest single lap: { steps, mode, at }, or null
+ *                           BEST_TIMES_SHOWN: [{ steps, mode, level, at, character }]
+ *   bestLap                 the fastest single lap: { steps, mode, level, at }, or null
+ *                           ("level" is "easy", "normal" or "hard" for a single
+ *                           race that noted it, and null for everything else)
  *   favourite               the character driven most: { character, races,
  *                           counted }, or null. "counted" is how many races
  *                           have a character at all: races saved before 19
@@ -46,16 +55,27 @@ export function statsFrom(rows, track) {
   const byRaceTime = [...mine].sort((a, b) => a.raceSteps - b.raceSteps || a.at - b.at);
   const byLapTime = [...mine].sort((a, b) => a.bestLapSteps - b.bestLapSteps || a.at - b.at);
 
+  const won = mine.filter((row) => row.position === 1);
+  const winsBy = { online: won.filter((row) => row.mode === ONLINE).length, other: 0 };
+  for (const level of LEVELS) {
+    winsBy[level] = won.filter((row) => levelOf(row) === level).length;
+  }
+  winsBy.other = won.length - winsBy.online - LEVELS.reduce((sum, level) => sum + winsBy[level], 0);
+
   return {
     races: mine.length,
     online: mine.filter((row) => row.mode === ONLINE).length,
     single: mine.filter((row) => row.mode === SINGLE).length,
-    wins: mine.filter((row) => row.position === 1).length,
+    wins: won.length,
     podiums: mine.filter((row) => row.position <= 3).length,
+    winsBy,
     bestRaces: byRaceTime
       .slice(0, BEST_TIMES_SHOWN)
-      .map((row) => ({ steps: row.raceSteps, mode: row.mode, at: row.at, character: knownCharacter(row.character) })),
-    bestLap: byLapTime.length === 0 ? null : { steps: byLapTime[0].bestLapSteps, mode: byLapTime[0].mode, at: byLapTime[0].at },
+      .map((row) => ({ steps: row.raceSteps, mode: row.mode, level: levelOf(row), at: row.at, character: knownCharacter(row.character) })),
+    bestLap:
+      byLapTime.length === 0
+        ? null
+        : { steps: byLapTime[0].bestLapSteps, mode: byLapTime[0].mode, level: levelOf(byLapTime[0]), at: byLapTime[0].at },
     favourite: favouriteOf(mine),
     lastAt: mine.length === 0 ? null : Math.max(...mine.map((row) => row.at)),
   };
@@ -64,6 +84,15 @@ export function statsFrom(rows, track) {
 /** The id of a character that is in the cast today, or null. */
 function knownCharacter(id) {
   return isCharacterId(id) ? id : null;
+}
+
+/**
+ * The level of the computer karts in a saved race: "easy", "normal" or
+ * "hard" for a single race that noted one, null for everything else. An
+ * online race has no level, whatever its row says.
+ */
+function levelOf(row) {
+  return row.mode === SINGLE && isLevel(row.level) ? row.level : null;
 }
 
 /**
@@ -99,6 +128,7 @@ export const CSV_COLUMNS = Object.freeze([
   "Date (UTC)",
   "Track",
   "Kind of race",
+  "Computer karts",
   "Place",
   "Race time",
   "Best lap",
@@ -159,6 +189,7 @@ export function resultsAsCsv(rows, trackNames = {}) {
         dateText(row.at),
         Object.hasOwn(trackNames, row.track) ? trackNames[row.track] : row.track,
         row.mode === ONLINE ? "online" : "single race",
+        levelOf(row) === null ? "" : LEVEL_WORDS[levelOf(row)], // "Easy", "Normal" or "Hard", as on the buttons of the race page
         row.position,
         formatTime(row.raceSteps * STEP_SECONDS),
         formatTime(row.bestLapSteps * STEP_SECONDS),

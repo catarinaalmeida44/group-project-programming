@@ -121,6 +121,10 @@ export function createStore(pool, { prefix = "" } = {}) {
       // "most played character" in their own stats. A table made before that
       // day gets the column here. Races saved before it have none (NULL).
       await pool.query(`ALTER TABLE ${results} ADD COLUMN IF NOT EXISTS character text`);
+      // Added the same day: the level of the computer karts in a single
+      // race ("easy", "normal" or "hard"), so the player's stats can say
+      // "on Easy". Online races and older rows have none (NULL).
+      await pool.query(`ALTER TABLE ${results} ADD COLUMN IF NOT EXISTS level text`);
     },
 
     // ---- players ----
@@ -229,23 +233,27 @@ export function createStore(pool, { prefix = "" } = {}) {
 
     // ---- race results ----
 
-    /** Saves one finished race. "character" is the id of the character driven (shared/cast.js), or left out. */
-    async addResult({ playerId, track, mode, raceSteps, bestLapSteps, position, character = null }) {
+    /**
+     * Saves one finished race. "character" is the id of the character driven
+     * (shared/cast.js), and "level" the level of the computer karts in a
+     * single race (shared/computer-driver.js). Either can be left out.
+     */
+    async addResult({ playerId, track, mode, raceSteps, bestLapSteps, position, character = null, level = null }) {
       await pool.query(
-        `INSERT INTO ${results} (player_id, track, mode, race_steps, best_lap_steps, position, character) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [playerId, track, mode, raceSteps, bestLapSteps, position, character],
+        `INSERT INTO ${results} (player_id, track, mode, race_steps, best_lap_steps, position, character, level) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [playerId, track, mode, raceSteps, bestLapSteps, position, character, level],
       );
     },
 
     /**
      * One player's own saved races, the newest first, at most "limit" of them:
-     * [{ track, mode, raceSteps, bestLapSteps, position, character, at }].
+     * [{ track, mode, raceSteps, bestLapSteps, position, character, level, at }].
      * "at" is when it was saved, in milliseconds. Only ever asked for the
      * signed-in player's own number: nobody reads someone else's list.
      */
     async resultsOf(playerId, limit) {
       const answer = await pool.query(
-        `SELECT track, mode, race_steps, best_lap_steps, position, character,
+        `SELECT track, mode, race_steps, best_lap_steps, position, character, level,
                 (extract(epoch from created_at) * 1000)::bigint AS at_ms
            FROM ${results}
           WHERE player_id = $1
@@ -260,6 +268,7 @@ export function createStore(pool, { prefix = "" } = {}) {
         bestLapSteps: row.best_lap_steps,
         position: row.position,
         character: row.character,
+        level: row.level,
         at: Number(row.at_ms),
       }));
     },
