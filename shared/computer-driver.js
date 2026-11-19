@@ -106,9 +106,70 @@ export function personalityOf(characterId) {
   return PERSONALITIES.find((personality) => personality.name === name) ?? null;
 }
 
-/** A new driver with a personality, before the race. "memory" is what it remembers from one step to the next. */
-export function createComputerDriver(personality) {
-  return { personality, memory: { segment: 0, stillSteps: 0, recoverSteps: 0 } };
+// ---- The mood of the day ----
+//
+// Without chance, a computer kart drives the same race every time from the
+// same place on the grid. So for each race each one gets a "mood": its
+// personality with every number moved a little, up or down. The character
+// is still recognisable (the Daredevil stays daring), but no two races are
+// driven quite alike. The mood comes from the race's random number (its
+// seed), so the same seed always gives the same moods: a race can still be
+// played again exactly, which the tests need.
+
+/** How far each number of a personality may move for one race, up or down. */
+export const MOOD_SWING = Object.freeze({
+  daring: 0.15, // overtaking and bends
+  care: 0.15, // braking early and dodging
+  pace: 0.03, // a share of top speed on a straight
+  aside: 10, // units: aims this far to the left (minus) or right (plus) of the racing line
+});
+
+/**
+ * A personality's mood for one race: the same personality with its numbers
+ * moved a little, picked from the race's seed and the character. Daring and
+ * care stay from 0 to 1, pace from 0.8 to 1. "aside" is added: how far from
+ * the racing line it likes to drive. With no seed (null) the personality
+ * is given back as it is, with aside 0.
+ */
+export function moodFor(personality, seed, characterId) {
+  if (seed === null || seed === undefined) {
+    return Object.freeze({ ...personality, aside: 0 });
+  }
+  const random = randomNumbers(seed, characterId);
+  const swing = (size) => (random() * 2 - 1) * size;
+  return Object.freeze({
+    ...personality,
+    daring: clamp(personality.daring + swing(MOOD_SWING.daring), 0, 1),
+    care: clamp(personality.care + swing(MOOD_SWING.care), 0, 1),
+    pace: clamp(personality.pace + swing(MOOD_SWING.pace), 0.8, 1),
+    aside: swing(MOOD_SWING.aside),
+  });
+}
+
+/**
+ * Numbers from 0 to 1 that look random but always come out the same for the
+ * same seed and name: a small, well-known recipe ("mulberry32").
+ */
+function randomNumbers(seed, name) {
+  let state = seed >>> 0;
+  for (const letter of String(name)) {
+    state = Math.imul(state ^ letter.charCodeAt(0), 2654435761) >>> 0;
+  }
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let mixed = Math.imul(state ^ (state >>> 15), state | 1);
+    mixed ^= mixed + Math.imul(mixed ^ (mixed >>> 7), mixed | 61);
+    return ((mixed ^ (mixed >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * A new driver with a personality, before the race. "mood" is how it drives
+ * in this race (moodFor); left out, it drives exactly as its personality.
+ * "memory" is what it remembers from one step to the next.
+ */
+export function createComputerDriver(personality, mood = moodFor(personality, null)) {
+  return { personality, mood, memory: { segment: 0, stillSteps: 0, recoverSteps: 0 } };
 }
 
 // ---- 1. Look around ----
@@ -121,6 +182,8 @@ export function createComputerDriver(personality) {
  *   line     the racing line: [{ x, y }]
  *   others   the other karts: [{ x, y }]
  *   bananas  the bananas on the road: [{ x, y }]
+ *   aside    how far to the right (plus) or left (minus) of the racing line
+ *            to aim, from the mood of the day. 0 aims right at the line
  *
  * Gives back { view, memory }. "view" has:
  *   speed, topSpeed  how fast the kart goes and can go, units per second
@@ -135,7 +198,7 @@ export function createComputerDriver(personality) {
  *   stuck            whether the kart has not moved for a while
  *   recovering       whether the kart is still backing away
  */
-export function lookAround(track, racer, memory, line, others, bananas, character) {
+export function lookAround(track, racer, memory, line, others, bananas, character, aside = 0) {
   const { kart } = racer;
   const speed = speedOf(kart);
   const segment = followSegment(line, memory.segment, kart);
@@ -143,7 +206,8 @@ export function lookAround(track, racer, memory, line, others, bananas, characte
   const to = line[(segment + 1) % line.length];
   const lineAngle = Math.atan2(to.y - from.y, to.x - from.x);
   const reach = LOOK_AHEAD + speed * LOOK_AHEAD_PER_SPEED;
-  const target = pointAhead(line, segment, kart, reach);
+  const onTheLine = pointAhead(line, segment, kart, reach);
+  const target = { x: onTheLine.x - Math.sin(lineAngle) * aside, y: onTheLine.y + Math.cos(lineAngle) * aside };
 
   // The next bend is at the end of this stretch of the line.
   const after = line[(segment + 2) % line.length];
@@ -292,10 +356,12 @@ export function keysFor(action, view, kart, personality) {
  * memory updated for the next step.
  */
 export function decide(driver, track, racer, line, others, bananas, character) {
-  const { view, memory } = lookAround(track, racer, driver.memory, line, others, bananas, character);
-  const scores = scoreActions(view, driver.personality);
+  // How it drives today: its mood, or, for a driver made without one, its personality.
+  const today = driver.mood ?? driver.personality;
+  const { view, memory } = lookAround(track, racer, driver.memory, line, others, bananas, character, today.aside ?? 0);
+  const scores = scoreActions(view, today);
   const action = bestAction(scores);
-  const keys = keysFor(action, view, racer.kart, driver.personality);
+  const keys = keysFor(action, view, racer.kart, today);
   return { keys, action, scores, driver: { ...driver, memory } };
 }
 
@@ -434,6 +500,7 @@ function angleBetween(from, to) {
   return Math.atan2(Math.sin(to - from), Math.cos(to - from));
 }
 
-function clamp(value) {
-  return Math.min(1, Math.max(0, value));
+/** The value, kept from "low" to "high" (0 to 1 unless told otherwise). */
+function clamp(value, low = 0, high = 1) {
+  return Math.min(high, Math.max(low, value));
 }

@@ -31,7 +31,7 @@ const accounts = pool === null ? null : createAccounts(createStore(pool));
 
 const app = createApp({ database, accounts });
 // One online room for each track. Results of signed-in players are saved.
-attachOnlinePlay(app, { track: TRACKS[DEFAULT_TRACK], tracks: TRACKS, character: TEST_DRIVER, accounts });
+attachOnlinePlay(app, { track: TRACKS[DEFAULT_TRACK], tracks: TRACKS, character: TEST_DRIVER, accounts, computerKarts: true });
 
 app.listen(port, host, () => {
   console.log(`The server is running. Open http://localhost:${port} in a browser.`);

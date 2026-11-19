@@ -196,6 +196,7 @@ What this means for you: prefer finished, reliable features over many half-finis
   - **[DROPPED 17 Nov 2026]** Three difficulty levels.
   - Mild catch-up: slightly faster when far behind, slightly slower when far ahead.
 - *17 Nov 2026, built by Rodrigo: computer karts in a single race. Five of them: the characters the player did not choose. Each character drives with its own "personality" (PCP Daredevil, Dean Steady, Professor Ricardo Pereira Careful, Cici Boss Hunter, FranFon Smooth, Ró Versos Calm). They decide with utility AI, as our professor suggested: they score each thing they could do (follow the racing line, brake, overtake, dodge a banana, back away from a wall) and do the most useful one, pressing the same four keys a player has. They follow the racing line the arrows use. Not built: computer karts online, items, catch-up. Decisions made by the agent, please confirm: five computer karts with the player starting at the back of the grid; which personality each character has; without a chosen character, the first five of the cast; the same driver stats as the player; the race is over for the player when they finish.*
+- *18 Nov 2026, built by Rodrigo: computer karts online, as Rodrigo asked: when the host starts an online race, the characters nobody in the room is become computer karts, up to 6 karts in all (Rodrigo's choice: one for each character). The host can switch them off with a tick box while no race is on (Rodrigo's choice). Their results are never saved. Also each computer kart now drives each race in a "mood of the day", its personality's numbers moved a little, so races are not all alike (Rodrigo's choice, after he saw them repeat). A room takes up to 6 people (Catarina, 19 Nov), so computer karts fill only the places people leave free. Decisions made by the agent, please confirm: the switch starts on in every room; computer karts leave before each start, when no person is racing, or if one would become the host; how far a mood may move each number (daring and care 0.15, pace 0.03, 10 units aside).*
 
 ### Characters and the selection menu
 
@@ -434,4 +435,4 @@ Before the demo:
 | Catarina Almeida | 70573 | catarinaalmeida44 | [OPEN] |
 | Francisco Fonseca (Fran) | 72576 | FranFon15 | [OPEN] |
 | Pedro Collares Pereira | 71022 | pedrocollarespereira | [OPEN] |
-| Rodrigo Simeão Versos | _to add_ | rodrigosversos | Campus tracks (reported 11 Nov 2026); computer karts (built 17 Nov 2026, to be confirmed by the team) |
+| Rodrigo Simeão Versos | 72677 | rodrigosversos | Campus tracks (reported 11 Nov 2026); computer karts (single race 17 Nov 2026, online 18 Nov 2026, to be confirmed by the team) |

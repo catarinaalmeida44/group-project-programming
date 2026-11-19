@@ -18,7 +18,7 @@ The server is on a free plan and goes to sleep after 15 minutes without visitors
 | Catarina Almeida | 70573 | catarinaalmeida44 |
 | Francisco Fonseca | 72576 | FranFon15 |
 | Pedro Collares Pereira | 71022 | pedrocollarespereira |
-| Rodrigo Simeão Versos | _to add_ | rodrigosversos |
+| Rodrigo Simeão Versos | 72677 | rodrigosversos |
 
 ## Run it on your own laptop
 
