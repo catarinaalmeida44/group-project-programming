@@ -182,15 +182,23 @@ document.getElementById("race-again").addEventListener("click", (event) => {
   event.currentTarget.blur();
 });
 
+// Is someone signed in on this browser? Asked once, when the page opens:
+// true, false, or null while the server has not answered yet.
+let signedIn = null;
+accountApi?.getMe().then((me) => {
+  signedIn = me.signedIn === true;
+});
+
 /**
  * Tells the server about the race the player has just finished, so that it
- * counts in their own stats if they are signed in. A guest gets "not signed
- * in" back, and nothing is said about it. The race itself never waits for
- * the answer.
+ * counts in their own stats if they are signed in. For a guest nothing is
+ * sent at all. (If the server has not yet said who is signed in, the race
+ * is sent anyway: a guest then gets "not signed in" back, and nothing is
+ * said about it.) The race itself never waits for the answer.
  */
 function reportFinish(progress) {
   const times = finishedRaceTimes(progress.lapSteps, track.laps);
-  if (accountApi === null || times === null) {
+  if (accountApi === null || times === null || signedIn === false) {
     return;
   }
   const thisRace = raceNumber;
