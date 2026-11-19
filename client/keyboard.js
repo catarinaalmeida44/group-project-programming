@@ -34,7 +34,9 @@ const doNothing = () => {};
  *     onStart    Enter was pressed. The online page uses it to ask the
  *                server for a race start
  *     onDrive    a driving key went down. The game uses it to start the
- *                countdown at the very first key press, however short it is
+ *                countdown at the very first key press, however short it is.
+ *                It is told which key ("ArrowLeft" ...), and whether this is
+ *                the key being held down (true) or a fresh press (false)
  * Gives back two questions the game can ask at any moment:
  *   input()      which driving keys are held
  *   isDriving()  is at least one driving key held
@@ -58,7 +60,7 @@ export function createKeyboard(target, actions = {}) {
     if (DRIVING_KEYS.includes(event.key)) {
       heldKeys.add(event.key);
       event.preventDefault(); // stop the arrow keys from scrolling the page
-      onDrive();
+      onDrive(event.key, event.repeat === true);
       return;
     }
     if (event.repeat) {

@@ -3173,3 +3173,235 @@ a.button {
     transition: none !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Game settings (game-settings-card.js): the card that comes up over the
+   picture before a race, on the three race pages, and the small label in the
+   corner of an online room that says who the host is.
+   --------------------------------------------------------------------------- */
+
+/* The dark veil over the picture, with the card in the middle of it. */
+.settings-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 0.6rem;
+  border-radius: 10px;
+  background: rgba(11, 24, 32, 0.8);
+}
+
+.settings-veil[hidden] {
+  display: none;
+}
+
+.settings-card {
+  position: relative;
+  width: min(31rem, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 1rem 1.3rem 1.2rem;
+  border: 2px solid var(--line-strong);
+  border-top: 6px solid var(--yellow);
+  border-radius: 14px;
+  background: var(--navy);
+  box-shadow: 0 10px 0 rgba(11, 24, 32, 0.6);
+  animation: settings-in 260ms ease-out both;
+}
+
+@keyframes settings-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-card {
+    animation: none;
+  }
+}
+
+/* The small label above the title: "You are the host". A yellow flag. */
+.settings-badge,
+.room-host {
+  display: inline-block;
+  margin: 0;
+  padding: 0.12rem 0.7rem;
+  border-radius: 999px;
+  background: var(--yellow);
+  color: var(--navy);
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.settings-title {
+  margin: 0.35rem 0 0;
+  color: var(--yellow);
+  font-size: 1.75rem;
+  font-style: italic;
+  font-weight: 900;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.settings-lead {
+  margin: 0.3rem 0 0.2rem;
+  color: var(--text-quiet);
+  font-size: 0.95rem;
+}
+
+/* The cross in the corner: away without changing anything. */
+.settings-close {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.55rem;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-quiet);
+  font: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.settings-close:hover {
+  background: var(--navy-hover);
+  color: var(--text);
+}
+
+/* One row: the name on the left, the buttons on the right, a sentence under them. */
+.settings-row {
+  display: grid;
+  grid-template-columns: 8.2rem 1fr;
+  align-items: center;
+  gap: 0.15rem 0.8rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.settings-name {
+  font-weight: 800;
+}
+
+.settings-choices {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.settings-hint {
+  grid-column: 2;
+  margin: 0;
+  color: var(--text-quiet);
+  font-size: 0.85rem;
+}
+
+/* A button of a row: chunky, like a key. The one in use is yellow. */
+.settings-choice {
+  flex: 1;
+  min-height: 2.5rem;
+  padding: 0.2rem 0.4rem;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--navy-raised);
+  box-shadow: 0 3px 0 var(--navy-deep);
+  color: var(--text);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.settings-choice:hover:not(:disabled) {
+  border-color: var(--sky);
+  background: var(--navy-hover);
+}
+
+.settings-choice[aria-pressed="true"] {
+  border-color: var(--yellow-light);
+  background: var(--yellow);
+  box-shadow: 0 3px 0 var(--yellow-edge);
+  color: var(--navy);
+}
+
+.settings-choice:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.settings-choice:focus-visible,
+.settings-close:focus-visible {
+  outline: 3px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* The level, while computer karts are off: there is nobody to set it for. */
+.settings-row.is-off .settings-name {
+  color: var(--text-quiet);
+}
+
+.settings-confirm {
+  margin-top: 0.5rem;
+  min-height: 2.9rem;
+  font-size: 1.08rem;
+}
+
+/* The label in the corner of an online room that waits for its first race. */
+.room-label {
+  position: absolute;
+  left: 0.6rem;
+  top: 0.6rem;
+  z-index: 2;
+  display: grid;
+  justify-items: start;
+  gap: 0.3rem;
+  max-width: 62%;
+  padding: 0.5rem 0.7rem 0.55rem;
+  border-left: 6px solid var(--yellow);
+  border-radius: 10px;
+  background: rgba(11, 24, 32, 0.88);
+}
+
+.room-label[hidden],
+.room-label [hidden] {
+  display: none;
+}
+
+.room-summary {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+/* Someone else is the host: the flag is quiet, not yellow. */
+.room-label:not(.is-mine) .room-host {
+  background: var(--navy-raised);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+/* The button "Game settings" in the numbers above the track (single race, two players). */
+.settings-button {
+  padding: 0.15rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--navy-raised);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.settings-button:hover {
+  background: var(--navy-hover);
+}
+
+.settings-button:focus-visible {
+  outline: 2px solid var(--yellow);
+  outline-offset: 2px;
+}

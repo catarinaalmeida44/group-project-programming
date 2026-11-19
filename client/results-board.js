@@ -37,13 +37,17 @@ const CONFETTI = 18;
  *   say(text)           the sentence at the bottom: who starts the next race
  *   offerStart(yes)     show the button "Start next race", or not. Only the
  *                       host gets it: the server obeys nobody else
+ *   offerSettings(yes)  show the button "Game settings", or not. Again only
+ *                       for the host ("onSettings" is called when it is pressed)
  *   paint(now)          call for every picture: turns the winner's kart
  *
  * Under the sentence the board has two buttons: "Start next race" (for the
  * host; "onStart" is called when it is pressed) and "Back to menu".
  */
-export function createResultsBoard(page, { onStart = () => {} } = {}) {
+export function createResultsBoard(page, { onStart = () => {}, onSettings = () => {} } = {}) {
   const box = page.getElementById("finish-board");
+  let settingsButton = null; // "Game settings", on the board while it is up
+  let settingsOffered = false;
   let shown = false;
   let winner = null; //   { context, look }: the big picture, painted again for every picture
   let nextLine = null; // the sentence at the bottom
@@ -141,9 +145,14 @@ export function createResultsBoard(page, { onStart = () => {} } = {}) {
       startButton.type = "button";
       startButton.hidden = !startOffered;
       startButton.addEventListener("click", () => onStart());
+      // The host can also change the game settings before the next race.
+      settingsButton = makePart(page, "button", "button", "Game settings");
+      settingsButton.type = "button";
+      settingsButton.hidden = !settingsOffered;
+      settingsButton.addEventListener("click", () => onSettings());
       const toMenu = makePart(page, "a", "button", "Back to menu");
       toMenu.href = "/";
-      actions.append(startButton, toMenu);
+      actions.append(startButton, settingsButton, toMenu);
 
       box.append(nextLine, actions);
       box.hidden = false;
@@ -157,6 +166,14 @@ export function createResultsBoard(page, { onStart = () => {} } = {}) {
       winner = null;
       nextLine = null;
       startButton = null;
+      settingsButton = null;
+    },
+
+    offerSettings(yes) {
+      settingsOffered = yes === true;
+      if (settingsButton !== null && settingsButton.hidden === settingsOffered) {
+        settingsButton.hidden = !settingsOffered;
+      }
     },
 
     offerStart(yes) {

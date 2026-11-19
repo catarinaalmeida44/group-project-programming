@@ -46,6 +46,16 @@ export function computersSwitch(update, race, myId) {
 }
 
 /**
+ * The player numbers of the computer karts in an update, checked: a list of
+ * whole numbers, empty when the update says nothing usable about them. The
+ * online page uses it so that someone who is watching a race is shown a
+ * person's kart, never a computer kart (race-view.js).
+ */
+export function computerIdsOf(update) {
+  return computersSwitch(update, { phase: "open", host: null }, null).shown ? [...update.computers.karts] : [];
+}
+
+/**
  * The names to show for the karts, by player number (a Map): the user names
  * of the signed-in players (net.js), and for each computer kart its
  * character's name with "(computer)". The Map given is not changed.
