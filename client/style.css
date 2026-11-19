@@ -355,6 +355,63 @@ h1 {
   font-size: 0.95rem;
 }
 
+/* The full screen button, at the right end of the numbers above the track
+   (full-screen.js). Small and quiet, so the numbers stay what is seen first. */
+.full-screen-button {
+  margin-left: auto;
+  padding: 0.15rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--navy-raised);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.full-screen-button:hover {
+  background: var(--navy-hover);
+}
+
+.full-screen-button:focus-visible {
+  outline: 2px solid var(--yellow);
+  outline-offset: 2px;
+}
+
+/* The play area on the whole screen (F or the button). The numbers stay at
+   the top, and the picture takes all the room under them: it grows until it
+   touches the edges and keeps its shape ("contain"), the rest is dark. The
+   messages and results shown on top of the picture come along. */
+.play-area:fullscreen {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 100vw;
+  height: 100vh;
+  padding: 0.6rem;
+  background: var(--navy-deep);
+}
+
+.play-area:fullscreen .hud {
+  flex: none;
+}
+
+.play-area:fullscreen .screen {
+  flex: 1;
+  min-height: 0;
+}
+
+.play-area:fullscreen canvas {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
 /* The track, with the message on top of it. */
 .screen {
   position: relative;

@@ -37,6 +37,7 @@ import { podiumLineup, podiumLoser, podiumCaption, cheersDue, finishPlace, finis
 import { formatTime } from "./format.js";
 import { chooseTrackName } from "./track-choice.js";
 import { createKeyboard } from "./keyboard.js";
+import { setUpFullScreen } from "./full-screen.js";
 import { createPainter } from "./draw.js";
 import { createHud } from "./hud.js";
 import { createPlayback, readServerMessage, bananasOf, walkersOf, statusLine, accountLine, othersLine, QUIET_AFTER_MS } from "./net.js";
@@ -414,7 +415,11 @@ const soundText = document.getElementById("sound");
 soundText.textContent = sound.isOn() ? "on" : "off";
 
 // ---- The keyboard ----
+// The game on the whole screen: the button above the track, or F (full-screen.js).
+const fullScreen = setUpFullScreen(document, document.getElementById("play-area"), document.getElementById("full-screen"));
+
 const keyboard = createKeyboard(window, {
+  onFullScreen: () => fullScreen.toggle(),
   onSound: () => {
     soundText.textContent = sound.toggle() ? "on" : "off";
   },

@@ -33,6 +33,7 @@ import { TEST_DRIVER } from "../shared/characters.js";
 import { chooseTrack, chooseTrackName } from "./track-choice.js";
 import { storeysOf } from "../shared/tracks/index.js";
 import { createKeyboard } from "./keyboard.js";
+import { setUpFullScreen } from "./full-screen.js";
 import { createPainter } from "./draw.js";
 import { introShare, startLights, spinTurnOf } from "./scene.js";
 import { lookFromChoice, readChoice } from "./kart-choice.js";
@@ -120,7 +121,11 @@ const sound = createRaceSound(window, storage);
 const soundText = document.getElementById("sound");
 soundText.textContent = sound.isOn() ? "on" : "off";
 
+// The game on the whole screen: the button above the track, or F (full-screen.js).
+const fullScreen = setUpFullScreen(document, document.getElementById("play-area"), document.getElementById("full-screen"));
+
 const keyboard = createKeyboard(window, {
+  onFullScreen: () => fullScreen.toggle(),
   onDrive: start,
   onRestart: startAgain,
   onView: changeView,
