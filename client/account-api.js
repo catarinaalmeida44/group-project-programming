@@ -164,6 +164,79 @@ export function createAccountApi(fetchFunction, { answerWithinMs = ANSWER_WITHIN
     getLeaderboard(trackName) {
       return ask("GET", `/api/leaderboard?track=${encodeURIComponent(trackName)}`);
     },
+
+    /**
+     * The signed-in player's own stats on the Nova lap, for "Your account".
+     * The address names no player: the server knows who asks from the
+     * cookie, so nobody can read someone else's.
+     * Gives { ok: false, code, message }, or:
+     *   { ok: true,
+     *     track, trackName,            the short name and the name of the track
+     *     stats: {
+     *       races, online, single,     how many races, and of each kind
+     *       wins, podiums,             finished first, and in the first three
+     *       winsBy: { online, easy, normal, hard, other },   where the wins come from
+     *       bestRaces: [{ steps, mode, level, at, character }],   the three fastest
+     *       bestLap: { steps, mode, level, at } or null,
+     *       favourite: { character, races, counted } or null,   the character driven most
+     *       lastAt,                    when the newest race was saved, or null
+     *       rank: { race, lap } or null } }   on the shared leaderboard (online races only)
+     * Times are in steps of the game, 60 to a second. "at" is a moment in
+     * milliseconds. "mode" is "online" or "single".
+     */
+    getStats() {
+      return ask("GET", "/api/stats");
+    },
+
+    /**
+     * Tells the server about a single race this browser has just run, so
+     * that it counts in the signed-in player's own stats.
+     *   result  { track, raceSteps, bestLapSteps, position, character, level }
+     *           "track" is the short name, "character" an id or null, and
+     *           "level" how good the computer karts were: easy, normal or hard
+     * The server checks that the numbers make sense, and keeps the race
+     * apart from online races: it never counts for the shared leaderboard.
+     * Gives { ok: true } or { ok: false, code, message }. Codes of its own:
+     *   invalid_result   the numbers cannot be a real race
+     *   too_soon         the last race was only just saved
+     */
+    saveSingleResult(result) {
+      return ask("POST", "/api/single-result", result);
+    },
+
+    /**
+     * The signed-in player's own saved races as a file for a spreadsheet
+     * ("Download my results"). Gives { ok: true, file }, where "file" is
+     * the file exactly as the server sent it (a "Blob", the browser's word
+     * for a piece of data that can be saved), or { ok: false, code, message }.
+     */
+    async getResultsFile() {
+      const callOff = new AbortController();
+      const tooLong = setTimeout(() => callOff.abort(), answerWithinMs);
+      try {
+        const response = await fetchFunction("/api/my-results.csv", {
+          method: "GET",
+          headers: {},
+          credentials: "same-origin",
+          signal: callOff.signal,
+        });
+        const kind = String(response.headers?.get?.("content-type") ?? "");
+        if (response.ok && kind.startsWith("text/csv")) {
+          return { ok: true, file: await response.blob() };
+        }
+        // Not a file: the server said no in our usual format, or something
+        // else answered in its place.
+        const answer = await response.json().catch(() => null);
+        if (answer !== null && typeof answer === "object" && answer.ok === false && typeof answer.message === "string") {
+          return answer;
+        }
+        return STARTING_UP_NUMBERS.includes(response.status) ? STARTING_UP : UNAVAILABLE;
+      } catch {
+        return OFFLINE;
+      } finally {
+        clearTimeout(tooLong);
+      }
+    },
   };
 }
 

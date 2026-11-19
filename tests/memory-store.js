@@ -10,8 +10,9 @@
 export function createMemoryStore() {
   let players = []; // { id, username, usernameKey, passwordHash, failedLogins, lockedUntil }
   let sessions = []; // { tokenHash, playerId, expiresAt }
-  let results = []; // { playerId, track, mode, raceSteps, bestLapSteps, position }
+  let results = []; // { playerId, track, mode, raceSteps, bestLapSteps, position, character, at, order }
   let nextId = 1;
+  let nextOrder = 1; // each saved result gets the next number, so that "newest first" is certain
 
   const visible = (player) => ({
     id: player.id,
@@ -21,10 +22,17 @@ export function createMemoryStore() {
     lockedUntil: player.lockedUntil,
   });
 
-  /** The best value of one field for each player on a track, fastest first. */
+  /**
+   * The best value of one field for each player on a track, fastest first.
+   * Only races the server ran ("online") count, as in the real store: a
+   * single race is reported by the player's own browser.
+   */
   function bestOf(field, track) {
     const best = new Map(); // player id -> steps
     for (const result of results) {
+      if (result.mode !== "online") {
+        continue;
+      }
       if (result.track === track && (!best.has(result.playerId) || result[field] < best.get(result.playerId))) {
         best.set(result.playerId, result[field]);
       }
@@ -126,8 +134,25 @@ export function createMemoryStore() {
       sessions = sessions.filter((session) => session.expiresAt > nowMs);
     },
 
-    async addResult(result) {
-      results.push({ ...result });
+    async addResult({ playerId, track, mode, raceSteps, bestLapSteps, position, character = null, level = null }) {
+      results.push({ playerId, track, mode, raceSteps, bestLapSteps, position, character, level, at: Date.now(), order: nextOrder++ });
+    },
+
+    async resultsOf(playerId, limit) {
+      return results
+        .filter((result) => result.playerId === playerId)
+        .sort((a, b) => b.at - a.at || b.order - a.order) // the newest first
+        .slice(0, limit)
+        .map(({ track, mode, raceSteps, bestLapSteps, position, character, level, at }) => ({
+          track,
+          mode,
+          raceSteps,
+          bestLapSteps,
+          position,
+          character,
+          level,
+          at,
+        }));
     },
 
     async bestRaces(track, limit) {

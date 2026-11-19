@@ -41,6 +41,15 @@
         <div class="screen">
           <canvas id="track" width="960" height="576">Your browser cannot show the game.</canvas>
           <p id="message" class="message" role="status"></p>
+          <!-- When the race is over and the podium is up: what to do next, as
+               buttons on the picture. main.js shows it. The R key still works.
+               It is inside the picture's box, so it comes along on the whole screen. -->
+          <div id="race-over" class="race-over" hidden>
+            <button type="button" id="race-again" class="button button-primary">Race again</button>
+            <a class="button" href="/">Back to menu</a>
+            <!-- Whether this race was saved for a signed-in player's stats. main.js fills it in. -->
+            <p id="race-over-note" class="race-over-note" role="status"></p>
+          </div>
         </div>
       </div>
 
@@ -54,7 +63,8 @@
       </p>
       <p class="note">
         A race on <span id="track-name">the test track</span>. It runs in your browser. Your best
-        times are kept in this browser only, and are not shared with anyone.
+        times are kept in this browser. If you are signed in, a finished race also counts in
+        your own stats (your name in the menu), but never for the shared leaderboard.
       </p>
     </main>
 

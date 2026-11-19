@@ -12,10 +12,14 @@
 //   hud.js                the lap counter, the clock and the message
 //   podium.js, podium-view.js  the podium when the race is over
 //
-// The race runs entirely in this browser. Nothing is sent to the server.
+// The race runs entirely in this browser. While it runs, nothing is sent to
+// the server. When the player finishes, the result is reported once, so
+// that it counts in a signed-in player's own stats (account-api.js,
+// saveSingleResult). The server cannot check a race it did not run, so such
+// a result never counts for the shared leaderboard.
 // The player races against computer karts, which drive by the same rules and
 // choose their own keys (utility AI, see computer-driver.js). Your
-// best times are kept in this browser only (records.js), and the camera view
+// best times are also kept in this browser (records.js), and the camera view
 // you start in comes from the menu's settings (settings.js). The track comes
 // from the address of the page (track-choice.js): race.html?track=campus-loop
 // opens the campus loop, and without a choice it is the test oval. (The
@@ -26,7 +30,7 @@ import { createPracticeRace, stepPracticeRace, placesInput, COMPUTER_KARTS } fro
 import { STEP_SECONDS } from "../shared/physics.js";
 import { currentLap, nextCheckpoint } from "../shared/laps.js";
 import { TEST_DRIVER } from "../shared/characters.js";
-import { chooseTrack } from "./track-choice.js";
+import { chooseTrack, chooseTrackName } from "./track-choice.js";
 import { storeysOf } from "../shared/tracks/index.js";
 import { createKeyboard } from "./keyboard.js";
 import { setUpFullScreen } from "./full-screen.js";
@@ -46,13 +50,16 @@ import { followTarget, easeTowards, nextView } from "./camera.js";
 import { formatTime } from "./format.js";
 import { storageOf } from "./storage.js";
 import { readSettings } from "./settings.js";
-import { recordFinishedRace } from "./records.js";
+import { recordFinishedRace, finishedRaceTimes } from "./records.js";
+import { accountApi } from "./account-api.js";
+import { singleSavedText } from "./stats-view.js";
 import { createRaceSound } from "./sound.js";
 import { tileKindAt } from "../shared/track.js";
 import { podiumLineup, podiumLoser, podiumKartsOf, singleRaceIsOver, podiumCaption, cheersDue, finishPlace, finishedWords } from "./podium.js";
 import { createPodiumView } from "./podium-view.js";
 
 const track = chooseTrack(window.location.search);
+const trackShortName = chooseTrackName(window.location.search); // such as "nova-lap": the name results are saved under
 const character = TEST_DRIVER;
 
 // ---- The parts of the page ----
@@ -67,6 +74,9 @@ const showHud = createHud(document);
 const messageBox = document.getElementById("message");
 const placeBox = document.getElementById("place-box");
 const placeText = document.getElementById("place");
+// When the race is over: "Race again" and "Back to menu", as buttons on the picture.
+const raceOverBox = document.getElementById("race-over");
+const raceOverNote = document.getElementById("race-over-note");
 
 /**
  * A number picked by chance, from which the bananas of one race grow
@@ -96,6 +106,8 @@ let record = null; //      once the race is finished: did it beat your best time
 let youFinishedAt = null; // the step of the race when the player finished, or null
 let podiumSince = null; //   when the podium came up, in milliseconds of the page's clock, or null
 let cheered = 0; //          how many times the crowd has cheered on this podium
+let raceNumber = 0; //       counts the races on this page, so a late answer about an older race is ignored
+let savedAnswer = null; //   what the server said about saving this race for the player's stats, or null
 
 // ---- The state of the camera ----
 // The colours of the character the player chose in the menu (cast-choice.js).
@@ -158,7 +170,52 @@ function startAgain() {
   youFinishedAt = null;
   podiumSince = null;
   cheered = 0;
+  raceNumber += 1;
+  savedAnswer = null;
   camera = followTarget(race.racers[0].kart, track); // jump straight back, do not glide
+}
+
+// "Race again" does what the R key does. The button gives the keyboard back
+// to the page afterwards, so that the arrow keys drive at once.
+document.getElementById("race-again").addEventListener("click", (event) => {
+  startAgain();
+  event.currentTarget.blur();
+});
+
+// Is someone signed in on this browser? Asked once, when the page opens:
+// true, false, or null while the server has not answered yet.
+let signedIn = null;
+accountApi?.getMe().then((me) => {
+  signedIn = me.signedIn === true;
+});
+
+/**
+ * Tells the server about the race the player has just finished, so that it
+ * counts in their own stats if they are signed in. For a guest nothing is
+ * sent at all. (If the server has not yet said who is signed in, the race
+ * is sent anyway: a guest then gets "not signed in" back, and nothing is
+ * said about it.) The race itself never waits for the answer.
+ */
+function reportFinish(progress) {
+  const times = finishedRaceTimes(progress.lapSteps, track.laps);
+  if (accountApi === null || times === null || signedIn === false) {
+    return;
+  }
+  const thisRace = raceNumber;
+  accountApi
+    .saveSingleResult({
+      track: trackShortName,
+      raceSteps: times.raceSteps,
+      bestLapSteps: times.lapSteps,
+      position: finishPlace(placesInput(race), 0) ?? 1,
+      character: myCharacter,
+      level: race.level, // how good the computer karts of this race were: easy, normal or hard
+    })
+    .then((answer) => {
+      if (thisRace === raceNumber) {
+        savedAnswer = answer; // the player has not started another race meanwhile
+      }
+    });
 }
 
 function changeView() {
@@ -202,6 +259,7 @@ function frame(now) {
   if (racer.progress.finished && record === null) {
     record = recordFinishedRace(storage, track, racer.progress.lapSteps);
     youFinishedAt = race.countdownSteps;
+    reportFinish(racer.progress); // for a signed-in player's own stats
   }
 
   // When every kart has finished (or the others took too long), the podium
@@ -236,7 +294,7 @@ function frame(now) {
     const kartsOfTheRace = podiumKartsOf(race, myCharacter);
     const lineup = podiumLineup(kartsOfTheRace, track);
     const loser = podiumLoser(kartsOfTheRace, track); // the driver who came last cries beside the podium
-    const caption = `${podiumCaption(lineup, formatTime)}  ·  Press R to race again`;
+    const caption = podiumCaption(lineup, formatTime); // "Race again" is a button on the picture now (race.html)
     const shownFor = (now - podiumSince) / 1000;
     podium.paint(trackCanvas.getContext("2d"), { width: trackCanvas.width, height: trackCanvas.height }, lineup, shownFor, caption, loser);
     // The crowd cheers, again and again for a while.
@@ -264,6 +322,14 @@ function frame(now) {
   // The countdown is shown as one big number in the middle of the track.
   const showingCountdown = started && countdown.label !== "" && !progress.finished;
   messageBox.classList.toggle("countdown", showingCountdown && warning === null);
+
+  // The race is over and the podium is up: the two buttons come onto the
+  // picture, with a word about the player's stats if there is one to say.
+  raceOverBox.hidden = podiumSince === null;
+  const note = singleSavedText(savedAnswer).trim();
+  if (raceOverNote.textContent !== note) {
+    raceOverNote.textContent = note;
+  }
 
   // Your place among all the karts, such as "3rd of 6" (standings.js).
   placeText.textContent = placeLine(placesInput(race), track, 0);
@@ -333,7 +399,7 @@ function messageFor(progress, countdown) {
   if (progress.finished) {
     // Your place, and then the podium is on its way: it comes when everyone has finished (podium.js).
     const place = finishPlace(placesInput(race), 0) ?? 1;
-    return `${finishedWords(place, progress.steps, formatTime)}${newBestText()}`;
+    return `${finishedWords(place, progress.steps, formatTime)}${newBestText()}${singleSavedText(savedAnswer)}`;
   }
   if (!started) {
     return "Press an arrow key to start the countdown";

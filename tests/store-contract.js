@@ -201,5 +201,89 @@ export function describeAStore(name, makeStore, timeout = 5000) {
       expect(newRui).not.toBe(null);
       expect(newRui.id).not.toBe(rui.id);
     }, timeout);
+
+    // Added on 19 November 2026, for a player's own stats: the character
+    // driven, single races, and the list of one player's own races. These
+    // use a track and players of their own, so the checks above stay as
+    // they were.
+    describe("a player's own races", () => {
+      let eva;
+      let tom;
+
+      beforeAll(async () => {
+        eva = await store.addPlayer({ username: "Eva", usernameKey: "eva", passwordHash: "h" });
+        tom = await store.addPlayer({ username: "Tom", usernameKey: "tom", passwordHash: "h" });
+        const add = (result) => store.addResult(result);
+        await add({ playerId: eva.id, track: "nova-lap", mode: "online", raceSteps: 5000, bestLapSteps: 1500, position: 2, character: "dean" });
+        await add({ playerId: eva.id, track: "nova-lap", mode: "single", raceSteps: 4000, bestLapSteps: 1200, position: 1, character: "pcp", level: "easy" });
+        await add({ playerId: eva.id, track: "test-oval", mode: "online", raceSteps: 900, bestLapSteps: 290, position: 3 }); // no character given
+        await add({ playerId: tom.id, track: "nova-lap", mode: "online", raceSteps: 4500, bestLapSteps: 1400, position: 1, character: "cici" });
+      }, timeout * 6);
+
+      it("gives one player's own races back, the newest first, with the character, the kind of race and the level", async () => {
+        const mine = await store.resultsOf(eva.id, 10);
+        expect(mine.map(({ at, ...rest }) => rest)).toEqual([
+          { track: "test-oval", mode: "online", raceSteps: 900, bestLapSteps: 290, position: 3, character: null, level: null },
+          { track: "nova-lap", mode: "single", raceSteps: 4000, bestLapSteps: 1200, position: 1, character: "pcp", level: "easy" },
+          { track: "nova-lap", mode: "online", raceSteps: 5000, bestLapSteps: 1500, position: 2, character: "dean", level: null },
+        ]);
+        for (const row of mine) {
+          // Saved a moment ago. (The database has its own clock, so allow some minutes.)
+          expect(Number.isSafeInteger(row.at)).toBe(true);
+          expect(Math.abs(row.at - Date.now())).toBeLessThan(10 * 60 * 1000);
+        }
+      }, timeout);
+
+      it("gives no more races than asked for, and none for a player who does not exist", async () => {
+        const newestTwo = await store.resultsOf(eva.id, 2);
+        expect(newestTwo.map((row) => row.raceSteps)).toEqual([900, 4000]);
+        expect(await store.resultsOf(999999, 10)).toEqual([]);
+      }, timeout);
+
+      it("never gives one player the races of another", async () => {
+        const toms = await store.resultsOf(tom.id, 10);
+        expect(toms.map((row) => row.character)).toEqual(["cici"]);
+      }, timeout);
+
+      it("never counts a single race for the leaderboard, however fast it was", async () => {
+        // Eva's single race (4000) is faster than her online one (5000) and than Tom's (4500).
+        expect(await store.bestRaces("nova-lap", 10)).toEqual([
+          { username: "Tom", steps: 4500 },
+          { username: "Eva", steps: 5000 },
+        ]);
+        expect(await store.bestLaps("nova-lap", 10)).toEqual([
+          { username: "Tom", steps: 1400 },
+          { username: "Eva", steps: 1500 },
+        ]);
+        expect(await store.myBest("nova-lap", eva.id)).toEqual({
+          race: { steps: 5000, rank: 2 },
+          lap: { steps: 1500, rank: 2 },
+        });
+      }, timeout);
+
+      it("leaves a player with single races only off the leaderboard altogether", async () => {
+        const sol = await store.addPlayer({ username: "Sol", usernameKey: "sol", passwordHash: "h" });
+        await store.addResult({ playerId: sol.id, track: "nova-lap", mode: "single", raceSteps: 100, bestLapSteps: 30, position: 1, character: "ro" });
+        expect((await store.bestRaces("nova-lap", 10)).map((row) => row.username)).toEqual(["Tom", "Eva"]);
+        expect(await store.myBest("nova-lap", sol.id)).toEqual({ race: null, lap: null });
+        expect(await store.resultsOf(sol.id, 10)).toHaveLength(1); // but it is in their own list
+        await store.deletePlayer(sol.id);
+      }, timeout);
+
+      it("keeps a character name that looks like a database command as plain text", async () => {
+        const nasty = "x'); DROP TABLE race_results; --";
+        await store.addResult({ playerId: tom.id, track: "nova-lap", mode: "single", raceSteps: 7000, bestLapSteps: 2000, position: 4, character: nasty });
+        expect((await store.resultsOf(tom.id, 1))[0].character).toBe(nasty);
+        expect(await store.resultsOf(eva.id, 10)).toHaveLength(3); // everything is still there
+      }, timeout);
+
+      it("takes a deleted player's own races away, and nobody else's", async () => {
+        await store.deletePlayer(eva.id);
+        expect(await store.resultsOf(eva.id, 10)).toEqual([]);
+        expect(await store.resultsOf(tom.id, 10)).toHaveLength(2);
+        await store.deletePlayer(tom.id);
+        expect(await store.bestRaces("nova-lap", 10)).toEqual([]);
+      }, timeout);
+    });
   });
 }

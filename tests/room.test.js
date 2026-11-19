@@ -302,8 +302,12 @@ describe("the update a room sends to browsers", () => {
     expect(JSON.parse(JSON.stringify(update))).toEqual(update);
   });
 
-  it("is sent every third step, which is 20 times a second", () => {
-    expect(60 / STEPS_PER_UPDATE).toBe(20);
+  // Changed on 19 November 2026, because the rule changed (asked for by
+  // Catarina, to shorten the wait between a key press and the picture
+  // online). Until then this test was called "is sent every third step,
+  // which is 20 times a second" and expected 20.
+  it("is sent every second step, which is 30 times a second", () => {
+    expect(60 / STEPS_PER_UPDATE).toBe(30);
   });
 });
 

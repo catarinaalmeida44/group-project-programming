@@ -2,9 +2,10 @@
 //
 // The driving rules do not know about keyboards. They only want four
 // yes-or-no answers: gas, brake, left, right. This file turns the arrow
-// keys into those four answers. It also listens for five other keys:
+// keys into those four answers. It also listens for six other keys:
 // R (start again), V (change the camera view), M (sound off or on), F (full
-// screen on or off) and Enter (online: start a race).
+// screen on or off), L (online: the connection meter on or off) and Enter
+// (online: start a race).
 
 const DRIVING_KEYS = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
 
@@ -28,6 +29,8 @@ const doNothing = () => {};
  *     onView     V was pressed
  *     onSound    M was pressed: switch the sound off or on
  *     onFullScreen  F was pressed: the game on the whole screen, or back
+ *     onMeter    L was pressed. The online page uses it to show or hide
+ *                its connection meter ("L" as in lag)
  *     onStart    Enter was pressed. The online page uses it to ask the
  *                server for a race start
  *     onDrive    a driving key went down. The game uses it to start the
@@ -44,6 +47,7 @@ export function createKeyboard(target, actions = {}) {
     onStart = doNothing,
     onSound = doNothing,
     onFullScreen = doNothing,
+    onMeter = doNothing,
   } = actions;
   const heldKeys = new Set();
 
@@ -69,6 +73,8 @@ export function createKeyboard(target, actions = {}) {
       onSound();
     } else if (letter === "f" && !event.ctrlKey && !event.metaKey && !event.altKey) {
       onFullScreen(); // not Ctrl+F or Cmd+F: that is the browser's "find on this page"
+    } else if (letter === "l" && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      onMeter(); // not Ctrl+L or Cmd+L: that puts the keyboard in the browser's address bar
     } else if (event.key === "Enter") {
       onStart();
     }

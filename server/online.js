@@ -15,7 +15,7 @@
 //                       character, or computer karts on or off (see messages.js)
 //   server -> browser   "welcome" with your player number, then the state
 //                       of all karts, of the race and of the bananas on the
-//                       road 20 times a second.
+//                       road 30 times a second.
 //                       Also "account" (who you are signed in as, if anyone),
 //                       "names" (the user names of the signed-in players in
 //                       the room), "saved" (your finished race was written
@@ -457,13 +457,17 @@ export function attachOnlinePlay(
         return;
       }
       const { position, raceSteps, bestLapSteps } = finish;
+      // Which character they drove, for their own stats ("most played
+      // character"). Read now: by the time the database answers, they may
+      // have left the room.
+      const character = cast.characterOf(finish.id) ?? null;
       seat.account
         .then((account) => {
           if (account === null) {
             return; // a guest: nothing to save
           }
           return accounts
-            .saveResult({ playerId: account.id, track: shortName, raceSteps, bestLapSteps, position })
+            .saveResult({ playerId: account.id, track: shortName, raceSteps, bestLapSteps, position, character })
             .then((saved) => tell(seat.connection, { type: "saved", saved, position, raceSteps, bestLapSteps }));
         })
         .catch((error) => {

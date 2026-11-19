@@ -8,6 +8,7 @@
 //   kart-panel.js         then choosing your character, before the race
 //   leaderboard-panel.js  Leaderboard
 //   account-panel.js      the account corner, and signing in and out
+//   stats-panel.js        "My stats", at the top of "Your account"
 //
 // Two of them talk to the server, through "accountApi" (account-api.js).
 // They get it handed in here instead of fetching it themselves. That is what
@@ -21,6 +22,7 @@ import { connectCharacterChoice } from "./kart-panel.js";
 import { connectTrackChoice } from "./track-panel.js";
 import { connectLeaderboard } from "./leaderboard-panel.js";
 import { connectAccount } from "./account-panel.js";
+import { connectStats } from "./stats-panel.js";
 
 const storage = storageOf(window); // this browser's storage, for the settings and the best times
 
@@ -30,6 +32,15 @@ const characters = connectCharacterChoice(document, storage);
 connectTrackChoice(document, TRACKS, storage, characters);
 const leaderboard = connectLeaderboard(document, { api: accountApi, storage, tracks: TRACKS });
 
-// The leaderboard marks the signed-in player's own row, so it is told each
-// time someone signs in or out.
-connectAccount(document, { api: accountApi, onChange: leaderboard.setPlayer });
+// "My stats", at the top of the "Your account" panel (stats-panel.js).
+const stats = connectStats(document, { api: accountApi, storage });
+
+// The leaderboard marks the signed-in player's own row, and the stats card
+// shows the player's name, so both are told each time someone signs in or out.
+connectAccount(document, {
+  api: accountApi,
+  onChange: (me) => {
+    leaderboard.setPlayer(me);
+    stats.setPlayer(me);
+  },
+});

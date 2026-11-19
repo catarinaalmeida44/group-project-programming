@@ -9,6 +9,9 @@
 //   POST /api/change-password change the signed-in player's password
 //   POST /api/delete-account  delete the signed-in player's account
 //   GET  /api/leaderboard     the shared leaderboard of one track (?track=campus-loop)
+//   GET  /api/stats           the signed-in player's own stats on the Nova lap
+//   POST /api/single-result   a single race the browser ran, for those stats
+//   GET  /api/my-results.csv  the signed-in player's own races, as a file for a spreadsheet
 //
 // This file is about the internet side: reading what a browser sent,
 // refusing what is not allowed, setting the cookie, choosing the status
@@ -23,9 +26,20 @@
 
 import { TRACKS } from "../shared/tracks/index.js";
 import { SESSION_DAYS } from "./accounts.js";
+import { resultsAsCsv } from "./stats.js";
 
 /** The name of the cookie that holds the "you are signed in" ticket. */
 export const SESSION_COOKIE = "session";
+
+/**
+ * The track a player's stats are about: the Nova lap, the one track of the
+ * finished game (Catarina, 19 November 2026). Races on other tracks are
+ * still saved, and are in the file of "Download my results".
+ */
+export const STATS_TRACK = "nova-lap";
+
+/** The name the browser gives the downloaded file. */
+export const RESULTS_FILE_NAME = "nova-kart-my-results.csv";
 
 /** A sign-up or sign-in message is two short texts. Anything longer than this is refused unread. */
 export const BODY_LIMIT_BYTES = 2048;
@@ -47,6 +61,9 @@ export const TRIES_PER_MINUTE = {
   "/api/logout": 30,
   "/api/me": 300,
   "/api/leaderboard": 300,
+  "/api/stats": 120,
+  "/api/single-result": 30,
+  "/api/my-results.csv": 30,
 };
 
 /**
@@ -79,7 +96,11 @@ const STATUS_FOR = {
   wrong_login: 401,
   not_signed_in: 401,
   locked: 429,
+  invalid_result: 400,
+  too_soon: 429,
 };
+
+const NOT_SIGNED_IN = { ok: false, code: "not_signed_in", message: "You are not signed in." };
 
 /**
  * Makes the handler for /api/ addresses.
@@ -231,6 +252,69 @@ export function createApi({ accounts = null, now = Date.now } = {}) {
         const player = await accounts.playerForSession(ticketOf(request));
         const { races, laps, mine } = await accounts.leaderboard(track, player === null ? null : player.id);
         sendJson(response, 200, { ok: true, track, races, laps, mine });
+      },
+    },
+
+    "/api/stats": {
+      method: "GET",
+      async run({ request, response }) {
+        // Whose stats? Only ever those of the player the ticket belongs to.
+        // The address takes no name and no number, so nobody can ask for
+        // someone else's.
+        const player = await accounts.playerForSession(ticketOf(request));
+        if (player === null) {
+          return sendRefusal(response, NOT_SIGNED_IN);
+        }
+        const stats = await accounts.statsOf(player.id, STATS_TRACK);
+        sendJson(response, 200, { ok: true, track: STATS_TRACK, trackName: TRACKS[STATS_TRACK].name, stats });
+      },
+    },
+
+    "/api/single-result": {
+      method: "POST",
+      async run({ request, response, body }) {
+        // Whose race? Only ever the signed-in player's own. The message
+        // holds the race, never a player: nobody can save a race for
+        // someone else. accounts.js decides whether the numbers make sense.
+        const player = await accounts.playerForSession(ticketOf(request));
+        if (player === null) {
+          return sendRefusal(response, NOT_SIGNED_IN);
+        }
+        const answer = await accounts.saveSingleResult({
+          playerId: player.id,
+          track: body.track,
+          raceSteps: body.raceSteps,
+          bestLapSteps: body.bestLapSteps,
+          position: body.position,
+          character: body.character ?? null,
+          level: body.level ?? null,
+        });
+        if (!answer.ok) {
+          return sendRefusal(response, answer);
+        }
+        sendJson(response, 201, { ok: true });
+      },
+    },
+
+    "/api/my-results.csv": {
+      method: "GET",
+      async run({ request, response }) {
+        const player = await accounts.playerForSession(ticketOf(request));
+        if (player === null) {
+          return sendRefusal(response, NOT_SIGNED_IN);
+        }
+        const rows = await accounts.resultsOf(player.id);
+        const trackNames = Object.fromEntries(Object.entries(TRACKS).map(([shortName, track]) => [shortName, track.name]));
+        response.writeHead(200, {
+          "Content-Type": "text/csv; charset=utf-8",
+          // "attachment" tells the browser to save this as a file instead of showing it.
+          "Content-Disposition": `attachment; filename="${RESULTS_FILE_NAME}"`,
+          "X-Content-Type-Options": "nosniff",
+          "Cache-Control": "no-store",
+        });
+        // "﻿" is an invisible mark at the very start that tells Excel
+        // the file is written in UTF-8, so that a name like "Ró" stays "Ró".
+        response.end(`﻿${resultsAsCsv(rows, trackNames)}`);
       },
     },
   };

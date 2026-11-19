@@ -81,8 +81,14 @@ export const MAX_PLAYERS = Math.min(CAST.length, GRID_PLACES);
 /** A player who has pressed no key for this many steps counts as away from the keyboard: one minute. */
 export const AWAY_AFTER_STEPS = 60 * 60;
 
-/** The server sends everyone an update once every this many steps: 60 / 3 = 20 times a second. */
-export const STEPS_PER_UPDATE = 3;
+/**
+ * The server sends everyone an update once every this many steps: 60 / 2 =
+ * 30 times a second. Until 19 November 2026 it was every third step, 20
+ * times a second. With news arriving more often, the online page can draw
+ * the race less far in the past (client/net.js), so a key press shows on
+ * the screen sooner. The price is half as many messages again.
+ */
+export const STEPS_PER_UPDATE = 2;
 
 // The two time limits of a race: two minutes after the first finish, ten
 // minutes after GO. They live in shared/race-time.js, because the page

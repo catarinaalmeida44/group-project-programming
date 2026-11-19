@@ -189,15 +189,19 @@ describe("connecting", () => {
     expect(browser.first.type).toBe("welcome");
   });
 
-  it("sends updates about 20 times a second", async () => {
+  // Changed on 19 November 2026, because the rule changed (30 updates a
+  // second instead of 20, see STEPS_PER_UPDATE in server/room.js). Until then
+  // this test was called "sends updates about 20 times a second" and
+  // expected from 5 to 15 in half a second.
+  it("sends updates about 30 times a second", async () => {
     const browser = await connect();
     await browser.next(stateWith(1));
     let updates = 0;
     browser.socket.on("message", () => updates++);
     await pause(500);
-    // Half a second should bring about 10. Allow plenty of slack for a busy computer.
-    expect(updates).toBeGreaterThanOrEqual(5);
-    expect(updates).toBeLessThanOrEqual(15);
+    // Half a second should bring about 15. Allow plenty of slack for a busy computer.
+    expect(updates).toBeGreaterThanOrEqual(8);
+    expect(updates).toBeLessThanOrEqual(22);
   });
 });
 

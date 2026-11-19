@@ -5,11 +5,13 @@ Our game server: the program that runs on Render. It sends the game's files to t
 | File | What it does |
 |---|---|
 | `app.js` | Builds the web server and decides what to answer for each request. It sends files from the `client/` folder and, under addresses that start with `/shared/`, from the `shared/` folder. It answers `/health` with "I am alive", hands addresses that start with `/api/` to `api.js`, and refuses everything else. With every answer it tells the browser to run only our own scripts and styles |
-| `api.js` | The addresses a page uses for accounts and the leaderboard: sign up, sign in, sign out, "who am I", change my password, delete my account, and the leaderboard of a track. It reads what a browser sent, refuses what is not allowed, and sets the cookie |
-| `accounts.js` | The rules for accounts: who may sign in, when an account is locked, how long a sign-in lasts, which results may be saved, what the leaderboard shows. Knows nothing about the internet or about database questions, which makes it easy to test |
+| `api.js` | The addresses a page uses for accounts and the leaderboard: sign up, sign in, sign out, "who am I", change my password, delete my account, the leaderboard of a track, and for the signed-in player only: their own stats, saving a single race, and the file of their results. It reads what a browser sent, refuses what is not allowed, and sets the cookie |
+| `accounts.js` | The rules for accounts: who may sign in, when an account is locked, how long a sign-in lasts, which results may be saved (online ones from the server itself, single ones from a browser only if they could be real and not too soon after the last), what the leaderboard shows, and a player's own stats. Knows nothing about the internet or about database questions, which makes it easy to test |
+| `stats.js` | A player's own stats, worked out from the list of their saved races: how many, wins, podiums, the three best times, the best lap, the character driven most. Also writes that list out as a ".csv" file for a spreadsheet. Plain lists in, plain answers out |
+| `single-results.js` | Is a single race that a browser reports one that could have been driven? A real track, sensible numbers, a best lap that fits the race, a place a race has, a character of the cast, a level the computer karts have (easy, normal or hard), and no faster than all laps at twice top speed |
 | `passwords.js` | Scrambles passwords so they are never kept in a readable form, and checks a password against its scrambled form |
 | `store.js` | Every question the game asks the database about players, sessions and race results |
-| `online.js` | Online play. Keeps a live connection open to every browser on the online page, passes the keys they hold to the room, sends everyone the state of all karts and bananas 20 times a second, and saves the result when a signed-in player finishes a race. Fills a race with computer karts when the host starts it, unless the host switched them off, and says in every update whether they are on and which karts they are (`computers`). One room for each track. Gives every room real chance to pick the seeds of its bananas with |
+| `online.js` | Online play. Keeps a live connection open to every browser on the online page, passes the keys they hold to the room, sends everyone the state of all karts and bananas 30 times a second, and saves the result when a signed-in player finishes a race. Fills a race with computer karts when the host starts it, unless the host switched them off, and says in every update whether they are on and which karts they are (`computers`). One room for each track. Gives every room real chance to pick the seeds of its bananas with |
 | `room.js` | The karts of everyone driving together, and the race: who the host is, the countdown, who is racing, who is watching, and who finished in which position. Moves the karts with the shared rules, 60 steps a second: it puts them on the starting grid, lets them bump into each other, and looks after the bananas of a race. On a track with ramps and walkers (`shared/ramps.js`, `shared/walkers.js`) it also keeps the walkers of the race: they stand still until GO, are put back at every start, and the room works out who topples one. Its update then has `walkers` (each one's own clock `time`, and `down`, the steps it still sits on the ground), and a kart has `air` and `boost` while it is in the air or has extra speed after a ramp (left out when 0). No message from a browser can move or topple a walker or make a kart jump. Knows nothing about the internet, which makes it easy to test |
 | `messages.js` | Checks every message a browser sends before the game looks at it: keys, restart, start, the colours of its kart, the character it wants to be, and computer karts on or off (only an exact true or false) |
 | `computer-players.js` | Computer karts in an online room. When the host starts a race, it adds one player to the room for each character nobody is, up to 6 karts, and every step presses their keys with the brain of `shared/computer-driver.js`. To the room they are ordinary players, so `room.js` did not change. Also says when they must leave: no person left, no person racing, or one of them would be the host. Knows nothing about the internet |
@@ -43,7 +45,13 @@ Why the `shared/` folder is sent to browsers too: it holds the game rules, and t
 
 For each track: the ten fastest whole races and the ten fastest single laps, one row per player, and the signed-in player's own best and rank. It shows user names and times and nothing else.
 
-A time gets there in one way only. When a signed-in player finishes an online race that began with the countdown, `online.js` takes the time from the room and writes it to the database. The server ran that race itself. There is no address and no message through which a browser could send a time.
+A time gets there in one way only. When a signed-in player finishes an online race that began with the countdown, `online.js` takes the time from the room and writes it to the database. The server ran that race itself. There is no address and no message through which a browser could send a time for it.
+
+## A player's own stats
+
+Since 19 November 2026. `/api/stats` gives the signed-in player their numbers on the Nova lap, and `/api/my-results.csv` their saved races on every track as a file. Neither address takes a name or a number: the cookie says who is asking, so nobody can read someone else's.
+
+Single races count here too. A single race runs in the player's own browser, which reports it afterwards to `/api/single-result`. The server cannot check a race it did not run, so it saves such a race as "single", shows it only to that player, and leaves it out of both leaderboard questions in `store.js`. Before saving it checks that the numbers could be real (`single-results.js`) and that as much time has passed since the player's last single race as the reported one took. What a browser can still fake is a believable time it did not drive, which only changes what that one player sees about themselves.
 
 ## Who decides what, online
 
@@ -53,7 +61,7 @@ The same goes for what happens between karts and on the road. The server decides
 
 ## What a browser is told
 
-Twenty times a second, every browser in a room gets one update (`snapshot()` in `room.js`):
+Thirty times a second (twenty until 19 November 2026), every browser in a room gets one update (`snapshot()` in `room.js`):
 
 - `karts`: for each kart on the track its player number, grid place, position, direction, speed, laps, clock, whether it has finished, `spin`, the number of steps it will still spin (0 when it is not spinning), and `passed`, its count of checkpoints, from which the page shows who is in front and which checkpoint comes next
 - `race`: the phase (`open`, `countdown`, `racing` or `finished`), how far the countdown is, who the host is and who is watching
@@ -82,7 +90,9 @@ For accounts and the leaderboard:
 - a request to change something that was started by a page on another website, or that is not in our format, or is longer than a couple of lines
 - more tries in a minute than a classroom would make: per computer, and for the slow password work also in total
 - a track that does not exist
-- any attempt to send in a result: there is nowhere to send it
+- any attempt to send in an online result: there is nowhere to send it
+- reading stats or the file of results without being signed in, and anyone's but your own: the addresses take no name
+- a reported single race that cannot be real, one sent too soon after the last, one for another player, and one that calls itself "online" (`tests/my-stats.test.js`, `tests/single-results.test.js`)
 
 For online play:
 
