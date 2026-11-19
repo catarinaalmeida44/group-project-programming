@@ -2,6 +2,41 @@
 
 Rodrigo Simeão Versos (GitHub rodrigosversos). Entries from 11 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 19 November 2026: full screen
+
+**What was done**
+Both race pages (single race and online) can now be played on the whole screen: a **Full screen** button at the right end of the numbers above the track, or the **F** key. **Esc** or F again goes back. The numbers (lap, time, place) stay at the top, and the picture grows until it touches the edges of the screen, keeping its shape. Branch `rodrigo-full-screen`, from `main` after my online computer karts (#31) were merged.
+
+| File | What changed |
+|---|---|
+| `client/full-screen.js` | New. Asks the browser for full screen, or to leave it, and keeps the button's words right |
+| `client/keyboard.js` | The F key (not with Ctrl, Cmd or Alt) |
+| `client/race.html`, `client/online.html` | A "play area" around the numbers and the picture (what goes on the whole screen), the button, and F in the help line |
+| `client/style.css` | The button, and how the play area looks on the whole screen |
+| `client/main.js`, `client/online.js` | Set up the button and the F key |
+| `tests/full-screen.test.js` | New. 14 tests |
+| `WALKTHROUGH.md`, `PROJECT_BRIEF.md`, the READMEs | Kept true |
+
+**Why it was done this way**
+- **The browser's own full screen** (the "Fullscreen API"): the same thing a video player uses. Nothing to install.
+- **The picture is enlarged, not redrawn** (my choice): quick and safe, and the drawing code did not change. The price: on a big screen it is a little soft.
+- **The numbers come along**, so lap, time and place can still be seen. Messages and results on top of the picture come along too.
+- **Ctrl+F is left alone**, because it is how a browser searches a page.
+
+**Decisions**
+- Mine: full screen on both pages; enlarge rather than redraw; build it and ask Catarina to review, rather than ask her first.
+- Decision made by the agent, please confirm: the button's place (right end of the numbers) and words ("Full screen" / "Leave full screen"); the F key; the help lines and the online status lines are not shown in full screen.
+- Decision made by the agent, please confirm, and tell the owner: `client/race.html`, `client/online.html`, `client/style.css`, `client/keyboard.js`, `client/main.js` and `client/online.js` changed. They are Catarina's area.
+
+**What was checked, and what was not**
+- `npm test`: 2,126 passed, 5 skipped (14 new tests).
+- The new code was broken on purpose in 8 ways. 7 made a test fail at once. "The button is shown where full screen cannot be used" did not: my pretend button already started hidden. The test was made strict and then failed.
+- In Chrome without a screen, 1600 by 900, on both pages: F put the play area on the whole screen and the picture grew from 928 by 557 to 1581 by 829; F again and the button switched back and forth; the button's words followed; no page errors.
+- **Not checked:** a real laptop screen and Esc pressed by a person (the test browser has no person to press it); Safari and Firefox; a phone.
+
+**How to check it yourself**
+Run `npm start`, open http://localhost:3000, choose Single race. Press **F**: the game fills the screen. Drive a bit, press **Esc**: back to the page. Click **Full screen** at the right of the numbers: the same. Do it on the Online page too.
+
 ### 18 November 2026: computer karts online, and a mood for each race
 
 **What was done**
