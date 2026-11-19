@@ -3162,18 +3162,6 @@ a.button {
   }
 }
 
-/* Some players ask their computer for less motion, because moving pictures
-   make them unwell. For them nothing moves: the karts stand on the road,
-   the sea is still, and panels and buttons change at once. */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation: none !important;
-    transition: none !important;
-  }
-}
-
 /* ---------------------------------------------------------------------------
    Game settings (game-settings-card.js): the card that comes up over the
    picture before a race, on the three race pages, and the small label in the
@@ -3214,12 +3202,6 @@ a.button {
   from {
     opacity: 0;
     transform: translateY(14px) scale(0.97);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .settings-card {
-    animation: none;
   }
 }
 
@@ -3580,4 +3562,16 @@ a.button {
 .tile-double .tile-icon {
   background: #1f9e8f;
   color: #fff;
+}
+
+/* Some players ask their computer for less motion, because moving pictures
+   make them unwell. For them nothing moves: the karts stand on the road,
+   the sea is still, and panels and buttons change at once. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }
