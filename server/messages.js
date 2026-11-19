@@ -2,7 +2,7 @@
 //
 // Anyone on the internet can send our server anything, not only the text
 // our own page sends. So every message is checked here before the game
-// looks at it. A browser may say exactly six things:
+// looks at it. A browser may say exactly seven things:
 //
 //   {"type":"keys","gas":true,"brake":false,"left":false,"right":true}
 //       "these are the driving keys I am holding now"
@@ -23,12 +23,18 @@
 //       "fill the empty places with computer karts from the next race on"
 //       (true), or "do not" (false). Any browser may say it, but only the
 //       host is obeyed, and only while no race is on (see online.js).
+//   {"type":"settings","computers":true,"level":"hard","most":4}
+//       "these are the game settings for this room": computer karts or not,
+//       how good they are, and at most how many people (shared/game-settings.js).
+//       All three must be there and be exactly right. Again any browser may
+//       say it, and only the host is obeyed, while no race is on.
 //
 // A browser never says where its kart is, how fast it goes or which lap it
 // is on. The server works those out itself, with the shared rules.
 
 import { cleanLookChoice } from "../shared/kart-looks.js";
 import { isCharacterId } from "../shared/cast.js";
+import { cleanGameSettings } from "../shared/game-settings.js";
 
 /** A real message is far shorter than this. Anything longer is refused unread. */
 export const MAX_MESSAGE_LENGTH = 200;
@@ -36,8 +42,9 @@ export const MAX_MESSAGE_LENGTH = 200;
 /**
  * Checks one message from a browser.
  * Gives { type: "keys", keys }, { type: "restart" }, { type: "start" } or
- * { type: "look", look }, { type: "character", character } or { type: "computers", on },
- * or null if the message is not one of the six
+ * { type: "look", look }, { type: "character", character }, { type: "computers", on }
+ * or { type: "settings", settings },
+ * or null if the message is not one of the seven
  * things a browser may say.
  * What it gives back is built fresh from the checked parts only, so
  * anything extra a browser added to its message is dropped.
@@ -80,6 +87,13 @@ export function readClientMessage(text) {
   if (message.type === "computers") {
     // Only an exact true or false gets through.
     return typeof message.on === "boolean" ? { type: "computers", on: message.on } : null;
+  }
+
+  if (message.type === "settings") {
+    // Only a true or false, one of the three levels and a whole number of
+    // people in the range get through, and only all three together.
+    const settings = cleanGameSettings(message);
+    return settings === null ? null : { type: "settings", settings };
   }
 
   if (message.type === "keys") {

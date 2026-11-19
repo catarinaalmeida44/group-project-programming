@@ -19,7 +19,7 @@
 // without any network.
 
 import { CAST } from "../shared/cast.js";
-import { createComputerDriver, decide, personalityOf, moodFor } from "../shared/computer-driver.js";
+import { createComputerDriver, decide, personalityOf, moodFor, atLevel, isLevel, DEFAULT_LEVEL } from "../shared/computer-driver.js";
 import { walkerSpots } from "../shared/walkers.js";
 
 /** How many karts a race has once computer karts fill it: one for each character. */
@@ -59,10 +59,16 @@ export function createComputerPlayers(track, line, character) {
      * "seed" is a random number for this race: each computer kart drives in a
      * mood picked from it (computer-driver.js). null: no mood, each drives
      * exactly as its personality.
+     * "level" is how good they are in this race: "easy", "normal" (as they
+     * always drove, and what they are when it is left out) or "hard". The
+     * host chooses it in the game settings (shared/game-settings.js).
      */
-    fill(room, cast, total = KARTS_IN_A_FULL_RACE, seed = null) {
+    fill(room, cast, total = KARTS_IN_A_FULL_RACE, seed = null, level = DEFAULT_LEVEL) {
       if (!Number.isInteger(total) || total < 0) {
         throw new RangeError("fill: the number of karts must be a whole number from 0 up");
+      }
+      if (!isLevel(level)) {
+        throw new RangeError("fill: the level must be easy, normal or hard");
       }
       let added = 0;
       while (knowsTheWay && room.playerCount() < total) {
@@ -77,7 +83,9 @@ export function createComputerPlayers(track, line, character) {
         }
         room.setLook(player.id, given.look);
         const personality = personalityOf(given.id);
-        drivers.set(player.id, { ...createComputerDriver(personality, moodFor(personality, seed, given.id)), character: given });
+        // Its mood of the day, moved up or down by the level, exactly as in a single race (shared/practice-race.js).
+        const mood = atLevel(moodFor(personality, seed, given.id), level);
+        drivers.set(player.id, { ...createComputerDriver(personality, mood), character: given });
         added++;
       }
       return added;
