@@ -30,6 +30,7 @@ import { chooseTrack } from "./track-choice.js";
 import { storeysOf } from "../shared/tracks/index.js";
 import { createKeyboard } from "./keyboard.js";
 import { setUpFullScreen } from "./full-screen.js";
+import { readLevel, saveLevel, levelButtons } from "./difficulty.js";
 import { createPainter } from "./draw.js";
 import { introShare, startLights, spinTurnOf } from "./scene.js";
 import { lookFromChoice, readChoice } from "./kart-choice.js";
@@ -86,6 +87,7 @@ const missedCheckpoint = watchForMissedCheckpoint(track);
 // ---- The state of the race ----
 const storage = storageOf(window); // this browser's storage, for the settings and the best times
 const myCharacter = readCharacter(storage)?.id ?? null; // the character chosen in the menu, or null (cast-choice.js)
+let level = readLevel(storage); // how good the computer karts are: easy, normal or hard (difficulty.js)
 let race = newRace(); // the racers (the player is racers[0]), the computer drivers, the countdown and the bananas
 let started = false; //    the countdown starts at the first key press
 let lastFrameTime = null;
@@ -108,6 +110,28 @@ let camera = followTarget(race.racers[0].kart, track); // the spot in the middle
 const sound = createRaceSound(window, storage);
 const soundText = document.getElementById("sound");
 soundText.textContent = sound.isOn() ? "on" : "off";
+
+// ---- The level of the computer karts: three buttons above the track (difficulty.js) ----
+const levelBox = document.getElementById("level-box");
+
+/** Shows which level is in use: that button is pressed. */
+function showLevel() {
+  for (const { level: each, pressed } of levelButtons(level)) {
+    levelBox.querySelector(`[data-level="${each}"]`).setAttribute("aria-pressed", String(pressed));
+  }
+}
+
+for (const button of levelBox.querySelectorAll("button")) {
+  button.addEventListener("click", () => {
+    level = button.dataset.level;
+    saveLevel(storage, level); // remembered for next time
+    showLevel();
+    startAgain(); // a new race at this level, as with R
+    button.blur(); // so the arrow keys and Space go back to driving
+  });
+}
+showLevel();
+levelBox.hidden = race.drivers.length === 0; // no computer karts on this track: nothing to choose
 
 // The game on the whole screen: the button above the track, or F (full-screen.js).
 const fullScreen = setUpFullScreen(document, document.getElementById("play-area"), document.getElementById("full-screen"));
@@ -290,7 +314,7 @@ function sceneFor(countdownSteps, hasStarted) {
 
 /** A new race, before the countdown. The computer karts are the characters the player did not choose. */
 function newRace() {
-  return createPracticeRace(track, newSeed(), line, COMPUTER_KARTS, myCharacter);
+  return createPracticeRace(track, newSeed(), line, COMPUTER_KARTS, myCharacter, level);
 }
 
 /** The computer karts as they are drawn: in their character's colours, turning while they spin. */
