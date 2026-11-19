@@ -4,6 +4,60 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 19 November 2026, afternoon: a room of six, a job that keeps the server awake, and the driver who cries
+
+**What she said**
+
+- Cap the online room at six players, "because we only have 6 characters anyway".
+- Yes to the small GitHub file that keeps the site awake.
+- The driver who came last cries beside the podium. Her answers to the three open points: "last" is the last line of the results, finished or not; it is also in the single race against the computer karts; and it is fine if the one crying is the Dean or the professor.
+- Show the banner for watching, and the podium with the character crying.
+
+**What was built**
+
+| What | Where |
+|---|---|
+| A room takes six players, one for each character, and never more than the grid has places. A seventh is told "The room is full" | `MAX_PLAYERS` in `server/room.js`, the words in `client/link.js` |
+| A job on GitHub opens the live server's `/health` every five minutes, so the server does not fall asleep. It needs nothing from the repository and can change nothing in it | `.github/workflows/keep-awake.yml` |
+| Who cries: with four or more karts, the driver on the last line of the results, finished or not. With five karts the fourth is neither on the podium nor crying. With three or fewer, nobody | `podiumLoser()` and `CRY_FROM_KARTS` in `client/podium.js` |
+| The pose: both fists at the eyes, rubbing, elbows out, shoulders shaking in bursts, bent forwards a little, the head rocking slowly. Not a dance: nobody can choose it | `cryingPose()` in `client/pilot-shape.js` |
+| The figure: the same pilot as on the podium, with their own head (or a helmet for a kart that is no character), and five blue tears from each eye flying out like a little fountain. It stands on the floor beside the step of third place, between the podium and the students at the side | `cryingDriver()`, `tearParts()`, `LOSER_SPOT` in `client/podium-shape.js` |
+| Both race pages work out who came last and hand them to the podium, on the Nova lap and in the hall of the other tracks | `client/podium-view.js`, `client/online.js`, `client/main.js` |
+
+**Four existing tests were changed, because the rule changed (a room of six)**
+
+They are not Catarina's alone: whoever wrote them should know, and say if they disagree. Each has a comment in its file that says what it said before.
+
+| Test | It said | It says now |
+|---|---|---|
+| `tests/room.test.js`, "holds eight players unless told otherwise" | `MAX_PLAYERS` is 8 | "holds six players unless told otherwise: one for each character": it is 6, and the number of characters |
+| `tests/grid.test.js`, "has eight places, one for each player a room can hold" | the grid has 8 places and a room takes exactly as many | "has eight places, enough for every player a room can hold": the grid still has 8, and a room takes no more than that |
+| `tests/room-bananas.test.js`, "ends for a full room of eight robots too" | a race with 8 robots ends, with 8 finishes | "ends for a full room of robots too (six)": the same with a full room, which is now 6 |
+| `tests/bumps.test.js`, "never leave a kart in a wall ... when eight karts race for the same corner" | made its room with `roomWith(8)` | still races eight karts, one on every place of the grid, in a room made for eight on purpose (`roomWith(8, TEST_OVAL, 8)`), because eight jam a corner worse than six |
+
+**For Pedro: his podium files were touched**
+
+`client/podium.js`, `client/podium-shape.js` and `client/podium-view.js` are his (pull request 28). Nothing of his was removed. Added: the driver who cries. Moved without changing what it does: the lines that give a driver their own head or a helmet (now `withTheirOwnHead()`), and the lines that turn a kart into a driver (now `driverOf()`), so both the podium and the crying driver use them. All his tests in `tests/podium.test.js` pass as they were.
+
+**Decisions made by the agent: please confirm**
+
+- The crying driver stands on the camera's right, beside third place. The left would work as well.
+- The fists cover the eyes of the head picture. The rest of the face, the hair and the suit stay visible, so it is still clear who it is.
+- The first tears (three small drops an eye) could not be seen at the size of the podium. They are now five an eye, bigger, in a higher arc.
+- GitHub visits every five minutes. Render switches off after fifteen, so two visits can be late before the server naps.
+- `MAX_PLAYERS` is worked out from the list of characters, not written as "6": a seventh character would make room for a seventh player.
+
+**Checked, and not checked**
+
+- `npm test`: 2,050 passed, 5 skipped. 26 are new, in `tests/crying-driver.test.js`.
+- In the browser on the laptop, sound off: the podium of the Nova lap painted with five and with six drivers, with Cici Boss and with the Dean as the one crying, close up and whole; the hall of another track with a plain kart crying, and with three karts and nobody crying, without an error; six robot players filling the room and a seventh page told "The room is full"; the single race page and the online page still open without errors.
+- NOT checked: the crying driver at the end of a real race, driven to the finish (the pictures were made with the same code and made-up results). How the crying looks in motion: the agent only sees single pictures, and has been wrong about movement before. The GitHub job: it cannot run before it is on `main`. Anything on the live site.
+
+**How to check it yourself**
+
+1. `npm start`, Single race on the Nova lap, and finish it (or wait 30 seconds after you finish): with six karts in the race, the last one cries at the right of the podium.
+2. After merging: on GitHub, the "Actions" tab shows "Keep the server awake" running every few minutes. "Run workflow" there starts it by hand.
+
 ### 19 November 2026, midday: watching a race, one kart per player, a host who is away, and how many karts fit
 
 **What she said, after reading the entry below**

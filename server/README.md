@@ -87,7 +87,7 @@ For online play:
 
 - a live connection to any address other than `/play`, or to a track that does not exist
 - a live connection started by a page on someone else's website
-- a player when the room is full (eight players)
+- a player when the room is full (six players, one for each character; eight until 19 November 2026)
 - any message that is not exactly one of the four allowed kinds: the browser is sent away
 - kart colours that are not three whole numbers from the allowed ranges, such as a colour written out or a name: the browser is sent away
 - painting another player's kart: a choice of colours only ever changes the kart of the connection that sent it

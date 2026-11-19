@@ -2,7 +2,7 @@
 
 Plain-language answers to the questions the teaching staff may ask when they open this repository. Any member can be asked about any part, so everyone should be able to give these answers.
 
-**State on 12 November 2026:** the game opens on a main menu with a drawn picture of the campus by the sea. From it a player chooses a track (the test oval or the campus loop) for a single race in the browser or for an online race, chooses the colours of their kart, opens the leaderboard, changes the settings, and creates an account or signs in. A race is seen from behind the kart, with a sky, buildings and trees. It starts on a grid behind the start line, under a gantry with start lights. Karts bump into each other, and banana peels on the road make a kart spin. A race has a lap counter, a finish time and three camera views. Online, up to eight browsers in the room of a track see each other's karts, the host starts a race for everyone, and when a signed-in player finishes, our server saves the time. The shared leaderboard shows the ten fastest races and laps of each track. The server is on the internet at https://novasbe-kart.onrender.com, with a database that holds the accounts and the results. Since 17 November a single race is against five computer karts, each with its own way of driving. Accounts have no email yet, and there are no characters, items, computer karts online, or cup, so some answers below still describe the plan. Each answer is rewritten as the real thing gets built.
+**State on 12 November 2026:** the game opens on a main menu with a drawn picture of the campus by the sea. From it a player chooses a track (the test oval or the campus loop) for a single race in the browser or for an online race, chooses the colours of their kart, opens the leaderboard, changes the settings, and creates an account or signs in. A race is seen from behind the kart, with a sky, buildings and trees. It starts on a grid behind the start line, under a gantry with start lights. Karts bump into each other, and banana peels on the road make a kart spin. A race has a lap counter, a finish time and three camera views. Online, up to six browsers, one for each character, in the room of a track see each other's karts, the host starts a race for everyone, and when a signed-in player finishes, our server saves the time. The shared leaderboard shows the ten fastest races and laps of each track. The server is on the internet at https://novasbe-kart.onrender.com, with a database that holds the accounts and the results. Since 17 November a single race is against five computer karts, each with its own way of driving. Accounts have no email yet, and there are no characters, items, computer karts online, or cup, so some answers below still describe the plan. Each answer is rewritten as the real thing gets built.
 
 ## Where does each part live?
 
@@ -63,6 +63,7 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 | The kinds of ground | `shared/surfaces.js` | Road and grass |
 | The automatic tests | `tests/` | Yes, for the driving rules, the server and a number helper |
 | The instructions that make GitHub run the tests | `.github/workflows/tests.yml` | Yes |
+| The instructions that make GitHub visit the live server every five minutes, so it stays awake | `.github/workflows/keep-awake.yml` | Yes |
 | The instructions that tell Render how to run the server | `render.yaml` and `.node-version` | Yes, in use since 10 November |
 | The database connection | `server/db.js` | Yes. Works on the live server and from a laptop that has the address |
 | The game on a laptop with pretend accounts | `server/start-pretend.js` (`npm run start:pretend`) | Yes: for trying accounts without the database's secret address |
@@ -165,7 +166,7 @@ The server also protects itself, and each of these has a test:
 - Every message is checked in `server/messages.js`. Anything that is not exactly one of the three allowed kinds gets the browser disconnected.
 - A browser that sends more than 60 messages in a second is disconnected. A real player sends a handful.
 - A connection can only act on its own kart. A message has no way to name another player, and anything extra in a message is dropped.
-- A room takes eight players. A ninth is told the room is full.
+- A room takes six players, one for each character (eight until 19 November 2026, when a seventh and eighth drove a plain kart). A seventh is told the room is full.
 - A live connection is only accepted at one address (`/play`, with the short name of a track that exists), and only from a page of our own site, so another website cannot use a visitor's browser to connect to our game.
 
 **One room for each track.** `online.html?track=campus-loop` connects to the room of the campus loop, and without a choice it is the room of the test oval. The page takes the short name from its own address, but only if it is a name in our list of tracks (`client/track-choice.js`), and the server checks it again.
@@ -247,7 +248,7 @@ The room in `server/room.js` is always in one of four phases, and the server tel
 - **When the race is over, a results board comes up over the track** (`client/results-board.js`). The winner is on top, large, with their kart turning round in their own colours. Everyone else is below in the order they crossed the line, each with a small picture of their kart, their time, and how far behind the winner they were. Karts that ran out of time come last, the one that was closest to the finish first: more checkpoints passed, and of two with the same count, the one nearer to its next checkpoint. They are marked "did not finish" with the lap they were on. The board pops up, the rows slide in one after the other and confetti falls. A player who has asked their computer for less motion gets the board without any of that. The board stays until the host starts the next race.
 - **During the race** the page shows the player's place, such as "2nd of 4", and a racer who has finished sees a small list in the corner while the others are still driving. All of this is worked out by the page from what the server sends about every kart (`client/standings.js`). It is for showing only: what is saved to the leaderboard is the server's own count.
 - **The countdown is the rule the practice race uses**, `countdownAt` in `shared/countdown.js`. It is counted in steps on the server, so every browser sees the same number and all karts are let go on the same step. Holding the gas early gives no head start.
-- **Someone who joins during a race watches.** They are in the room and count towards the eight, but they have no kart on the track. Their camera follows the kart that has done the most laps, and V changes the view as usual, for example to the whole track from above. They join at the next start. If every racer leaves, the room goes back to open, so watchers are never stuck.
+- **Someone who joins during a race watches.** They are in the room and count towards the six, but they have no kart on the track. Their camera is on the kart that was in first place when they arrived, a banner on the picture says that they are watching, and V changes the view as usual, for example to the whole track from above. They join at the next start. If every racer leaves, the room goes back to open, so watchers are never stuck.
 
 What the server refuses here, each with a test:
 
@@ -464,6 +465,8 @@ Tested in `tests/cast.test.js`, `tests/room-characters.test.js` and `tests/pilot
 
 **When it comes** (`client/podium.js`): online, when the server says the race is over (everyone finished, or the time ran out). In a single race, when every kart has finished, or at the latest 30 seconds after the player finished, so a computer kart that is stuck cannot keep the player waiting. It never comes before the player finished. Online, the podium is shown alone for 10 seconds, then the results board comes up on top of it, with everyone.
 
+**Who cries beside it** (Catarina's idea, 19 November 2026): when four or more karts raced, the driver on the last line of the results, finished or not, stands on the floor beside the third step with both fists at the eyes, shoulders shaking, and blue tears flying out like a little fountain, while everyone else cheers. Only that one: with five karts the fourth is neither on the podium nor crying, and with three or fewer nobody cries. It is the same in a single race and online (`podiumLoser()` in `client/podium.js`, `cryingPose()` in `client/pilot-shape.js`, `cryingDriver()` in `client/podium-shape.js`).
+
 **Who stands on it**: the first three karts that finished, the fastest on the top step. A kart that did not finish never stands on it, even if it was in front on the track. Each driver is their character, with their own head, suit and dance. A kart that is no character keeps a helmet on, so no empty head is shown.
 
 **Where**: on the Nova lap, on the track itself: on the lawn right in front of the white wall with the school's name, at the end of the entrance avenue, by the start (`podium` in `client/nova-lap-look.js`). The race view (`client/draw.js`) paints each step with its driver and each student of the crowd among the walls and trees, like a kart, with a camera of its own that looks at the podium and the name above it. The other tracks have no such wall, so there the podium stands in a hall of its own: white, with tall glass panes and a big NOVA SBE sign in our own letters, not with the school's logo. (Pedro first chose the hall for every track, then, on 18 November, the real wall on the Nova lap.)
@@ -639,7 +642,7 @@ The server runs on Render's free plan. Render takes the code from the `main` bra
 
 These are the limits we expect from the free hosting plans:
 
-- Render's free server sleeps after 15 minutes without visitors and takes about a minute to wake up.
+- Render's free server sleeps after 15 minutes without visitors and takes about a minute to wake up. Since 19 November 2026 a job on GitHub opens `/health` every five minutes (`.github/workflows/keep-awake.yml`), which counts as a visitor, so the server normally stays awake. GitHub's timer is not exact, so it can still nap now and then; our own pages then say "The server is waking up". GitHub only runs timed jobs from `main`.
 - Render can restart a free server at any time. An online session in progress is lost, as described above, but anything saved in the database will be safe.
 - Render's free plan gives 750 running hours a month, which is enough for one server that is always on.
 - Neon's free database pauses after 5 minutes without use and wakes on the next request.
@@ -707,7 +710,7 @@ The server does not wait for the database when it starts. `/database-check` answ
 - Sound: a bump is noticed from a sudden change of speed. A gentle touch that hardly changes the speed is silent, and online a soft bump can be missed because the picture glides between the server's updates.
 - Sound: the sound check page `sound-test.html` is reachable by anyone who types its address. It only plays sounds.
 - A very short key tap, shorter than one picture on the screen, is not sent to the server.
-- The limit of 60 messages a second is per connection. Nothing yet limits how many connections one computer may open, beyond the room being full at eight.
+- The limit of 60 messages a second is per connection. Nothing yet limits how many connections one computer may open, beyond the room being full at six.
 - Computer karts exist only in a single race, not online. There is one level (the team dropped difficulty levels on 17 November), which may be hard for a beginner. They do not use items (there are none yet) and have no catch-up. How well they drive was checked by robots and by Rodrigo's agent in a browser, not yet by people racing them.
 - Computer karts follow the racing line drawn for the arrows. If the line is changed, they change with it. A track without a line has no computer karts.
 - The numbers in the driving rules are first guesses. No person has driven the kart for long yet, so they will change with playtesting.

@@ -3,13 +3,13 @@
 A 2D online kart racing game set at the Nova SBE Carcavelos campus.
 Team project for Introduction to Programming (course 2477) at Nova SBE.
 
-**Status:** the game opens on a main menu (Single race, Cup coming soon, Online, Leaderboard, Settings, and an account corner). You choose a track, the test oval or the first campus track, the campus loop, and the colours of your kart, and drive alone in the browser or online. The race is seen from behind the kart, with a sky, buildings and trees, and karts drawn as small 3D models. It starts on a grid behind the start line, under a gantry with start lights. Karts bump into each other, banana peels on the road make a kart spin, and arrows show the way round. A race has a lap counter, a finish time, three camera views and a 3, 2, 1, GO! countdown. Online, up to eight browsers in the room of a track see each other's karts, and the player who has been there longest can start a race for everyone with Enter. You can create an account with a user name and a password. When a signed-in player finishes an online race, the server saves the time, and the leaderboard shows the ten fastest races and laps of each track. The server is on the internet at the link below.
+**Status:** the game opens on a main menu (Single race, Cup coming soon, Online, Leaderboard, Settings, and an account corner). You choose a track, the test oval or the first campus track, the campus loop, and the colours of your kart, and drive alone in the browser or online. The race is seen from behind the kart, with a sky, buildings and trees, and karts drawn as small 3D models. It starts on a grid behind the start line, under a gantry with start lights. Karts bump into each other, banana peels on the road make a kart spin, and arrows show the way round. A race has a lap counter, a finish time, three camera views and a 3, 2, 1, GO! countdown. Online, up to six browsers, one for each character, in the room of a track see each other's karts, and the player who has been there longest can start a race for everyone with Enter. You can create an account with a user name and a password. When a signed-in player finishes an online race, the server saves the time, and the leaderboard shows the ten fastest races and laps of each track. The server is on the internet at the link below.
 
 ## Play it
 
 Deployed URL: https://novasbe-kart.onrender.com
 
-The server is on a free plan and goes to sleep after 15 minutes without visitors. If the page does not open at once, wait about a minute: it is waking up.
+The server is on a free plan and goes to sleep after 15 minutes without visitors. A small job on GitHub visits it every five minutes to keep it awake (`.github/workflows/keep-awake.yml`). If the page still does not open at once, wait about a minute: it is waking up.
 
 ## Team
 
@@ -75,6 +75,7 @@ To use the real database, its address has to be in a file called `.env` (copy `.
 | `package.json` | The project's identity card: its name, its commands (such as `npm test`) and the libraries it uses |
 | `package-lock.json` | Written automatically. The exact version of every library, so all laptops and the server use the same ones. Never edited by hand |
 | `.github/workflows/tests.yml` | Tells GitHub to run the tests on every pull request |
+| `.github/workflows/keep-awake.yml` | Tells GitHub to visit the live server every five minutes, so that it does not fall asleep |
 | `render.yaml` | Tells Render, the company that keeps our server online, how to set the server up |
 | `.node-version` | The exact Node.js version used by Render and by the tests on GitHub |
 
