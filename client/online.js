@@ -24,6 +24,12 @@
 //
 // Known limit: your own kart reacts a moment late, because your key press
 // has to travel to the server and the result has to travel back.
+//
+// When the connection cannot be made (the server may be waking up) or is
+// lost, the page tries again by itself, and a card in the middle of the
+// picture says what is happening (link.js). Someone who comes back like
+// this during a race watches it and drives in the next one, like anyone
+// who arrives during a race.
 
 import { TRACKS, storeysOf } from "../shared/tracks/index.js";
 import { createPodiumView } from "./podium-view.js";
@@ -53,6 +59,7 @@ import { followTarget, easeTowards, nextView } from "./camera.js";
 import { storageOf } from "./storage.js";
 import { readSettings } from "./settings.js";
 import { closeWhenLeft } from "./page-life.js";
+import { linkCard, afterClose, retryWaitMs, GIVE_UP_AFTER_MS, LOST_AFTER_QUIET_MS } from "./link.js";
 
 // The short name is always one from our own list of tracks, whatever the
 // address says, so it is safe to use in the address of the connection below.
@@ -81,8 +88,17 @@ const podium = createPodiumView(track, draw); //           the podium, painted o
 let podiumSince = null; //                      when the podium came up, in milliseconds of the page's clock, or null
 let cheered = 0; //                              how many times the crowd has cheered on this podium
 
+// The card over the picture while the connection is being made or is lost (link.js).
+const cardBox = document.getElementById("link-card");
+const cardTitle = document.getElementById("link-title");
+const cardText = document.getElementById("link-text");
+const cardRoad = document.getElementById("link-road");
+const cardWaited = document.getElementById("link-waited");
+const cardActions = document.getElementById("link-actions");
+const cardButton = document.getElementById("link-again");
+
 // ---- What we know from the server ----
-const playback = createPlayback(); // the latest updates, for smooth drawing
+let playback = createPlayback(); //   the latest updates, for smooth drawing
 let race = readRace(null); //          the race as of the latest update: phase, countdown, host, who is watching
 let endsIn = null; //                  how many steps until the race is over for everyone, or null
 let resultsShown = ""; //              the results list as it is on the page now
@@ -119,23 +135,162 @@ let lastFrameTime = null;
 // ---- The live connection ----
 // "wss" is the secure kind, used when the page itself was loaded securely (https).
 const secure = window.location.protocol === "https:";
-const connection = new WebSocket(`${secure ? "wss" : "ws"}://${window.location.host}/play?track=${trackName}`);
+const roomAddress = `${secure ? "wss" : "ws"}://${window.location.host}/play?track=${trackName}`;
+
+let connection = null; //                the live connection, or null between two tries
+let linkState = "connecting"; //         "connecting", "joined", "full", "sentAway" or "gaveUp" (link.js)
+let tryingSince = performance.now(); //  when the page began to try to connect, this time round
+let failedTries = 0; //                  how many tries in a row have failed
+let wasInRoom = false; //                true once the server has welcomed us: a later loss is "connection lost"
+let toldFull = false; //                 the server said the room is full
+let leaving = false; //                  the player is leaving the page
+let retryTimer = null; //                the wait before the next try
+
+/**
+ * Opens the live connection. Called when the page opens, and again by
+ * itself each time a try fails or the connection is lost.
+ */
+function connect() {
+  clearTimeout(retryTimer);
+  toldFull = false;
+  const socket = new WebSocket(roomAddress);
+  connection = socket;
+  // A connection that the page has given up on may still say something
+  // later. Only the newest one is listened to.
+  socket.addEventListener("open", () => {
+    if (socket === connection) {
+      connected = true;
+    }
+  });
+  socket.addEventListener("message", (event) => {
+    if (socket === connection) {
+      hear(event.data);
+    }
+  });
+  socket.addEventListener("close", (event) => {
+    if (socket === connection) {
+      connectionClosed(event.code);
+    }
+  });
+}
+
+/**
+ * The connection has closed, or never opened. Unless the player is leaving,
+ * the room is full or the server sent us away, try again after a short wait.
+ */
+function connectionClosed(code) {
+  connection = null;
+  connected = false;
+  forgetTheRoom();
+  const next = afterClose({ code, toldFull, leaving });
+  if (next === "stop") {
+    return;
+  }
+  if (next !== "again") {
+    linkState = next;
+    return;
+  }
+  if (linkState === "joined") {
+    tryingSince = performance.now(); // we were in the room: the trying starts now
+    failedTries = 0;
+  }
+  if (performance.now() - tryingSince > GIVE_UP_AFTER_MS) {
+    linkState = "gaveUp"; // tried for long enough: the card offers a button
+    return;
+  }
+  linkState = "connecting";
+  failedTries += 1;
+  retryTimer = setTimeout(connect, retryWaitMs(failedTries));
+}
+
+/** Starts trying afresh: the button on the card, or the internet coming back. */
+function tryAgain() {
+  dropConnection();
+  linkState = "connecting";
+  tryingSince = performance.now();
+  failedTries = 0;
+  connect();
+}
+
+/** Lets go of the connection without waiting for it to say goodbye. */
+function dropConnection() {
+  clearTimeout(retryTimer);
+  const old = connection;
+  connection = null; // from now on nothing it says is listened to
+  connected = false;
+  if (old !== null) {
+    old.close();
+  }
+  forgetTheRoom();
+}
+
+/**
+ * Everything the last connection told us about the room is out of date
+ * once it is gone: our number, the karts, the race. The picture keeps what
+ * it showed last, under the card. Who we are signed in as stays, and so
+ * does what was said about our last saved result.
+ */
+function forgetTheRoom() {
+  myId = null;
+  welcomedAt = null;
+  playback = createPlayback();
+  race = readRace(null);
+  endsIn = null;
+  latestKarts = [];
+  kartsShown = null;
+  lastNewsAt = null;
+  names = new Map();
+  bananas = [];
+  walkers = [];
+  podiumSince = null;
+  camera = null;
+  keysSent = ""; // the next connection is told afresh which keys are held
+  status = "Connecting to the server...";
+  if (board.isShown()) {
+    board.hide();
+  }
+  messageBox.textContent = "";
+  noticeText.textContent = "";
+  placeBox.hidden = true;
+  showResultsList([]);
+}
 
 // Leaving the page closes the connection, so our kart does not stay on the
 // track as a ghost. Coming back with Back reloads the page (page-life.js).
-closeWhenLeft(window, connection, () => window.location.reload());
+closeWhenLeft(
+  window,
+  {
+    close(code, reason) {
+      leaving = true; // and do not try again
+      clearTimeout(retryTimer);
+      if (connection !== null) {
+        connection.close(code, reason);
+      }
+    },
+  },
+  () => window.location.reload(),
+);
 
-connection.addEventListener("open", () => {
-  connected = true;
+// The button on the card ("Try again"), and the internet coming back while
+// the page was waiting for it.
+cardButton.addEventListener("click", tryAgain);
+window.addEventListener("online", () => {
+  if (linkState === "connecting" && !connected) {
+    tryAgain();
+  }
 });
 
-connection.addEventListener("message", (event) => {
-  const message = readServerMessage(event.data);
+/** One message from the server. */
+function hear(text) {
+  const message = readServerMessage(text);
   if (message === null) {
     return; // not something this page understands: ignore it
   }
   lastNewsAt = performance.now();
   if (message.type === "welcome") {
+    linkState = "joined";
+    wasInRoom = true;
+    failedTries = 0;
     myId = message.id;
     welcomedAt = performance.now();
     if (myCharacter !== null) {
@@ -176,7 +331,10 @@ connection.addEventListener("message", (event) => {
       camera = null; // a race has just started: jump to the grid, do not glide there
     }
   } else if (message.type === "full") {
-    status = "The room is full. Try again in a few minutes.";
+    // The server closes the connection straight after this. The card then
+    // says the room is full, with a button to try again.
+    toldFull = true;
+    linkState = "full";
   } else if (message.type === "account") {
     account = message;
   } else if (message.type === "saved") {
@@ -185,22 +343,39 @@ connection.addEventListener("message", (event) => {
     names = message.names;
   }
   accountText.textContent = accountLine(account, saved); // as text, never as HTML
-});
-
-connection.addEventListener("close", () => {
-  if (connected && myId !== null) {
-    status = "The connection to the server was lost. Reload the page to join again.";
-  } else if (myId === null && !status.startsWith("The room is full")) {
-    status = "Could not connect to the server. It may be waking up: wait a minute and reload the page.";
-  }
-  connected = false;
-});
+}
 
 /** Sends one message to the server, if the connection is open. */
 function send(message) {
-  if (connection.readyState === WebSocket.OPEN) {
+  if (connection !== null && connection.readyState === WebSocket.OPEN) {
     connection.send(JSON.stringify(message));
   }
+}
+
+/** Writes words on the page only when they have changed, so a screen reader does not read them out again and again. */
+function setText(part, text) {
+  if (part.textContent !== text) {
+    part.textContent = text; // as text, never as HTML
+  }
+}
+
+/**
+ * Shows the card over the picture, or takes it away.
+ *   card  from linkCard() in link.js, or null for no card
+ */
+function showCard(card) {
+  cardBox.hidden = card === null;
+  if (card === null) {
+    return;
+  }
+  setText(cardTitle, card.title);
+  setText(cardText, card.text);
+  setText(cardWaited, card.waited);
+  // The little kart on the card drives along its road while we wait.
+  cardRoad.hidden = card.share === null;
+  cardRoad.style.setProperty("--share", String(card.share ?? 0));
+  cardActions.hidden = card.button === null;
+  setText(cardButton, card.button ?? "");
 }
 
 // ---- The sound ----
@@ -274,6 +449,28 @@ function frame(now) {
   // warning when the server has sent nothing for a while (see net.js).
   // While all is well, the sentence about the race is added to it.
   const sinceLastUpdateMs = lastNewsAt === null ? 0 : performance.now() - lastNewsAt;
+
+  // The connection (link.js). In the room but no news for a long time: the
+  // connection is dead, so drop it and join again. Trying for too long
+  // without getting in: stop, and let the card offer a button.
+  if (linkState === "joined" && sinceLastUpdateMs > LOST_AFTER_QUIET_MS) {
+    tryAgain();
+    requestAnimationFrame(frame); // everything this picture knew is out of date: start the next one
+    return;
+  }
+  if (linkState === "connecting" && performance.now() - tryingSince > GIVE_UP_AFTER_MS) {
+    dropConnection();
+    linkState = "gaveUp";
+  }
+  const card = linkCard({
+    state: linkState,
+    waitedMs: performance.now() - tryingSince,
+    wasInRoom,
+    quietMs: sinceLastUpdateMs,
+    online: navigator.onLine !== false,
+  });
+  showCard(card);
+
   const allIsWell = connected && myId !== null && karts !== null && sinceLastUpdateMs <= QUIET_AFTER_MS;
   const line = statusLine({
     status,
@@ -281,7 +478,8 @@ function frame(now) {
     playerCount: karts === null ? 0 : karts.length + race.watching.length,
     sinceLastUpdateMs,
   });
-  statusText.textContent = allIsWell && about.line !== "" ? `${line} ${about.line}` : line;
+  // While the card is up it does the talking, and the line under the picture is empty.
+  setText(statusText, card !== null ? "" : allIsWell && about.line !== "" ? `${line} ${about.line}` : line);
 
   // Who else is in the room: the user names of signed-in players, and how
   // many guests. Written to the page only when it changes.
@@ -454,7 +652,8 @@ function showResultsList(lines) {
 
 // A way to look at the online session from the browser's console.
 window.kartGame = {
-  state: () => ({ myId, view, connected, status, trackName, account, saved, race: { ...race }, karts: kartsShown }),
+  state: () => ({ myId, view, connected, status, link: linkState, trackName, account, saved, race: { ...race }, karts: kartsShown }),
 };
 
+connect();
 requestAnimationFrame(frame);

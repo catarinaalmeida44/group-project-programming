@@ -7,8 +7,14 @@
 
 import { checkUsername, checkPassword, USERNAME_MIN, USERNAME_MAX, PASSWORD_MIN } from "../shared/account-rules.js";
 import { reasonCode, reasonText } from "./answers.js";
+import { waitingWords, SLOW_AFTER_MS } from "./waking.js";
 
 export const CHECKING_TEXT = "Checking who is signed in…";
+// What the account corner says when that answer takes more than a few
+// seconds: the server was asleep and is waking up (waking.js). Racing
+// alone needs no server, so the player does not have to wait for it.
+export const CHECKING_SLOW_TEXT = `${waitingWords(CHECKING_TEXT, SLOW_AFTER_MS)} You can already race.`;
+export const SIGNING_OUT_SLOW_TEXT = waitingWords("Signing out…", SLOW_AFTER_MS);
 export const UNAVAILABLE_TEXT = "Accounts are not available on this server right now. You can still race.";
 export const CONFIRM_TEXT = "Tick the box to confirm that you want to delete your account.";
 export const STILL_WAITING_TEXT = "Still waiting for the server to answer your last try.";

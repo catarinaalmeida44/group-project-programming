@@ -34,12 +34,25 @@ const UNAVAILABLE = {
 };
 
 /**
- * Makes the set of functions. "fetchFunction" is the browser's own tool for
- * asking a server. The tests hand in a pretend one.
+ * How long a question may stay without an answer, in thousandths of a
+ * second. A server that is waking up answers within about a minute
+ * (waking.js). After a minute and a half we stop waiting and say the server
+ * could not be reached, so that no form is left waiting for ever.
  */
-export function createAccountApi(fetchFunction) {
+export const ANSWER_WITHIN_MS = 90_000;
+
+/**
+ * Makes the set of functions. "fetchFunction" is the browser's own tool for
+ * asking a server. The tests hand in a pretend one, and a short
+ * "answerWithinMs" so they do not have to wait a minute and a half.
+ */
+export function createAccountApi(fetchFunction, { answerWithinMs = ANSWER_WITHIN_MS } = {}) {
   /** Asks the server one thing. Always gives an object with "ok" in it. */
   async function ask(method, address, body) {
+    // "signal" lets us call the question off: after answerWithinMs it is
+    // stopped, and the wait below ends as if the server were unreachable.
+    const callOff = new AbortController();
+    const tooLong = setTimeout(() => callOff.abort(), answerWithinMs);
     let response;
     try {
       response = await fetchFunction(address, {
@@ -47,8 +60,10 @@ export function createAccountApi(fetchFunction) {
         headers: body === undefined ? {} : { "Content-Type": "application/json" },
         body: body === undefined ? undefined : JSON.stringify(body),
         credentials: "same-origin", // send our cookie, and only to our own site
+        signal: callOff.signal,
       });
     } catch {
+      clearTimeout(tooLong);
       return OFFLINE;
     }
     let answer;
@@ -57,6 +72,7 @@ export function createAccountApi(fetchFunction) {
     } catch {
       answer = null;
     }
+    clearTimeout(tooLong);
     if (answer === null || typeof answer !== "object" || typeof answer.ok !== "boolean") {
       // Not an answer in our format: for example an older server that has no accounts.
       return UNAVAILABLE;

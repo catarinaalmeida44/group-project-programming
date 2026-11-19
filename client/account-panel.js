@@ -22,8 +22,11 @@ import {
   SIGNED_UP_NOTICE,
   SIGNED_OUT_NOTICE,
   DELETED_NOTICE,
+  CHECKING_SLOW_TEXT,
+  SIGNING_OUT_SLOW_TEXT,
 } from "./account-view.js";
 import { NO_REASON } from "./answers.js";
+import { waitingWords, SLOW_AFTER_MS } from "./waking.js";
 
 /**
  * Shows the right part of the account corner.
@@ -82,6 +85,16 @@ export function showFormWaiting(form, waiting) {
 }
 
 /**
+ * The server has not answered a form for a few seconds: it was asleep and
+ * is waking up (waking.js). Say so next to "Signing in…", so the wait does
+ * not look like a broken button.
+ */
+function showFormSlow(form) {
+  const button = form.querySelector('button[type="submit"]');
+  form.querySelector('[data-error-for="form"]').textContent = waitingWords(button.dataset.waiting, SLOW_AFTER_MS);
+}
+
+/**
  * Empties every form in an account panel and takes away everything that
  * was said about it, so that no password stays behind in a box.
  */
@@ -122,7 +135,9 @@ function connectForm(form, send, onYes) {
     event.preventDefault(); // we send the form ourselves: the browser must not load another page
     showFormErrors(form, NO_ERRORS);
     showFormWaiting(form, true);
+    const slow = setTimeout(() => showFormSlow(form), SLOW_AFTER_MS);
     const result = await send();
+    clearTimeout(slow);
     showFormWaiting(form, false);
     if (result.ok) {
       onYes();
@@ -144,10 +159,16 @@ function connectForm(form, send, onYes) {
  *             changes (and with null while we wait for the first answer)
  */
 export function connectAccount(page, { api, onChange = () => {} }) {
+  let slowCheck = null; // the wait before the corner says the server is waking up
   const account = createAccount({
     api,
     onChange: (me) => {
+      clearTimeout(slowCheck);
       showAccountCorner(page, accountCorner(me));
+      if (me === null) {
+        // Still checking who is signed in. If that takes long, say why.
+        slowCheck = setTimeout(() => showAccountNotice(page, CHECKING_SLOW_TEXT), SLOW_AFTER_MS);
+      }
       onChange(me);
     },
   });
@@ -236,7 +257,9 @@ export function connectAccount(page, { api, onChange = () => {} }) {
   const signOutButton = page.getElementById("sign-out");
   signOutButton.addEventListener("click", async () => {
     signOutButton.disabled = true;
+    const slow = setTimeout(() => showAccountNotice(page, SIGNING_OUT_SLOW_TEXT), SLOW_AFTER_MS);
     const result = await account.signOut();
+    clearTimeout(slow);
     signOutButton.disabled = false;
     if (result.ok) {
       showAccountNotice(page, SIGNED_OUT_NOTICE);

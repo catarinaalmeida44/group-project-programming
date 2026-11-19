@@ -17,6 +17,7 @@ import { bestTimeText } from "./records.js";
 import { practiceBests } from "./track-list.js";
 import { saidYes, reasonText } from "./answers.js";
 import { usernameKey } from "../shared/account-rules.js";
+import { waitingWords, SLOW_AFTER_MS } from "./waking.js";
 
 /** A board never shows more rows than this. */
 export const BOARD_SIZE = 10;
@@ -110,6 +111,8 @@ export function myLine(rows, me, rank, steps) {
 /**
  * The shared part of the panel: the two boards of all players.
  *   loading  true while we wait for the server
+ *   slow     true when that wait has lasted a few seconds: the server was
+ *            asleep and is waking up (waking.js), and the text says so
  *   answer   what accountApi.getLeaderboard() answered
  *   me       what the server said about who is signed in, or null
  * Gives one of:
@@ -117,9 +120,9 @@ export function myLine(rows, me, rank, steps) {
  *   { kind: "notice", text }            the server said no, or could not be reached
  *   { kind: "ready", races, laps }      each board is { rows, empty, mine }
  */
-export function sharedBoards({ loading, answer, me }) {
+export function sharedBoards({ loading, slow = false, answer, me }) {
   if (loading) {
-    return { kind: "loading", text: LOADING_TEXT };
+    return { kind: "loading", text: slow === true ? waitingWords(LOADING_TEXT, SLOW_AFTER_MS) : LOADING_TEXT };
   }
   if (!saidYes(answer)) {
     return { kind: "notice", text: reasonText(answer) };
@@ -146,14 +149,14 @@ function oneBoard(list, me, myRank, mySteps) {
  * Everything the panel shows.
  *   tracks     the list from shared/tracks/index.js: short name -> track
  *   shortName  the short name of the chosen track; it must be in the list
- *   loading, answer, me   see sharedBoards()
+ *   loading, slow, answer, me   see sharedBoards()
  *   storage    this browser's storage, or null (see storage.js)
  * Gives { tracks, trackName, shared, practice }:
  *   tracks     one { shortName, name, chosen } for each track, for the switcher
  *   shared     from sharedBoards()
  *   practice   your own practice bests: { race, lap, any }
  */
-export function leaderboardView({ tracks, shortName, loading, answer, me, storage }) {
+export function leaderboardView({ tracks, shortName, loading, slow = false, answer, me, storage }) {
   const track = tracks[shortName];
   return {
     tracks: Object.entries(tracks).map(([name, listed]) => ({
@@ -162,7 +165,7 @@ export function leaderboardView({ tracks, shortName, loading, answer, me, storag
       chosen: name === shortName,
     })),
     trackName: track.name,
-    shared: sharedBoards({ loading, answer, me }),
+    shared: sharedBoards({ loading, slow, answer, me }),
     practice: practiceBests(storage, track),
   };
 }
