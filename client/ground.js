@@ -14,6 +14,7 @@
 
 import { chaseNumbers } from "./camera.js";
 import { paintGroundShapes } from "./ground-art.js";
+import { rowOnMap, spanFrom, shoreBands } from "./shore.js";
 
 /** The hidden picture is never larger than this many pixels along a side. */
 const LARGEST_PICTURE = 4096;
@@ -46,6 +47,7 @@ const LINE_DARK = "#14181d";
  * Gives { picture, sharpness, paintTilted }.
  */
 export function createGround(track, look, grid, buildings = null) {
+  const shore = look.shore ? shoreBands(look.shore) : null; // beach and sea past the south edge, or none
   const sharpness = Math.min(BEST_SHARPNESS, LARGEST_PICTURE / track.width, LARGEST_PICTURE / track.height);
   const picture = document.createElement("canvas");
   picture.width = Math.round(track.width * sharpness);
@@ -161,6 +163,27 @@ export function createGround(track, look, grid, buildings = null) {
       paintClose(context, spot);
     }
 
+    // Past the south edge of the map: beach, surf and sea, out to the
+    // horizon (shore.js). The map is laid over it below.
+    /** Paints these bands of the shore, row by row, from the first row down to the last. */
+    function paintShore(bands, lastRow) {
+      for (let y = firstRow; y < lastRow; y++) {
+        const scale = (y + 0.5 - horizonY) * growthPerRow;
+        const ahead = depth * (1 / scale - 1 / settings.kartScale);
+        const row = rowOnMap({ along: alongKart, across: acrossKart, ahead, scale, cos, sin, width: screen.width });
+        for (const band of bands) {
+          const span = spanFrom(row, band.from, screen.width);
+          if (span !== null) {
+            context.fillStyle = band.colour;
+            context.fillRect(span.x, y, span.length, 1);
+          }
+        }
+      }
+    }
+    if (shore !== null) {
+      paintShore(shore, screen.height);
+    }
+
     for (let y = firstRow; y < screen.height; y++) {
       // How large the ground is drawn on this row, sideways and along the road.
       const scale = (y + 0.5 - horizonY) * growthPerRow;
@@ -219,6 +242,14 @@ export function createGround(track, look, grid, buildings = null) {
       haze.addColorStop(1, withAlpha(look.haze, 0));
       context.fillStyle = haze;
       context.fillRect(0, firstRow, screen.width, hazeDepth);
+
+      // The haze would turn the far sea almost white. The water is painted
+      // again over it, partly see-through, so it still reads as sea.
+      if (shore !== null && look.shore.throughHaze > 0) {
+        context.globalAlpha = look.shore.throughHaze;
+        paintShore(shore.filter((band) => band.water === true), firstRow + hazeDepth);
+        context.globalAlpha = 1;
+      }
     }
   }
 

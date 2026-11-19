@@ -72,6 +72,7 @@ Everything the browser shows and does: the web page, the drawing of the track an
 | `scenery-paint.js` | Puts those strips on the screen: lays the right part of a wall's picture on each strip, in thin upright slices so the wall runs away into the distance. Keeps every picture in four sizes |
 | `wall-art.js` | The pictures on the walls of the Nova lap, each painted once by code: the entrance front with its banner, the halls, the library, the Westmont hall, the auditorium, the mouth of the beach tunnel, the inside of the atrium. No image files |
 | `ground-art.js` | The ground of a track that is drawn as shapes: each kind of paving, lawn and road as a small repeating picture, the lines on the roads, the shadows of the buildings |
+| `shore.js` | The beach and the sea past the south edge of a map: for each row of the race view, which part of it lies past each band (sand, surf, water). Only sums, so it is tested. Used by `ground.js` when a look has a `shore` (the Nova lap) |
 | `nova-lap-ground.js` | The ground of the Nova lap as a list of shapes (which paving lies where), and the function that turns such shapes into the letters of a track |
 | `nova-lap-buildings.js` | The buildings of the Nova lap: where each box stands, how tall it is in metres, which picture is on each side, and the fences. Also which squares are solid |
 | `nova-lap-look.js` | The look of the Nova lap put together: the way round, sky and horizon, the lines on the roads, and the single things (Christmas tree, statue, flags, palms) |

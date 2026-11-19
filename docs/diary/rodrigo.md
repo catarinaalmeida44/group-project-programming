@@ -2,6 +2,39 @@
 
 Rodrigo Simeão Versos (GitHub rodrigosversos). Entries from 11 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 19 November 2026: the sea on the Nova lap
+
+**What was done**
+On the Nova lap you now see Carcavelos beach and the sea past the coast road: dry sand, wet sand, a line of surf, and blue water out to the horizon. Before, the ground past the edge of the map was one plain pale colour and the sea was only a thin line on the horizon. Branch `rodrigo-sea`, from `main` after my difficulty levels (#33) were merged.
+
+| File | What changed |
+|---|---|
+| `client/shore.js` | New. For each row of the race view, which part of it lies past each band of the beach and sea |
+| `client/ground.js` | Paints the shore under the map, and the water again over the haze |
+| `client/nova-lap-look.js` | The beach and sea of the Nova lap: where each band starts and its colour |
+| `tests/shore.test.js` | New. 12 tests |
+| `WALKTHROUGH.md`, `PROJECT_BRIEF.md`, the READMEs | Kept true |
+
+**Why it was done this way**
+- **Only a picture.** No rule changed: karts cannot reach the beach, the map's letters are the same, and laps and times are not affected.
+- **Under the map**, row by row, the same way the race view already paints the ground, so the sea lines up with the road and moves with the camera.
+- **The water again over the haze**, partly see-through, because otherwise the far sea looks almost white.
+- **No Google Earth picture.** I asked for a Google Earth or Maps scan. Their terms do not allow copying their pictures into another product, so the agent did not. It tried OpenStreetMap instead (free, used for the campus loop), but its services refused automatic requests. So the beach width (about 55 m of sand) is a guess; the Nova lap is not to scale anyway (its coast road is straight).
+
+**Decisions**
+- Mine: see the sea from the outdoor parts of the Nova lap.
+- Decision made by the agent, please confirm: no satellite picture (see above); the bands and their colours; about 55 m of sand; the water painted 60% over the haze.
+- Decision made by the agent, please confirm, and tell the owner: `client/ground.js` and `client/nova-lap-look.js` changed (Catarina's area).
+
+**What was checked, and what was not**
+- `npm test`: 2,174 passed, 5 skipped (12 new tests).
+- Broken on purpose in 6 ways; 5 made a test fail at once, the sixth after I added one more case to a test.
+- With the track tour (`track-tour.html?track=nova-lap`) in Chrome without a screen: along the coast road and from the path to the beach the sand and the blue sea show to the left; no page errors. About 23 frames a second with the sea and without it: no difference.
+- **Not checked:** how it looks on a real laptop with a graphics card, and whether the beach width matches what you see on campus.
+
+**How to check it yourself**
+Run `npm start` and open http://localhost:3000/track-tour.html?track=nova-lap, which flies round the lap by itself. Or race the Nova lap: on the path west past the beach tunnel and along the coast road, the beach and the sea are on your left.
+
 ### 19 November 2026: Easy, Normal and Hard
 
 **What was done**
