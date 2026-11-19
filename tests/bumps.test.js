@@ -527,9 +527,12 @@ function run(room, steps, everyStep = () => {}) {
   }
 }
 
-/** A room on the test oval with this many players, the first of them the host. Gives { room, ids }. */
-function roomWith(playerCount, track = TEST_OVAL) {
-  const room = createRoom(track, TEST_DRIVER);
+/**
+ * A room on the test oval with this many players, the first of them the host. Gives { room, ids }.
+ * "places" is how many players the room takes; left out, as many as an online room (six).
+ */
+function roomWith(playerCount, track = TEST_OVAL, places = undefined) {
+  const room = createRoom(track, TEST_DRIVER, places);
   const ids = [];
   for (let player = 0; player < playerCount; player++) {
     ids.push(room.addPlayer().id);
@@ -666,7 +669,11 @@ describe("bumps in a race", () => {
       return { gas: Math.abs(turn) < 1.2 || speedOf(kart) < 120, brake: false, left: turn < -0.05, right: turn > 0.05 };
     }
 
-    const { room, ids } = roomWith(8);
+    // Changed on 19 November 2026, when the team capped an online room at
+    // six players. Before, this said roomWith(8). It still races eight, one
+    // on every place of the grid, which jams the corner worse than a real
+    // room can: the room of this test is made for eight on purpose.
+    const { room, ids } = roomWith(8, TEST_OVAL, 8);
     room.startRace(ids[0]);
     run(room, COUNTDOWN_STEPS);
     const cornerOf = new Map(ids.map((id) => [id, 0]));

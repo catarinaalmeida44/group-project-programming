@@ -40,9 +40,12 @@ const ALL_PLACES = [0, 1, 2, 3, 4, 5, 6, 7];
 // ---- The grid ----
 
 describe("the places on the starting grid", () => {
-  it("has eight places, one for each player a room can hold", () => {
+  // Changed on 19 November 2026, when the team capped a room at six players.
+  // Before, this said: "has eight places, one for each player a room can
+  // hold", expect(MAX_PLAYERS).toBe(GRID_PLACES). The grid still has eight.
+  it("has eight places, enough for every player a room can hold", () => {
     expect(GRID_PLACES).toBe(8);
-    expect(MAX_PLAYERS).toBe(GRID_PLACES);
+    expect(MAX_PLAYERS).toBeLessThanOrEqual(GRID_PLACES);
   });
 
   it("puts places 0 and 1 in the front row, left and right of the track's start", () => {

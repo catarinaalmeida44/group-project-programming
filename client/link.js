@@ -114,7 +114,7 @@ export function linkCard({ state, waitedMs = 0, wasInRoom = false, quietMs = 0, 
       : null;
   }
   if (state === "full") {
-    return card("The room is full", "Every place on the grid of this track is taken. Try again in a few minutes, or race on another track.", {
+    return card("The room is full", "This room already has a player for each character. Try again in a few minutes.", {
       button: "Try again",
     });
   }

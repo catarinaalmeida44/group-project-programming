@@ -63,13 +63,20 @@ import { createRacer, stepRacer } from "../shared/race.js";
 import { countdownAt, COUNTDOWN_STEPS } from "../shared/countdown.js";
 import { FINISH_WINDOW_STEPS, RACE_LIMIT_STEPS } from "../shared/race-time.js";
 import { GRID_PLACES } from "../shared/grid.js";
+import { CAST } from "../shared/cast.js";
 import { bumpKarts } from "../shared/bumps.js";
 import { createBananaMaker, stepBananas, SEED_COUNT } from "../shared/hazards.js";
 import { createWalkers, stepWalkers } from "../shared/walkers.js";
 import { cleanLookChoice } from "../shared/kart-looks.js";
 
-/** How many players fit in a room: one for each place on the starting grid (shared/grid.js). */
-export const MAX_PLAYERS = GRID_PLACES;
+/**
+ * How many players fit in a room: one for each character (shared/cast.js),
+ * so six, and never more than the starting grid has places (shared/grid.js).
+ * Until 19 November 2026 it was one for each place on the grid, eight: a
+ * seventh and an eighth player then drove a plain kart without a character.
+ * Catarina: "we can never have more than six, because we have six characters."
+ */
+export const MAX_PLAYERS = Math.min(CAST.length, GRID_PLACES);
 
 /** A player who has pressed no key for this many steps counts as away from the keyboard: one minute. */
 export const AWAY_AFTER_STEPS = 60 * 60;

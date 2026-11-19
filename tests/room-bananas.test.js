@@ -568,14 +568,17 @@ describe("a whole race with bananas", () => {
     }
   });
 
-  it("ends for a full room of eight robots too, with a place for everyone", () => {
-    const { room, finishes } = raceWithRobots(9, 8);
+  // Changed on 19 November 2026, when the team capped a room at six players.
+  // Before, this said: "ends for a full room of eight robots too", with
+  // raceWithRobots(9, 8), eight finishes and positions up to 8.
+  it("ends for a full room of robots too (six), with a place for everyone", () => {
+    const { room, finishes } = raceWithRobots(9, MAX_PLAYERS);
     expect(room.phase()).toBe("finished");
-    expect(finishes).toHaveLength(8);
+    expect(finishes).toHaveLength(MAX_PLAYERS);
     expect(finishes[0].position).toBe(1);
     const positions = finishes.map((finish) => finish.position);
     expect([...positions].sort((a, b) => a - b)).toEqual(positions); // handed out in finishing order
-    expect(Math.max(...positions)).toBeLessThanOrEqual(8);
+    expect(Math.max(...positions)).toBeLessThanOrEqual(MAX_PLAYERS);
   });
 });
 
