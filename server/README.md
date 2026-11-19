@@ -32,7 +32,7 @@ Why the `shared/` folder is sent to browsers too: it holds the game rules, and t
 
 ## Accounts
 
-- **An account** is a user name (3 to 16 letters, digits or underscores) and a password (at least 8 characters). The rules are in `shared/account-rules.js`, so the page can check them before sending, but the server always checks again. "Ana" and "ana" count as the same name.
+- **An account** is a user name (3 to 16 letters, digits or underscores) and a password (at least 8 characters, and not the user name itself). The rules are in `shared/account-rules.js`, so the page can check them before sending, but the server always checks again. "Ana" and "ana" count as the same name.
 - **Passwords are never kept.** `passwords.js` scrambles each one with `scrypt`, which comes with Node.js, together with a random "salt" so that two players with the same password get different scrambled forms. The scrambling is slow on purpose (about a tenth of a second), which makes guessing millions of passwords from a stolen database take far too long.
 - **Staying signed in.** After a correct password the server makes a long random "ticket" and puts it in a cookie in the browser. The browser sends it back with every request. The cookie cannot be read by the page's own code, is only sent to our site, and stops working after seven days or when the player signs out. The database holds only a scrambled copy of each ticket.
 - **Wrong passwords.** After five in a row the account is locked for ten minutes. A wrong password and a name nobody has get exactly the same answer, after the same amount of work, so trying names does not reveal which exist.
@@ -70,9 +70,11 @@ For normal page requests:
 - kinds of file that are not on its list
 - addresses that are broken
 
+The answer to an address that does not exist is the number 404 ("not found"). A person who opened it in a browser gets a page of the game with a button back to the menu (`client/not-found.html`). Everything else that asks gets the three plain words "Page not found." The page never shows the address that was asked for, and the files listed above stay as private as before (`tests/not-found-page.test.js`).
+
 For accounts and the leaderboard:
 
-- a user name or password that breaks the rules, and a user name that is taken
+- a user name or password that breaks the rules, a password that is the user name itself, and a user name that is taken
 - a wrong password, a name nobody has, and any sign-in while the account is locked
 - a ticket that is made up, damaged, signed out or older than seven days
 - deleting an account without being signed in, or without that account's own password. Nothing in the request can name another player
@@ -85,11 +87,12 @@ For online play:
 
 - a live connection to any address other than `/play`, or to a track that does not exist
 - a live connection started by a page on someone else's website
-- a player when the room is full (eight players)
+- a player when the room is full (six players, one for each character; eight until 19 November 2026)
 - any message that is not exactly one of the four allowed kinds: the browser is sent away
 - kart colours that are not three whole numbers from the allowed ranges, such as a colour written out or a name: the browser is sent away
 - painting another player's kart: a choice of colours only ever changes the kart of the connection that sent it
-- a race start from anyone but the host, or while a countdown is running or a race is being driven: it is ignored. A race that has begun is driven to its end (since 13 November 2026)
+- a race start from anyone but the host, or while a countdown is running or a race is being driven: it is ignored. A race that has begun is driven to its end (since 13 November 2026). The host is the player who has been in the room longest and has pressed a key in the last minute: one who is away passes the room on (since 19 November 2026, `tests/host-away.test.js`)
+- a second kart for a signed-in player who is already in the room: the older connection is told why and sent away (since 19 November 2026, `tests/one-kart-per-player.test.js`)
 - a finish after the time of a race has run out: that racer's laps and clock stay as they were, and no result is saved
 - a restart during a countdown or a race: it is ignored, so nobody can give themselves a fresh clock
 - keys from a player who joined during a race and is watching: they move nothing

@@ -15,7 +15,7 @@
 // working after seven days, or at once when the player signs out.
 
 import { createHash, randomBytes } from "node:crypto";
-import { checkUsername, checkPassword, usernameKey, PASSWORD_MAX } from "../shared/account-rules.js";
+import { checkUsername, checkPassword, checkPasswordIsNotName, usernameKey, PASSWORD_MAX } from "../shared/account-rules.js";
 import { hashPassword, passwordMatches, pretendToCheck } from "./passwords.js";
 
 export const SESSION_DAYS = 7;
@@ -136,14 +136,14 @@ export function createAccounts(
     /**
      * Makes a new account. Gives { ok: true, player: { id, username } }, or
      * { ok: false, code, message } when the name or the password breaks the
-     * rules or the name is taken.
+     * rules, the password is the user name itself, or the name is taken.
      */
     async signUp(username, password) {
       const nameProblem = checkUsername(username);
       if (nameProblem !== null) {
         return no("invalid_username", nameProblem);
       }
-      const passwordProblem = checkPassword(password);
+      const passwordProblem = checkPassword(password) ?? checkPasswordIsNotName(username, password);
       if (passwordProblem !== null) {
         return no("invalid_password", passwordProblem);
       }
@@ -225,8 +225,8 @@ export function createAccounts(
      *                    wrong tries. Being signed in is not enough: someone
      *                    who finds a laptop open must not be able to take
      *                    the account over
-     *   newPassword      has to keep the rules for passwords, and has to be
-     *                    a different one
+     *   newPassword      has to keep the rules for passwords, must not be the
+     *                    user name, and has to be a different one
      *
      * Afterwards every OTHER browser where this player was signed in is
      * signed out. If someone else knew the old password, they are out now.
@@ -240,7 +240,7 @@ export function createAccounts(
       }
       // The new password is looked at first: that costs nothing, and a new
       // password that breaks the rules can never be accepted anyway.
-      const problem = checkPassword(newPassword);
+      const problem = checkPassword(newPassword) ?? checkPasswordIsNotName(player.username, newPassword);
       if (problem !== null) {
         return no("invalid_password", problem);
       }

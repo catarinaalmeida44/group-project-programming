@@ -1,0 +1,47 @@
+# Keeps the game's server awake.
+#
+# Our server is on Render's free plan, which switches a server off when
+# nobody has visited it for 15 minutes. The next visitor then waits up to a
+# minute on a loading page while it starts again. For someone who opens our
+# link to mark the project, that looks as if the game were broken.
+#
+# So GitHub visits the server every five minutes, by itself: it opens the
+# address /health, which answers "I am alive" and touches nothing else (no
+# database, no account, no race). A visit counts as a visitor, so the
+# server stays on.
+#
+# Good to know:
+#   - GitHub only runs timed jobs from the main branch, so this starts
+#     working once it is merged into main.
+#   - GitHub's timer is not exact: a visit can come some minutes late, so
+#     now and then the server may still nap. The next visit wakes it.
+#   - Render's free plan allows 750 running hours a month. One server that
+#     never sleeps uses at most 744, so this fits, as long as it is the only
+#     free server in our Render account.
+#   - To stop it: delete this file, or switch the job off in the "Actions"
+#     tab of the repository on GitHub.
+name: Keep the server awake
+
+on:
+  schedule:
+    # Every five minutes. The five parts are: minute, hour, day of the
+    # month, month, day of the week. "*/5" means "every fifth minute".
+    - cron: "*/5 * * * *"
+  # Also lets a team member run it by hand from the "Actions" tab, to try it.
+  workflow_dispatch:
+
+# This job needs nothing from the repository: it cannot read or change it.
+permissions: {}
+
+jobs:
+  visit:
+    name: Visit the server
+    runs-on: ubuntu-latest
+    # A sleeping server takes up to a minute to answer. Give up after three.
+    timeout-minutes: 3
+    steps:
+      - name: Open the health check of the live server
+        # --fail: count an error answer as a failure. --max-time 150: wait
+        # at most two and a half minutes. The address is public: it is the
+        # one in README.md.
+        run: curl --fail --silent --show-error --max-time 150 https://novasbe-kart.onrender.com/health

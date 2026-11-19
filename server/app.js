@@ -168,9 +168,34 @@ async function answer(request, response, database, api) {
 
   const file = await findPublicFile(address);
   if (file === null) {
-    return sendText(response, 404, "Page not found.");
+    return sendNotFound(request, response);
   }
   return send(response, 200, file.type, file.content);
+}
+
+// The page a person sees when they open an address that does not exist.
+const NOT_FOUND_PAGE = path.resolve(SERVER_FOLDER, "..", "client", "not-found.html");
+
+/**
+ * Answers "there is nothing at this address" (404).
+ *
+ * A person who typed a wrong address into their browser gets a page of the
+ * game, with a button back to the menu, instead of three bare words on a
+ * white screen. A browser says that it wants a page by listing "text/html"
+ * in what it accepts. Everything else that asks (a page of ours looking
+ * for a script, a test, another program) gets the short plain answer, as
+ * before.
+ */
+async function sendNotFound(request, response) {
+  const wantsAPage = String(request.headers.accept ?? "").includes("text/html");
+  if (wantsAPage) {
+    try {
+      return send(response, 404, FILE_TYPES[".html"], await readFile(NOT_FOUND_PAGE));
+    } catch (error) {
+      console.error("Could not read the 'page not found' page:", error.message); // and answer in plain words instead
+    }
+  }
+  return sendText(response, 404, "Page not found.");
 }
 
 /**

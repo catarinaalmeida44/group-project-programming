@@ -436,6 +436,179 @@ main:has(.status) canvas {
   display: none;
 }
 
+/* The banner for someone who arrived during a race and is watching it: big
+   letters across the top of the picture. It stops short of the right edge,
+   where the small map is. */
+.watch-banner {
+  position: absolute;
+  left: 0.6rem;
+  top: 0.6rem;
+  right: 22%;
+  z-index: 2;
+  padding: 0.55rem 1rem 0.6rem;
+  border: 2px solid transparent;
+  border-left: 8px solid var(--yellow);
+  border-radius: 10px;
+  background: rgba(11, 24, 32, 0.88);
+}
+
+.watch-title {
+  margin: 0;
+  color: var(--yellow);
+  font-size: clamp(1.15rem, 3.1vw, 1.9rem);
+  font-style: italic;
+  font-weight: 900;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.watch-text {
+  margin: 0.25rem 0 0;
+  font-weight: 600;
+}
+
+/* A watcher pressed a driving key: the banner lights up, and says why nothing moves. */
+.watch-banner.nudged {
+  border-color: var(--yellow);
+}
+
+/* While the banner is up, the notice "The race ends in 42 s" moves from
+   the top of the picture to the bottom, out of its way. */
+.screen:has(.watch-banner:not([hidden])) .notice {
+  top: auto;
+  bottom: 0.6rem;
+}
+
+/* The card over the picture of the online page while the connection to the
+   server is being made or is lost (link.js). The veil dims the picture
+   behind it, so the card is the one thing to read. */
+.link-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  border-radius: 10px;
+  background: rgba(11, 24, 32, 0.78);
+}
+
+.link-card {
+  width: min(30rem, 100%);
+  padding: 1.3rem 1.5rem 1.4rem;
+  border: 2px solid var(--line-strong);
+  border-top: 6px solid var(--yellow);
+  border-radius: 14px;
+  background: var(--navy);
+  box-shadow: 0 10px 0 rgba(11, 24, 32, 0.6);
+  text-align: center;
+}
+
+.link-title {
+  margin: 0;
+  color: var(--yellow);
+  font-size: 1.7rem;
+  font-style: italic;
+  font-weight: 900;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.link-text {
+  margin: 0.55rem 0 0;
+  color: var(--text);
+}
+
+.link-text:empty {
+  display: none;
+}
+
+/* The road the little kart drives along: asphalt with a broken white line. */
+.wake-road {
+  position: relative;
+  height: 1.9rem;
+  margin: 1.1rem 0 0;
+  overflow: hidden;
+  border-radius: 999px;
+  background:
+    repeating-linear-gradient(90deg, rgba(242, 245, 247, 0.6) 0 14px, transparent 14px 28px) 0 50% / calc(100% + 28px) 2px no-repeat,
+    #2a333c;
+  box-shadow: inset 0 0 0 2px var(--line);
+}
+
+/* The kart, seen from above: a red body, four wheels, a yellow helmet.
+   "--share" is how far it has driven, from 0 to 1. online.js sets it. */
+.wake-kart {
+  position: absolute;
+  left: calc(0.5rem + (100% - 2.9rem) * var(--share, 0));
+  top: 50%;
+  width: 1.9rem;
+  height: 0.9rem;
+  border-radius: 0.3rem 0.5rem 0.5rem 0.3rem;
+  background: var(--red);
+  transform: translateY(-50%);
+  transition: left 1s linear;
+}
+
+/* The four wheels: one is drawn, and its three shadows are the others. */
+.wake-kart::before {
+  content: "";
+  position: absolute;
+  left: 0.15rem;
+  top: -0.24rem;
+  width: 0.5rem;
+  height: 0.24rem;
+  border-radius: 2px;
+  background: var(--ink);
+  box-shadow:
+    0 1.14rem 0 var(--ink),
+    1.05rem 0 0 var(--ink),
+    1.05rem 1.14rem 0 var(--ink);
+}
+
+.wake-kart::after {
+  content: "";
+  position: absolute;
+  left: 0.55rem;
+  top: 50%;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--yellow);
+  transform: translateY(-50%);
+}
+
+.link-waited {
+  margin: 0.35rem 0 0;
+  color: var(--text-quiet);
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.link-waited:empty {
+  display: none;
+}
+
+.link-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: center;
+  margin-top: 1.1rem;
+}
+
+/* A link that looks like a button, such as "Back to the menu". */
+a.button {
+  text-decoration: none;
+}
+
+/* The "page not found" page (not-found.html): the same card, alone in the
+   middle of the page. */
+.lost-page .link-card {
+  justify-self: center;
+  margin-top: 12vh;
+}
+
 /* The results of an online race, in the top left corner of the picture. */
 .results {
   position: absolute;
@@ -2442,6 +2615,19 @@ main:has(.status) canvas {
 @keyframes clouds {
   to {
     transform: translateX(-70px);
+  }
+}
+
+/* On the "waking up" card of the online page the broken line of the road
+   runs backwards under the little kart, as if it were driving. One dash
+   and one gap are 28px, so after 28px the line looks the same again. */
+.wake-road {
+  animation: road-line 0.6s linear infinite;
+}
+
+@keyframes road-line {
+  to {
+    background-position: -28px 50%;
   }
 }
 

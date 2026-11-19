@@ -376,6 +376,36 @@ function dabAt(seconds) {
   return blendPoses(fists, dab, into);
 }
 /**
+ * Crying: the pose of the driver who came last, who stands down with the
+ * crowd while the first three are on the podium (podium-shape.js). It is not
+ * a dance, so it is not in DANCES: nobody can choose it.
+ *
+ * Both fists are at the eyes and rub them, one going up as the other goes
+ * down, the elbows out to the sides. The shoulders shake with quick sobs
+ * that come in bursts, the body is bent forwards a little, and the head
+ * rocks slowly from one shoulder to the other. The tears are drawn by
+ * podium-shape.js.
+ */
+export function cryingPose(seconds) {
+  const sob = Math.abs(Math.sin(seconds * TURN * 2.6)); //            the quick shakes
+  const burst = 0.55 + 0.45 * Math.sin(seconds * TURN * 0.45); //     stronger, weaker, stronger
+  const rub = Math.sin(seconds * TURN * 1.8); //                      the fists
+  const rock = Math.sin(seconds * TURN * 0.4); //                     the slow rocking from side to side
+  return still({
+    lift: 0.45 * sob * burst,
+    sway: 0.35 * rock,
+    lean: 0.06 * rock,
+    tilt: 0.16 * rock,
+    pitch: -0.12, // bent forwards
+    feetApart: 0.5,
+    leftHand: [2.5, -1.7, 21.5 + 0.4 * rub],
+    leftBend: [0, -1, 0.25],
+    rightHand: [2.5, 1.7, 21.5 - 0.4 * rub],
+    rightBend: [0, 1, 0.25],
+  });
+}
+
+/**
  * The horse-riding dance, ten beats a round. The whole time the pilot
  * jumps, once a beat, the feet apart, one knee higher than the other and
  * then the other one, the body thrown from side to side. For the first half

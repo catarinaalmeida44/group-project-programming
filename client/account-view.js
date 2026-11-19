@@ -5,10 +5,16 @@
 // account.js talks to the server, and account-panel.js puts the result on
 // the page.
 
-import { checkUsername, checkPassword, USERNAME_MIN, USERNAME_MAX, PASSWORD_MIN } from "../shared/account-rules.js";
+import { checkUsername, checkPassword, checkPasswordIsNotName, USERNAME_MIN, USERNAME_MAX, PASSWORD_MIN } from "../shared/account-rules.js";
 import { reasonCode, reasonText } from "./answers.js";
+import { waitingWords, SLOW_AFTER_MS } from "./waking.js";
 
 export const CHECKING_TEXT = "Checking who is signed in…";
+// What the account corner says when that answer takes more than a few
+// seconds: the server was asleep and is waking up (waking.js). Racing
+// alone needs no server, so the player does not have to wait for it.
+export const CHECKING_SLOW_TEXT = `${waitingWords(CHECKING_TEXT, SLOW_AFTER_MS)} You can already race.`;
+export const SIGNING_OUT_SLOW_TEXT = waitingWords("Signing out…", SLOW_AFTER_MS);
 export const UNAVAILABLE_TEXT = "Accounts are not available on this server right now. You can still race.";
 export const CONFIRM_TEXT = "Tick the box to confirm that you want to delete your account.";
 export const STILL_WAITING_TEXT = "Still waiting for the server to answer your last try.";
@@ -16,7 +22,7 @@ export const STILL_WAITING_TEXT = "Still waiting for the server to answer your l
 // The hints under the two boxes of the "Create account" form. The numbers
 // come from the rules themselves, so the hints cannot go out of date.
 export const USERNAME_HINT = `${USERNAME_MIN} to ${USERNAME_MAX} letters, digits or underscores. Other players see it on the leaderboard.`;
-export const PASSWORD_HINT = `At least ${PASSWORD_MIN} characters. We do not ask for an email, so a forgotten password cannot be reset.`;
+export const PASSWORD_HINT = `At least ${PASSWORD_MIN} characters, and not your user name. We do not ask for an email, so a forgotten password cannot be reset.`;
 
 // What the account corner says after something worked.
 export const SIGNED_IN_NOTICE = "You are signed in.";
@@ -26,7 +32,7 @@ export const DELETED_NOTICE = "Your account and all your saved results are delet
 export const PASSWORD_CHANGED_NOTICE = "Your password is changed. You were signed out on your other devices.";
 
 // The "Change my password" form.
-export const NEW_PASSWORD_HINT = `At least ${PASSWORD_MIN} characters, and not the one you have now.`;
+export const NEW_PASSWORD_HINT = `At least ${PASSWORD_MIN} characters, not your user name, and not the one you have now.`;
 export const SAME_PASSWORD_TEXT = "That is the password you already have. Choose a different one.";
 
 /**
@@ -89,6 +95,16 @@ export function hasErrors(errors) {
  */
 export function accountFormErrors(username, password) {
   return { ...NO_ERRORS, username: checkUsername(username), password: checkPassword(password) };
+}
+
+/**
+ * What is wrong with the "create account" form, before anything is sent:
+ * the same as above, and the password must not be the user name itself.
+ * (Signing in does not ask that: an older account may have such a password.)
+ */
+export function signUpFormErrors(username, password) {
+  const errors = accountFormErrors(username, password);
+  return { ...errors, password: errors.password ?? checkPasswordIsNotName(username, password) };
 }
 
 /** What is wrong with the "delete my account" form, before anything is sent. */

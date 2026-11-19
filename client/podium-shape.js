@@ -16,7 +16,7 @@
 // in podium-view.js.
 
 import { box, bar, shade } from "./kart-shape.js";
-import { pilotParts, poseAt, mapPart, HEAD_HEIGHT } from "./pilot-shape.js";
+import { pilotParts, poseAt, cryingPose, mapPart, HEAD_HEIGHT } from "./pilot-shape.js";
 
 /**
  * The three steps of the podium, seen from the camera: 2nd on the left,
@@ -52,6 +52,25 @@ export const CROWD_SIZE = 80;
 export const CROWD_CHEERS = Object.freeze(["wave", "jump", "clap"]);
 /** How high a jumping student gets off the ground, in units. */
 export const CROWD_JUMP = 2.4;
+
+/**
+ * Where the driver who came last stands and cries (see cryingDriver): on
+ * the floor beside the step of second place, a little towards the camera,
+ * in the gap between the podium and the students at the side. In the
+ * podium's own directions, as PODIUM_STEPS: "y" above zero is the camera's
+ * left.
+ *
+ * Why the left and not the right: on the Nova lap the low wall along the
+ * avenue runs through the gap on the right, touching the step of third
+ * place. The first try stood the driver there, at y = -27, which is inside
+ * that wall: it was painted over their feet. Catarina saw it at once.
+ * tests/crying-driver.test.js now checks that the spot is clear of every
+ * wall, fence, tree and bench of a track that has a podium.
+ */
+export const LOSER_SPOT = Object.freeze({ x: 12, y: 27 });
+/** How many tears fly from each eye at a time, and their colour. */
+export const TEARS_EACH_EYE = 5;
+const TEAR = "#41b4ff";
 
 /**
  * Where each student of the crowd stands, and in which colours: always the
@@ -197,8 +216,10 @@ export function stepPart(step, y = step.y) {
  * measured from there. The race view (draw.js) sorts the groups with
  * everything else on the track, so a tree in front hides what is behind it.
  *   drivers  up to three, from podiumLineup() in podium.js, each with "picture"
+ *   loser    the driver who came last, from podiumLoser() in podium.js,
+ *            with "picture", or null: one more group, crying
  */
-export function podiumGroups(drivers, seconds, crowd = crowdSpots()) {
+export function podiumGroups(drivers, seconds, crowd = crowdSpots(), loser = null) {
   const fromStep = (step) => ([x, y, z]) => [x, y - step.y, z];
   const steps = PODIUM_STEPS.map((step) => {
     const driver = drivers.find((one) => one.place === step.place);
@@ -216,7 +237,12 @@ export function podiumGroups(drivers, seconds, crowd = crowdSpots()) {
     shadows: [{ x: 0.4, y: 0, along: 2.2, across: 2.6, turn: 0 }],
     labels: [],
   }));
-  return [...steps, ...people];
+  // The driver who came last, crying, when there is one (podiumLoser in podium.js).
+  const crying =
+    loser === null
+      ? []
+      : [{ at: [LOSER_SPOT.x, LOSER_SPOT.y], parts: cryingDriver(loser, seconds), shadows: [{ x: 0.4, y: 0, along: 3.2, across: 3.6, turn: 0 }], labels: [] }];
+  return [...steps, ...people, ...crying];
 }
 
 /**
@@ -252,7 +278,16 @@ export function podiumDriver(driver, seconds) {
     throw new RangeError("podiumDriver: only places 1, 2 and 3 stand on the podium");
   }
   const pose = driver.place === 1 ? poseAt("trophy", seconds) : poseAt(driver.dance ?? "clap", seconds + driver.place * 0.37);
-  const parts = pilotParts(driver.look, driver.hair ?? "#2b2420", pose, false, driver.longHair ?? null).map((part) => {
+  const parts = withTheirOwnHead(pilotParts(driver.look, driver.hair ?? "#2b2420", pose, false, driver.longHair ?? null), driver);
+  return parts.map((part) => mapPart(part, ([x, y, z]) => [x, y + step.y, z + step.height]));
+}
+
+/**
+ * Gives a pilot their own head: the picture of the person's head, if the
+ * driver has one, or a helmet in their colours where the head is.
+ */
+function withTheirOwnHead(parts, driver) {
+  return parts.map((part) => {
     if (part.name !== "head") {
       return part;
     }
@@ -266,19 +301,69 @@ export function podiumDriver(driver, seconds) {
       ball: { middle: [x, y, z - HEAD_HEIGHT * 0.12], radius: HEAD_HEIGHT * 0.36, colour: driver.look.helmet, stripe: driver.look.stripe, visor: "#16202b" },
     };
   });
-  return parts.map((part) => mapPart(part, ([x, y, z]) => [x, y + step.y, z + step.height]));
+}
+
+/**
+ * The driver who came last, standing on the floor and crying while
+ * everyone else cheers (Catarina's idea, 19 November 2026). The same figure
+ * as on the podium, with their own head and without a helmet, in the pose
+ * of crying (cryingPose in pilot-shape.js), and with tears. Gives a list of
+ * parts, measured from where the driver stands.
+ *   driver  { look, hair, longHair, picture }, from podiumLoser() in podium.js
+ */
+export function cryingDriver(driver, seconds) {
+  const figure = pilotParts(driver.look, driver.hair ?? "#2b2420", cryingPose(seconds), false, driver.longHair ?? null);
+  const face = figure.find((part) => part.name === "head").head.middle;
+  return [...withTheirOwnHead(figure, driver), ...tearParts(face, seconds)];
+}
+
+/**
+ * The tears: blue drops that leave each eye like a little fountain, as in
+ * a cartoon: up and out to the side in an arc, down as far as the
+ * shoulders, and again, one after the other. (The first try had three small
+ * drops an eye: they could not be seen at the size of the podium.) Each drop always flies the same way, worked out from the time, so
+ * nothing has to be remembered.
+ *   face  the middle of the head: [x, y, z]
+ */
+export function tearParts(face, seconds) {
+  const parts = [];
+  for (const side of [-1, 1]) {
+    for (let drop = 0; drop < TEARS_EACH_EYE; drop++) {
+      // How far this drop is along its way: 0 as it leaves the eye, 1 as it lands.
+      const along = (((seconds * 1.3 + drop / TEARS_EACH_EYE + (side === 1 ? 0.1 : 0)) % 1) + 1) % 1;
+      parts.push({
+        name: "tear",
+        ball: {
+          middle: [face[0] + 2.6, face[1] + side * (2.6 + 6.4 * along), face[2] + 9 * along - 15 * along * along],
+          radius: 0.95 * (1 - 0.4 * along), // it gets smaller as it falls
+          colour: TEAR,
+          stripe: TEAR,
+          visor: TEAR,
+        },
+      });
+    }
+  }
+  return parts;
 }
 
 /**
  * Everything that moves in the scene at a moment: the drivers on the
  * podium and the crowd. Gives { parts, shadows }.
  *   drivers  up to three, from podiumLineup() in podium.js
+ *   loser    the driver who came last, from podiumLoser(), or null
  */
-export function podiumMoving(drivers, seconds, crowd = crowdSpots()) {
-  const parts = [...drivers.flatMap((driver) => podiumDriver(driver, seconds)), ...crowd.flatMap((spot) => crowdPerson(spot, seconds))];
+export function podiumMoving(drivers, seconds, crowd = crowdSpots(), loser = null) {
+  const toTheirSpot = ([x, y, z]) => [x + LOSER_SPOT.x, y + LOSER_SPOT.y, z];
+  const parts = [
+    ...drivers.flatMap((driver) => podiumDriver(driver, seconds)),
+    ...crowd.flatMap((spot) => crowdPerson(spot, seconds)),
+    // The driver who came last, crying, when there is one.
+    ...(loser === null ? [] : cryingDriver(loser, seconds).map((part) => mapPart(part, toTheirSpot))),
+  ];
   const shadows = [
     ...PODIUM_STEPS.map((step) => ({ x: 0.6, y: step.y, along: STEP_DEPTH * 0.62, across: STEP_WIDTH * 0.62, turn: 0 })),
     ...crowd.map((spot) => ({ x: spot.x + 0.4, y: spot.y, along: 2.2, across: 2.6, turn: 0 })),
+    ...(loser === null ? [] : [{ x: LOSER_SPOT.x + 0.4, y: LOSER_SPOT.y, along: 3.2, across: 3.6, turn: 0 }]),
   ];
   return { parts, shadows };
 }

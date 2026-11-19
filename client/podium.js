@@ -11,6 +11,10 @@
 // finish never does. After PODIUM_SECONDS the online page also shows the
 // results board, with everyone.
 //
+// When four or more karts raced, the driver who came last stands on the
+// floor beside the podium and cries, while everyone else cheers
+// (podiumLoser below; Catarina's idea, 19 November 2026).
+//
 // This file is plain sums, so it is tested without a browser.
 
 import { standings } from "./standings.js";
@@ -44,6 +48,55 @@ export function cameraPullBack(seconds) {
   return CAMERA_STARTS + (1 - CAMERA_STARTS) * arrived;
 }
 
+/**
+ * The driver who came last is shown crying when at least this many karts
+ * raced. With three or fewer, everyone who finished is on the podium, and
+ * nobody cries.
+ */
+export const CRY_FROM_KARTS = 4;
+
+/**
+ * The driver who came last, who stands beside the podium and cries, or null
+ * when fewer than CRY_FROM_KARTS karts raced.
+ *
+ * "Last" is the last line of the results: the karts that finished come
+ * first, in the order they crossed the line, then the karts that did not
+ * finish, the one closest to the finish first (standings.js). So a kart
+ * that never finished can be the one, and with four or more karts the last
+ * one is never also on the podium. Only that one driver cries: with five
+ * karts the fourth is neither on the podium nor crying.
+ *
+ * Gives { place, id, character, name, look, hair, longHair, head, finished },
+ * as a driver of podiumLineup() is described there. "place" is their place
+ * in the race, the same as the number of karts.
+ */
+export function podiumLoser(karts, track) {
+  const usable = Array.isArray(karts) ? karts.filter((kart) => kart !== null && typeof kart === "object") : [];
+  if (usable.length < CRY_FROM_KARTS) {
+    return null;
+  }
+  const order = standings(usable, track);
+  const last = order[order.length - 1];
+  const { dance, steps, ...driver } = driverOf(last); // someone who cries does not dance, and may have no race time
+  return { place: order.length, ...driver, finished: last.finished === true };
+}
+
+/** A kart as a driver to paint: who they are, their colours, hair and head (cast-choice.js). */
+function driverOf(kart) {
+  const character = characterById(kart.character);
+  return {
+    id: kart.id,
+    character: character === null ? null : character.id,
+    name: character === null ? `Kart ${kart.id}` : character.name,
+    look: character === null ? lookOf(kart) : lookOfCharacter(character.id),
+    hair: character === null ? null : hairOf(character.id),
+    longHair: character === null ? null : longHairOf(character.id),
+    head: character === null ? null : headOf(character.id),
+    dance: character === null ? null : danceOf(character.id),
+    steps: kart.steps,
+  };
+}
+
 /** In a single race: the longest the player waits for the computer karts after finishing, in seconds. */
 export const WAIT_AFTER_YOU_SECONDS = 30;
 
@@ -64,21 +117,7 @@ export const WAIT_AFTER_YOU_SECONDS = 30;
 export function podiumLineup(karts, track) {
   const usable = Array.isArray(karts) ? karts.filter((kart) => kart !== null && typeof kart === "object") : [];
   const finishers = standings(usable, track).filter((kart) => kart.finished === true);
-  return finishers.slice(0, 3).map((kart, index) => {
-    const character = characterById(kart.character);
-    return {
-      place: index + 1,
-      id: kart.id,
-      character: character === null ? null : character.id,
-      name: character === null ? `Kart ${kart.id}` : character.name,
-      look: character === null ? lookOf(kart) : lookOfCharacter(character.id),
-      hair: character === null ? null : hairOf(character.id),
-      longHair: character === null ? null : longHairOf(character.id),
-      head: character === null ? null : headOf(character.id),
-      dance: character === null ? null : danceOf(character.id),
-      steps: kart.steps,
-    };
-  });
+  return finishers.slice(0, 3).map((kart, index) => ({ place: index + 1, ...driverOf(kart) }));
 }
 
 /**

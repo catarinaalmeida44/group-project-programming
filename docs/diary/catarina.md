@@ -4,6 +4,213 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 19 November 2026, afternoon: a room of six, a job that keeps the server awake, and the driver who cries
+
+**What she said**
+
+- Cap the online room at six players, "because we only have 6 characters anyway".
+- Yes to the small GitHub file that keeps the site awake.
+- The driver who came last cries beside the podium. Her answers to the three open points: "last" is the last line of the results, finished or not; it is also in the single race against the computer karts; and it is fine if the one crying is the Dean or the professor.
+- Show the banner for watching, and the podium with the character crying.
+
+**What was built**
+
+| What | Where |
+|---|---|
+| A room takes six players, one for each character, and never more than the grid has places. A seventh is told "The room is full" | `MAX_PLAYERS` in `server/room.js`, the words in `client/link.js` |
+| A job on GitHub opens the live server's `/health` every five minutes, so the server does not fall asleep. It needs nothing from the repository and can change nothing in it | `.github/workflows/keep-awake.yml` |
+| Who cries: with four or more karts, the driver on the last line of the results, finished or not. With five karts the fourth is neither on the podium nor crying. With three or fewer, nobody | `podiumLoser()` and `CRY_FROM_KARTS` in `client/podium.js` |
+| The pose: both fists at the eyes, rubbing, elbows out, shoulders shaking in bursts, bent forwards a little, the head rocking slowly. Not a dance: nobody can choose it | `cryingPose()` in `client/pilot-shape.js` |
+| The figure: the same pilot as on the podium, with their own head (or a helmet for a kart that is no character), and five blue tears from each eye flying out like a little fountain. It stands on the lawn beside the step of second place, between the podium and the students at the side (see "Her first look" below: it was on the other side at first) | `cryingDriver()`, `tearParts()`, `LOSER_SPOT` in `client/podium-shape.js` |
+| Both race pages work out who came last and hand them to the podium, on the Nova lap and in the hall of the other tracks | `client/podium-view.js`, `client/online.js`, `client/main.js` |
+
+**Four existing tests were changed, because the rule changed (a room of six)**
+
+They are not Catarina's alone: whoever wrote them should know, and say if they disagree. Each has a comment in its file that says what it said before.
+
+| Test | It said | It says now |
+|---|---|---|
+| `tests/room.test.js`, "holds eight players unless told otherwise" | `MAX_PLAYERS` is 8 | "holds six players unless told otherwise: one for each character": it is 6, and the number of characters |
+| `tests/grid.test.js`, "has eight places, one for each player a room can hold" | the grid has 8 places and a room takes exactly as many | "has eight places, enough for every player a room can hold": the grid still has 8, and a room takes no more than that |
+| `tests/room-bananas.test.js`, "ends for a full room of eight robots too" | a race with 8 robots ends, with 8 finishes | "ends for a full room of robots too (six)": the same with a full room, which is now 6 |
+| `tests/bumps.test.js`, "never leave a kart in a wall ... when eight karts race for the same corner" | made its room with `roomWith(8)` | still races eight karts, one on every place of the grid, in a room made for eight on purpose (`roomWith(8, TEST_OVAL, 8)`), because eight jam a corner worse than six |
+
+**For Pedro: his podium files were touched**
+
+`client/podium.js`, `client/podium-shape.js` and `client/podium-view.js` are his (pull request 28). Nothing of his was removed. Added: the driver who cries. Moved without changing what it does: the lines that give a driver their own head or a helmet (now `withTheirOwnHead()`), and the lines that turn a kart into a driver (now `driverOf()`), so both the podium and the crying driver use them. All his tests in `tests/podium.test.js` pass as they were.
+
+**Decisions made by the agent: please confirm**
+
+- The crying driver stands on the camera's left, beside second place, a little towards the camera (at first on the right: see "Her first look").
+- The fists cover the eyes of the head picture. The rest of the face, the hair and the suit stay visible, so it is still clear who it is.
+- The first tears (three small drops an eye) could not be seen at the size of the podium. They are now five an eye, bigger, in a higher arc.
+- GitHub visits every five minutes. Render switches off after fifteen, so two visits can be late before the server naps.
+- `MAX_PLAYERS` is worked out from the list of characters, not written as "6": a seventh character would make room for a seventh player.
+
+**Her first look: "the layer on the gray floor is weirdly over their feet"**
+
+She was right, and the agent had not seen it in its own pictures: it had looked at the face and the tears, not at the feet. The driver stood at the right of third place, and exactly there the low wall along the avenue runs (`avenue parapet` in `client/nova-lap-buildings.js`, rows 6.7 to 7 of the map; the podium is at row 6.1). The driver was standing inside the wall, so the wall was painted over the feet and shins.
+
+- Fixed: the driver now stands on the lawn at the camera's left, beside second place, a little towards the camera so that a dancing arm of second place passes behind them (`LOSER_SPOT` in `client/podium-shape.js`).
+- So that it cannot come back: a test works out where the spot is on the map of every track that has a podium, and fails if a wall, fence, tree or bench is within reach of it, elbows included. A second test puts the old spot in and expects it to be caught, to prove the first one can see such a mistake.
+- Found on the way, NOT changed: two of the eighty students of the crowd (numbers 8 and 9) stand right at the trunk of the tree behind second place. They have stood there since the crowd was made bigger on 18 November.
+
+**Checked, and not checked**
+
+- `npm test`: 2,054 passed, 5 skipped. 30 are new, in `tests/crying-driver.test.js`.
+- In the browser on the laptop, sound off: the podium of the Nova lap painted with five and with six drivers, with Cici Boss and with the Dean as the one crying, close up and whole; the hall of another track with a plain kart crying, and with three karts and nobody crying, without an error; six robot players filling the room and a seventh page told "The room is full"; the single race page and the online page still open without errors.
+- NOT checked: the crying driver at the end of a real race, driven to the finish (the pictures were made with the same code and made-up results). How the crying looks in motion: the agent only sees single pictures, and has been wrong about movement before. The GitHub job: it cannot run before it is on `main`. Anything on the live site.
+
+**How to check it yourself**
+
+1. `npm start`, Single race on the Nova lap, and finish it (or wait 30 seconds after you finish): with six karts in the race, the last one cries at the right of the podium.
+2. After merging: on GitHub, the "Actions" tab shows "Keep the server awake" running every few minutes. "Run workflow" there starts it by hand.
+
+### 19 November 2026, midday: watching a race, one kart per player, a host who is away, and how many karts fit
+
+**What she said, after reading the entry below**
+
+- Two tabs giving two karts is a problem: one kart per signed-in player. A person using two different browsers on purpose is fine.
+- A password must not be the same as the user name.
+- Someone who arrives during a race must be told so in big letters on the picture: a race is on, you are watching, a new race starts soon and you join it. And they should see the kart that is in first place when they arrive.
+- If the host is inactive (their kart does not move and the race ends by the two minutes), the host passes to the next person, the one who entered the room second.
+- Later, in the clean-up: the race should fill more of the screen, without the little lines under the picture ("Connected. 3 players here."), or with them worked into the picture. Not now, but new things should be built with that in mind.
+- To think about and discuss: how many players the online room should hold (three felt boring, more than three felt laggy, never more than six because there are six characters); whether two players can be the same character; and a podium where the driver who came last stands down with the crowd and cries.
+
+**What was measured about the number of karts**
+
+| What | 1 kart | 3 karts | 6 karts | 8 karts |
+|---|---|---|---|---|
+| The live server at Render, robot karts driving for 15 seconds: the usual gap between two updates (it should be 50 thousandths of a second) | 49 | 49 | 49 | 49 |
+| The same: the worst gap | 70 | 66 | 97 | 98 |
+| The same: how fast the game ran, against real time | 100% | 100% | 100% | 100% |
+| The room's rules alone, on this laptop: work for one second of racing, in thousandths of a second | 0.6 | 0.6 | 1.4 | 2.2 |
+| This laptop painting one picture of the online page, all karts in view, in thousandths of a second (16 are allowed) | 3.3 | 3.9 | 4.4 | not measured |
+
+So neither the server nor the painting slows down with six karts: each extra kart costs about a fifth of a thousandth of a second to paint. What this does NOT show: six different laptops on the campus Wi-Fi. All the robots ran from one computer on one connection. Where "more than three is laggy" came from could not be found in the notes; the only record is three players on three laptops on 10 November.
+
+**Characters:** two players in a room are never the same character, already. The server gives the second one the first character nobody has, and their page says "Someone in this room is already Cici Boss, so you are Dean." (`server/cast-keeper.js`). What a player cannot do is see in the menu who is already taken.
+
+**What was built**
+
+| What | Where |
+|---|---|
+| A password cannot be the user name, whatever the capital letters. Asked when a password is chosen (sign-up, change of password), on the server and in the sign-up form. Not asked at sign-in, so an account made before today still opens | `checkPasswordIsNotName()` in `shared/account-rules.js`, `server/accounts.js`, `signUpFormErrors()` in `client/account-view.js` |
+| A banner in big letters across the top of the picture for someone who arrived during a race: "A RACE IS ON: YOU ARE WATCHING", then "The camera is on Dean. A new race starts when this one is over, and you join it." Pressing an arrow key makes it light up and say "Your keys do nothing yet: you drive in the next race." | `watchBanner()` in `client/race-view.js`, `client/online.js`, `client/online.html`, `client/style.css` |
+| The camera of someone watching is on the kart in first place when they arrive (by checkpoints passed, as the place "2nd of 4" is worked out). It stays with that kart, and moves to the new leader only when its kart has finished or left | `kartToFollow()` in `client/race-view.js` |
+| One kart for each signed-in player in a room. Joining again from another tab or computer keeps the new one; the older one is told why and closed, and its page shows "You are playing somewhere else" with "Play here instead" | `sendOlderOnesAway()` in `server/online.js`, `client/net.js`, `client/link.js`, `client/online.js` |
+| The host is whoever has been in the room longest AND has pressed a key in the last minute. One who is away passes the room to the next player in the order they arrived | `isAway()`, `hostId()`, `AWAY_AFTER_STEPS` in `server/room.js` |
+| The page sends "start" for Enter whenever no race is on, host or not, and the server decides. So a host who was counted as away gets the room back by pressing Enter | `client/online.js` |
+
+**Decisions made by the agent: please confirm**
+
+- "Inactive" is one minute without a key, counted all the time, not only at the end of a race. Her case (the host's kart never moved, the race ended by the two minutes) is covered: by then the host has long passed on. Counting all the time also covers the case she did not name: a host who is away before the first race, where no race ever ends.
+- Three things count as being there without a key: having just arrived; having finished the race that just ended (a host who won and then waited two minutes for the others keeps the room); and, for the host, a newcomer walking in (a host who waited for friends keeps the room for another minute).
+- Pressing any key, R or Enter brings an away player back at once. If everyone is away, the host is whoever has been here longest.
+- Of two connections of the same player, the newer one stays: a forgotten tab is the old one.
+- Guests are not limited: two tabs of a guest are still two karts. (The server has nothing to recognise a guest by. A rule inside the page, "one kart per browser", could cover it: not built, say if you want it.)
+- The camera stays with the kart it started on instead of jumping to each new leader.
+- The banner sits at the top of the picture and stops before the small map. It is on the picture, not under it, with the fuller screen in mind.
+
+**No existing test was changed.** All 1,960 from this morning pass as they were.
+
+**Still to decide together**
+
+1. The size of the room. Today eight fit. By the measurements six is safe; her limit is six, because there are six characters. Changing it means two existing tests that say "eight" change too.
+2. The driver who came last, crying among the crowd at the podium, when four or more raced.
+3. Whether to keep the server awake (asked this morning).
+
+**Checked, and not checked**
+
+- `npm test`: 2,024 passed, 5 skipped. 64 are new: `tests/password-not-name.test.js` (16), `tests/host-away.test.js` (20), `tests/watching.test.js` (16), `tests/one-kart-per-player.test.js` (12).
+- In the browser on the laptop, with the sound switched off: the banner with two robot karts racing and the camera on the one in front (the old rule would have shown the other); the banner answering a key; the sign-up form refusing a password equal to the name; a second tab of the same signed-in player putting the card on the first, and "Play here instead" putting it on the second.
+- On the laptop's real server: two robot players, the first silent, the second pressing a key every five seconds. The first was host at 2, 30 and 58 seconds, the second at 63 and 70, and the first again as soon as it pressed a key.
+- NOT checked: any of this on the live site (it runs the old version); real people on several laptops; how the banner looks on a small screen; a screen reader.
+- The agent's test drives in the browser pane played the engine sound on her speakers until she asked for mute. The pane's sound setting is now switched off before any test and put back afterwards.
+
+**How to check it yourself**
+
+1. `npm run start:pretend`. In one browser window open Online on the Nova lap and press Enter. In a second window (a private one, so it is a different player) open the same page: the banner is there.
+2. Create an account with the password equal to the name: the form says no.
+3. Signed in, open the online page in two tabs: the first one says "You are playing somewhere else".
+4. With two windows in the room, leave the first alone for a minute and press an arrow key in the second now and then: the second is told "You are the host".
+
+### 19 November 2026, morning: bad inputs, a sleeping server, and a lost connection
+
+**What she asked for**
+
+A run aimed at two things from yesterday's list of ideas. One: try the bad inputs (wrong password, taken user name, joining mid-race, two tabs, reloading during a race, the server waking from sleep) and fix whatever shows a raw error. Two: a clear "the server is waking up, about a minute" message instead of a blank wait. And: "tell me what I have to decide". The other two tracks will be removed in the final polish, not now.
+
+**What the sweep found**
+
+Tried on the laptop with pretend accounts (`npm run start:pretend`) and, for the room, also on the live site. The agent does not type passwords into the live site, so the account forms were tried on the laptop only: the code is the same.
+
+| Tried | What the game said | Verdict |
+|---|---|---|
+| Sign up with nothing, a short name, `<b>x</b>`, an accent, 5,000 letters, a 5,000-letter password | A sentence under the box that is wrong, before anything is sent | fine |
+| A taken user name, also in other capitals | "Someone already has that user name. Choose another one." | fine |
+| Wrong password, unknown user | "Wrong user name or password." for both, so names cannot be guessed | fine |
+| Five wrong passwords, then the right one | "Too many wrong passwords. Try again in 10 minutes." | fine |
+| Change password: wrong current one, the same new one, a short new one | A sentence each | fine |
+| Delete account without the tick, or with a wrong password | A sentence each | fine |
+| Pressing "Sign in" twice at once | One sign-in | fine |
+| Everything above with the server switched off | "The server could not be reached. Try again in a moment." The leaderboard says so too, with "Try again" | fine |
+| Two tabs in the same room | Two karts. Nothing breaks | a choice, see below |
+| Opening the online page during a race | You watch, and drive in the next race | fine |
+| Reloading during a race | Your kart leaves the race, and you watch until the next one | a choice, see below |
+| A track that does not exist in the address, or `<script>` | The test oval, and nothing of the address on the page | fine |
+| An address that does not exist | Three bare words on a white page: "Page not found." | **fixed** |
+| The server stops or restarts under an open online page | A small line under the picture: "reload the page". The player had to reload by hand | **fixed** |
+| The server is slow to answer because it is waking up | "Signing in…" and nothing else, for as long as it takes | **fixed** |
+| Arriving during a race as a character someone else already has | The line said "You are Cici Boss" although you had no kart yet and would get another character | **fixed** |
+
+No raw error, code or stack of technical words was shown anywhere. What was missing was what to tell the player while waiting, and doing the retrying for them.
+
+**What was built**
+
+| What | Where |
+|---|---|
+| The online page tries to connect again by itself: after half a second, then 1, 2, 3 and every 5 seconds. A card over the picture says what is happening: "Connecting…", after 3 seconds "The server is waking up" with a little kart driving along a road and the seconds counted, after 75 seconds "Still waking up", after two and a half minutes "The server cannot be reached" with a "Try again" button and "Back to the menu". Also "Connection lost", "No internet connection", "The room is full", "The server has gone quiet" | `client/link.js` (the words and the sums), `client/online.js` (`connect`, `connectionClosed`, `tryAgain`, `forgetTheRoom`, `showCard`), `client/online.html`, `client/style.css` |
+| In the room, eight seconds without any news from the server count as a lost connection: the page lets go of it and joins again | `LOST_AFTER_QUIET_MS` in `client/link.js` |
+| In the menu, signing in, creating an account, changing a password, deleting the account, signing out, the account corner and the leaderboard add "The server is waking up, which can take up to a minute." when an answer takes more than three seconds | `client/waking.js`, `client/account-panel.js`, `client/account-view.js`, `client/leaderboard.js`, `client/leaderboard-view.js` |
+| A question to the server that gets no answer for a minute and a half is given up, with "The server could not be reached." If the hosting company answers in our server's place while it starts, the form says "The server is starting up. Try again in a minute." | `client/account-api.js` |
+| A wrong address gives a page of the game, "Off the track", with a button back to the menu, still with the number 404. Scripts and programs get the plain words as before | `client/not-found.html`, `sendNotFound()` in `server/app.js` |
+| Someone who arrives during a race is told who they are only once they have a kart | `client/online.js` |
+
+**About the sleeping server**
+
+- Render's own page about the free plan says: the server is switched off after 15 minutes without visitors, waking takes about a minute, and a browser that opens the site meanwhile is shown a loading page by Render itself. Messages of a race count as visitors, so a race is never cut off by this.
+- Measured on 19 November at 10:35: the sleeping server answered after 17 seconds.
+- So someone who opens the link cold sees Render's loading page, not a blank one, and we cannot change that page. Our own message is for a page that was already open: the menu left alone for a quarter of an hour, then "Sign in" or the leaderboard.
+- Two more tries to catch the server asleep, after leaving it alone for 17 and then 21 minutes, found it awake both times (it answered in a tenth of a second). Something else was visiting it: a teammate, or a program that scans the internet. So what an open page of ours gets from Render during the waking was not seen, and neither was Render's loading page. The code copes with all three possibilities: the answer is held back (the "waking up" words after three seconds), the connection is refused (the page tries again), or Render answers in our place (the "starting up" sentence).
+
+**Decisions made by the agent: please confirm**
+
+- This branch, `waking-up-and-lost-connection`, is built on top of `atrium-screen-and-characters`, which is built on Pedro's `podium`. It touches the same files, so starting from `main` would have meant conflicts. Pull requests 28 and 29 have to be merged before this one.
+- After a lost connection the page comes back by itself. During a race the returning player watches, as before: the rule was not changed.
+- The numbers: 3 seconds before "waking up", 8 seconds of silence before "lost", 2.5 minutes before giving up, 1.5 minutes for a question in the menu. All are named at the top of `client/waking.js`, `client/link.js` and `client/account-api.js`.
+- Nothing was done to keep the server awake. That is a choice for her (below).
+
+**What she has to decide**
+
+1. Should the server never sleep? Free ways: a job on GitHub that opens `/health` every ten minutes (a small file in the repository, no new account), or a free "is my site up" service (she makes an account). Paid: Render's always-on plan. Or leave it, and open the link a few minutes before any demo.
+2. Reloading during a race: keep "you watch until the next race", or hold the kart for a few seconds so a reload brings you back into the race? The second is a change to the rules of the room.
+3. The same person in two tabs: allow two karts (today), or one kart per signed-in player?
+4. A password that is the same as the user name is accepted today. Refuse it?
+
+**Checked, and not checked**
+
+- `npm test`: 1,960 passed, 5 skipped. 45 are new, in `tests/link.test.js` and `tests/not-found-page.test.js`. No existing test was changed.
+- In the browser, on the laptop: every row of the table above; the card for a lost connection (server stopped) and the page joining again by itself when it came back; the waking card from the first second to "The server cannot be reached" and the "Try again" button, against a copy of the server without race rooms; the three waking sentences in the menu with answers slowed down to five seconds; the "Off the track" page.
+- On the live site: two tabs, joining and reloading during a race, a wrong track, a wrong address. It runs the old version, so the new card and page were not seen there.
+- NOT checked: the new card on the live site against a server that is really asleep (only possible after merging). Two real laptops. Wi-Fi switched off and on (rows 11 to 13 of `docs/two-laptop-checklist.md`, rewritten for the new behaviour). A screen reader reading the card.
+
+**How to check it yourself**
+
+1. `npm run start:pretend`, open http://localhost:3000, click Online and a track. Stop the server with Ctrl+C: the card says "Connection lost". Start it again: the card goes away and you are back in the room, without touching the page.
+2. Open http://localhost:3000/anything-at-all: "Off the track".
+3. After merging: leave the live menu open for 20 minutes, then press "Sign in" with any name and password. After three seconds the form should say the server is waking up.
+
 ### 18 November 2026, late evening: the podium inside the atrium, a white screen, more dances
 
 **What she said, after looking at the entry below**

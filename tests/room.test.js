@@ -4,6 +4,7 @@
 
 import { describe, it, expect } from "vitest";
 import { createRoom, MAX_PLAYERS, STEPS_PER_UPDATE } from "../server/room.js";
+import { CAST } from "../shared/cast.js";
 import { readClientMessage, MAX_MESSAGE_LENGTH } from "../server/messages.js";
 import { stepRacer } from "../shared/race.js";
 import { createKart } from "../shared/physics.js";
@@ -71,8 +72,12 @@ describe("joining and leaving a room", () => {
     expect(spots.size).toBe(MAX_PLAYERS);
   });
 
-  it("holds eight players unless told otherwise", () => {
-    expect(MAX_PLAYERS).toBe(8);
+  // Changed on 19 November 2026, when the team capped a room at six, one for
+  // each character. Before, this said: "holds eight players unless told
+  // otherwise", expect(MAX_PLAYERS).toBe(8).
+  it("holds six players unless told otherwise: one for each character", () => {
+    expect(MAX_PLAYERS).toBe(6);
+    expect(MAX_PLAYERS).toBe(CAST.length);
   });
 
   it("refuses a new player when the room is full", () => {

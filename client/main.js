@@ -47,7 +47,7 @@ import { readSettings } from "./settings.js";
 import { recordFinishedRace } from "./records.js";
 import { createRaceSound } from "./sound.js";
 import { tileKindAt } from "../shared/track.js";
-import { podiumLineup, podiumKartsOf, singleRaceIsOver, podiumCaption, cheersDue, finishPlace, finishedWords } from "./podium.js";
+import { podiumLineup, podiumLoser, podiumKartsOf, singleRaceIsOver, podiumCaption, cheersDue, finishPlace, finishedWords } from "./podium.js";
 import { createPodiumView } from "./podium-view.js";
 
 const track = chooseTrack(window.location.search);
@@ -204,10 +204,12 @@ function frame(now) {
   };
   if (podiumSince !== null) {
     // The podium instead of the track: the first three, the winner with the trophy.
-    const lineup = podiumLineup(podiumKartsOf(race, myCharacter), track);
+    const kartsOfTheRace = podiumKartsOf(race, myCharacter);
+    const lineup = podiumLineup(kartsOfTheRace, track);
+    const loser = podiumLoser(kartsOfTheRace, track); // the driver who came last cries beside the podium
     const caption = `${podiumCaption(lineup, formatTime)}  ·  Press R to race again`;
     const shownFor = (now - podiumSince) / 1000;
-    podium.paint(trackCanvas.getContext("2d"), { width: trackCanvas.width, height: trackCanvas.height }, lineup, shownFor, caption);
+    podium.paint(trackCanvas.getContext("2d"), { width: trackCanvas.width, height: trackCanvas.height }, lineup, shownFor, caption, loser);
     // The crowd cheers, again and again for a while.
     while (cheered < cheersDue(shownFor)) {
       sound.cheer();

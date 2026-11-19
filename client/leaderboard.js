@@ -7,6 +7,7 @@
 // a pretend "show", and watch what happens.
 
 import { leaderboardView } from "./leaderboard-view.js";
+import { SLOW_AFTER_MS } from "./waking.js";
 
 /**
  * Makes the leaderboard.
@@ -19,11 +20,13 @@ export function createLeaderboard({ api, storage, tracks, show }) {
   let shortName = Object.keys(tracks)[0]; // the chosen track: the first one to begin with
   let me = null; //       who is signed in, as account.js tells us (null: not known)
   let loading = false; // true while we wait for the server
+  let slow = false; //    true once we have waited for a few seconds: the server is waking up (waking.js)
+  let slowTimer = null;
   let answer = null; //   the server's last answer for the chosen track
   let asked = 0; //       how many times we asked, to recognise an answer that comes too late
 
   function render() {
-    show(leaderboardView({ tracks, shortName, loading, answer, me, storage }));
+    show(leaderboardView({ tracks, shortName, loading, slow, answer, me, storage }));
   }
 
   /** Asks the server for the boards of the chosen track, and shows "loading" meanwhile. */
@@ -31,7 +34,17 @@ export function createLeaderboard({ api, storage, tracks, show }) {
     asked += 1;
     const thisTime = asked;
     loading = true;
+    slow = false;
     render();
+
+    // If the answer takes long, the panel says that the server is waking up.
+    clearTimeout(slowTimer);
+    slowTimer = setTimeout(() => {
+      if (thisTime === asked && loading) {
+        slow = true;
+        render();
+      }
+    }, SLOW_AFTER_MS);
 
     let got = null;
     try {
@@ -47,7 +60,9 @@ export function createLeaderboard({ api, storage, tracks, show }) {
     if (thisTime !== asked) {
       return;
     }
+    clearTimeout(slowTimer);
     loading = false;
+    slow = false;
     answer = got;
     render();
   }
