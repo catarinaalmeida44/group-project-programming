@@ -20,6 +20,13 @@ Everything built on 10 November is in `docs/build-diary.md`.
 - One thing to know, not changed: a win against Easy computer karts counts in "My stats" exactly like a win against Hard ones. The level is not saved with a race.
 - A small fix went onto the stats branch at the same time: a guest's finished single race is no longer sent to the server at all (before, it was sent and refused, which left a red line in the browser's console).
 
+**And one more while this was being built: Francisco's FranFon look and the menu without the Cup (number 34)**
+
+- Merged into `main` at 16:42: FranFon drives a green kart and dances a golf swing, and the Cup tile is gone from the menu. It changed `client/index.html` and `client/style.css`, which the stats work also changes, in other places.
+- `main` was merged into `my-stats-and-results-buttons` again, and that branch into this one. The code fitted together by itself both times. The only overlap, both times, was the list and the number of tests in `WALKTHROUGH.md`: both entries are kept.
+- All tests pass on each combination: 2,278 on the stats branch, 2,326 on this one. In the pane the menu shows three tiles (no Cup) and "Your account" still has the stats card, the download button and the password part.
+- Nothing of Rodrigo's or Francisco's was removed or changed.
+
 **What was built** (branch `online-lag-small-fixes`, on top of the stats branch)
 
 | What | Where |
@@ -57,7 +64,7 @@ Each has a comment in its file that says what it said before. Whoever wrote them
 
 **Checked, and not checked**
 
-- `npm test`: 2,307 passed, 5 skipped (87 files). 48 are new: `tests/playback-delay.test.js` 16 and `tests/meter.test.js` 32. One of them found a slip in the meter before anyone saw it: 30 updates a second could read as 31.
+- `npm test`: 2,326 passed, 5 skipped (88 files), with pull requests 31 to 34 underneath. 48 are new: `tests/playback-delay.test.js` 16 and `tests/meter.test.js` 32. One of them found a slip in the meter before anyone saw it: 30 updates a second could read as 31.
 - Measured with a robot player (a guest, no account) and six karts, five of them computer karts:
   - This laptop's server with the new code: 359 updates in 12 seconds (30 a second), usually 31 thousandths of a second apart, the game at 100% of real speed, 1,398 characters an update. That is about 42,000 characters a second for each player, half as much again as before.
   - The live server, which still has the old code: usually 49 apart, 95 of 100 within 64, the worst 68, the game at 100% of real speed. So the server keeps its pace with Rodrigo's computer karts in the race.

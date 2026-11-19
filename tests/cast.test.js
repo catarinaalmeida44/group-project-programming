@@ -69,7 +69,7 @@ describe("the cast", () => {
     expect(colourNames("ricardo")).toEqual(["Orange", "Blue", "Navy"]);
     expect(colourNames("ro")).toEqual(["Pink", "Yellow", "Yellow"]);
     expect(colourNames("cici")).toEqual(["Blue", "Pink", "Navy"]);
-    expect(colourNames("franfon")).toEqual(["Black", "Black", "Black"]);
+    expect(colourNames("franfon")).toEqual(["Green", "Yellow", "Green"]); // all black until 19 November 2026: Francisco asked for green with a yellow helmet (changed with his OK)
     expect(colourNames("pcp")).toEqual(["Red", "Yellow", "Red"]);
   });
 

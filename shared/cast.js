@@ -30,7 +30,7 @@ export const CAST = Object.freeze(
     { id: "ricardo", name: "Professor Ricardo Pereira", look: { body: 5, helmet: 1, suit: 1 } }, // orange, blue, navy
     { id: "ro", name: "Ró Versos", look: { body: 7, helmet: 2, suit: 5 } }, //  pink, yellow, yellow
     { id: "cici", name: "Cici Boss", look: { body: 1, helmet: 7, suit: 1 } }, // blue, pink, navy
-    { id: "franfon", name: "FranFon", look: { body: 9, helmet: 9, suit: 2 } }, // black, black, black
+    { id: "franfon", name: "FranFon", look: { body: 3, helmet: 2, suit: 4 } }, // green, yellow, green (all black until 19 November 2026: Francisco asked for green with a yellow helmet)
     { id: "pcp", name: "PCP", look: { body: 0, helmet: 2, suit: 3 } }, //  red, yellow, red (like a Ferrari)
   ].map((character) => Object.freeze({ ...character, look: Object.freeze(character.look) })),
 );

@@ -159,8 +159,11 @@ describe("every movement", () => {
   // character, so the list got a seventh, "gangnam", at its end. The same
   // evening three more followed: "griddy" for Ro Versos (he asked), and
   // "floss" and "dab" for Dean and Professor Ricardo Pereira.
+  // Changed on 19 November 2026, with Francisco's OK: "golf" was added for
+  // FranFon, so there are eleven dances. (The name of the test says ten; it
+  // was left as it was so it stays easy to find.)
   it("is one of standing, arms crossed, and the ten dances", () => {
-    expect(DANCES).toEqual(["clap", "robot", "drive", "wave", "plane", "siu", "gangnam", "griddy", "floss", "dab"]);
+    expect(DANCES).toEqual(["clap", "robot", "drive", "wave", "plane", "siu", "gangnam", "griddy", "floss", "dab", "golf"]);
     expect(MOVES).toEqual(["stand", "crossed", ...DANCES]);
   });
 

@@ -44,12 +44,14 @@ describe("the main menu", () => {
     expect(body).toMatch(/<a class="menu-choice" href="\/online.html">Online<\/a>/);
   });
 
-  it("shows the Cup, but it cannot be clicked yet, and says why", async () => {
+  // Replaced on 19 November 2026, with Francisco's OK. The old test checked
+  // that a greyed-out Cup was shown, "coming soon". The team dropped the Cup
+  // on 17 November (PROJECT_BRIEF.md), and on the 19th it left the menu.
+  it("no longer has a Cup: the team dropped it", async () => {
     const { body } = await page("/");
-    const cup = body.match(/<button[^>]*>Cup<\/button>/);
-    expect(cup).not.toBeNull();
-    expect(cup[0]).toContain("disabled");
-    expect(body).toContain("Cup: coming soon");
+    expect(body).not.toMatch(/>Cup</);
+    expect(body).not.toContain("Cup: coming soon");
+    expect(body).not.toContain("tile-soon");
   });
 
   it("has a Leaderboard button and a Settings button", async () => {
