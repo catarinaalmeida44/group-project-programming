@@ -20,7 +20,7 @@ Everything the browser shows and does: the web page, the drawing of the track an
 | `account-view.js` | The words for the account corner, and what is wrong with a form before it is sent, by the rules in `shared/account-rules.js`. No browser needed, so it has tests |
 | `account.js` | Creating an account, signing in and out, deleting the account: checks the form, asks the server, remembers who is signed in. It never keeps a password |
 | `account-panel.js` | Puts accounts on the page: the account corner and the panels "Sign in", "Create account" and "Your account", where a player can change their password or delete the account |
-| `stats-view.js` | A player's own stats as words for the card in "Your account": the three big numbers, "1:23.45", "Online · 19 Nov 2026", "Driven in 5 of your 9 races", and what the single race page says about saving a race. No browser needed, so it has tests |
+| `stats-view.js` | A player's own stats as words for the card in "Your account": the three big numbers, "1:23.45", the little label beside a time ("Online", or "on Easy", "on Normal", "on Hard" for a single race, in the words of `difficulty.js`), "Driven in 5 of your 9 races", where the wins come from, and what the single race page says about saving a race. No browser needed, so it has tests |
 | `stats-panel.js` | Puts "My stats" at the top of "Your account": asks the server each time the panel opens, paints the character driven most beside their kart, fills in the numbers and the best times, and saves the file of "Download my results" |
 | `settings-panel.js` | The Settings panel on the page: the camera view a race starts in, and sound on or off |
 | `favicon.svg` | The small picture on the browser's tab: our own drawing of a finish flag |

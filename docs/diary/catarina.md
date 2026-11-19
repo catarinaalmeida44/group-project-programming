@@ -4,6 +4,50 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 19 November 2026, night: "on Easy", "on Normal", "on Hard" in my stats, and one pull request for everything
+
+**What she said**
+
+- About wins against Easy computer karts: "Yes count them but make it have a little thing on the side saying on easy mode, on medium mode, on hard mode, depending on how they named each mode."
+- "Then I think we are ready for the pull request to send." And: "Can we just send one overall pull request instead of 3 separate ones?"
+
+**What was built** (on branch `online-lag-small-fixes`, which holds everything)
+
+| What | Where |
+|---|---|
+| A finished single race is saved with the level of its computer karts: easy, normal or hard, as Rodrigo named them | `reportFinish()` in `client/main.js`, a new column `level` in `race_results` (`server/store.js`), the check in `server/single-results.js` |
+| Each best time and the best lap carry a little label: "on Easy", "on Normal", "on Hard", or "Online". Each has its own colour | `raceTag()` in `client/stats-view.js`, `client/stats-panel.js`, `.best-tag` in `client/style.css` |
+| One line says where the wins come from: "3 wins: 1 online · 1 on Easy · 1 on Hard" | `winsBy` in `server/stats.js`, `winsLine()` in `client/stats-view.js` |
+| The downloaded file has a column "Computer karts" with Easy, Normal or Hard | `resultsAsCsv()` in `server/stats.js` |
+
+**Why it was done this way**
+
+- **The words are taken from Rodrigo's own list** (`LEVEL_WORDS` in `client/difficulty.js`), so if he renames a level, the label follows. He called the middle one "Normal", so the label says "on Normal", not "medium".
+- **The server refuses a level that does not exist**, like everything else a browser reports about a single race. An online race never has a level, whatever is sent.
+- **Nothing changes for the leaderboard**: single races still never reach it.
+
+**One pull request**
+
+- Yes: `online-lag-small-fixes` sits on top of `my-stats-and-results-buttons`, so it contains the stats, the results buttons, the lag work, the meter and this. One pull request from it carries everything. The other branch can stay on GitHub unused.
+- `main` moved once more that evening (Rodrigo's sea landscape, number 35) and was merged in. The code fitted together by itself. The only overlap was, again, the number of tests in `WALKTHROUGH.md`.
+
+**Decisions made by the agent: please confirm**
+
+- A second new column in `race_results`, `level`. As with `character`, the server adds it by itself at its next start and older races have none.
+- A single race saved without a level (none exist on the live site, only from the first hours of testing) is labelled "Single race", and its wins are counted as "in single races".
+- The label is shown beside each best time and the best lap, not beside the three big numbers, which stay clean. The wins get their own small line.
+
+**Checked, and not checked**
+
+- `npm test`: 2,362 passed, 5 skipped (89 files), with pull requests 31 to 35 underneath. 24 are new for the level; the stats tests written earlier that day were brought up to the new shape (they are part of the same pull request, not older tests).
+- The real database (`npm run test:database`, test tables only): 33 passed, 2 skipped. A results table made the old way now gets both columns and keeps its old race.
+- In the browser pane, on the pretend server, sound off, with a test account: three single races were reported to the server (a win on Easy, a third place on Hard, a win on Normal; a race "on medium" was refused). The card then showed "on Easy" in green, "on Normal" in yellow and "on Hard" in red beside the three times, "on Easy" beside the best lap, and "2 wins: 1 on Easy · 1 on Normal". The downloaded file had Easy, Normal and Hard in its new column.
+- **Not checked:** a real single race driven by a person on each level (the label was checked with races reported straight to the server, and the page's own report was checked with the robot's race earlier that day, before the level was added to it); the live site; a phone.
+
+**How to check it yourself**
+
+Run `npm run start:pretend`, open http://localhost:3000, create an account. Choose Single race, the Nova lap, press **Easy** above the track and finish the race. Back in the menu, click your name: the time has "on Easy" beside it. Race again on **Hard**: that time has "on Hard", and the wins line says which wins were on which level.
+
 ### 19 November 2026, late evening: less lag online, and a connection meter that stays out of the way
 
 **What she said**
