@@ -271,10 +271,10 @@ closeWhenLeft(
 );
 
 // The button on the card ("Try again"), and the internet coming back while
-// the page was waiting for it.
+// the page was waiting for it, or after it had given up.
 cardButton.addEventListener("click", tryAgain);
 window.addEventListener("online", () => {
-  if (linkState === "connecting" && !connected) {
+  if ((linkState === "connecting" || linkState === "gaveUp") && !connected) {
     tryAgain();
   }
 });
