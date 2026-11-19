@@ -59,7 +59,12 @@ export const HELMET_SPOT = Object.freeze([1.6, 7.4, HELMET_RADIUS]);
  * "gangnam" was added on 18 November 2026 for Cici Boss, who had "wave"
  * before: "wave" stays in the list, and nobody dances it at the moment.
  */
-export const DANCES = Object.freeze(["clap", "robot", "drive", "wave", "plane", "siu", "gangnam", "griddy", "floss", "dab"]);
+export const DANCES = Object.freeze(["clap", "robot", "drive", "wave", "plane", "siu", "gangnam", "griddy", "floss", "dab", "bounce"]);
+// ("bounce" was added on 19 November 2026 for FranFon, who had "plane"
+// before. Francisco asked for Fortnite's "Default Dance"; that is Epic
+// Games' own dance and everything in our game is original, so FranFon got
+// a dance of our own with the same party feel. "plane" stays in the list,
+// danced by nobody.)
 // (The last three were added the same evening: "griddy" for Ró Versos, who
 // asked for it, and "floss" for Dean and "dab" for Professor Ricardo
 // Pereira, because Catarina wanted better dances for them. (The Professor
@@ -120,7 +125,8 @@ function stand(seconds) {
  *   "robot"    stiff robot arms, turning in steps (Professor Ricardo Pereira)
  *   "drive"    pretending to drive: hands on a wheel, leaning into the bends (Ró Versos)
  *   "wave"     both arms up, waving from side to side (Cici Boss)
- *   "plane"    arms out like the wings of a plane, banking left and right (FranFon)
+ *   "plane"    arms out like the wings of a plane, banking left and right
+ *              (FranFon until 19 November 2026; danced by nobody now)
  *   "siu"      a little run, a jump with a full turn, and landing with the
  *              arms spread down and the feet apart (PCP)
  *   "gangnam"  riding an invisible horse: the wrists crossed in front, the
@@ -134,6 +140,10 @@ function stand(seconds) {
  *   "dab"      one arm straight up to the side, the other across the face,
  *              leaning into it, to one side and then the other
  *              (Professor Ricardo Pereira)
+ *   "bounce"   our own party dance: bouncing on the knees on every beat,
+ *              the fists punching up in front in turn, swaying side to
+ *              side, the head nodding along, and a jump every fourth beat
+ *              (FranFon)
  * Anything else is standing.
  */
 export function poseAt(move, seconds) {
@@ -255,6 +265,8 @@ export function poseAt(move, seconds) {
     }
     case "dab":
       return dabAt(t);
+    case "bounce":
+      return bounceAt(t);
     default:
       return stand(t);
   }
@@ -264,6 +276,46 @@ export function poseAt(move, seconds) {
 export const FLOSS_SWINGS = 1.5;
 /** How long the "dab" takes to dab to one side and then to the other, in seconds. */
 export const DAB_SECONDS = 1.7;
+
+/** How many beats a second the "bounce" has. */
+export const BOUNCE_BEATS_PER_SECOND = 2.4;
+/** How high the "bounce" jumps, once every four beats, in units (Francisco: "I want my character to jump too"). */
+export const BOUNCE_JUMP = 2.2;
+/** Where a fist of the "bounce" is when it is punched up, in front of the shoulder (right hand; the left is the mirror). */
+export const BOUNCE_FIST_UP = Object.freeze([3.6, 3.0, 19.0]);
+/** Where a fist of the "bounce" is when it is down, by the hip (right hand; the left is the mirror). */
+export const BOUNCE_FIST_DOWN = Object.freeze([2.6, 3.6, 10.8]);
+
+/**
+ * The bounce (FranFon), our own party dance. On every beat the pilot
+ * bounces on the knees, and one fist punches up in front of the shoulder
+ * while the other comes down by the hip: right, left, right, left. The body
+ * sways from side to side over two beats, and the head nods on the beat.
+ * Every fourth beat is a jump: both feet leave the ground and the pilot
+ * lands on the next beat. (Until a few minutes after it was made, on
+ * 19 November 2026, the feet stayed on the ground; Francisco asked for the
+ * jump.)
+ */
+function bounceAt(seconds) {
+  const beats = seconds * BOUNCE_BEATS_PER_SECOND;
+  const right = 0.5 * (1 + Math.sin(beats * Math.PI)); // 1: the right fist is up, 0: the left one is
+  const mirror = ([x, y, z]) => [x, -y, z];
+  const beat = Math.floor(beats);
+  const jumping = ((beat % 4) + 4) % 4 === 3; // the fourth beat of every four
+  return still({
+    // Up and back down within the beat: zero where the beat starts and ends, so it flows on.
+    jump: jumping ? BOUNCE_JUMP * Math.sin((beats - beat) * Math.PI) : 0,
+    lift: 0.6 * Math.abs(Math.sin(beats * Math.PI)), // a bounce on every beat, only ever upwards
+    sway: 0.6 * Math.sin((beats * Math.PI) / 2),
+    lean: 0.08 * Math.sin((beats * Math.PI) / 2),
+    tilt: 0.12 * Math.sin(beats * Math.PI * 2),
+    feetApart: 0.7,
+    rightHand: mixPoint(BOUNCE_FIST_DOWN, BOUNCE_FIST_UP, right),
+    rightBend: [0, 1, -1],
+    leftHand: mixPoint(mirror(BOUNCE_FIST_DOWN), mirror(BOUNCE_FIST_UP), 1 - right),
+    leftBend: [0, -1, -1],
+  });
+}
 
 /** How long one round of the "griddy" takes: as long as the siu, for the same reason as the gangnam. */
 export const GRIDDY_SECONDS = SIU_SECONDS;

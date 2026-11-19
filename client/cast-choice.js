@@ -88,7 +88,7 @@ const DANCE = Object.freeze({
   ricardo: "dab", //    "robot" until 18 November 2026
   ro: "griddy", //      "drive" until 18 November 2026: he asked for this one
   cici: "gangnam", //   "wave" until 18 November 2026: she asked for this one
-  franfon: "plane",
+  franfon: "bounce", // "plane" until 19 November 2026: he asked for a new one
   pcp: "siu",
 });
 
@@ -109,6 +109,7 @@ const DANCE_NAMES = Object.freeze({
   griddy: "The griddy",
   floss: "The floss",
   dab: "The dab",
+  bounce: "The FranFon bounce",
 });
 
 /** The name of a character's dance, to show on the page, or null for an id that is not in the cast. */

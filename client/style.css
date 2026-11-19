@@ -1162,7 +1162,7 @@ a.button {
   font-size: 1.05rem;
 }
 
-/* The four big choices. */
+/* The three big choices. */
 .menu-choices {
   width: min(100%, 30rem);
 }
@@ -1349,33 +1349,6 @@ a.button {
   color: #fff;
 }
 
-/* A choice that is not ready yet: flat, with a dashed border, and it does
-   not react to the mouse. */
-.tile-soon .menu-choice,
-.tile-soon .menu-choice:hover {
-  border-style: dashed;
-  border-color: var(--line);
-  background: rgba(16, 32, 43, 0.92);
-  box-shadow: none;
-  color: var(--text-quiet);
-  cursor: not-allowed;
-}
-
-.tile-soon:active,
-.tile-soon:hover .tile-icon {
-  transform: none;
-}
-
-.tile-soon .tile-icon {
-  background: var(--navy-raised);
-  color: var(--text-quiet);
-  transform: none;
-}
-
-.tile-soon::after {
-  display: none;
-}
-
 /* A narrow window (a phone): the menu takes the whole width, and the veil
    over the picture covers all of it. */
 @media (max-width: 46rem) {
@@ -1442,7 +1415,7 @@ a.button {
   }
 }
 
-/* A low window (a small laptop): everything a little tighter, so the four
+/* A low window (a small laptop): everything a little tighter, so the three
    choices fit without scrolling. */
 @media (max-height: 44rem) {
   .title-name {
@@ -2242,7 +2215,7 @@ a.button {
   overflow: hidden;
   border: 2px solid var(--line);
   border-radius: 14px;
-  /* Lighter than the panel, so dark suits (FranFon is all black) stand out. */
+  /* Lighter than the panel, so dark suits (the navy ones) stand out. */
   background:
     linear-gradient(115deg, transparent 0 58%, rgba(255, 255, 255, 0.07) 58% 70%, transparent 70%),
     linear-gradient(172deg, color-mix(in srgb, var(--tint, #6f8597) 58%, #9fb2c3) 0%, color-mix(in srgb, var(--tint, #6f8597) 30%, #22374a) 82%);
