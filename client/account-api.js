@@ -201,6 +201,40 @@ export function createAccountApi(fetchFunction, { answerWithinMs = ANSWER_WITHIN
     saveSingleResult(result) {
       return ask("POST", "/api/single-result", result);
     },
+
+    /**
+     * The signed-in player's own saved races as a file for a spreadsheet
+     * ("Download my results"). Gives { ok: true, file }, where "file" is
+     * the file exactly as the server sent it (a "Blob", the browser's word
+     * for a piece of data that can be saved), or { ok: false, code, message }.
+     */
+    async getResultsFile() {
+      const callOff = new AbortController();
+      const tooLong = setTimeout(() => callOff.abort(), answerWithinMs);
+      try {
+        const response = await fetchFunction("/api/my-results.csv", {
+          method: "GET",
+          headers: {},
+          credentials: "same-origin",
+          signal: callOff.signal,
+        });
+        const kind = String(response.headers?.get?.("content-type") ?? "");
+        if (response.ok && kind.startsWith("text/csv")) {
+          return { ok: true, file: await response.blob() };
+        }
+        // Not a file: the server said no in our usual format, or something
+        // else answered in its place.
+        const answer = await response.json().catch(() => null);
+        if (answer !== null && typeof answer === "object" && answer.ok === false && typeof answer.message === "string") {
+          return answer;
+        }
+        return STARTING_UP_NUMBERS.includes(response.status) ? STARTING_UP : UNAVAILABLE;
+      } catch {
+        return OFFLINE;
+      } finally {
+        clearTimeout(tooLong);
+      }
+    },
   };
 }
 

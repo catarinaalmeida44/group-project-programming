@@ -87,7 +87,9 @@ const resultsList = document.getElementById("results-list");
 const computersLine = document.getElementById("computers-line");
 const computersBox = document.getElementById("computers");
 const computersWho = document.getElementById("computers-who");
-const board = createResultsBoard(document); // the big results board when a race is over (results-board.js)
+// The big results board when a race is over (results-board.js). Its button
+// "Start next race" does what Enter does.
+const board = createResultsBoard(document, { onStart: () => askToStart() });
 const podium = createPodiumView(track, draw); //           the podium, painted on the race picture when a race is over (podium-view.js)
 let podiumSince = null; //                      when the podium came up, in milliseconds of the page's clock, or null
 let cheered = 0; //                              how many times the crowd has cheered on this podium
@@ -422,11 +424,7 @@ const keyboard = createKeyboard(window, {
   // page sends it whenever no race is on, host or not. The server decides:
   // a host who was counted as away from the keyboard is the host again by
   // pressing Enter (server/room.js), and this page cannot know that yet.
-  onStart: () => {
-    if (race.phase === "open" || race.phase === "finished") {
-      send({ type: "start" });
-    }
-  },
+  onStart: () => askToStart(),
   onView: () => {
     view = nextView(view);
     camera = null; // jump to the kart in the new view
@@ -458,6 +456,13 @@ function showComputersSwitch() {
   }
   if (computersWho.textContent !== now.text) {
     computersWho.textContent = now.text; // as text, never as HTML
+  }
+}
+
+/** Asks the server to start a race: the Enter key, and the button on the results board. Only while no race is on. */
+function askToStart() {
+  if (race.phase === "open" || race.phase === "finished") {
+    send({ type: "start" });
   }
 }
 
@@ -649,6 +654,7 @@ function frame(now) {
     board.hide();
   }
   board.say(mine !== undefined ? about.message : about.line);
+  board.offerStart(race.host === myId); // only the host can start the next race
   board.paint(now);
 
   messageBox.classList.toggle("countdown", about.big && warning === null);

@@ -35,14 +35,21 @@ const CONFETTI = 18;
  *   hide()              take it away, when the next race starts
  *   isShown()           is it up?
  *   say(text)           the sentence at the bottom: who starts the next race
+ *   offerStart(yes)     show the button "Start next race", or not. Only the
+ *                       host gets it: the server obeys nobody else
  *   paint(now)          call for every picture: turns the winner's kart
+ *
+ * Under the sentence the board has two buttons: "Start next race" (for the
+ * host; "onStart" is called when it is pressed) and "Back to menu".
  */
-export function createResultsBoard(page) {
+export function createResultsBoard(page, { onStart = () => {} } = {}) {
   const box = page.getElementById("finish-board");
   let shown = false;
   let winner = null; //   { context, look }: the big picture, painted again for every picture
   let nextLine = null; // the sentence at the bottom
   let said = "";
+  let startButton = null; // "Start next race", on the board while it is up
+  let startOffered = false;
 
   /** A picture of one kart, of one of the two sizes. Gives { canvas, context }. */
   function kartPicture(size, className, label) {
@@ -126,7 +133,19 @@ export function createResultsBoard(page) {
       }
 
       nextLine = makePart(page, "p", "finish-next");
-      box.append(nextLine);
+
+      // What to do next, with one click: the host can start the next race,
+      // and everyone can go back to the menu. (Enter still works too.)
+      const actions = makePart(page, "div", "finish-actions");
+      startButton = makePart(page, "button", "button button-primary", "Start next race");
+      startButton.type = "button";
+      startButton.hidden = !startOffered;
+      startButton.addEventListener("click", () => onStart());
+      const toMenu = makePart(page, "a", "button", "Back to menu");
+      toMenu.href = "/";
+      actions.append(startButton, toMenu);
+
+      box.append(nextLine, actions);
       box.hidden = false;
       shown = true;
     },
@@ -137,6 +156,14 @@ export function createResultsBoard(page) {
       shown = false;
       winner = null;
       nextLine = null;
+      startButton = null;
+    },
+
+    offerStart(yes) {
+      startOffered = yes === true;
+      if (startButton !== null && startButton.hidden === startOffered) {
+        startButton.hidden = !startOffered;
+      }
     },
 
     say(text) {
