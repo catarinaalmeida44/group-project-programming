@@ -163,6 +163,56 @@ function randomNumbers(seed, name) {
   };
 }
 
+// ---- Levels: Easy, Normal, Hard ----
+//
+// In a single race the player chooses how good the computer karts are. A
+// level moves every personality's numbers the same way, after the mood of
+// the day: on Easy they drive slower on straights, take bends more slowly
+// and overtake less; on Hard the other way round. A level never changes the
+// kart: top speed and the rules stay the same for everyone, so a computer
+// kart never cheats. PCP is still the Daredevil on Easy, only a slower one.
+// Online every race is Normal.
+
+/** The levels, from easiest to hardest. */
+export const LEVELS = Object.freeze(["easy", "normal", "hard"]);
+
+/** The level when none was chosen: the computer karts as they always drove. */
+export const DEFAULT_LEVEL = "normal";
+
+/** How much each level moves the numbers: added to daring, care and pace. */
+export const LEVEL_SHIFT = Object.freeze({
+  easy: Object.freeze({ daring: -0.4, care: 0.3, pace: -0.18 }),
+  normal: Object.freeze({ daring: 0, care: 0, pace: 0 }),
+  hard: Object.freeze({ daring: 0.35, care: -0.3, pace: 0.08 }),
+});
+
+/** Is this one of the levels? Only the exact words. */
+export function isLevel(level) {
+  return typeof level === "string" && LEVELS.includes(level);
+}
+
+/**
+ * A personality (or a mood of the day) at a level. Daring and care stay
+ * from 0 to 1, pace from 0.65 to 1 (Easy may go below the 0.8 of the
+ * slowest personality). Normal gives it back unchanged. Refuses a level
+ * that does not exist.
+ */
+export function atLevel(personality, level) {
+  if (!isLevel(level)) {
+    throw new RangeError("atLevel: the level must be easy, normal or hard");
+  }
+  if (level === "normal") {
+    return personality;
+  }
+  const shift = LEVEL_SHIFT[level];
+  return Object.freeze({
+    ...personality,
+    daring: clamp(personality.daring + shift.daring, 0, 1),
+    care: clamp(personality.care + shift.care, 0, 1),
+    pace: clamp(personality.pace + shift.pace, 0.65, 1),
+  });
+}
+
 /**
  * A new driver with a personality, before the race. "mood" is how it drives
  * in this race (moodFor); left out, it drives exactly as its personality.

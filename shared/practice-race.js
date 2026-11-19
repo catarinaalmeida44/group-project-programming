@@ -29,7 +29,7 @@ import { createRacer, stepRacer } from "./race.js";
 import { bumpKarts } from "./bumps.js";
 import { createBananaMaker, stepBananas } from "./hazards.js";
 import { createWalkers, stepWalkers, walkerSpots } from "./walkers.js";
-import { createComputerDriver, decide, personalityOf, moodFor } from "./computer-driver.js";
+import { createComputerDriver, decide, personalityOf, moodFor, atLevel, isLevel, DEFAULT_LEVEL } from "./computer-driver.js";
 import { CAST, isCharacterId } from "./cast.js";
 import { GRID_PLACES } from "./grid.js";
 
@@ -56,8 +56,13 @@ const NO_KEYS = Object.freeze({ gas: false, brake: false, left: false, right: fa
  *   count   how many computer karts, from 0 up to the free places on the grid
  *   playerCharacter  the id of the character the player chose, or null for
  *           none. The computer karts never take it
+ *   level   how good the computer karts are: "easy", "normal" (the default)
+ *           or "hard" (computer-driver.js). Anything else is refused
  */
-export function createPracticeRace(track, seed = null, line = null, count = COMPUTER_KARTS, playerCharacter = null) {
+export function createPracticeRace(track, seed = null, line = null, count = COMPUTER_KARTS, playerCharacter = null, level = DEFAULT_LEVEL) {
+  if (!isLevel(level)) {
+    throw new RangeError("createPracticeRace: the level must be easy, normal or hard");
+  }
   if (!Number.isInteger(count) || count < 0) {
     throw new RangeError("createPracticeRace: the number of computer karts must be a whole number from 0 up");
   }
@@ -74,11 +79,12 @@ export function createPracticeRace(track, seed = null, line = null, count = COMP
     others.push(createRacer(track, number));
     // Its personality, in a mood picked from this race's seed (computer-driver.js).
     const personality = personalityOf(free[number].id);
-    const mood = moodFor(personality, seed, free[number].id);
+    const mood = atLevel(moodFor(personality, seed, free[number].id), level);
     drivers.push({ ...createComputerDriver(personality, mood), character: free[number] });
   }
   return {
     racers: [player, ...others],
+    level, // how good the computer karts are
     drivers,
     line: computers === 0 ? null : line,
     countdownSteps: 0,
