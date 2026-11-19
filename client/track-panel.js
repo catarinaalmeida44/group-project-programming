@@ -1,18 +1,20 @@
 // The "Choose a track" panel of the menu: one card for each track.
 //
-// The same panel is used for a single race and for an online race. Only the
-// words and the page the cards lead to are different. What a card says is
+// The same panel is used for a single race, for an online race and for a
+// two-player race. Only the words and the page the cards lead to are different. What a card says is
 // worked out in track-list.js, and the small map on it is painted by
 // mini-map.js. This file only builds the cards on the page and opens the
 // panel, so it is checked by eye in a browser.
 
-import { trackCards, RACE_KINDS } from "./track-list.js";
+import { trackCards, TRACK_CHOICE_KINDS } from "./track-list.js";
+import { CAST } from "../shared/cast.js";
+import { readCharacter } from "./cast-choice.js";
 import { paintMiniMap } from "./mini-map.js";
 import { makePart } from "./page-parts.js";
 
 /**
  * Fills the panel for one kind of race.
- *   kind     "single" or "online" (see RACE_KINDS in track-list.js)
+ *   kind     "single", "online" or "double" (see TRACK_CHOICE_KINDS in track-list.js)
  *   cards    from trackCards() in track-list.js, made for the same kind
  *   onPick   called with the card when one is clicked, instead of following
  *            its link: the menu then lets the player choose a character
@@ -21,7 +23,7 @@ import { makePart } from "./page-parts.js";
  * the code that opens the next step did not load.
  */
 export function showTrackChoice(page, kind, cards, onPick = null) {
-  const words = RACE_KINDS[kind];
+  const words = TRACK_CHOICE_KINDS[kind];
   page.getElementById("track-choice-title").textContent = words.title;
   page.getElementById("track-choice-lead").textContent = words.lead;
 
@@ -69,8 +71,8 @@ export function showTrackChoice(page, kind, cards, onPick = null) {
 }
 
 /**
- * Makes "Single race" and "Online" in the menu open the panel with the track
- * cards.
+ * Makes "Single race", "Two players" and "Online" in the menu open the panel
+ * with the track cards.
  *   tracks      the list from shared/tracks/index.js: short name -> track
  *   storage     this browser's storage, or null (see storage.js)
  *   characters  the "Choose your character" step (connectCharacterChoice
@@ -88,7 +90,33 @@ export function connectTrackChoice(page, tracks, storage, characters) {
     shownKind = kind;
     showTrackChoice(page, kind, trackCards(tracks, storage, kind), (card) => {
       panel.close();
-      characters.open(card.address, RACE_KINDS[kind].go, card.name);
+      if (kind === "double") {
+        chooseTwoDrivers(card);
+      } else {
+        characters.open(card.address, TRACK_CHOICE_KINDS[kind].go, card.name);
+      }
+    });
+  }
+
+  /**
+   * Two players: the character step comes twice. First the driver on the
+   * left of the keyboard (W, A, S, D), then the driver on the right (the
+   * arrows), who cannot take the character the first one chose. Only the
+   * second step leads to the race.
+   */
+  function chooseTwoDrivers(card) {
+    characters.open(card.address, "Next: player 2", card.name, {
+      title: "Player 1: choose your character",
+      lead: "Player 1 drives with W A S D",
+      onGo: () => {
+        const first = readCharacter(storage)?.id ?? CAST[0].id;
+        characters.open(card.address, TRACK_CHOICE_KINDS.double.go, card.name, {
+          second: true,
+          taken: first,
+          title: "Player 2: choose your character",
+          lead: "Player 2 drives with the arrow keys",
+        });
+      },
     });
   }
 
@@ -103,6 +131,7 @@ export function connectTrackChoice(page, tracks, storage, characters) {
     });
   }
   openFrom("single-race-tile", "single");
+  openFrom("double-tile", "double");
   openFrom("online-tile", "online");
 
   // The browser's Back button can bring this page back exactly as it was

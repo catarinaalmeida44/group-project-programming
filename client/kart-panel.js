@@ -28,7 +28,19 @@
 // shown anywhere.
 
 import { CAST } from "../shared/cast.js";
-import { readCharacter, saveCharacter, headOf, lookOfCharacter, hairOf, longHairOf, danceOf, danceNameOf } from "./cast-choice.js";
+import {
+  readCharacter,
+  saveCharacter,
+  readSecondCharacter,
+  saveSecondCharacter,
+  firstOther,
+  headOf,
+  lookOfCharacter,
+  hairOf,
+  longHairOf,
+  danceOf,
+  danceNameOf,
+} from "./cast-choice.js";
 import { paintPilotScene, viewerBehind } from "./kart-paint.js";
 import { poseAt, chosenPose, cardPose } from "./pilot-shape.js";
 import { makePart } from "./page-parts.js";
@@ -62,8 +74,16 @@ function picture(address) {
 /**
  * Connects the "Choose your character" panel.
  *   storage  this browser's storage, or null (see storage.js)
- * Gives { open(address, goWord, trackName) }: opens the panel for a race
- * at that address (from track-list.js), with "goWord" on the button.
+ * Gives { open(address, goWord, trackName, options) }: opens the panel for a
+ * race at that address (from track-list.js), with "goWord" on the button.
+ * "options" are for the two-player race, where the step comes twice
+ * (track-panel.js), and can all be left out:
+ *   title   the title of the panel, instead of "Choose your character"
+ *   lead    the small line above the name, instead of "Your driver for ..."
+ *   second  true: this is the second driver. Their choice is remembered
+ *           apart from the first driver's (cast-choice.js)
+ *   taken   the id of a character that cannot be chosen: the other driver's
+ *   onGo    called when the button is pressed, instead of going to the race
  */
 export function connectCharacterChoice(page, storage) {
   const panel = page.getElementById("your-kart");
@@ -75,6 +95,20 @@ export function connectCharacterChoice(page, storage) {
   const hero = page.getElementById("character-hero");
   const numberLine = page.getElementById("character-number");
   const moveLine = page.getElementById("character-move");
+  const titleLine = page.getElementById("your-kart-title");
+  const usualTitle = titleLine.textContent;
+  let second = false; //  choosing for the second driver of a two-player race
+  let taken = null; //    the character the other driver has, or null
+  let onGo = null; //     what the button does instead of going to the race, or null
+
+  // The button is a link to the race. In the first of the two steps of a
+  // two-player race it opens the second step instead.
+  go.addEventListener("click", (event) => {
+    if (onGo !== null) {
+      event.preventDefault();
+      onGo();
+    }
+  });
 
   const bigCanvas = makePart(page, "canvas", "kart-preview");
   bigCanvas.width = BIG_SIZE.width * SHARP;
@@ -105,13 +139,15 @@ export function connectCharacterChoice(page, storage) {
     const group = makePart(page, "fieldset", "faces");
     group.append(makePart(page, "legend", "visually-hidden", "Characters"));
     for (const { id, name } of CAST) {
-      const label = makePart(page, "label", "face");
+      const isTaken = id === taken; // the other driver is this character already
+      const label = makePart(page, "label", isTaken ? "face is-taken" : "face");
       label.style.setProperty("--tint", lookOfCharacter(id).body); // style.css mixes it into the floor
       const box = makePart(page, "input");
       box.type = "radio";
       box.name = "character";
       box.value = id;
       box.checked = chosen === id;
+      box.disabled = isTaken;
       box.addEventListener("change", () => choose(id));
 
       const canvas = makePart(page, "canvas", "face-pilot");
@@ -136,7 +172,7 @@ export function connectCharacterChoice(page, storage) {
       label.addEventListener("pointerleave", leave);
       box.addEventListener("focus", arrive);
       box.addEventListener("blur", leave);
-      label.append(box, canvas, makePart(page, "span", "face-name", name));
+      label.append(box, canvas, makePart(page, "span", "face-name", isTaken ? `${name} (player 1)` : name));
       group.append(label);
     }
     choices.append(group);
@@ -169,7 +205,7 @@ export function connectCharacterChoice(page, storage) {
     chosen = id;
     shown = null; // so that the poster starts again, even if it showed this one already
     showOnPoster(id);
-    const saved = saveCharacter(storage, id);
+    const saved = (second ? saveSecondCharacter : saveCharacter)(storage, id);
     status.textContent = saved || storage === null ? "" : "This browser did not let the game save your choice.";
   }
 
@@ -217,17 +253,24 @@ export function connectCharacterChoice(page, storage) {
   });
 
   return {
-    open(address, goWord, trackName) {
-      chosen = readCharacter(storage)?.id ?? CAST[0].id;
+    open(address, goWord, trackName, options = {}) {
+      second = options.second === true;
+      taken = options.taken ?? null;
+      onGo = typeof options.onGo === "function" ? options.onGo : null;
+      titleLine.textContent = options.title ?? usualTitle; // as text, never as HTML
+      const remembered = (second ? readSecondCharacter : readCharacter)(storage)?.id ?? CAST[0].id;
+      chosen = remembered === taken ? firstOther(CAST, taken).id : remembered;
       showChoices();
       choose(chosen);
-      lead.textContent = `Your driver for ${trackName}`; // as text, never as HTML
+      lead.textContent = options.lead ?? `Your driver for ${trackName}`; // as text, never as HTML
       go.textContent = goWord;
       go.href = address;
       if (storage === null) {
         status.textContent = "This browser does not let the game keep your choice, so it lasts until you close this page.";
       }
-      panel.showModal();
+      if (!panel.open) {
+        panel.showModal(); // in the second step of a two-player race it is open already
+      }
       // Put the keyboard on the chosen character, so the arrow keys move between them.
       choices.querySelector("input:checked")?.focus();
       if (!moving) {

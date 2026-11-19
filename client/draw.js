@@ -93,6 +93,9 @@ const MINIMAP_MARGIN = 10;
  *                      sorted among the buildings and trees like a kart
  *             camera   a camera of its own, in the form of RACE (camera.js),
  *                      instead of the race camera. Race view only
+ *             mapInset  how many pixels in from the right edge the small map
+ *                      is drawn. The two-player page shows only the middle
+ *                      of each picture, so its maps move in. Left out: 0
  *             hideOwnKart  true: the kart the camera stays with is not
  *                      painted, and the small map is left out (the camera
  *                      only stands there to look at the podium)
@@ -176,7 +179,7 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
 
     // The views that show only part of the track get a small map in the corner.
     if (view !== "map" && scene.hideOwnKart !== true) {
-      drawMinimap(kart, others, bananas, light, seconds);
+      drawMinimap(kart, others, bananas, light, seconds, scene.mapInset);
     }
   };
 
@@ -705,9 +708,10 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
 
   // ---- The small map in the corner ----
 
-  function drawMinimap(kart, others, bananas, light, seconds) {
+  function drawMinimap(kart, others, bananas, light, seconds, inset) {
     const scale = mini.width / track.width;
-    const left = SCREEN.width - mini.width - MINIMAP_MARGIN;
+    // "inset" moves the map in from the right edge (the two-player page shows only the middle of the picture).
+    const left = SCREEN.width - mini.width - MINIMAP_MARGIN - (Number.isFinite(inset) && inset > 0 ? inset : 0);
     const top = MINIMAP_MARGIN;
 
     context.save();

@@ -12,8 +12,8 @@ import { bestTimesFor, bestTimeText } from "./records.js";
 export const NO_TIME = "No time yet";
 
 /**
- * The two kinds of race a track can be chosen for, and what the "Choose a
- * track" panel says for each:
+ * The two kinds of race one player can choose a track for, and what the
+ * "Choose a track" panel says for each:
  *   page   the page that runs the race; the track is added to its address
  *   title  the title of the panel
  *   lead   the sentence under the title
@@ -35,16 +35,31 @@ export const RACE_KINDS = Object.freeze({
 });
 
 /**
+ * The third kind: two people on one computer, on a split screen (double.js).
+ * It is kept apart from the two above, which are the races of one player.
+ */
+export const TWO_PLAYER_KIND = Object.freeze({
+  page: "/double.html",
+  title: "Choose a track for two players",
+  lead: "Two players race on this computer, each on one half of the screen: one drives with W, A, S and D, the other with the arrow keys. It runs in your browser, and nothing is saved.",
+  go: "Race",
+});
+
+/** Every kind of race the "Choose a track" panel can be opened for, by name: "single", "online" and "double". */
+export const TRACK_CHOICE_KINDS = Object.freeze({ ...RACE_KINDS, double: TWO_PLAYER_KIND });
+
+/**
  * The address that opens a track: "/race.html?track=campus-loop" for a
- * single race, "/online.html?track=campus-loop" for an online one.
+ * single race, "/online.html?track=campus-loop" for an online one,
+ * "/double.html?track=campus-loop" for two players.
  * Refuses a kind of race that does not exist.
  */
 export function trackAddress(kind, shortName) {
-  if (!Object.hasOwn(RACE_KINDS, kind)) {
-    throw new Error(`There is no kind of race called "${kind}". The kinds are: ${Object.keys(RACE_KINDS).join(", ")}.`);
+  if (!Object.hasOwn(TRACK_CHOICE_KINDS, kind)) {
+    throw new Error(`There is no kind of race called "${kind}". The kinds are: ${Object.keys(TRACK_CHOICE_KINDS).join(", ")}.`);
   }
   // encodeURIComponent makes any text safe to put in an address.
-  return `${RACE_KINDS[kind].page}?track=${encodeURIComponent(shortName)}`;
+  return `${TRACK_CHOICE_KINDS[kind].page}?track=${encodeURIComponent(shortName)}`;
 }
 
 /** "3 laps", or "1 lap". */
@@ -70,7 +85,7 @@ export function practiceBests(storage, track) {
  * One card for each track in the list, in the order of the list.
  *   tracks   the list from shared/tracks/index.js: short name -> track
  *   storage  this browser's storage, or null (see storage.js)
- *   kind     "single" or "online": which page the cards lead to
+ *   kind     "single", "online" or "double": which page the cards lead to
  * Gives a list of { shortName, name, laps, address, best, track }.
  */
 export function trackCards(tracks, storage, kind) {

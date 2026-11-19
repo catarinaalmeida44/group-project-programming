@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nova SBE kart racer: two players</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body class="double-page">
+    <main>
+      <h1>Nova SBE kart racer</h1>
+      <nav class="modes">
+        <a href="/">← Menu</a>
+        <a href="/race.html">Single race</a>
+        <strong>Two players</strong>
+        <a href="/online.html">Online</a>
+      </nav>
+
+      <!-- The play area: what goes on the whole screen when F or the button is
+           pressed (full-screen.js): the line above the pictures and the two halves. -->
+      <div id="play-area" class="play-area">
+        <div class="hud">
+          <span>Camera <strong id="view"></strong></span>
+          <!-- Who the two race against, and the button that opens the "Game
+               settings" card (game-settings-card.js). -->
+          <span id="settings-box">
+            <span id="settings-summary"></span>
+            <button type="button" id="open-game-settings" class="settings-button">Game settings</button>
+          </span>
+          <!-- The game on the whole screen, or back (full-screen.js). Hidden in a browser that cannot. -->
+          <button id="full-screen" class="full-screen-button" type="button" hidden>Full screen</button>
+        </div>
+
+        <!-- The split screen: one half for each driver, side by side. Each half
+             is a picture of the race from behind that driver's kart, with their
+             name plate under it. double.js draws and fills in everything. -->
+        <div id="double-screen" class="screen double-screen">
+          <section id="half-1" class="half" aria-label="Player 1">
+            <div class="half-picture">
+              <canvas id="track-1" width="960" height="576">Your browser cannot show the game.</canvas>
+              <p id="message-1" class="message" role="status"></p>
+            </div>
+            <div id="plate-1" class="plate">
+              <span class="plate-who">
+                <span class="plate-player">Player 1</span>
+                <strong id="name-1" class="plate-name"></strong>
+              </span>
+              <span class="plate-keys" aria-label="Keys: W, A, S and D"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span>
+              <span class="plate-numbers">
+                <span>Lap <strong id="lap-1">1</strong> of <strong id="laps-1">3</strong></span>
+                <span>Time <strong id="time-1">0:00.00</strong></span>
+                <span id="place-box-1">Place <strong id="place-1"></strong></span>
+              </span>
+            </div>
+          </section>
+
+          <section id="half-2" class="half" aria-label="Player 2">
+            <div class="half-picture">
+              <canvas id="track-2" width="960" height="576">Your browser cannot show the game.</canvas>
+              <p id="message-2" class="message" role="status"></p>
+            </div>
+            <div id="plate-2" class="plate">
+              <span class="plate-who">
+                <span class="plate-player">Player 2</span>
+                <strong id="name-2" class="plate-name"></strong>
+              </span>
+              <span class="plate-keys" aria-label="Keys: the arrow keys"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></span>
+              <span class="plate-numbers">
+                <span>Lap <strong id="lap-2">1</strong> of <strong id="laps-2">3</strong></span>
+                <span>Time <strong id="time-2">0:00.00</strong></span>
+                <span id="place-box-2">Place <strong id="place-2"></strong></span>
+              </span>
+            </div>
+          </section>
+
+          <!-- A short notice at the top, between the halves, when the race is about to end. -->
+          <p id="notice" class="notice" role="status"></p>
+          <!-- When the race is over and the podium is up: what to do next. The R key still works. -->
+          <div id="race-over" class="race-over" hidden>
+            <button type="button" id="race-again" class="button button-primary">Race again</button>
+            <a class="button" href="/">Back to menu</a>
+            <p id="race-over-note" class="race-over-note" role="status"></p>
+          </div>
+          <!-- The "Game settings" card. It comes up when the page opens, and
+               again with the button above. game-settings-card.js builds it. -->
+          <div id="settings-card" class="settings-veil" hidden></div>
+        </div>
+      </div>
+
+      <p class="help">
+        Two drivers on one keyboard. <strong>Player 1</strong>, on the left: <kbd>W</kbd> gas, <kbd>S</kbd> brake and
+        reverse, <kbd>A</kbd> <kbd>D</kbd> steer. <strong>Player 2</strong>, on the right: <kbd>↑</kbd> gas,
+        <kbd>↓</kbd> brake and reverse, <kbd>←</kbd> <kbd>→</kbd> steer. <kbd>R</kbd> starts again.
+        <kbd>V</kbd> changes the camera of both halves. Drive clockwise.
+        <kbd>M</kbd> switches the sound off and on: it is <strong id="sound">on</strong>.
+        <strong>Game settings</strong> chooses whether computer karts race with you and how good they are.
+        <kbd>F</kbd> puts the game on the whole screen, and back (<kbd>Esc</kbd> also leaves it).
+      </p>
+      <p class="note">
+        A race for two on <span id="track-name">the test track</span>. It runs in your browser: nothing
+        is sent to our server, and nothing is saved, neither for your stats nor for the leaderboard.
+        The race is over when every kart has finished, or two minutes after the first one has.
+        Some keyboards cannot tell more than a few keys apart when they are held at the same time:
+        if a key seems to be ignored, let go of another one.
+      </p>
+    </main>
+
+    <script type="module" src="/double.js"></script>
+  </body>
+</html>

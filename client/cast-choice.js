@@ -31,6 +31,47 @@ export function saveCharacter(storage, id) {
   return writeSaved(storage, STORAGE_KEY, { id });
 }
 
+// ---- The second driver of a two-player race ----
+// Two people on one computer each choose a character. The first one is the
+// character above. The second is remembered next to it, under its own name.
+
+const SECOND_STORAGE_KEY = "character-2";
+
+/** The second driver's character saved in this browser, or null if there is none or it is not one in the cast. */
+export function readSecondCharacter(storage) {
+  return characterById(readSaved(storage, SECOND_STORAGE_KEY)?.id);
+}
+
+/** Remembers the second driver's character. Refuses an id that is not in the cast. Gives true if it was saved. */
+export function saveSecondCharacter(storage, id) {
+  if (characterById(id) === null) {
+    throw new Error("That is not a character anyone can choose.");
+  }
+  return writeSaved(storage, SECOND_STORAGE_KEY, { id });
+}
+
+/**
+ * The first character of the list that is not "taken": what a driver gets
+ * when the one they wanted is already the other driver's. "cast" is the list
+ * of characters (shared/cast.js).
+ */
+export function firstOther(cast, taken) {
+  return cast.find((character) => character.id !== taken) ?? null;
+}
+
+/**
+ * The characters of the two drivers of a two-player race, as two ids that
+ * are never the same: what each chose in the menu, or, where nothing usable
+ * was chosen, the first character that is still free. The page uses it so
+ * that a race can always start, even when the address was opened directly.
+ */
+export function twoCharacters(storage, cast) {
+  const first = readCharacter(storage)?.id ?? cast[0].id;
+  const wanted = readSecondCharacter(storage)?.id ?? null;
+  const second = wanted !== null && wanted !== first ? wanted : firstOther(cast, first).id;
+  return [first, second];
+}
+
 /** Where the picture of a character's face is, or null for an id that is not in the cast. */
 export function faceOf(id) {
   return characterById(id) === null ? null : `faces/${id}.jpg`;
