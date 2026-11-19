@@ -8,7 +8,7 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 
 | Part | Where | Built yet? |
 |---|---|---|
-| The main menu, the first page | `client/index.html` and `client/menu.js` | Yes: Single race, Online, Leaderboard, Settings and the account corner. (The Cup, shown greyed out until then, left the menu on 19 November: the team dropped it) |
+| The main menu, the first page | `client/index.html` and `client/menu.js` | Yes: Single race, Two players, Online, Leaderboard, Settings and the account corner. (The Cup, shown greyed out until then, left the menu on 19 November: the team dropped it) |
 | Choosing a track in the menu | `client/track-panel.js`, `client/track-list.js`, `client/mini-map.js` | Yes: a card with a small map for each track |
 | The leaderboard in the menu | `client/leaderboard.js`, `client/leaderboard-view.js`, `client/leaderboard-panel.js` | Yes: the shared boards of each track, and your own practice bests |
 | Accounts in the menu | `client/account.js`, `client/account-view.js`, `client/account-panel.js` | Yes: create an account, sign in, sign out, change your password, delete your account |
@@ -17,11 +17,13 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 | Which user names and passwords are allowed | `shared/account-rules.js` | Yes, used by the page and by the server |
 | How every page looks | `client/style.css` | Yes |
 | The single race page | `client/race.html` | Yes, on either track |
-| The practice race in the browser | `client/main.js`, with the race itself in `shared/practice-race.js` | Yes, against five computer karts |
+| The practice race in the browser | `client/main.js`, with the race itself in `shared/practice-race.js` | Yes, against five computer karts, or alone if the player switches them off in the game settings |
 | The game on the whole screen | `client/full-screen.js`, the F key in `client/keyboard.js`, the look in `client/style.css` | Yes, since 19 November, on both race pages |
 | How a computer kart decides what to do | `shared/computer-driver.js` | Yes, since 17 November in a single race, and since 18 November online |
-| How good the computer karts are (Easy, Normal, Hard) | `LEVELS` and `atLevel` in `shared/computer-driver.js`, the buttons in `client/difficulty.js` and `client/race.html` | Yes, since 19 November, in a single race only. Proposed: the team had dropped levels on 17 November |
-| Computer karts in an online room | `server/computer-players.js`, switched on and off in `server/online.js`, the tick box in `client/computers-switch.js` | Yes, since 18 November |
+| How good the computer karts are (Easy, Normal, Hard) | `LEVELS` and `atLevel` in `shared/computer-driver.js`, the words in `client/difficulty.js` | Yes, since 19 November: in a single race, in a two-player race and, chosen by the host, online. Proposed: the team had dropped levels on 17 November |
+| Computer karts in an online room | `server/computer-players.js`, switched on and off in `server/online.js`, their names in `client/computers-switch.js` | Yes, since 18 November |
+| The game settings: computer karts or not, their level, and online at most how many people | The rule in `shared/game-settings.js`, the words in `client/game-settings-view.js`, the card on the page in `client/game-settings-card.js`, the room's settings in `server/online.js` | Yes, since 19 November, on the three race pages. Online only the host chooses |
+| Two players on one computer, on a split screen | `client/double.html` and `client/double.js`, the words in `client/double-view.js`, the race itself in `shared/two-player-race.js`, the second set of keys in `client/keyboard.js` | Yes, since 19 November: W A S D and the arrows, with or without four computer karts. Nothing is saved |
 | Keeping settings and best times in the browser | `client/storage.js`, `client/settings.js`, `client/records.js` | Yes: the starting camera view, and your best race and best lap per track |
 | The keyboard controls | `client/keyboard.js` | Yes |
 | The camera: which part of the track is shown | `client/camera.js` | Yes, three views. The race view is low behind the kart, with a horizon |
@@ -62,7 +64,7 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 | The beach and the sea past the coast road of the Nova lap | `client/shore.js`, painted by `client/ground.js`, set in `client/nova-lap-look.js` | Yes, since 19 November |
 | A page that flies the camera round a track | `client/track-tour.html` | Yes, for the team: `track-tour.html?track=nova-lap` |
 | The list of tracks | `shared/tracks/index.js` | Yes: the test oval, the campus loop and the Nova lap |
-| Reading the chosen track from a page's address | `client/track-choice.js` | Yes: `race.html?track=campus-loop` and `online.html?track=campus-loop` |
+| Reading the chosen track from a page's address | `client/track-choice.js` | Yes: `race.html?track=campus-loop`, `online.html?track=campus-loop` and `double.html?track=campus-loop` |
 | The drivers and their scores | `shared/characters.js` | One placeholder driver |
 | The kinds of ground | `shared/surfaces.js` | Road and grass |
 | The automatic tests | `tests/` | Yes, for the driving rules, the server and a number helper |
@@ -287,7 +289,7 @@ The room in `server/room.js` is always in one of four phases, and the server tel
 - **The host is whoever has been in the room longest and is at their keyboard**, so normally the first player to enter. When the host leaves, the next longest becomes host. The host presses Enter to start, and only when no race is on. Everyone else just joins and waits on the grid.
 - **A host who is away passes the room on** (since 19 November 2026, `AWAY_AFTER_STEPS` in `server/room.js`). A player who has pressed no key for a minute counts as away, and the host is then the next player in the order they arrived. Before, a tab someone had forgotten, or a player who had walked off, stayed the host for ever and nobody else could start a race. Pressing any key brings a player back, Enter included, so a host who only sat still loses nothing. Three things count as being there without a key: having just arrived, having finished the race that just ended, and, for the host, a newcomer walking in (so a host who waited for friends keeps the room). If everyone is away, the host is simply whoever has been here longest.
 - **A signed-in player has one kart in a room** (since 19 November 2026, `sendOlderOnesAway` in `server/online.js`). When they join the room again, from another tab or another computer, the new connection stays and the older one is told why ("elsewhere") and sent away. Its page shows "You are playing somewhere else", with a button to play there instead, and does not come back by itself, or the two tabs would throw each other out for ever. A guest has no name to be recognised by, so two tabs of a guest are two karts.
-- **Someone who arrives during a race is told so on the picture** (since 19 November 2026, `watchBanner` and `kartToFollow` in `client/race-view.js`). A banner in big letters says "A race is on: you are watching", whose kart the camera is on, and that they join the next race. The camera is on the kart that was in first place when they arrived, and stays with it until it finishes. Before, the picture looked exactly as if they were driving, and the arrow keys did nothing without a word of why: now the banner answers a key press.
+- **Someone who arrives during a race is told so on the picture** (since 19 November 2026, `watchBanner` and `kartToFollow` in `client/race-view.js`). A banner in big letters says "A race is on: you are watching", whose kart the camera is on, and that they join the next race. The camera is on the person who was furthest ahead when they arrived, and stays with that kart until it finishes. It is never on a computer kart, and the left and right arrows move it to another person (`nextToWatch`): a watcher wants to see how their friends are doing. Before, the picture looked exactly as if they were driving, and the arrow keys did nothing without a word of why: now the banner answers a key press.
 - **Nobody can move until the host starts** (the team's rule since 17 November 2026). Before, everyone could drive around freely while waiting, which meant karts were all over the track, could bump into each other and drive laps that did not count. Now the waiting room is calm, and every race starts from the grid with everyone in place. The page only makes the kart lean, the engine rev and the next checkpoint light up when the keys really do something: in a race after GO (`keysWork` in `client/race-view.js`).
 - **A race that has begun is driven to its end** (since 13 November 2026). Before, the host could press Enter in the middle of a race, by accident too, and the race everyone was driving was thrown away. Now the server refuses that start.
 - **So that a race always does end, it has two time limits**, counted in steps on the server (`FINISH_WINDOW_STEPS` and `RACE_LIMIT_STEPS` in `shared/race-time.js`, which the server and the page both read). Once the first racer has finished, the others have two minutes left. And no race lasts longer than ten minutes after GO. Without them, one racer who walks away from their laptop would hold the room for ever. A racer who has not finished when the time runs out gets no result: their keys stop working, their kart rolls to a stop, and nothing is saved for them. From the first finish on, the page shows the time left at the top of the picture: "The race ends in 1:42", and in the last minute "The race ends in 42 s". (Why two minutes: Catarina asked for three on 13 November, or two if three was too long. A whole race takes between one and two and a half minutes, so with three the winner would wait longer than the race took.)
@@ -306,6 +308,46 @@ What the server refuses here, each with a test:
 - Keys from someone who is watching: they move nothing.
 
 The words on the page (the big number, "You are the host: press Enter", "You are watching") are worked out in `client/race-view.js` from what the server sent. The page decides nothing about the race.
+
+## What are the game settings, and who may change them?
+
+Three things can be chosen before a race (`shared/game-settings.js`, since 19 November 2026):
+
+| Setting | What it is | Where it counts |
+|---|---|---|
+| Computer karts | On or off. On, they fill the race up to six karts | Everywhere |
+| Their level | Easy, Normal or Hard (`atLevel` in `shared/computer-driver.js`) | Everywhere |
+| Players | At most how many people the room takes, from 2 to 6 | Online only |
+
+The same card comes up over the picture on the three race pages (`client/game-settings-card.js`, with its words in `client/game-settings-view.js`). Pressing a button on the card changes nothing yet: only "Confirm game settings" does.
+
+- **In a single race and a two-player race the player chooses.** The card is the first thing on the page, and the browser remembers the choice (`readGameChoice`). Confirming starts the race again. A single race with computer karts off is the player alone against the clock. It is not sent to the server for "My stats", because with nobody to beat it would count as a win every time.
+- **Online only the host chooses.** The first person in the room is the host, and gets the card by itself, titled "Start online game", with "You are the host" on top. Everyone else sees a small label in the corner that says who the host is and what they chose. Between two races the host opens the card again with "Game settings" on the results board.
+- **The server keeps the room's settings, not any browser** (`server/online.js`). The card only sends a wish: `{"type":"settings", ...}`. The server takes it from the host alone, and only while no race is on. Every update carries the settings, so every page shows the same thing. When the last person leaves, they go back to the defaults: computer karts on, Normal, six people.
+- **The limit never throws anyone out.** The host cannot set it below the number of people who are already in the room (`settingsAfter`): the limit then stays as it was, and the rest of what was asked still counts. Computer karts never count towards it, and they still fill the race to six karts whatever the limit is.
+- **A room that has reached its limit says "The room is full" to whoever arrives.** There is one room for each track for the whole site, so a host who sets 2 keeps everyone else out until someone leaves. One exception: a signed-in player who is already in the room is let back in (their page lost the connection for a moment, or they opened another tab). Their older kart leaves first, as the "one kart for each player" rule says. A guest has no name to be recognised by, so a guest is told the room is full.
+
+What the server refuses here, each with a test (`tests/online-settings.test.js`, `tests/game-settings.test.js`):
+
+- Settings from anyone but the host, and from the host during a race. Nothing changes.
+- A level that is not one of the three words ("medium"), a limit below 2 or above 6, computer karts that are not exactly true or false, or a message with a part missing. Like every other strange message, it sends its sender away.
+- A limit below the people who are in the room.
+- A newcomer when the room has as many people as the limit.
+
+## How do two people race on one computer?
+
+"Two players" in the menu (since 19 November 2026) is a race for two on one keyboard, on a split screen: `client/double.html` and `client/double.js`.
+
+- **Each driver has their own keys.** Player 1 drives with W, A, S and D, and player 2 with the arrow keys (`client/keyboard.js`). The letters only drive on this page: on the other pages they do nothing. They are kept in small type, so Caps Lock makes no difference.
+- **Each driver has half of the screen.** There are two pictures, each painted by its own painter (`createPainter` in `client/draw.js`) from behind one driver's kart. Each half shows the middle of its picture, so the two fit side by side without becoming tiny, and the small map moves in from the edge. Under each half is the driver's name plate in the colour of their kart: lap, time and place. In the other driver's half your kart carries a tag, "P1" or "P2".
+- **The race is one race** (`shared/two-player-race.js`). It is the single race's rule with two players instead of one: the same countdown, the same driving rules, bumps, bananas and walkers, in the same order. The two players are racers 0 and 1 and start side by side, behind the four computer karts, so neither has a head start. The computer karts are the four characters the two did not choose.
+- **It has an end of its own.** A single race ends when the player finishes. Here one of the two may never finish, so the race is over when every kart has finished, or when both players have finished and waited 30 seconds for the computer karts, or two minutes after the first kart finished, or ten minutes after GO. Those are the two limits of an online race (`shared/race-time.js`).
+- **Each driver chooses a character in the menu.** The character step comes twice (`chooseTwoDrivers` in `client/track-panel.js`), and the second driver cannot take the first one's character. The page itself also makes sure they differ (`twoCharacters` in `client/cast-choice.js`), so it works when its address is opened directly.
+- **Nothing is saved.** It runs in the browser, like a single race, but nothing is sent to the server: no stats, no leaderboard, no best time. Two people share one account's browser, so there is nobody to save it for.
+- **When it is over, the left picture grows over both halves and shows the podium**, with "Race again" and "Back to menu".
+- **One limit we cannot fix in code:** many laptop keyboards cannot tell more than a few keys apart when they are held at the same moment, so now and then one driver's key may be ignored while the other holds theirs. The page says so under the pictures.
+
+What the race rule refuses, each with a test (`tests/two-player-race.test.js`): the same character for both drivers, a character that is not in the cast, a level that is not one of the three, a wrong number of computer karts, one driver's keys moving the other's kart or a computer kart, and keys from a driver who has finished.
 
 ## How does the camera work?
 
@@ -569,9 +611,19 @@ The only personal data is the user name a player chose. There is no email, no re
 
 ## What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 2,362 tests today, plus the ones that only run against the real database. They take about 40 seconds, most of it online races that run in real time.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 2,564 tests today, plus the ones that only run against the real database. They take about 40 seconds, most of it online races that run in real time.
 
 **Covered today**
+
+- Game settings and two players, since 19 November 2026 (night), 202 tests in seven new files:
+  - `tests/game-settings.test.js` (31): what a setting may be, what a host may change, and how the server reads the settings message.
+  - `tests/online-settings.test.js` (19), over a real live connection: only the host changes the settings, never during a race; the limit turns a newcomer away, never goes below the people who are there, and lets a signed-in player who is already in the room back in; computer karts are faster on Hard than on Normal than on Easy.
+  - `tests/game-settings-view.test.js` (34): the words of the card and of the label in the corner, what the browser remembers, and a single race without computer karts (alone on pole, over at the finish, alone on the podium, not counted in the stats).
+  - `tests/watching-people.test.js` (24): a watcher's camera is on a person and never on a computer kart, and the arrows go round the people.
+  - `tests/two-player-race.test.js` (46): the grid for two, each driver's keys move only their own kart, the four ways the race ends, and a whole race driven to its end by two robots.
+  - `tests/keyboard.test.js` (16): W A S D drive only on the two-player page, Caps Lock, both drivers at once. (The keyboard had no tests of its own before.)
+  - `tests/double-view.test.js` (32): the words of each half, the second driver's character, the way from the menu, and the page as the server sends it.
+  - No older test was changed. One of them (`tests/track-list.test.js`) says the menu has two kinds of race for one player, so the two-player kind is kept in a list of its own beside them (`TRACK_CHOICE_KINDS` in `client/track-list.js`).
 
 - Lag online, since 19 November 2026: `tests/playback-delay.test.js` (16 tests: how far in the past the page shows the race: 4 steps on a steady connection, more after late updates, never more than 6, the kart never stopping or going backwards once the page has adapted, back to 4 afterwards) and `tests/meter.test.js` (32: what the connection meter counts, which sentence fits which numbers, and the L key). Two older tests said "20 updates a second" and were changed to 30, each with a comment that says what it said before: "is sent every second step, which is 30 times a second" in `tests/room.test.js` and "sends updates about 30 times a second" in `tests/online.test.js`.
 
