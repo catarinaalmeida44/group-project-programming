@@ -52,6 +52,16 @@
             <p id="watch-title" class="watch-title"></p>
             <p id="watch-text" class="watch-text"></p>
           </div>
+          <!-- The connection meter: a small box in the corner that says why the
+               game may feel slow (the way to the server, uneven updates, or
+               this computer). Hidden until the player presses L, and it lets
+               clicks through. online.js fills it in, as text; the counting
+               and the words are in meter.js. -->
+          <div id="meter" class="meter" aria-live="off" hidden>
+            <p class="meter-title">Connection <span class="meter-key"><kbd>L</kbd> hides this</span></p>
+            <dl id="meter-rows" class="meter-rows"></dl>
+            <p id="meter-verdict" class="meter-verdict"></p>
+          </div>
           <!-- A card over the picture while the connection to the server is being
                made, is lost, or cannot be made: "The server is waking up",
                "Connection lost", "The room is full". The page tries again by
@@ -96,6 +106,7 @@
         The yellow light on the road is the checkpoint to drive through next.
         <kbd>M</kbd> switches the sound off and on: it is <strong id="sound">on</strong>.
         <kbd>F</kbd> puts the game on the whole screen, and back (<kbd>Esc</kbd> also leaves it).
+        If the race feels slow, <kbd>L</kbd> shows a small connection meter that says why, and hides it again.
       </p>
       <p class="note">
         Everyone who opens this page is in the same room on <span id="track-name">the test track</span>,

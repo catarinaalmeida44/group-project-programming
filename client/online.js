@@ -51,6 +51,8 @@ import { routePoints, watchForWrongWay, WRONG_WAY_MESSAGE } from "./route.js";
 import { nextCheckpointNumber, watchForMissedCheckpoint, missedCheckpointMessage } from "./checkpoints.js";
 import { placeLine, resultLines, boardLines } from "./standings.js";
 import { createResultsBoard } from "./results-board.js";
+import { createMeter, meterWords, VERDICTS } from "./meter.js";
+import { makePart } from "./page-parts.js";
 import { lookOf } from "./kart-shape.js";
 import { createRaceSound } from "./sound.js";
 import { tileKindAt } from "../shared/track.js";
@@ -253,6 +255,7 @@ function forgetTheRoom() {
   myId = null;
   welcomedAt = null;
   playback = createPlayback();
+  meter.forget(); // what it counted belongs to the connection that is gone
   race = readRace(null);
   endsIn = null;
   latestKarts = [];
@@ -341,6 +344,7 @@ function hear(text) {
       status = `Connected. ${note}`;
     }
     playback.add(message, performance.now());
+    meter.update(performance.now()); // the connection meter counts the updates (meter.js)
     latestKarts = message.karts;
     latestUpdate = message;
     bananas = bananasOf(message);
@@ -420,6 +424,7 @@ const fullScreen = setUpFullScreen(document, document.getElementById("play-area"
 
 const keyboard = createKeyboard(window, {
   onFullScreen: () => fullScreen.toggle(),
+  onMeter: () => toggleMeter(), // L: the connection meter, on or off
   onSound: () => {
     soundText.textContent = sound.toggle() ? "on" : "off";
   },
@@ -464,6 +469,72 @@ function showComputersSwitch() {
   }
 }
 
+// ---- The connection meter (meter.js) ----
+// A small box in a corner of the picture that says why the game may feel
+// slow: the way to the server, uneven updates, or this computer. It is off
+// until the player presses L, so it is never in anyone's way, and it changes
+// nothing about the race.
+const meter = createMeter();
+const meterBox = document.getElementById("meter");
+const meterRows = document.getElementById("meter-rows");
+const meterVerdict = document.getElementById("meter-verdict");
+/** While the meter is shown, the server is asked a tiny question this often, to time the answer. */
+const METER_ASKS_EVERY_MS = 2000;
+/** The numbers on the page are refreshed this often: twice a second is calm to read. */
+const METER_REFRESH_MS = 500;
+let meterOn = false;
+let meterTimer = null; //   the repeating question, while the meter is shown
+let meterShownAt = 0; //    when the numbers on the page were last refreshed
+
+/** Times one tiny question to the server and back. "/health" is the address that only says "I am alive". */
+async function timeTheServer() {
+  const asked = performance.now();
+  try {
+    const answer = await fetch("/health", { cache: "no-store" });
+    await answer.text();
+    meter.answer(answer.ok ? performance.now() - asked : null);
+  } catch {
+    meter.answer(null); // no answer: the meter shows a dash
+  }
+}
+
+/** L: shows the meter, or hides it again. The questions to the server stop when it is hidden. */
+function toggleMeter() {
+  meterOn = !meterOn;
+  clearInterval(meterTimer);
+  meterTimer = null;
+  if (meterOn) {
+    timeTheServer();
+    meterTimer = setInterval(timeTheServer, METER_ASKS_EVERY_MS);
+    meterShownAt = 0; // fill the box in at once
+  }
+}
+
+/**
+ * Puts the meter's numbers on the page, if it is switched on. It steps
+ * aside while the podium and the results are up: they need the whole picture.
+ */
+function refreshMeter() {
+  const show = meterOn && podiumSince === null;
+  if (meterBox.hidden === show) {
+    meterBox.hidden = !show;
+  }
+  const now = performance.now();
+  if (!show || now - meterShownAt < METER_REFRESH_MS) {
+    return;
+  }
+  meterShownAt = now;
+  const words = meterWords(meter.read(now, playback.delaySteps()));
+  meterRows.replaceChildren(
+    ...words.rows.flatMap(({ label, value, poor }) => [
+      makePart(document, "dt", "", label),
+      makePart(document, "dd", poor ? "is-poor" : "", value), // as text, never as HTML
+    ]),
+  );
+  setText(meterVerdict, words.verdict);
+  meterVerdict.classList.toggle("is-fine", words.verdict === VERDICTS.fine);
+}
+
 /** Asks the server to start a race: the Enter key, and the button on the results board. Only while no race is on. */
 function askToStart() {
   if (race.phase === "open" || race.phase === "finished") {
@@ -500,11 +571,16 @@ function frame(now) {
   const frameSeconds = lastFrameTime === null ? 0 : Math.min((now - lastFrameTime) / 1000, 0.25);
   lastFrameTime = now;
 
+  // The connection meter counts the pictures, and shows its numbers if the
+  // player has switched it on with L (meter.js).
+  meter.picture(performance.now());
+  refreshMeter();
+
   const input = keyboard.input();
   sendKeysIfChanged(input);
   showComputersSwitch();
 
-  // The karts as they were a tenth of a second ago, glided between the
+  // The karts as they were a moment ago (4 to 6 steps), glided between the
   // server's updates (see net.js).
   const karts = playback.advance(now);
   kartsShown = karts;
@@ -738,7 +814,21 @@ function showResultsList(lines) {
 
 // A way to look at the online session from the browser's console.
 window.kartGame = {
-  state: () => ({ myId, view, connected, status, link: linkState, trackName, account, saved, race: { ...race }, karts: kartsShown }),
+  state: () => ({
+    myId,
+    view,
+    connected,
+    status,
+    link: linkState,
+    trackName,
+    account,
+    saved,
+    race: { ...race },
+    karts: kartsShown,
+    // How far in the past the race is shown right now, in steps (net.js), and what the meter counts.
+    delaySteps: playback.delaySteps(),
+    meter: { on: meterOn, ...meter.read(performance.now(), playback.delaySteps()) },
+  }),
 };
 
 connect();
