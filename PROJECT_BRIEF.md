@@ -202,6 +202,8 @@ What this means for you: prefer finished, reliable features over many half-finis
 
 - *19 Nov 2026, built by Rodrigo, **[PROPOSED]**: Easy / Normal / Hard for the computer karts, in a single race only (three buttons above the track). This reverses the team's 17 Nov decision "no difficulty levels", so the pull request asks the team to accept or close it. Online stays Normal. Decisions made by the agent, please confirm: the buttons on the race page rather than in the menu; how much each level moves the numbers; the browser remembers the level.*
 
+- *19 Nov 2026, built by Rodrigo: on the Nova lap the race view now shows Carcavelos beach and the sea past the coast road, out to the horizon (only a picture: no rule changed). Rodrigo asked for a Google Earth scan; the agent used neither Google imagery (its terms forbid copying it into a product) nor OpenStreetMap (its services refused automatic requests), so the beach width is a guess, about 55 m. Catarina's files changed: ground.js, nova-lap-look.js; she is asked to review.*
+
 ### Characters and the selection menu
 
 - [PROPOSED] 8 original characters: 6 available from the start (2 light, 2 medium, 2 heavy) and 2 to unlock. *Changed on 12 Nov 2026 at Catarina's request (teammates confirm by approving the pull request that contains this change): the characters will be based on real people, not only on campus "types" as first proposed. Before a real person's name or face goes into the game or into this repository, which anyone on the internet can read, that person has to have said yes. Still no Nintendo characters, names or images.*

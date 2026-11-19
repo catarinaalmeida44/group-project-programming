@@ -24,6 +24,23 @@ export const NOVA_LAP_LOOK = {
   wall: { shades: ["#a9ad80", "#aeb285"], specks: 4, speckSize: 2.4, joints: 0, stripes: false },
   beyond: "#a9ad80",
   haze: "#dfe9ee",
+  // Past the bottom of the map, across the coast road: Carcavelos beach and
+  // the sea (shore.js). The map ends 4 squares (12 m) past the road; then
+  // about 55 m of sand, a line of surf, and the sea to the horizon. Not a
+  // survey: the real beach is wider in the west and narrower by the fort, and
+  // the map's coast road is straight where the real one slants.
+  shore: {
+    bands: [
+      { from: 92 * 32, colour: "#e3cf9e" }, //                                  dry sand
+      { from: 92 * 32 + 40 * NOVA_LAP_UNITS_PER_METRE, colour: "#d2bb87" }, //  wet sand
+      { from: 92 * 32 + 55 * NOVA_LAP_UNITS_PER_METRE, colour: "#eef4f6" }, //  the surf
+      { from: 92 * 32 + 58 * NOVA_LAP_UNITS_PER_METRE, colour: "#3f8fbf", water: true }, //  shallow water
+      { from: 92 * 32 + 90 * NOVA_LAP_UNITS_PER_METRE, colour: "#2f7fb5", water: true }, //  the sea, as on the horizon
+    ],
+    // How much of the water is painted again over the haze, so the far sea
+    // stays blue (0: not at all, 1: as if there were no haze).
+    throughHaze: 0.6,
+  },
   seeGroundTo: 3600,
   kerbs: false,
   kerbColours: ["#d8473f", "#f2f5f7"],
