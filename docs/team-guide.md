@@ -81,7 +81,7 @@ The full rules are in `AGENTS.md`. The short version:
 2. **One branch for one piece of work.** Save each step as its own commit, with a message that says what it does.
 3. **Run `npm test` before you ask for a pull request.** GitHub runs the tests again, and a pull request with failing tests should not be merged.
 4. **A teammate approves every pull request.** Nobody merges their own without a review. GitHub enforces one approval.
-5. **Merging puts it online.** A few minutes after a merge into `main`, the public link shows the new version. Anyone on the online page at that moment is disconnected and has to reload.
+5. **Merging puts it online.** A few minutes after a merge into `main`, the public link shows the new version. Anyone on the online page at that moment is disconnected. Their page says "Connection lost" and joins the new, empty room again by itself, without a reload.
 6. **New libraries need a yes first.** Say what it does, why we need it and what the alternative is. We have three so far: `vitest` (tests), `ws` (live connections), `pg` (database).
 7. **No secrets anywhere.** Not in the repository, not in a chat with an agent, not in a screenshot.
 
@@ -124,7 +124,7 @@ Ask the owner before changing a file they look after. That is the main way we av
 - **Only Catarina has the database address.** It is a secret and is not in the repository. If your part needs the real database on your laptop, ask her in person. Do not send it through a chat.
 - **On your laptop, `npm start` has no accounts.** Accounts live in the database, and without its address the menu says that accounts are not available. That is correct, not a mistake. To try signing up, signing in and the leaderboard on your laptop, run `npm run start:pretend` instead: it is the same game with pretend accounts kept in memory, and it forgets everything when you stop it.
 - **Results are only saved for signed-in players, in online races that began with the countdown.** A single race in the browser never reaches the shared leaderboard, and neither does driving around online before the host presses Enter.
-- **The free server sleeps.** After 15 minutes without visitors it takes about a minute to wake up. Open the link a few minutes before you show it to anyone.
+- **The free server sleeps.** After 15 minutes without visitors it takes about a minute to wake up (17 seconds when we measured it on 19 November). Open the link a few minutes before you show it to anyone. A page of ours that was already open says "The server is waking up" while it waits, and the online page joins the room by itself when the server is back (`client/waking.js`, `client/link.js`).
 - **Right after installing Node.js, `npm` may be "not found".** Close and reopen the app or terminal you are using.
 - **The game is silent until your first key press.** A browser only lets a page make sound after you pressed a key or clicked. That is correct, not a mistake. To change how a sound sounds, change the numbers at the top of `client/sound.js` and listen on http://localhost:3000/sound-test.html, which has every sound on a button. A coding agent cannot hear: it can check that a sound is not silent and does not crackle, and nothing more.
 - **An agent's own browser can be slow.** The built-in browser of the Claude app redraws about once a second when it is not on screen, so the game looks jerky there. Judge how the game feels in a normal browser.

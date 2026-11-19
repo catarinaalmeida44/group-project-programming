@@ -70,6 +70,8 @@ For normal page requests:
 - kinds of file that are not on its list
 - addresses that are broken
 
+The answer to an address that does not exist is the number 404 ("not found"). A person who opened it in a browser gets a page of the game with a button back to the menu (`client/not-found.html`). Everything else that asks gets the three plain words "Page not found." The page never shows the address that was asked for, and the files listed above stay as private as before (`tests/not-found-page.test.js`).
+
 For accounts and the leaderboard:
 
 - a user name or password that breaks the rules, and a user name that is taken

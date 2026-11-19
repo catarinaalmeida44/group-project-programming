@@ -4,6 +4,82 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 19 November 2026, morning: bad inputs, a sleeping server, and a lost connection
+
+**What she asked for**
+
+A run aimed at two things from yesterday's list of ideas. One: try the bad inputs (wrong password, taken user name, joining mid-race, two tabs, reloading during a race, the server waking from sleep) and fix whatever shows a raw error. Two: a clear "the server is waking up, about a minute" message instead of a blank wait. And: "tell me what I have to decide". The other two tracks will be removed in the final polish, not now.
+
+**What the sweep found**
+
+Tried on the laptop with pretend accounts (`npm run start:pretend`) and, for the room, also on the live site. The agent does not type passwords into the live site, so the account forms were tried on the laptop only: the code is the same.
+
+| Tried | What the game said | Verdict |
+|---|---|---|
+| Sign up with nothing, a short name, `<b>x</b>`, an accent, 5,000 letters, a 5,000-letter password | A sentence under the box that is wrong, before anything is sent | fine |
+| A taken user name, also in other capitals | "Someone already has that user name. Choose another one." | fine |
+| Wrong password, unknown user | "Wrong user name or password." for both, so names cannot be guessed | fine |
+| Five wrong passwords, then the right one | "Too many wrong passwords. Try again in 10 minutes." | fine |
+| Change password: wrong current one, the same new one, a short new one | A sentence each | fine |
+| Delete account without the tick, or with a wrong password | A sentence each | fine |
+| Pressing "Sign in" twice at once | One sign-in | fine |
+| Everything above with the server switched off | "The server could not be reached. Try again in a moment." The leaderboard says so too, with "Try again" | fine |
+| Two tabs in the same room | Two karts. Nothing breaks | a choice, see below |
+| Opening the online page during a race | You watch, and drive in the next race | fine |
+| Reloading during a race | Your kart leaves the race, and you watch until the next one | a choice, see below |
+| A track that does not exist in the address, or `<script>` | The test oval, and nothing of the address on the page | fine |
+| An address that does not exist | Three bare words on a white page: "Page not found." | **fixed** |
+| The server stops or restarts under an open online page | A small line under the picture: "reload the page". The player had to reload by hand | **fixed** |
+| The server is slow to answer because it is waking up | "Signing in…" and nothing else, for as long as it takes | **fixed** |
+| Arriving during a race as a character someone else already has | The line said "You are Cici Boss" although you had no kart yet and would get another character | **fixed** |
+
+No raw error, code or stack of technical words was shown anywhere. What was missing was what to tell the player while waiting, and doing the retrying for them.
+
+**What was built**
+
+| What | Where |
+|---|---|
+| The online page tries to connect again by itself: after half a second, then 1, 2, 3 and every 5 seconds. A card over the picture says what is happening: "Connecting…", after 3 seconds "The server is waking up" with a little kart driving along a road and the seconds counted, after 75 seconds "Still waking up", after two and a half minutes "The server cannot be reached" with a "Try again" button and "Back to the menu". Also "Connection lost", "No internet connection", "The room is full", "The server has gone quiet" | `client/link.js` (the words and the sums), `client/online.js` (`connect`, `connectionClosed`, `tryAgain`, `forgetTheRoom`, `showCard`), `client/online.html`, `client/style.css` |
+| In the room, eight seconds without any news from the server count as a lost connection: the page lets go of it and joins again | `LOST_AFTER_QUIET_MS` in `client/link.js` |
+| In the menu, signing in, creating an account, changing a password, deleting the account, signing out, the account corner and the leaderboard add "The server is waking up, which can take up to a minute." when an answer takes more than three seconds | `client/waking.js`, `client/account-panel.js`, `client/account-view.js`, `client/leaderboard.js`, `client/leaderboard-view.js` |
+| A question to the server that gets no answer for a minute and a half is given up, with "The server could not be reached." If the hosting company answers in our server's place while it starts, the form says "The server is starting up. Try again in a minute." | `client/account-api.js` |
+| A wrong address gives a page of the game, "Off the track", with a button back to the menu, still with the number 404. Scripts and programs get the plain words as before | `client/not-found.html`, `sendNotFound()` in `server/app.js` |
+| Someone who arrives during a race is told who they are only once they have a kart | `client/online.js` |
+
+**About the sleeping server**
+
+- Render's own page about the free plan says: the server is switched off after 15 minutes without visitors, waking takes about a minute, and a browser that opens the site meanwhile is shown a loading page by Render itself. Messages of a race count as visitors, so a race is never cut off by this.
+- Measured on 19 November at 10:35: the sleeping server answered after 17 seconds.
+- So someone who opens the link cold sees Render's loading page, not a blank one, and we cannot change that page. Our own message is for a page that was already open: the menu left alone for a quarter of an hour, then "Sign in" or the leaderboard.
+- A second try to catch the server asleep, 17 minutes later, found it awake (it answered in a tenth of a second). So what an open page of ours gets from Render during the waking was not seen. The code copes with all three possibilities: the answer is held back (the "waking up" words after three seconds), the connection is refused (the page tries again), or Render answers in our place (the "starting up" sentence).
+
+**Decisions made by the agent: please confirm**
+
+- This branch, `waking-up-and-lost-connection`, is built on top of `atrium-screen-and-characters`, which is built on Pedro's `podium`. It touches the same files, so starting from `main` would have meant conflicts. Pull requests 28 and 29 have to be merged before this one.
+- After a lost connection the page comes back by itself. During a race the returning player watches, as before: the rule was not changed.
+- The numbers: 3 seconds before "waking up", 8 seconds of silence before "lost", 2.5 minutes before giving up, 1.5 minutes for a question in the menu. All are named at the top of `client/waking.js`, `client/link.js` and `client/account-api.js`.
+- Nothing was done to keep the server awake. That is a choice for her (below).
+
+**What she has to decide**
+
+1. Should the server never sleep? Free ways: a job on GitHub that opens `/health` every ten minutes (a small file in the repository, no new account), or a free "is my site up" service (she makes an account). Paid: Render's always-on plan. Or leave it, and open the link a few minutes before any demo.
+2. Reloading during a race: keep "you watch until the next race", or hold the kart for a few seconds so a reload brings you back into the race? The second is a change to the rules of the room.
+3. The same person in two tabs: allow two karts (today), or one kart per signed-in player?
+4. A password that is the same as the user name is accepted today. Refuse it?
+
+**Checked, and not checked**
+
+- `npm test`: 1,960 passed, 5 skipped. 45 are new, in `tests/link.test.js` and `tests/not-found-page.test.js`. No existing test was changed.
+- In the browser, on the laptop: every row of the table above; the card for a lost connection (server stopped) and the page joining again by itself when it came back; the waking card from the first second to "The server cannot be reached" and the "Try again" button, against a copy of the server without race rooms; the three waking sentences in the menu with answers slowed down to five seconds; the "Off the track" page.
+- On the live site: two tabs, joining and reloading during a race, a wrong track, a wrong address. It runs the old version, so the new card and page were not seen there.
+- NOT checked: the new card on the live site against a server that is really asleep (only possible after merging). Two real laptops. Wi-Fi switched off and on (rows 11 to 13 of `docs/two-laptop-checklist.md`, rewritten for the new behaviour). A screen reader reading the card.
+
+**How to check it yourself**
+
+1. `npm run start:pretend`, open http://localhost:3000, click Online and a track. Stop the server with Ctrl+C: the card says "Connection lost". Start it again: the card goes away and you are back in the room, without touching the page.
+2. Open http://localhost:3000/anything-at-all: "Off the track".
+3. After merging: leave the live menu open for 20 minutes, then press "Sign in" with any name and password. After three seconds the form should say the server is waking up.
+
 ### 18 November 2026, late evening: the podium inside the atrium, a white screen, more dances
 
 **What she said, after looking at the entry below**

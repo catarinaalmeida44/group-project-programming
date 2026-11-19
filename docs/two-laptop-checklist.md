@@ -31,9 +31,9 @@ Write "yes" or what went wrong next to each one.
 | 8 | A: press R (before any race has been started) | A's kart is back at the start with the clock at zero. B's kart is not affected | |
 | 9 | B: close the browser tab | Within a few seconds the blue kart disappears on A, and A says "You are alone here" | |
 | 10 | B: open the link and click "Online" in the menu again | B is back in the room. Both say "2 players here" | |
-| 11 | A: switch off the Wi-Fi and leave it off for one minute | On A, the karts stop moving and after two seconds the line under the track says "The server has gone quiet". On B, the red kart disappears within about half a minute | |
-| 12 | A: switch the Wi-Fi on again | A says the connection was lost. This one has never been tried, so write down what really happens | |
-| 13 | A: reload the page | A is back in the room with a kart | |
+| 11 | A: switch off the Wi-Fi and leave it off for one minute | On A, the karts stop moving and after two seconds a card over the picture says "The server has gone quiet", then "No internet connection" or "Connection lost". On B, the red kart disappears within about ten seconds | |
+| 12 | A: switch the Wi-Fi on again, and do NOT reload the page | Within a few seconds the card goes away by itself and A is back in the room with a kart (new on 19 November: the page tries again by itself). This one has never been tried on two laptops, so write down what really happens | |
+| 13 | A: reload the page anyway | A is back in the room with a kart, once and not twice | |
 
 ## The race start
 
@@ -172,7 +172,7 @@ This cannot be done at any moment. Do it the next time a pull request is merged 
 
 | # | Do this | You should see | Result |
 |---|---|---|---|
-| 14 | Keep both pages open while Render puts the new version online (a few minutes after the merge) | The karts stop. After two seconds both pages say "The server has gone quiet". Some seconds later they say the connection was lost. After a reload, both are in a new, empty room | |
+| 14 | Keep both pages open while Render puts the new version online (a few minutes after the merge) | The karts stop. After two seconds a card on both pages says "The server has gone quiet", and some seconds later "Connection lost", counting the seconds. When the new version is up, both pages are back in a new, empty room by themselves, without a reload | |
 
 ## Things to write down
 
