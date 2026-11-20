@@ -58,6 +58,11 @@ import { createMeter, meterWords, VERDICTS } from "./meter.js";
 import { makePart } from "./page-parts.js";
 import { lookOf } from "./kart-shape.js";
 import { createRaceSound } from "./sound.js";
+import { createPageMusic } from "./music.js";
+import { raceMoment } from "./music-cues.js";
+import { createUiSound } from "./ui-sound.js";
+import { roomReady } from "./ui-sound-cues.js";
+import { readSwitches, toggleMaster } from "./audio-switches.js";
 import { tileKindAt } from "../shared/track.js";
 import { SPIN_STEPS } from "../shared/hazards.js";
 import {
@@ -437,7 +442,13 @@ function showCard(card) {
 // the server says is happening: sound decides nothing about the race.
 const sound = createRaceSound(window, storage);
 const soundText = document.getElementById("sound");
-soundText.textContent = sound.isOn() ? "on" : "off";
+soundText.textContent = readSwitches(storage).master ? "on" : "off";
+// The music (music.js), the clicks of the buttons and the hype sound
+// (ui-sound.js). M is the master switch: it silences everything (audio-switches.js).
+const music = createPageMusic(window, storage);
+const uiSound = createUiSound(window, storage);
+uiSound.listen(document);
+let roomWasReady = false; // was everyone in the room a character at the last picture? (the hype plays once when they all are)
 
 // ---- The keyboard ----
 // The game on the whole screen: the button above the track, or F (full-screen.js).
@@ -447,7 +458,11 @@ const keyboard = createKeyboard(window, {
   onFullScreen: () => fullScreen.toggle(),
   onMeter: () => toggleMeter(), // L: the connection meter, on or off
   onSound: () => {
-    soundText.textContent = sound.toggle() ? "on" : "off";
+    const on = toggleMaster(storage);
+    sound.setMaster(on);
+    music.setSwitches();
+    uiSound.setSwitches();
+    soundText.textContent = on ? "on" : "off";
   },
   onRestart: () => send({ type: "restart" }),
   // Anyone can press Enter, but the server only obeys the host, and only
@@ -806,6 +821,26 @@ function frame(now) {
   } else if (race.phase !== "finished") {
     podiumSince = null;
   }
+  // The music: the menu song in the room before a race, none in the
+  // countdown, the race song from GO (faster on your final lap), the
+  // fanfare at your finish, the podium song on the podium (music-cues.js).
+  music.follow(
+    raceMoment({
+      inLobby: race.phase === "open",
+      started: race.phase === "countdown",
+      racing: race.phase === "racing",
+      finished: mine?.finished === true && race.phase === "racing",
+      podium: podiumSince !== null,
+      lapsDone: mine?.lapsDone ?? 0,
+      laps: track.laps,
+    }),
+  );
+  // The hype, once, when everyone in the room has a character (ui-sound-cues.js).
+  const roomIsReady = roomReady(race.phase, latestKarts);
+  if (roomIsReady && !roomWasReady) {
+    uiSound.hype();
+  }
+  roomWasReady = roomIsReady;
   if (podiumSince !== null) {
     const lineup = podiumLineup(latestKarts, track);
     const trackCanvas = document.getElementById("track");

@@ -2,6 +2,50 @@
 
 Rodrigo Simeão Versos (GitHub rodrigosversos). Entries from 11 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 20 November 2026: music, button clicks, the hype sound and the sound switches
+
+**What was done**
+- **Music**, as in kart games: the **menu** song (also in an online room before a race), the **race** song from GO, 15% faster on the final lap, the **finish** fanfare when you cross the line, and the **podium** song after it. No music in the countdown, so the beeps are heard.
+- **Button clicks** in the menu and on the race pages.
+- The **hype sound** when the character choice is done: the menu waits about a second for it before going to the race. Online it plays once when two or more people are in the room and all have a character.
+- **Settings > Sound**: **All sound** (and M during a race), and one switch for each kind: **Music**, **Race sounds**, **Menu sounds**.
+
+Branch `rodrigo-music`, from `main` after the game settings and two players (#37).
+
+| File | What changed |
+|---|---|
+| `client/music-score.js` | New. The four songs as notes, and the timing sums |
+| `client/music-cues.js` | New. Which song when, and "music on or off" |
+| `client/music.js` | New. Plays the songs |
+| `client/audio-switches.js` | New. The four switches |
+| `client/ui-sound.js`, `client/ui-sound-cues.js` | New. The click and the hype, and when each plays |
+| `client/sound.js` | The race sounds also obey All sound |
+| `client/settings-panel.js`, `client/index.html` | The four switches in Settings |
+| `client/menu.js`, `client/main.js`, `client/double.js`, `client/online.js` | Music, clicks and hype on every page; M is All sound |
+| `client/sound-test.html`, `client/sound-test.js` | Buttons to listen to every song, the fast final lap, the click and the hype |
+| `tests/music.test.js`, `tests/audio-switches.test.js` | New. 45 and 15 tests |
+| `WALKTHROUGH.md`, `PROJECT_BRIEF.md`, the READMEs | Kept true |
+
+**Why it was done this way**
+- **No Mario Kart music.** The brief says no Nintendo music, and copying it would break copyright. The tunes were composed for our game; they sound like a kart game, but they are our own.
+- **Made by our own code, no music files**, as Catarina decided for all sound on 15 November: nothing to download and no licences.
+- **The notes are written down as data and tested**, the player is checked by ear: the same split as the other sounds.
+- **"Race sounds" is the old box**, kept where it was saved, so nobody's earlier choice is lost.
+
+**Decisions**
+- Mine: music for menus, race and winning; clicks; the hype; switches by kind plus a master; the hype "when choosing is done".
+- Decision made by the agent, please confirm: the music is made in code (I did not answer that question); the four songs, speeds and loudness; silence in the countdown; the menu waits about a second for the hype; online the hype needs two or more people; M is now All sound (it was the race sounds).
+- Decision made by the agent, please confirm, and tell the owner: `client/sound.js`, `client/settings-panel.js`, `client/index.html`, `client/menu.js`, `client/main.js`, `client/double.js`, `client/online.js` and the sound check page changed (Catarina's area). She should listen to the songs on `sound-test.html`.
+
+**What was checked, and what was not**
+- `npm test`: 2,652 passed, 5 skipped (60 new tests).
+- Broken on purpose in 10 ways; 9 made a test fail at once, the tenth after the pretend page parts in a test were made stricter.
+- In Chrome without loudspeakers, counting the notes each page asks for: the menu is silent until the first click and then plays; Music off stops it, on again starts it; All sound off stops it and greys out the other switches; Race plays the hype and goes to the race after about 1.4 seconds; in a race the countdown has only beeps, after GO the race music plays, M silences everything and the page says "off"; the sound check page plays every song, the click and the hype; online, two players both hear the room music and the hype comes when the second arrives; no page errors.
+- **Not checked:** how it sounds to a person: nobody has listened yet. That is the next step (`sound-test.html`).
+
+**How to check it yourself**
+Run `npm start`, open http://localhost:3000 and click anywhere: the menu music starts. Open Settings: four switches. Choose a track and a character and press Race: the hype, then the race. After GO the race music; on the last lap it speeds up; at the finish the fanfare, then the podium song. To listen to each piece alone: http://localhost:3000/sound-test.html.
+
 ### 19 November 2026: the sea on the Nova lap
 
 **What was done**

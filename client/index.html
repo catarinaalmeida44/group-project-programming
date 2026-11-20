@@ -462,12 +462,26 @@
 
         <fieldset>
           <legend>Sound</legend>
-          <!-- settings-panel.js ticks the box from what is saved, and saves a change. -->
+          <!-- settings-panel.js ticks the boxes from what is saved, and saves a change (audio-switches.js). -->
+          <div class="field field-check">
+            <input type="checkbox" id="sound-master">
+            <label for="sound-master"><strong>All sound</strong></label>
+          </div>
+          <p class="note">Off silences the whole game. During a race, <kbd>M</kbd> switches it.</p>
+          <div class="field field-check">
+            <input type="checkbox" id="sound-music">
+            <label for="sound-music">Music</label>
+          </div>
           <div class="field field-check">
             <input type="checkbox" id="sound-on">
-            <label for="sound-on">Sound in races</label>
+            <label for="sound-on">Race sounds</label>
           </div>
-          <p class="note">Engine, bumps and the countdown. During a race, <kbd>M</kbd> switches it too.</p>
+          <p class="note">Engine, bumps and the countdown.</p>
+          <div class="field field-check">
+            <input type="checkbox" id="sound-menu">
+            <label for="sound-menu">Menu sounds</label>
+          </div>
+          <p class="note">Button clicks, and the hype when the characters are chosen.</p>
           <p id="sound-status" class="note" role="status"></p>
         </fieldset>
 

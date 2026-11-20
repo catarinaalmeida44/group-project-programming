@@ -18,6 +18,8 @@ import { storageOf } from "./storage.js";
 import { accountApi } from "./account-api.js";
 import { TRACKS } from "../shared/tracks/index.js";
 import { connectSettings } from "./settings-panel.js";
+import { createPageMusic } from "./music.js";
+import { createUiSound, HYPE_SECONDS } from "./ui-sound.js";
 import { connectCharacterChoice } from "./kart-panel.js";
 import { connectTrackChoice } from "./track-panel.js";
 import { connectLeaderboard } from "./leaderboard-panel.js";
@@ -26,9 +28,35 @@ import { connectStats } from "./stats-panel.js";
 
 const storage = storageOf(window); // this browser's storage, for the settings and the best times
 
-connectSettings(document, storage);
+// The sound of the menu: its music (music.js), a click for every button and
+// the hype sound when the characters are chosen (ui-sound.js). The sound
+// switches are in Settings (audio-switches.js), so Settings is told about
+// both, to apply a change at once.
+const music = createPageMusic(window, storage);
+music.follow({ place: "menu", finalLap: false });
+const uiSound = createUiSound(window, storage);
+uiSound.listen(document);
+
+connectSettings(document, storage, () => {
+  music.setSwitches();
+  uiSound.setSwitches();
+});
 // A track is chosen first, then the character, then the race starts.
 const characters = connectCharacterChoice(document, storage);
+
+// The hype when the character choice is done: the Race button waits a
+// moment for it, then goes to the race. (In the first step of a
+// two-player race the button opens the second step instead: kart-panel.js
+// stops it from leaving the page, and then there is no hype yet.)
+document.getElementById("character-go").addEventListener("click", (event) => {
+  if (event.defaultPrevented || !uiSound.hypeIsHeard()) {
+    return; // the first of two steps, or menu sounds off: go at once
+  }
+  event.preventDefault();
+  const address = event.currentTarget.href;
+  uiSound.hype();
+  setTimeout(() => window.location.assign(address), HYPE_SECONDS * 1000);
+});
 connectTrackChoice(document, TRACKS, storage, characters);
 const leaderboard = connectLeaderboard(document, { api: accountApi, storage, tracks: TRACKS });
 

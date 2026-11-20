@@ -51,6 +51,10 @@ import { formatTime } from "./format.js";
 import { storageOf } from "./storage.js";
 import { readSettings } from "./settings.js";
 import { createRaceSound } from "./sound.js";
+import { createPageMusic } from "./music.js";
+import { raceMoment } from "./music-cues.js";
+import { createUiSound } from "./ui-sound.js";
+import { readSwitches, toggleMaster } from "./audio-switches.js";
 import { podiumLineup, podiumLoser, podiumCaption, cheersDue, finishPlace } from "./podium.js";
 import { createPodiumView } from "./podium-view.js";
 import { HALF_SHOWS, NOT_SAVED_WORDS, halfMessage, plateName, tagsFor, watchedName } from "./double-view.js";
@@ -153,7 +157,12 @@ function newRace() {
 // every beep would come twice. M switches both off and on.
 const sounds = BOTH.map(() => createRaceSound(window, storage));
 const soundText = document.getElementById("sound");
-soundText.textContent = sounds[0].isOn() ? "on" : "off";
+soundText.textContent = readSwitches(storage).master ? "on" : "off";
+// One music for both drivers (music.js), and the clicks of the buttons
+// (ui-sound.js). M is the master switch: it silences everything (audio-switches.js).
+const music = createPageMusic(window, storage);
+const uiSound = createUiSound(window, storage);
+uiSound.listen(document);
 
 // ---- The game settings: a card over the pictures (game-settings-card.js) ----
 const settingsBox = document.getElementById("settings-box");
@@ -198,10 +207,12 @@ const keyboard = createKeyboard(
     onRestart: startAgain,
     onView: changeView,
     onSound: () => {
-      const on = sounds[0].toggle();
-      if (sounds[1].isOn() !== on) {
-        sounds[1].toggle();
+      const on = toggleMaster(storage);
+      for (const each of sounds) {
+        each.setMaster(on);
       }
+      music.setSwitches();
+      uiSound.setSwitches();
       soundText.textContent = on ? "on" : "off";
     },
   },
@@ -300,6 +311,19 @@ function frame(now) {
     podiumSince = now;
   }
   const podiumUp = podiumSince !== null;
+  // The music: the race song from GO, faster once either driver is on the
+  // final lap, the fanfare when both have finished, then the podium song.
+  const drivers = BOTH.map((number) => race.racers[number].progress);
+  music.follow(
+    raceMoment({
+      started,
+      racing: countdown.racing,
+      finished: drivers.every((progress) => progress.finished),
+      podium: podiumUp,
+      lapsDone: Math.max(...drivers.map((progress) => progress.lapsDone)),
+      laps: track.laps,
+    }),
+  );
   screenBox.classList.toggle("is-podium", podiumUp);
   raceOverBox.hidden = !podiumUp;
 
