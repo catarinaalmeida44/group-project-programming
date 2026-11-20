@@ -163,6 +163,7 @@ After the two starting commits of the first day, all the work came into `main` t
 | `docs/diary/` | One diary per team member: what was built, why, and what was and was not checked |
 | `docs/build-diary.md` | The diary of the first day |
 | `docs/two-laptop-checklist.md` | The checks we do by hand, with real laptops, for online play |
+| `SECURITY.md` | How to tell us about a security problem privately, and what we already do to keep the game safe |
 | `AGENTS.md` | How the team works with coding agents, and the rules they must follow (`CLAUDE.md` points to it) |
 | `.env.example` | A list of the secret settings the app needs, with fake values |
 | `package.json` | The project's identity card: its name, its commands (such as `npm test`) and the libraries it uses |
