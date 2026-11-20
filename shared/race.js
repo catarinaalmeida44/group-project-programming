@@ -31,7 +31,6 @@ import { surfaceAt, bounceOffWalls } from "./track.js";
 import { progressAtStart, updateProgress } from "./laps.js";
 import { gridSpot } from "./grid.js";
 import { JUMP_STEPS, BOOST_STEPS, BOOST_SHARE, takesOff, launchKart } from "./ramps.js";
-import { slopeAt, slopeShare, pullDownhill } from "./slopes.js";
 
 /** For walls, a kart is treated as a circle this many units across, from the middle to the edge. */
 export const KART_RADIUS = 10;
@@ -132,21 +131,11 @@ export function rollRacer(track, racer, character) {
  * "boosted" says the kart has extra speed from a ramp: the ground under it
  * is then handed to the driving rules with a boost on it, which raises the
  * top speed there (see topSpeedOf in physics.js). Left out, there is none.
- *
- * On a slope (slopes.js) the top speed is raised pointing downhill and
- * lowered pointing uphill, through the same boost, and the kart is pulled a
- * little downhill. On the flat nothing changes: the boost is 1 and there is
- * no pull, so a track without slopes drives exactly as before.
  */
 function moveKart(track, kart, keys, character, boosted = false) {
   const ground = surfaceAt(track, kart.x, kart.y);
-  const slope = slopeAt(track, kart.x, kart.y);
-  const boost = (boosted ? BOOST_SHARE : 1) * slopeShare(slope, kart.angle);
-  const surface = boost === 1 ? ground : { ...ground, boost };
-  // The pull comes first, so that the driving rules then deal with it like
-  // any other speed: on a gentle slope a standing kart's friction takes it
-  // away again in the same step, and the kart is left truly still.
-  const moved = stepKart(pullDownhill(kart, slope), keys, character, surface);
+  const surface = boosted ? { ...ground, boost: BOOST_SHARE } : ground;
+  const moved = stepKart(kart, keys, character, surface);
   return bounceOffWalls(track, moved, KART_RADIUS);
 }
 
