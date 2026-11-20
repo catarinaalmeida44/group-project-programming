@@ -28,6 +28,7 @@ import { createSceneryPainter } from "./scenery-paint.js";
 import { trafficLanes, carsAt } from "./traffic.js";
 import { WALL_ART } from "./wall-art.js";
 import { jumpHeight } from "../shared/ramps.js";
+import { stairsBump } from "./stairs-bump.js";
 import { createGround } from "./ground.js";
 import { paintSky } from "./sky.js";
 import { paintProp, paintPropFromAbove, PROP_HEIGHT } from "./props.js";
@@ -423,7 +424,16 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
   function paintKartWithJump(someKart, viewer, ground, steer) {
     const height = jumpHeight(someKart.air);
     if (!(height > 0) || ground === null) {
+      // On stairs (stairs-bump.js) a moving kart jolts up and down a little.
+      const bump = ground === null ? 0 : stairsBump(look.stairs, track.tileSize, someKart);
+      if (bump > 0) {
+        context.save();
+        context.translate(0, -bump * ground.scale);
+      }
       paintKart(context, viewer, lookOf(someKart), steer);
+      if (bump > 0) {
+        context.restore();
+      }
       return;
     }
     context.fillStyle = "rgba(8, 14, 22, 0.32)";

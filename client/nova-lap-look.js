@@ -119,6 +119,13 @@ export const NOVA_LAP_LOOK = {
   // ---- What only this track has ----
 
   ground: NOVA_LAP_GROUND,
+  // Stairs, as [left, top, right, bottom] in squares of the map: a kart that
+  // drives over them jolts on the steps in the race view (stairs-bump.js).
+  // Only the picture: the driving is the same as on any road. (20 November
+  // 2026, at the team's request. Real hills were tried the same day and left
+  // out: the ground is drawn flat, and a slower kart alone did not feel like
+  // going up or down.)
+  stairs: [[64, 63, 71, 69]], // the wide stairs, from the promenade to the lower plaza
   // Lines painted on the ground. Each is in squares of the map.
   groundMarks: [
     // The west street and the coast road: a broken line down the middle, a line along each edge.
