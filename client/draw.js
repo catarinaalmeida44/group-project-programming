@@ -53,13 +53,6 @@ const CAMERA_SWING = 6.5;
 const CAMERA_SINK = 8;
 /** The colours of the upright faces of the sunken part: the stone walls round it, the fronts of the stairs, the small steps of the path. */
 const LEVEL_WALLS = { stone: "#d6cfc1", stairs: "#b4705a", path: "#b3843f" };
-/**
- * A thing in the sunken part is hidden by the ground of the track that lies
- * nearer than it. "Nearer" is measured from this many units in front of the
- * thing's own spot, so that a thing standing right at the foot of a wall is
- * not cut through its middle.
- */
-const EDGE_SLACK = 12;
 /** A step of the sunken part lower than this (in units) has no front painted: it belongs to a ramp, not to stairs. */
 const MIN_STEP = 1.2;
 /** How the light falls on a face, by the way it looks: towards the south and west it is lit, towards the north and east in shade. */
@@ -459,22 +452,21 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
     // Something down in the sunken part (levels.js) is hidden by the ground
     // of the track in front of it, as a thing in a pit is by the pit's edge.
     // The ground is painted before everything that stands, so instead each
-    // such thing is cut to where the sunken part can really be seen: above
-    // the line where the ground at its distance lies, or through the holes.
+    // such thing is cut. The rule is the real one: a part of it that is
+    // above the level of the ground of the track can never be hidden by
+    // that ground; a part below that level is seen only through the holes.
+    // (A first version cut at one line for the whole thing, measured from
+    // its middle: a railing running towards the camera lost its near end,
+    // and the lower part of the tunnel's walls was cut away.)
     const holes = levels === null ? null : holeOutline(spot, upper, near);
     for (const thing of things) {
-      const sunk = holes !== null && thing.depth > 0;
-      if (sunk) {
+      const region = holes !== null && thing.depth > 0 ? seenRegion(thing, holes, upper, near) : null;
+      if (region !== null) {
         context.save();
-        const seenThrough = new Path2D(holes);
-        const edge = chasePoint(Math.max(thing.ahead - EDGE_SLACK, near + 1), 0, upper);
-        if (edge !== null) {
-          seenThrough.rect(0, 0, SCREEN.width, edge.y);
-        }
-        context.clip(seenThrough);
+        context.clip(region);
       }
       paintThing(thing);
-      if (sunk) {
+      if (region !== null) {
         context.restore();
       }
     }
@@ -591,6 +583,49 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
       context.lineWidth = 1;
       context.stroke();
     }
+  }
+
+  /**
+   * Where a thing down in the sunken part can be seen (see the painting
+   * loop): the holes, and everything above the line where the level of the
+   * ground of the track crosses the thing itself. Gives a Path2D to cut to,
+   * or null when nothing of the thing can be hidden (it is all above that
+   * level, like the tunnel's roof).
+   */
+  function seenRegion(thing, holes, upper, near) {
+    const region = new Path2D(holes);
+    const TOP = -SCREEN.height; // well above the top of the screen
+    if (thing.kind === "flat") {
+      return thing.lowest > thing.depth ? null : region;
+    }
+    if (thing.kind === "strip") {
+      // The upright piece from a to b: the ground's level along it, and everything above that line.
+      const nearest = near + 1;
+      const atLevel = (end) => chasePoint(Math.max(end.ahead, nearest), end.sideways, upper);
+      const pa = atLevel(thing.a);
+      const pb = atLevel(thing.b);
+      if (pa === null || pb === null) {
+        return null;
+      }
+      const left = Math.min(pa.x, pb.x) - 1;
+      const right = Math.max(pa.x, pb.x) + 1;
+      const yLeft = pa.x <= pb.x ? pa.y : pb.y;
+      const yRight = pa.x <= pb.x ? pb.y : pa.y;
+      region.moveTo(left, yLeft);
+      region.lineTo(right, yRight);
+      region.lineTo(right, TOP);
+      region.lineTo(left, TOP);
+      region.closePath();
+      return region;
+    }
+    // A kart or a thing standing on one spot: the ground's level there is
+    // "depth" units above where it stands, so that many units higher on the screen.
+    const ground = thing.kind === "kart" ? thing.ground : { y: thing.y, scale: thing.unit };
+    if (ground === null || ground === undefined) {
+      return null;
+    }
+    region.rect(0, TOP, SCREEN.width, ground.y - thing.depth * ground.scale - TOP);
+    return region;
   }
 
   /**

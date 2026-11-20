@@ -45,6 +45,7 @@ After the jolting on the stairs, Francisco asked for one try at the ground itsel
 - The Beach Way looked like an extra corridor with an odd wall. He chose to have the tunnel right at the edge of the plaza: the tunnel moved 5.5 squares east in `client/nova-lap-buildings.js`, the side wall of its old ramp was taken out, its railing at the west end moved with it, and the sandy floor in `client/nova-lap-ground.js` is now only in front of its mouth (west of it is the grass bank). These are Catarina's files: she should know. The squares were already walls in the track's letters, so the driving and the map did not change, and her Nova lap tests pass unchanged.
 - Three of this branch's own tests (not in `main` yet) were changed to the tunnel's new place, and one added: no Beach Way is left west of the tunnel.
 - Checked again in a browser from the spots of his three photos. `npm test`: 2773 passed, 5 skipped.
+- Francisco drove it again: the foot of the tunnel walls looked see-through, and railings vanished when he came close. The cut was too crude (one line per thing, from its middle). It now follows the real rule: what is above the level of the ground of the track is never hidden by it; what is below is seen only through the holes. Checked again from his three new photos.
 
 **What comes next**
 The team plays it before the demo. If the plaza is slow on someone's laptop, the path's 40 steps can be fewer.
