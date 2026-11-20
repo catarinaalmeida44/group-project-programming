@@ -36,7 +36,7 @@ Nothing had to be changed. The three pages hand the same painter (`client/podium
 
 **Decisions made by the agent: please confirm**
 
-- **Player 1 is on the right half, player 2 on the left.** She asked for the keys to be swapped, and did not say anything about the sides. The arrows are on the right of the keyboard, so the person using them sits on the right and looks at the right half. It is one word per driver to turn round (`side` in `DRIVERS`, and the order of the two halves in `client/double.html`).
+- **Player 1 is on the right half, player 2 on the left.** She asked for the keys to be swapped, and did not say anything about the sides. The arrows are on the right of the keyboard, so the person using them sits on the right and looks at the right half. It is one word per driver to turn round (`side` in `DRIVERS`, and the order of the two halves in `client/double.html`). **Confirmed by Catarina the same morning: "Yes, keep it."**
 - The camera stays with the kart it moved to until that kart finishes, then moves on by the same rule.
 - Online, the left and right arrows move the camera to another person after your finish, as they do for someone who arrived late. The banner there also carries "The race ends in 1:39", because at the bottom of the picture it lay under the results list.
 - A guest without a user name is called "Guest 2" in the banner, the same as in the results list beside it.
