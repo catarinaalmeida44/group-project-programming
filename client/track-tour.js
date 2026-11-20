@@ -12,6 +12,9 @@
 import { chooseTrack } from "./track-choice.js";
 import { storeysOf } from "../shared/tracks/index.js";
 import { createPainter } from "./draw.js";
+import { createFlyOver } from "./fly-over.js";
+import { isTimeOfDay, readTimeOfDay } from "./time-of-day.js";
+import { storageOf } from "./storage.js";
 import { lookOfTrack } from "./track-looks.js";
 import { routePoints } from "./route.js";
 import { nextView } from "./camera.js";
@@ -23,54 +26,25 @@ import { rampAt, JUMP_STEPS } from "../shared/ramps.js";
 const FIRST_SPEED = 170;
 const SLOWEST = 40;
 const FASTEST = 520;
-/** How far before and after a bend the pretend kart turns, in units. */
-const TURN_OVER = 70;
 
 const track = chooseTrack(window.location.search);
 const points = routePoints(track, lookOfTrack(track).route);
 const canvas = document.getElementById("track");
-const draw = createPainter(canvas, track, { storeys: storeysOf(track) });
+// The time of day: "?time=sunset" in the address, or else the one chosen in Settings.
+const askedTime = new URLSearchParams(window.location.search).get("time");
+const timeOfDay = isTimeOfDay(askedTime) ? askedTime : readTimeOfDay(storageOf(window));
+const draw = createPainter(canvas, track, { storeys: storeysOf(track), timeOfDay });
 document.getElementById("tour-name").textContent = track.name; // as text, never as HTML
 const placeText = document.getElementById("tour-place");
 
-// The route as stretches: where each starts, how long it is, which way it runs.
-const stretches = [];
-let lapLength = 0;
-if (points !== null) {
-  points.forEach((from, i) => {
-    const to = points[(i + 1) % points.length];
-    const length = Math.hypot(to.x - from.x, to.y - from.y);
-    stretches.push({ from, to, length, startsAt: lapLength, angle: Math.atan2(to.y - from.y, to.x - from.x) });
-    lapLength += length;
-  });
-}
+// Where the pretend kart is round the lap: the same sums as the fly-over
+// before a single race (fly-over.js).
+const flyOver = createFlyOver(points, track.start);
+const lapLength = flyOver.length;
 
 /** Where the pretend kart is after "distance" units of the lap: { x, y, angle }. */
 export function placeAt(distance) {
-  if (stretches.length === 0) {
-    return { ...track.start };
-  }
-  const along = ((distance % lapLength) + lapLength) % lapLength;
-  const number = stretches.findIndex((stretch) => along < stretch.startsAt + stretch.length);
-  const stretch = stretches[number === -1 ? stretches.length - 1 : number];
-  const done = along - stretch.startsAt;
-  const share = stretch.length > 0 ? done / stretch.length : 0;
-  // Near a bend, turn part of the way towards the stretch before or after.
-  const before = stretches[(stretches.indexOf(stretch) - 1 + stretches.length) % stretches.length];
-  const after = stretches[(stretches.indexOf(stretch) + 1) % stretches.length];
-  const turnTowards = (from, to, part) => from + Math.atan2(Math.sin(to - from), Math.cos(to - from)) * part;
-  let angle = stretch.angle;
-  const turnOver = Math.min(TURN_OVER, stretch.length / 2);
-  if (done < turnOver) {
-    angle = turnTowards(stretch.angle, before.angle, 0.5 * (1 - done / turnOver));
-  } else if (stretch.length - done < turnOver) {
-    angle = turnTowards(stretch.angle, after.angle, 0.5 * (1 - (stretch.length - done) / turnOver));
-  }
-  return {
-    x: stretch.from.x + (stretch.to.x - stretch.from.x) * share,
-    y: stretch.from.y + (stretch.to.y - stretch.from.y) * share,
-    angle,
-  };
+  return flyOver.placeAt(distance);
 }
 
 // ---- The state of the tour ----

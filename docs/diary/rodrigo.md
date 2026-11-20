@@ -2,6 +2,48 @@
 
 Rodrigo Simeão Versos (GitHub rodrigosversos). Entries from 11 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 20 November 2026: time of day, fly-over, How to play
+
+**What was done**
+- **Time of day**, in Settings: Morning, Afternoon (as before), Sunset, Night. The sky, the sun (or the moon and stars), the haze, the horizon, the shadows and the light over the picture change. Only the picture: no rule, lap or time.
+- **Fly-over**: before a single race starts, the camera glides round the track over the karts waiting on the grid. An arrow key starts the countdown as before.
+- **How to play**: a card with the goal, the keys of that page and four tips, by itself the first time on a race page, then with a button next to "Game settings".
+
+Branch `rodrigo-time-of-day`, from `main` after the security policy (#40).
+
+| File | What changed |
+|---|---|
+| `client/time-of-day.js` | New. The four times, remembered, and how each changes a track's look |
+| `client/fly-over.js` | New. The camera gliding round a track (moved from the track tour) |
+| `client/how-to-play.js` | New. The card and its words |
+| `client/draw.js`, `client/sky.js` | The light over the picture, the sky behind it, a coloured sun glow, the moon, stars, tinted clouds |
+| `client/index.html`, `client/settings-panel.js` | The time of day in Settings |
+| `client/main.js` | The fly-over before the start; the time of day; the card |
+| `client/online.js`, `client/double.js`, `client/track-tour.js` | The time of day and the card (the tour: also `?time=sunset`) |
+| `client/race.html`, `client/double.html`, `client/online.html`, `client/style.css` | The card's box and button, and its look |
+| `tests/time-of-day.test.js` | New. 37 tests |
+| `WALKTHROUGH.md`, `PROJECT_BRIEF.md`, the READMEs | Kept true |
+
+**Why it was done this way**
+- **A changed look, not changed drawings.** Every track already describes its sky, haze and horizon (`track-looks.js`); a time of day changes those numbers, and one light is laid over the picture. Nothing in the tracks had to change.
+- **The sky goes behind the picture at the end**, so the light falls on the ground, buildings and karts but not on the stars, and buildings still hide the sun.
+- **The fly-over only before the first key press**, so it never delays a race.
+- **The card on top of the game settings card**, and the race waits until it is closed.
+
+**Decisions**
+- Mine: time of day you can choose, sunset, the fly-over, How to play.
+- Decision made by the agent, please confirm: the four times and their colours; the choice in the menu's Settings (not the game settings card); the fly-over only in a single race; the card's words; the card comes by itself only once per browser.
+- Decision made by the agent, please confirm, and tell the owner: Catarina's `draw.js`, `sky.js`, `index.html`, `settings-panel.js`, the three race pages and `style.css` changed.
+
+**What was checked, and what was not**
+- `npm test`: 2,689 passed, 5 skipped (37 new tests).
+- Broken on purpose in 7 ways; all 7 made a test fail.
+- In Chrome without a screen: the four times on the Nova lap (pictures compared); Settings saves Sunset and says "Races will be at sunset"; on a first visit the card comes up over the game settings card, an arrow key does not start the race, Enter closes it and it is remembered, a second Enter confirms the game settings; the fly-over moves while nothing is pressed; the race starts and drives; a second visit has no card; the button opens it on the online and two-player pages, Esc closes it; no page errors. Two problems were found this way and fixed: the game settings card took the keyboard from the new card, and then the other way round.
+- **Not checked:** how night looks on a real laptop screen (it may be too dark or too light); the fly-over on the campus loop and test oval was only checked by the tests (never over a wall), not by eye.
+
+**How to check it yourself**
+Run `npm start`, open http://localhost:3000, Settings, choose **Sunset**, then a Single race: the card comes up; press Let's race, confirm the settings, and watch the camera fly round the track until you press an arrow key. Try **Night** too. Or look without driving: http://localhost:3000/track-tour.html?track=nova-lap&time=night.
+
 ### 20 November 2026: a security policy
 
 **What was done**

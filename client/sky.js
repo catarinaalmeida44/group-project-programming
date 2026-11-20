@@ -62,17 +62,42 @@ export function paintSky(context, looking, settings, screen, look, seconds = 0) 
   context.fillStyle = blue;
   context.fillRect(0, 0, screen.width, bottom);
 
-  // The sun, with a soft glow round it.
+  // At night: stars, each in its own direction and height, so they turn
+  // with the camera like the clouds (time-of-day.js).
+  if (sky.stars === true) {
+    context.fillStyle = "rgba(235, 240, 255, 0.85)";
+    for (let i = 0; i < 160; i++) {
+      const towards = ((i * 137.5) % 360) * (Math.PI / 180);
+      const x = acrossScreen(towards, looking, depth, screen.width);
+      const y = horizonY * (((i * 61) % 97) / 97) * 0.92;
+      if (x !== null && x >= 0 && x <= screen.width) {
+        const size = i % 7 === 0 ? 2 : 1;
+        context.fillRect(Math.round(x), Math.round(y), size, size);
+      }
+    }
+  }
+
+  // The sun (or at night the moon), with a soft glow round it. The colour
+  // of the glow changes with the time of day ("glow", as "r, g, b").
   const sunX = acrossScreen(sky.sunTowards, looking, depth, screen.width);
   if (sunX !== null) {
     const sunY = horizonY * (1 - sky.sunHeight);
-    const glow = context.createRadialGradient(sunX, sunY, 4, sunX, sunY, 150);
+    const colour = sky.glow ?? "255, 246, 205";
+    const reach = sky.moon === true ? 70 : 150;
+    const glow = context.createRadialGradient(sunX, sunY, 4, sunX, sunY, reach);
     glow.addColorStop(0, "rgba(255, 252, 235, 0.95)");
-    glow.addColorStop(0.12, "rgba(255, 246, 205, 0.75)");
-    glow.addColorStop(0.4, "rgba(255, 240, 190, 0.22)");
-    glow.addColorStop(1, "rgba(255, 240, 190, 0)");
+    glow.addColorStop(0.12, `rgba(${colour}, 0.75)`);
+    glow.addColorStop(0.4, `rgba(${colour}, 0.22)`);
+    glow.addColorStop(1, `rgba(${colour}, 0)`);
     context.fillStyle = glow;
-    context.fillRect(sunX - 150, sunY - 150, 300, 300);
+    context.fillRect(sunX - reach, sunY - reach, reach * 2, reach * 2);
+    if (sky.moon === true) {
+      // The moon itself: a pale disc.
+      context.fillStyle = "rgba(240, 244, 255, 0.95)";
+      context.beginPath();
+      context.arc(sunX, sunY, 11, 0, TURN);
+      context.fill();
+    }
   }
 
   // Clouds: each sits in its own direction, spread evenly round the sky,
@@ -85,7 +110,7 @@ export function paintSky(context, looking, settings, screen, look, seconds = 0) 
     }
     const y = horizonY * (0.2 + ((i * 37) % 50) / 100);
     const size = 0.75 + ((i * 53) % 60) / 100;
-    paintCloud(context, x, y, size);
+    paintCloud(context, x, y, size, sky.cloud);
   }
 
   // The horizon: hills, sea or a town, each in its stretch of directions.
@@ -213,7 +238,7 @@ export function isBetween(towards, from, to) {
   return along <= length;
 }
 
-function paintCloud(context, x, y, size) {
+function paintCloud(context, x, y, size, colour = "rgba(255, 255, 255, 0.86)") {
   const puffs = [
     [-52, 6, 30],
     [-20, -8, 38],
@@ -221,7 +246,7 @@ function paintCloud(context, x, y, size) {
     [50, 8, 26],
     [0, 12, 44],
   ];
-  context.fillStyle = "rgba(255, 255, 255, 0.86)";
+  context.fillStyle = colour; // white by day; the time of day may tint it (time-of-day.js)
   context.beginPath();
   for (const [dx, dy, radius] of puffs) {
     context.moveTo(x + dx * size + radius * size, y + dy * size);

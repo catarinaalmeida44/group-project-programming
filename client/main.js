@@ -37,6 +37,7 @@ import { setUpFullScreen } from "./full-screen.js";
 import { readGameChoice, saveGameChoice, settingsSummary } from "./game-settings-view.js";
 import { createSettingsCard } from "./game-settings-card.js";
 import { createPainter } from "./draw.js";
+import { createFlyOver, FLY_SPEED } from "./fly-over.js";
 import { introShare, startLights, spinTurnOf } from "./scene.js";
 import { lookFromChoice, readChoice } from "./kart-choice.js";
 import { readCharacter, lookOfCharacter } from "./cast-choice.js";
@@ -50,6 +51,8 @@ import { createHud } from "./hud.js";
 import { followTarget, easeTowards, nextView } from "./camera.js";
 import { formatTime } from "./format.js";
 import { storageOf } from "./storage.js";
+import { setUpHowToPlay } from "./how-to-play.js";
+import { readTimeOfDay } from "./time-of-day.js";
 import { readSettings } from "./settings.js";
 import { recordFinishedRace, finishedRaceTimes } from "./records.js";
 import { accountApi } from "./account-api.js";
@@ -74,7 +77,8 @@ document.getElementById("track-name").textContent = track.name; // as text, neve
 // how many storeys each one has (buildings.js). The test oval has none: it
 // gets low barriers along the edge of the road instead.
 const trackCanvas = document.getElementById("track");
-const draw = createPainter(trackCanvas, track, { storeys: storeysOf(track) });
+// The time of day chosen in Settings: only the picture changes (time-of-day.js).
+const draw = createPainter(trackCanvas, track, { storeys: storeysOf(track), timeOfDay: readTimeOfDay(storageOf(window)) });
 const podium = createPodiumView(track, draw); // the podium, painted on the same picture when the race is over (podium-view.js)
 const showHud = createHud(document);
 const messageBox = document.getElementById("message");
@@ -102,12 +106,18 @@ const missedCheckpoint = watchForMissedCheckpoint(track);
 
 // ---- The state of the race ----
 const storage = storageOf(window); // this browser's storage, for the settings and the best times
+// The "How to play" card: by itself the first time, and with its button (how-to-play.js).
+const howToPlay = setUpHowToPlay(document, { mode: "single", storage });
 const myCharacter = readCharacter(storage)?.id ?? null; // the character chosen in the menu, or null (cast-choice.js)
 // The game settings this browser remembers (game-settings-view.js): do
 // computer karts race with the player, and how good are they (easy, normal or hard)?
 let choice = readGameChoice(storage);
 let race = newRace(); // the racers (the player is racers[0]), the computer drivers, the countdown and the bananas
 let started = false; //    the countdown starts at the first key press
+// Until then the camera flies round the track (fly-over.js).
+const flyOver = createFlyOver(line, track.start);
+let flyDistance = 0; //    how far round the track the fly-over camera is, in units
+let lastFlyTime = null; // when the fly-over last moved, in milliseconds of the page's clock
 let lastFrameTime = null;
 let waitingSeconds = 0; // real time that has passed but is not yet turned into game steps
 let record = null; //      once the race is finished: did it beat your best times? (records.js)
@@ -198,8 +208,8 @@ const keyboard = createKeyboard(window, {
 });
 
 function start() {
-  if (settingsCard.isOpen()) {
-    return; // the race waits behind the card until the settings are confirmed
+  if (settingsCard.isOpen() || howToPlay.isOpen()) {
+    return; // the race waits behind the cards until they are closed
   }
   started = true;
 }
@@ -371,13 +381,29 @@ function frame(now) {
     }
   } else {
     const others = race.racers.map((_, id) => id).filter((id) => id !== shownId).map(kartAsDrawn);
-    draw(view, kartAsDrawn(shownId), camera, steer, others, {
-      ...sceneFor(race.countdownSteps, started),
-      bananas: race.bananas,
-      walkers: walkersShown, // the people who walk across the track (shared/walkers.js)
-      // While the race is on, the next checkpoint is lit up in yellow.
-      nextCheckpoint: keysWork ? nextCheckpoint(progress, track) : undefined,
-    });
+    if (!started && view === "chase") {
+      // Before the first key press: the camera flies round the track, over
+      // every kart waiting on the grid (fly-over.js). An arrow key starts the
+      // countdown, and the camera comes down behind your kart as before.
+      flyDistance += FLY_SPEED * (lastFlyTime === null ? 0 : Math.min((now - lastFlyTime) / 1000, 0.1));
+      lastFlyTime = now;
+      const place = flyOver.placeAt(flyDistance);
+      const camera = { ...place, vx: Math.cos(place.angle) * FLY_SPEED, vy: Math.sin(place.angle) * FLY_SPEED, id: -1 };
+      draw("chase", camera, camera, 0, [kartAsDrawn(shownId), ...others], {
+        hideOwnKart: true, // there is no kart at the camera, and no small map
+        bananas: race.bananas,
+        walkers: walkersShown,
+      });
+    } else {
+      lastFlyTime = null;
+      draw(view, kartAsDrawn(shownId), camera, steer, others, {
+        ...sceneFor(race.countdownSteps, started),
+        bananas: race.bananas,
+        walkers: walkersShown, // the people who walk across the track (shared/walkers.js)
+        // While the race is on, the next checkpoint is lit up in yellow.
+        nextCheckpoint: keysWork ? nextCheckpoint(progress, track) : undefined,
+      });
+    }
   }
 
   // A checkpoint that was left out, or driving against the arrows for a

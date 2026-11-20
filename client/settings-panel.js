@@ -7,6 +7,7 @@
 
 import { readSettings, saveStartView } from "./settings.js";
 import { readSwitches, saveSwitch } from "./audio-switches.js";
+import { TIMES, TIME_WORDS, TIME_SENTENCE, readTimeOfDay, saveTimeOfDay } from "./time-of-day.js";
 import { VIEWS } from "./camera.js";
 import { VIEW_NAMES } from "./hud.js";
 import { makePart } from "./page-parts.js";
@@ -48,6 +49,32 @@ export function connectSettings(page, storage, onSoundChanged = () => {}) {
       ? ""
       : "This browser does not let the game keep settings, so races will start in the first view.";
   }
+
+  // The time of day of the races (time-of-day.js): one round choice for
+  // each, with the saved one ticked. The race pages read it when they open.
+  const timeChoices = page.getElementById("time-choices");
+  const timeStatus = page.getElementById("time-status");
+  page.getElementById("open-settings").addEventListener("click", () => {
+    const chosenTime = readTimeOfDay(storage);
+    timeChoices.replaceChildren();
+    timeStatus.textContent = "";
+    for (const time of TIMES) {
+      const label = makePart(page, "label");
+      const choice = makePart(page, "input");
+      choice.type = "radio";
+      choice.name = "time-of-day";
+      choice.value = time;
+      choice.checked = time === chosenTime;
+      choice.addEventListener("change", () => {
+        const saved = saveTimeOfDay(storage, time);
+        timeStatus.textContent = saved
+          ? `Saved. Races will be ${TIME_SENTENCE[time]}.`
+          : "This browser did not let the game save your choice.";
+      });
+      label.append(choice, TIME_WORDS[time]);
+      timeChoices.append(label);
+    }
+  });
 
   // The sound switches: all sound (the master), music, race sounds and
   // menu sounds (audio-switches.js). Kept in this browser; the pages read

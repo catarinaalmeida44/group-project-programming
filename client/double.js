@@ -49,6 +49,8 @@ import { timeLeftNotice, kartToWatchAfterFinish, finishedBanner } from "./race-v
 import { VIEW_NAMES } from "./hud.js";
 import { formatTime } from "./format.js";
 import { storageOf } from "./storage.js";
+import { setUpHowToPlay } from "./how-to-play.js";
+import { readTimeOfDay } from "./time-of-day.js";
 import { readSettings } from "./settings.js";
 import { createRaceSound } from "./sound.js";
 import { createPageMusic } from "./music.js";
@@ -62,6 +64,8 @@ import { HALF_SHOWS, NOT_SAVED_WORDS, halfMessage, plateName, tagsFor, watchedNa
 const track = chooseTrack(window.location.search);
 const character = TEST_DRIVER;
 const storage = storageOf(window); // this browser's storage, for the characters and the settings
+// The "How to play" card: by itself the first time, and with its button (how-to-play.js).
+const howToPlay = setUpHowToPlay(document, { mode: "double", storage });
 
 /** The two drivers, as numbers: 0 is player 1 (the arrows, right half), 1 is player 2 (W A S D, left half). */
 const BOTH = [0, 1];
@@ -76,7 +80,8 @@ const MAP_INSET = Math.round((SCREEN.width * (1 - HALF_SHOWS)) / 2);
 
 const canvases = BOTH.map((player) => document.getElementById(`track-${player + 1}`));
 // One painter for each half. Each remembers its own camera swing and its own smoke.
-const painters = canvases.map((canvas) => createPainter(canvas, track, { storeys: storeysOf(track) }));
+// The time of day chosen in Settings: only the picture changes (time-of-day.js).
+const painters = canvases.map((canvas) => createPainter(canvas, track, { storeys: storeysOf(track), timeOfDay: readTimeOfDay(storageOf(window)) }));
 const podium = createPodiumView(track, painters[0]); // the podium, painted on player 1's picture, grown over both halves
 const parts = BOTH.map((player) => {
   const part = (name) => document.getElementById(`${name}-${player + 1}`);
@@ -220,8 +225,8 @@ const keyboard = createKeyboard(
 );
 
 function start() {
-  if (settingsCard.isOpen()) {
-    return; // the race waits behind the card until the settings are confirmed
+  if (settingsCard.isOpen() || howToPlay.isOpen()) {
+    return; // the race waits behind the cards until they are closed
   }
   started = true;
 }
