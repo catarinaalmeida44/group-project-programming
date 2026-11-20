@@ -146,8 +146,8 @@ export const NOVA_LAP_LOOK = {
       // the path, and the floor of the tunnel's mouth: as low as the plaza,
       // as on the campus. Driving up the path, it drops away on the left.
       // (Francisco, 20 November 2026.)
-      { rect: [50.5, 74, 64, 77], to: 1 },
-      { rect: [51, 77, 57, 79.5], to: 1 },
+      { rect: [55, 74, 64, 77], to: 1 },
+      { rect: [56.5, 77, 62.5, 79.5], to: 1 },
     ],
     // The scenery that does not stand on the ground of the track, by its
     // name in nova-lap-buildings.js. "depth" is a share of the drop;
@@ -160,7 +160,6 @@ export const NOVA_LAP_LOOK = {
       { name: "tunnel, ceiling", depth: 1 },
       { name: "tunnel, back wall", depth: 1 },
       { name: "tunnel, reeds on top", depth: 1 },
-      { name: "tunnel, sloping wall of the ramp", depth: 1 },
       // Between the plaza and the Sagres Beach Way: both are at the bottom.
       { name: "rail at the head of the tunnel way", depth: 1 },
       // Between the path and the Sagres Beach Way: it stands on the edge of

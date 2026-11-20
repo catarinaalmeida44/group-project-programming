@@ -146,16 +146,25 @@ describe("the two levels of the Nova lap", () => {
     expect(sunkenBounds(LEVELS)).toEqual({ left: 48 * TILE, top: 63 * TILE, right: 73 * TILE, bottom: 79.5 * TILE });
   });
 
-  it("has the Sagres Beach Way and the floor of the tunnel's mouth as low as the plaza", () => {
-    for (const [column, row] of [[51, 75], [57, 76], [63, 74], [54, 78], [52, 78]]) {
+  // (Both changed the same afternoon, before any merge: at Francisco's request
+  // the tunnel moved 5.5 squares east, to the edge of the plaza, and the
+  // Beach Way became only the part in front of its mouth.)
+  it("has the Sagres Beach Way, in front of the tunnel, and the floor of the tunnel's mouth as low as the plaza", () => {
+    for (const [column, row] of [[55, 75], [60, 76], [63, 74], [57, 78], [61, 78]]) {
       expect(depthAtSquare(column, row), `${column}, ${row}`).toBeCloseTo(DROP);
     }
   });
 
   it("makes the Sagres Beach Way drop away below the path: the further west, the deeper it is below it", () => {
     const below = (column) => depthAtSquare(column, 75) - depthAtSquare(column, 72);
-    expect(below(52)).toBeGreaterThan(below(58));
-    expect(below(58)).toBeGreaterThan(below(63));
+    expect(below(56)).toBeGreaterThan(below(60));
+    expect(below(60)).toBeGreaterThan(below(63));
+  });
+
+  it("has no Beach Way left west of the tunnel: the bank there is at ground level, so there is no corridor", () => {
+    for (const column of [51, 53, 54]) {
+      expect(depthAtSquare(column, 75), `${column}`).toBe(0);
+    }
   });
 
   it("paints its strips deepest first, so that shallower ground in front covers deeper ground behind", () => {
