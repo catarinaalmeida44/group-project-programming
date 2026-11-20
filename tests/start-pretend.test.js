@@ -73,8 +73,9 @@ describe("the game with pretend accounts", () => {
     const me = await (await fetch(`${base}/api/me`, { headers: { Cookie: cookie } })).json();
     expect(me).toEqual({ ok: true, signedIn: true, username: "Ana" });
 
-    const board = await (await fetch(`${base}/api/leaderboard?track=campus-loop`)).json();
-    expect(board).toEqual({ ok: true, track: "campus-loop", races: [], laps: [], mine: null });
+    // Until 20 November 2026 this asked for the campus loop, which is no longer a track of the game.
+    const board = await (await fetch(`${base}/api/leaderboard?track=nova-lap`)).json();
+    expect(board).toEqual({ ok: true, track: "nova-lap", races: [], laps: [], mine: null });
 
     expect((await fetch(`${base}/`)).status).toBe(200); // and the game itself is there
   }, 20_000);

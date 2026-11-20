@@ -21,8 +21,8 @@
 // choose their own keys (utility AI, see computer-driver.js). Your
 // best times are also kept in this browser (records.js), and the camera view
 // you start in comes from the menu's settings (settings.js). The track comes
-// from the address of the page (track-choice.js): race.html?track=campus-loop
-// opens the campus loop, and without a choice it is the test oval. (The
+// from the address of the page (track-choice.js): race.html?track=nova-lap
+// opens the Nova lap, and without a choice it is the test oval. (The
 // online page is online.js.)
 
 import { countdownAt } from "../shared/countdown.js";

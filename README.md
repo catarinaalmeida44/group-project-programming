@@ -19,7 +19,7 @@ Nothing to install: it runs in the browser of a laptop, with a keyboard.
 **In a race**
 
 - Six characters of our own, each with their own kart colours and their own dance.
-- The Nova lap: a lap of the campus that we built from a video we filmed there, with the school's buildings, the atrium and the beach beyond the road. Two earlier tracks are also there: a test oval and a first campus loop.
+- The Nova lap: a lap of the campus that we built from a video we filmed there, with the school's buildings, the atrium and the beach beyond the road. A plain test oval is there too, for a quick race.
 - A starting grid with start lights and a 3, 2, 1, GO! countdown, a lap counter and a clock.
 - Karts bump into each other, banana peels make a kart spin, arrows show the way, and a warning comes up when you drive the wrong way or miss a checkpoint.
 - Three camera views, a small map, and the game on the whole screen with F.
@@ -180,6 +180,6 @@ Each of the folders `client/`, `server/`, `shared/` and `tests/` has a `README.m
 - The characters, names, drawings and sound effects in the game are our own. The track, the karts and the scenery are drawn by our code, and the sound effects are made by our code.
 - The music is recorded, by others. The tune of the menu and the three tunes of a race are by MintoDog, from OpenGameArt, who gave them to everybody (CC0). The trumpets and clapping of the podium are "YoFrankie! (c) 2008, Blender Foundation, www.blender.org", used under the licence CC-BY 3.0 (https://creativecommons.org/licenses/by/3.0/). Which file is which is in `client/music/README.md`.
 - The idea of the driving, karts and banana peels included, comes from kart racing games such as Mario Kart. No characters, names, music or images from any other game are used.
-- The campus loop is based on map data © OpenStreetMap contributors, available under the Open Database License (https://www.openstreetmap.org/copyright).
+- The map of our first campus track (`shared/tracks/campus-loop.js`, no longer in the game, still used by the tests) is based on map data © OpenStreetMap contributors, available under the Open Database License (https://www.openstreetmap.org/copyright).
 - Libraries, all open source: [ws](https://github.com/websockets/ws) for the live connection of online play, [pg](https://node-postgres.com) to talk to the database, and [Vitest](https://vitest.dev) to run the tests.
 - Services: [Render](https://render.com) keeps the server online, [Neon](https://neon.tech) keeps the database, and GitHub keeps the code and runs the tests.

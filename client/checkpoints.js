@@ -3,7 +3,8 @@
 //
 // The rules count a lap only when every checkpoint was driven through, in
 // order (shared/laps.js). On a track with open squares it is easy to leave
-// one out without noticing: on the campus loop, driving straight on past
+// one out without noticing: on the campus loop (our first campus track, no
+// longer in the game, where this was found), driving straight on past
 // the CTT Student Hall instead of round its end. The lap then does not
 // count, and before 13 November 2026 nothing on the screen said why.
 //

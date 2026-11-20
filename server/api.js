@@ -8,7 +8,7 @@
 //   POST /api/logout          sign out
 //   POST /api/change-password change the signed-in player's password
 //   POST /api/delete-account  delete the signed-in player's account
-//   GET  /api/leaderboard     the shared leaderboard of one track (?track=campus-loop)
+//   GET  /api/leaderboard     the shared leaderboard of one track (?track=nova-lap)
 //   GET  /api/stats           the signed-in player's own stats on the Nova lap
 //   POST /api/single-result   a single race the browser ran, for those stats
 //   GET  /api/my-results.csv  the signed-in player's own races, as a file for a spreadsheet

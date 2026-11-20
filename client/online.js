@@ -1,8 +1,8 @@
 // The online page: driving and racing with other people.
 //
 // Each track has its own room on the server. The address of the page says
-// which one (track-choice.js): online.html?track=campus-loop is the campus
-// loop, and without a choice it is the test oval.
+// which one (track-choice.js): online.html?track=nova-lap is the Nova lap,
+// and without a choice it is the test oval.
 //
 // Before a race, everyone drives around freely. The host (whoever has been
 // here longest) presses Enter to start a race: every kart goes to the grid,
