@@ -21,7 +21,8 @@
 //   4. smoke and dust
 //   5. the player's own kart, last, so that nothing ever hides it
 
-import { SCREEN, FOLLOW, CHASE, RACE, blendChase, chaseRow, chasePoint, eyeOf, seenFromKart, easeAngle, sideSeen } from "./camera.js";
+import { SCREEN, FOLLOW, CHASE, RACE, blendChase, chaseRow, chasePoint, eyeOf, seenFromKart, easeAngle, sideSeen, seesFromAbove } from "./camera.js";
+import { readLevels, depthAt, faces } from "./levels.js";
 import { createBuildings, buildingsInView } from "./buildings.js";
 import { createScenery, sceneryInView, squaresWithScenery, rampBlocks, cutAtSquares, RAMP_FLAT_STYLES } from "./scenery.js";
 import { createSceneryPainter } from "./scenery-paint.js";
@@ -48,6 +49,14 @@ const DARK = "#14181d";
 
 /** How quickly the race camera swings round behind a kart that has turned. Lower shows more of the kart turning. */
 const CAMERA_SWING = 6.5;
+/** How quickly the race camera goes down with the kart into the sunken part of the ground, and up again (levels.js). */
+const CAMERA_SINK = 8;
+/** The colours of the upright faces of the sunken part: the stone walls round it, the fronts of the stairs, the small steps of the path. */
+const LEVEL_WALLS = { stone: "#d6cfc1", stairs: "#b4705a", path: "#b3843f" };
+/** A step of the sunken part lower than this (in units) has no front painted: it belongs to a ramp, not to stairs. */
+const MIN_STEP = 1.2;
+/** How the light falls on a face, by the way it looks: towards the south and west it is lit, towards the north and east in shade. */
+const FACE_LIGHT = { north: 0.78, east: 0.9, south: 1.1, west: 1.04 };
 /** How quickly the picture of the steering follows the keys. */
 const STEER_QUICKNESS = 14;
 /** The start gantry: how high its beam hangs over the road, how tall the beam is, how thick a post is and how wide the whole thing may be, in units. */
@@ -144,7 +153,9 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
     barrierHeight: look.barrierHeight,
     noBarrierAt: ownScenery ? (column, row) => ownScenery.has(`${column} ${row}`) : null,
   });
-  const ground = createGround(track, look, grid, buildings);
+  // A part of the ground that lies lower (levels.js), on the Nova lap only.
+  const levels = readLevels(look, track.tileSize, look.scenery?.unitsPerMetre ?? track.tileSize / 3);
+  const ground = createGround(track, look, grid, buildings, levels);
   const gantry = gantryOf(track);
   const traffic = trafficLanes(track, look.traffic);
   const mini = paintMiniPicture(ground.picture, track);
@@ -156,6 +167,7 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
   let swing = null; //      { x, y, angle }: where the race camera was and which way it looked
   let steerShown = 0; //    the steering as it is drawn, which follows the keys smoothly
   const puffs = []; //      smoke and dust in the air
+  let cameraDepth = null; // how deep the ground under the race camera is (levels.js); it follows the kart's, smoothly
 
   return function draw(view, kart, camera, steer, others = [], scene = {}) {
     const now = performance.now();
@@ -237,6 +249,17 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
     swing = { x: kart.x, y: kart.y, angle };
     const spot = swing;
 
+    // TWO LEVELS (levels.js). The camera goes down with the kart into the
+    // sunken part, and up again, smoothly. Everything is drawn from the
+    // camera's height above the ground it stands on: "at(x, y)" gives the
+    // camera for something at that spot, "upper" for the ground of the
+    // track and what stands on it. Without levels both are just "settings".
+    const kartDepth = depthAt(levels, kart.x, kart.y);
+    cameraDepth = cameraDepth === null || jumped ? kartDepth : cameraDepth + (kartDepth - cameraDepth) * (1 - Math.exp(-CAMERA_SINK * frameSeconds));
+    const lifted = (depth) => (levels === null || depth === cameraDepth ? settings : { ...settings, eyeLift: depth - cameraDepth });
+    const at = (x, y) => lifted(depthAt(levels, x, y));
+    const upper = lifted(0);
+
     if (look.light) {
       // Another time of day: the sky is painted apart, and put behind the
       // picture at the end, so the light falls on everything but the sky.
@@ -251,25 +274,36 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
     } else {
       paintSky(context, spot.angle, settings, SCREEN, look, seconds);
     }
-    ground.paintTilted(context, spot, settings, SCREEN);
+    const near = chaseRow(SCREEN.height, settings).ahead;
+    ground.paintTilted(
+      context,
+      spot,
+      upper,
+      SCREEN,
+      levels === null
+        ? null
+        : () => {
+            ground.paintSunken(context, spot, settings, SCREEN, cameraDepth);
+            paintLevelWalls(spot, settings, near);
+          },
+    );
 
     // Everything that stands on the ground, with the square it stands on.
     const size = track.tileSize;
-    const near = chaseRow(SCREEN.height, settings).ahead;
     const things = [];
 
     // The buildings. buildings.js leaves out a wall that stands between the
     // camera and the kart, and shows a wall beside the camera for as long
-    // as any of it can be seen.
-    things.push(...buildingsInView(buildings, spot, settings, SCREEN));
-    things.push(...sceneryInView(scenery, spot, settings, SCREEN));
+    // as any of it can be seen. They all stand on the ground of the track.
+    things.push(...buildingsInView(buildings, spot, upper, SCREEN));
+    things.push(...sceneryInView(scenery, spot, upper, SCREEN));
 
     const standing = (kind, x, y, scale, more = {}) => {
       const seen = seenFromKart(spot, x, y);
       if (seen.ahead < near + 6 || seen.ahead > settings.viewAhead) {
         return;
       }
-      const place = chasePoint(seen.ahead, seen.sideways, settings);
+      const place = chasePoint(seen.ahead, seen.sideways, at(x, y));
       if (place === null) {
         return;
       }
@@ -318,11 +352,12 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
       if (seen.ahead > settings.viewAhead) {
         continue;
       }
-      const viewer = viewerBehind(seen, other.angle + (other.spinTurn ?? 0) - spot.angle, other.angle, settings, SCREEN);
+      const otherCamera = at(other.x, other.y);
+      const viewer = viewerBehind(seen, other.angle + (other.spinTurn ?? 0) - spot.angle, other.angle, otherCamera, SCREEN);
       if (viewer !== null) {
         things.push({
           kind: "kart",
-          ground: chasePoint(seen.ahead, seen.sideways, settings), // where it touches the road, for when it is in the air
+          ground: chasePoint(seen.ahead, seen.sideways, otherCamera), // where it touches the road, for when it is in the air
           kart: other,
           viewer,
           ahead: seen.ahead,
@@ -338,7 +373,7 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
       if (seen.ahead > settings.viewAhead) {
         continue;
       }
-      const viewer = viewerBehind(seen, group.angle - spot.angle, group.angle, settings, SCREEN);
+      const viewer = viewerBehind(seen, group.angle - spot.angle, group.angle, upper, SCREEN);
       if (viewer !== null) {
         things.push({ kind: "podium", group, viewer, ahead: seen.ahead, column: Math.floor(group.x / size), row: Math.floor(group.y / size) });
       }
@@ -374,7 +409,8 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
       } else if (b.ahead < nearest) {
         b = cut(b, a);
       }
-      const ends = [chasePoint(a.ahead, a.sideways, settings), chasePoint(b.ahead, b.sideways, settings)];
+      const lightCamera = at((piece.from.x + piece.to.x) / 2, (piece.from.y + piece.to.y) / 2);
+      const ends = [chasePoint(a.ahead, a.sideways, lightCamera), chasePoint(b.ahead, b.sideways, lightCamera)];
       if (ends[0] !== null && ends[1] !== null) {
         things.push({ kind: "light", ends, ahead: (a.ahead + b.ahead) / 2, column: piece.column, row: piece.row });
       }
@@ -402,7 +438,7 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
       if (thing.kind === "side" || thing.kind === "roof") {
         paintBuildingPiece(thing);
       } else if (thing.kind === "strip") {
-        sceneryPainter.paintStrip(context, thing, settings, SCREEN);
+        sceneryPainter.paintStrip(context, thing, upper, SCREEN);
       } else if (thing.kind === "flat") {
         sceneryPainter.paintFlat(context, thing);
       } else if (thing.kind === "kart") {
@@ -411,7 +447,7 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
       } else if (thing.kind === "podium") {
         paintPodiumGroup(thing.group, thing.viewer);
       } else if (thing.kind === "gantry") {
-        paintGantry(thing.piece, spot, settings, near, scene.lights);
+        paintGantry(thing.piece, spot, upper, near, scene.lights);
       } else if (thing.kind === "light") {
         paintLight(thing, seconds);
       } else {
@@ -425,8 +461,9 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
 
     // Our own kart last: always in the same spot and never hidden.
     if (scene.hideOwnKart !== true) {
-      const own = viewerBehind({ ahead: 0, sideways: 0 }, kart.angle + (kart.spinTurn ?? 0) - spot.angle, kart.angle, settings, SCREEN);
-      paintKartWithJump(kart, own, chasePoint(0, 0, settings), steerShown);
+      const ownCamera = lifted(kartDepth); // the camera trails a moment behind the kart, going down or up
+      const own = viewerBehind({ ahead: 0, sideways: 0 }, kart.angle + (kart.spinTurn ?? 0) - spot.angle, kart.angle, ownCamera, SCREEN);
+      paintKartWithJump(kart, own, chasePoint(0, 0, ownCamera), steerShown);
     }
 
     if (look.light) {
@@ -445,6 +482,69 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
       context.fillStyle = look.beyond;
       context.fillRect(0, 0, SCREEN.width, SCREEN.height);
       context.restore();
+    }
+  }
+
+  /**
+   * The upright faces of the sunken part of the ground (levels.js) that look
+   * towards the camera: the stone walls round it and the front of every
+   * step. Painted with the ground, after the sunken strips and before the
+   * ground of the track, which covers them everywhere but in its holes.
+   * A face that reaches behind the bottom of the screen is cut there.
+   */
+  function paintLevelWalls(spot, settings, near) {
+    const eye = eyeOf(settings);
+    const eyePoint = { x: spot.x - Math.cos(spot.angle) * eye.behind, y: spot.y - Math.sin(spot.angle) * eye.behind };
+    const nearest = near + 1;
+    const cut = (behind, ahead) => {
+      const share = (nearest - behind.ahead) / (ahead.ahead - behind.ahead);
+      return { ahead: nearest, sideways: behind.sideways + share * (ahead.sideways - behind.sideways) };
+    };
+    const shown = [];
+    for (const wall of levels.walls) {
+      // The tiny steps of a ramp (levels.js cuts it into many) have no front
+      // worth painting: drawn, they showed as stripes across the path.
+      if (!faces(wall, eyePoint) || wall.bottom - wall.top < MIN_STEP) {
+        continue;
+      }
+      let a = seenFromKart(spot, wall.a.x, wall.a.y);
+      let b = seenFromKart(spot, wall.b.x, wall.b.y);
+      if ((a.ahead < nearest && b.ahead < nearest) || Math.min(a.ahead, b.ahead) > settings.viewAhead) {
+        continue;
+      }
+      if (a.ahead < nearest) {
+        a = cut(a, b);
+      } else if (b.ahead < nearest) {
+        b = cut(b, a);
+      }
+      const topCamera = { ...settings, eyeLift: wall.top - cameraDepth };
+      const bottomCamera = { ...settings, eyeLift: wall.bottom - cameraDepth };
+      if (!seesFromAbove(topCamera)) {
+        continue;
+      }
+      const points = [
+        chasePoint(a.ahead, a.sideways, topCamera),
+        chasePoint(b.ahead, b.sideways, topCamera),
+        chasePoint(b.ahead, b.sideways, bottomCamera),
+        chasePoint(a.ahead, a.sideways, bottomCamera),
+      ];
+      if (points.every((point) => point !== null)) {
+        shown.push({ wall, points, ahead: (a.ahead + b.ahead) / 2 });
+      }
+    }
+    shown.sort((p, q) => q.ahead - p.ahead); // the furthest first
+    for (const { wall, points } of shown) {
+      const kind = wall.top === 0 ? "stone" : wall.toward.y !== 0 ? "stairs" : "path";
+      const way = wall.toward.x > 0 ? "east" : wall.toward.x < 0 ? "west" : wall.toward.y > 0 ? "south" : "north";
+      const colour = hazed(shade(LEVEL_WALLS[kind], FACE_LIGHT[way]), look.haze, 0);
+      context.beginPath();
+      points.forEach((point, i) => (i === 0 ? context.moveTo(point.x, point.y) : context.lineTo(point.x, point.y)));
+      context.closePath();
+      context.fillStyle = colour;
+      context.fill();
+      context.strokeStyle = colour; // closes the thin gaps between neighbouring faces
+      context.lineWidth = 1;
+      context.stroke();
     }
   }
 

@@ -126,6 +126,24 @@ export const NOVA_LAP_LOOK = {
   // out: the ground is drawn flat, and a slower kart alone did not feel like
   // going up or down.)
   stairs: [[64, 63, 71, 69]], // the wide stairs, from the promenade to the lower plaza
+  // The ground at two levels, in the race view only (levels.js): the wide
+  // stairs go down to the lower plaza in front of the Grand Auditorium, and
+  // the path past the beach tunnel rises back up to the west, to the
+  // slanting path. Karts drive on it as on any road. (20 November 2026, a
+  // first try at the team's request. The drop is a guess, kept a little
+  // smaller than the height of the race camera's eye, about 3.3 metres, so
+  // that from the lower plaza the camera still sees over the edge.)
+  levels: {
+    drop: 2.2,
+    areas: [
+      { rect: [64, 63, 71, 69], from: 0, to: 1, along: "y", steps: 12 }, // the stairs, down to the south
+      { rect: [64, 69, 73, 78], to: 1 }, //                                  the lower plaza
+      // The path: at ground level in the west, as deep as the plaza in the
+      // east. In 40 steps, too small to see one by one, so it looks like a
+      // ramp. (16 for a few minutes: it looked like a second flight of stairs.)
+      { rect: [48, 70, 64, 74], from: 0, to: 1, along: "x", steps: 40 },
+    ],
+  },
   // Lines painted on the ground. Each is in squares of the map.
   groundMarks: [
     // The west street and the coast road: a broken line down the middle, a line along each edge.
