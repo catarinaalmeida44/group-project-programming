@@ -2,6 +2,47 @@
 
 Francisco Fonseca (Fran, GitHub FranFon15). Entries from 11 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 20 November 2026: the Nova lap at two levels (stairs down, the path and the Sagres Beach Way)
+
+**What was done**
+After the jolting on the stairs, Francisco asked for one try at the ground itself going down and up, as on the campus, to be dropped if it looked bad. He tried it and kept it, and asked for one more thing: the Sagres Beach Way at the bottom too, dropping away on the left when driving up the path, with a railing between them. Branch `nova-lap-two-levels`, which starts from `nova-lap-slopes` (the jolting).
+- The wide stairs go down 2.2 metres in 12 steps to the lower plaza; the path past the beach tunnel rises smoothly back up to the west; the Sagres Beach Way and the tunnel's mouth lie at the bottom; the railing between path and Beach Way stands on the path's edge and rises with it.
+- Stone walls where the level changes; the camera goes down with the kart and up again.
+- Only the picture: the driving is unchanged, online too. The views from above and the small map are flat as before.
+
+| File | What changed |
+|---|---|
+| `client/camera.js` | "eyeLift": something on lower or higher ground is drawn lower or higher. Without it, nothing changes |
+| `client/levels.js` | New. Where the ground is lower, its steps, the stone walls, and which scenery stands at the bottom |
+| `client/ground.js` | The sunken part is cut out of the ground picture and painted under it, each step at its depth |
+| `client/draw.js` | The walls; karts, props, the tunnel and the railing at their height; the camera going down and up |
+| `client/nova-lap-look.js` | The levels of the Nova lap, and the names of the scenery at the bottom |
+| `tests/levels.test.js` | New. 29 tests |
+| `WALKTHROUGH.md`, `client/README.md`, `tests/README.md` | Kept true |
+
+**Why it was done this way**
+- One small change in the camera reaches everything that is drawn: the ground, the buildings and the karts all ask the camera where to go.
+- The buildings file (Catarina's) is not changed: the look names the pieces of the tunnel that go down.
+- The steps of the path are too small to see, so it looks like a ramp; the steps of the stairs are big, so they look like stairs.
+
+**Decisions**
+- The team, through Francisco, chose two levels, after trying them, and the Sagres Beach Way at the bottom.
+- Decision made by the agent, please confirm: the drop is 2.2 metres, a guess kept smaller than the height of the camera's eye (about 3.3 metres) so it sees over the edge from below.
+- Decision made by the agent, please confirm: the railing at the west end of the Beach Way stays at ground level, on top of the stone wall.
+
+**What was checked, and what was not**
+- The pictures were drawn in a browser from twelve fixed spots (top and middle of the stairs, the plaza in four directions, the path both ways and at three points going up, the tunnel from the plaza, the view from above). On the way three problems were found and fixed: the path looked like a second flight of stairs, thin stripes across it, and the plaza was three times slower to draw (now about 1.7 times).
+- Two mistakes in new tests of this branch were fixed: one expected the sunken part to end at the plaza (written before the Beach Way went down), one picked a point outside the tunnel floor.
+- Broken on purpose in three ways; each made tests fail.
+- `npm test`: see the commit; 2726 passed, 5 skipped before the merge with `main`.
+- Francisco drove the first version on his laptop and kept it. **Not checked by the agent:** how it looks in motion, other karts going down and up, and how smooth it is on a slower laptop.
+
+**How to check it yourself**
+`npm start`, Single race, Nova lap: down the stairs, across the plaza, up the path, and look left at the Sagres Beach Way.
+
+**What comes next**
+The team plays it before the demo. If the plaza is slow on someone's laptop, the path's 40 steps can be fewer.
+
 ### 20 November 2026: karts jolt on the stairs of the Nova lap (and slopes tried and taken out)
 
 **What was done**
