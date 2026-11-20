@@ -10,7 +10,7 @@
 // above.
 
 import { describe, it, expect } from "vitest";
-import { readLevels, depthAt, sunkenBounds, faces } from "../client/levels.js";
+import { readLevels, depthAt, sunkenBounds, faces, sceneryByLevel } from "../client/levels.js";
 import { chaseNumbers, chasePoint, chaseRow, eyeOf, seesFromAbove, RACE, CHASE } from "../client/camera.js";
 import { lookOfTrack } from "../client/track-looks.js";
 import { NOVA_LAP } from "../shared/tracks/nova-lap.js";
@@ -138,8 +138,24 @@ describe("the two levels of the Nova lap", () => {
     }
   });
 
-  it("keeps the whole sunken part inside the stairs, the plaza and the path", () => {
-    expect(sunkenBounds(LEVELS)).toEqual({ left: 48 * TILE, top: 63 * TILE, right: 73 * TILE, bottom: 78 * TILE });
+  // (Written on 20 November with the plaza as the southern end; the same day
+  // the Sagres Beach Way and the tunnel's mouth went down too, at
+  // Francisco's request, so the sunken part now ends at the tunnel's back
+  // wall. This test had not been merged yet.)
+  it("keeps the whole sunken part inside the stairs, the plaza, the path and the Sagres Beach Way", () => {
+    expect(sunkenBounds(LEVELS)).toEqual({ left: 48 * TILE, top: 63 * TILE, right: 73 * TILE, bottom: 79.5 * TILE });
+  });
+
+  it("has the Sagres Beach Way and the floor of the tunnel's mouth as low as the plaza", () => {
+    for (const [column, row] of [[51, 75], [57, 76], [63, 74], [54, 78], [52, 78]]) {
+      expect(depthAtSquare(column, row), `${column}, ${row}`).toBeCloseTo(DROP);
+    }
+  });
+
+  it("makes the Sagres Beach Way drop away below the path: the further west, the deeper it is below it", () => {
+    const below = (column) => depthAtSquare(column, 75) - depthAtSquare(column, 72);
+    expect(below(52)).toBeGreaterThan(below(58));
+    expect(below(58)).toBeGreaterThan(below(63));
   });
 
   it("paints its strips deepest first, so that shallower ground in front covers deeper ground behind", () => {
@@ -151,6 +167,47 @@ describe("the two levels of the Nova lap", () => {
   it("drives exactly as before: the levels are only a picture", () => {
     expect(surfaceAt(NOVA_LAP, 68 * TILE, 72 * TILE)).toEqual(ROAD);
     expect(NOVA_LAP.levels).toBeUndefined();
+  });
+});
+
+describe("the scenery of the Nova lap, by level", () => {
+  const { blocks, fences } = NOVA_LOOK.scenery;
+  const groups = sceneryByLevel(blocks, fences, NOVA_LOOK.levels.scenery, LEVELS, TILE);
+  const groupOf = (name) => groups.find((group) => [...group.blocks, ...group.fences].some((piece) => piece.name === name || piece.name.startsWith(`${name}, piece`)));
+
+  it("puts the beach tunnel at the bottom, with the Sagres Beach Way", () => {
+    for (const name of ["tunnel, wall west of the mouth", "tunnel, beam with the name", "tunnel, ceiling", "tunnel, back wall"]) {
+      expect(groupOf(name).depth, name).toBeCloseTo(DROP);
+    }
+  });
+
+  it("leaves everything else on the ground of the track, as before", () => {
+    expect(groups[0].depth).toBe(0);
+    expect(groupOf("Grand Auditorium").depth).toBe(0);
+    const all = groups.reduce((count, group) => count + group.blocks.length, 0);
+    expect(all).toBe(blocks.length); // no block lost or doubled
+  });
+
+  it("stands the railing between the path and the Sagres Beach Way on the path, rising with it to the west", () => {
+    const pieces = groups.flatMap((group) => group.fences.filter((fence) => fence.name.startsWith("rail along the tunnel way")).map((fence) => ({ x: fence.from[0], depth: group.depth })));
+    expect(pieces.length).toBeGreaterThan(10); // cut at every square
+    pieces.sort((a, b) => a.x - b.x);
+    for (let i = 1; i < pieces.length; i++) {
+      expect(pieces[i].depth).toBeGreaterThanOrEqual(pieces[i - 1].depth); // deeper towards the east, like the path
+    }
+    expect(pieces[0].depth).toBeLessThan(DROP / 3); // in the west it is high above the Beach Way
+  });
+
+  it("keeps every block of the track without levels on the ground, in one group", () => {
+    const flat = sceneryByLevel(blocks, fences, NOVA_LOOK.levels.scenery, null, TILE);
+    expect(flat).toHaveLength(1);
+    expect(flat[0].blocks).toHaveLength(blocks.length);
+    expect(flat[0].fences).toHaveLength(fences.length);
+  });
+
+  it("refuses a rule for scenery that does not exist, or with no depth", () => {
+    expect(() => sceneryByLevel(blocks, fences, [{ name: "a tunnel that is not there", depth: 1 }], LEVELS, TILE)).toThrow(/no scenery called/);
+    expect(() => sceneryByLevel(blocks, fences, [{ name: "tunnel, ceiling" }], LEVELS, TILE)).toThrow(/depth/);
   });
 });
 

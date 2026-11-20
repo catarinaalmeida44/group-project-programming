@@ -142,6 +142,30 @@ export const NOVA_LAP_LOOK = {
       // east. In 40 steps, too small to see one by one, so it looks like a
       // ramp. (16 for a few minutes: it looked like a second flight of stairs.)
       { rect: [48, 70, 64, 74], from: 0, to: 1, along: "x", steps: 40 },
+      // The Sagres Beach Way, the sandy way down to the beach tunnel, south of
+      // the path, and the floor of the tunnel's mouth: as low as the plaza,
+      // as on the campus. Driving up the path, it drops away on the left.
+      // (Francisco, 20 November 2026.)
+      { rect: [50.5, 74, 64, 77], to: 1 },
+      { rect: [51, 77, 57, 79.5], to: 1 },
+    ],
+    // The scenery that does not stand on the ground of the track, by its
+    // name in nova-lap-buildings.js. "depth" is a share of the drop;
+    // "follow" means a railing that stands on the ground along its line,
+    // looked for that many squares to one side of it.
+    scenery: [
+      { name: "tunnel, wall west of the mouth", depth: 1 },
+      { name: "tunnel, wall east of the mouth", depth: 1 },
+      { name: "tunnel, beam with the name", depth: 1 },
+      { name: "tunnel, ceiling", depth: 1 },
+      { name: "tunnel, back wall", depth: 1 },
+      { name: "tunnel, reeds on top", depth: 1 },
+      { name: "tunnel, sloping wall of the ramp", depth: 1 },
+      // Between the plaza and the Sagres Beach Way: both are at the bottom.
+      { name: "rail at the head of the tunnel way", depth: 1 },
+      // Between the path and the Sagres Beach Way: it stands on the edge of
+      // the path, so it rises with it, and the Beach Way drops away below it.
+      { name: "rail along the tunnel way", follow: [0, -0.3] },
     ],
   },
   // Lines painted on the ground. Each is in squares of the map.

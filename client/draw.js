@@ -22,7 +22,7 @@
 //   5. the player's own kart, last, so that nothing ever hides it
 
 import { SCREEN, FOLLOW, CHASE, RACE, blendChase, chaseRow, chasePoint, eyeOf, seenFromKart, easeAngle, sideSeen, seesFromAbove } from "./camera.js";
-import { readLevels, depthAt, faces } from "./levels.js";
+import { readLevels, depthAt, faces, sceneryByLevel } from "./levels.js";
 import { createBuildings, buildingsInView } from "./buildings.js";
 import { createScenery, sceneryInView, squaresWithScenery, rampBlocks, cutAtSquares, RAMP_FLAT_STYLES } from "./scenery.js";
 import { createSceneryPainter } from "./scenery-paint.js";
@@ -132,20 +132,30 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
   // The ramps of a track (shared/ramps.js) are scenery too: boxes with a
   // sloping top, added to the track's own.
   const ramps = rampBlocks(track);
-  const sceneryModel =
+  const unitsPerMetre = look.scenery?.unitsPerMetre ?? track.tileSize / 3;
+  // A part of the ground that lies lower (levels.js), on the Nova lap only.
+  const levels = readLevels(look, track.tileSize, unitsPerMetre);
+  // The scenery, sorted by the level it stands on: most of it on the ground
+  // of the track, some of it (the beach tunnel) down in the sunken part.
+  // Each group is drawn with the camera's height above its own ground. A
+  // track without levels has one group, as before.
+  const sceneries =
     look.scenery || ramps.length > 0
-      ? {
-          unitsPerMetre: look.scenery?.unitsPerMetre ?? track.tileSize / 3,
-          fences: look.scenery?.fences ?? [],
-          blocks: [...(look.scenery?.blocks ?? []), ...ramps],
-          flatStyles: { ...RAMP_FLAT_STYLES, ...look.scenery?.flatStyles },
-        }
-      : null;
-  const scenery = sceneryModel ? createScenery(track, sceneryModel) : null;
-  const sceneryPainter = scenery ? createSceneryPainter(look.wallArt ?? WALL_ART, scenery, look.haze) : null;
+      ? sceneryByLevel([...(look.scenery?.blocks ?? []), ...ramps], look.scenery?.fences ?? [], look.levels?.scenery, levels, track.tileSize)
+          .filter((group) => group.blocks.length > 0 || group.fences.length > 0)
+          .map((group) => {
+            const made = createScenery(track, {
+              unitsPerMetre,
+              fences: group.fences,
+              blocks: group.blocks,
+              flatStyles: { ...RAMP_FLAT_STYLES, ...look.scenery?.flatStyles },
+            });
+            return { depth: group.depth, scenery: made, painter: createSceneryPainter(look.wallArt ?? WALL_ART, made, look.haze) };
+          })
+      : [];
   const props = propsOfTrack(track, look, storeys);
-  const ownScenery = scenery ? squaresWithScenery(scenery, track.tileSize) : null;
-  for (const prop of scenery ? props : []) {
+  const ownScenery = sceneries.length > 0 ? new Set(sceneries.flatMap((group) => [...squaresWithScenery(group.scenery, track.tileSize)])) : null;
+  for (const prop of ownScenery ? props : []) {
     // A square with a statue or a tree on it shows what is in the way, too.
     ownScenery.add(`${Math.floor(prop.x / track.tileSize)} ${Math.floor(prop.y / track.tileSize)}`);
   }
@@ -153,8 +163,6 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
     barrierHeight: look.barrierHeight,
     noBarrierAt: ownScenery ? (column, row) => ownScenery.has(`${column} ${row}`) : null,
   });
-  // A part of the ground that lies lower (levels.js), on the Nova lap only.
-  const levels = readLevels(look, track.tileSize, look.scenery?.unitsPerMetre ?? track.tileSize / 3);
   const ground = createGround(track, look, grid, buildings, levels);
   const gantry = gantryOf(track);
   const traffic = trafficLanes(track, look.traffic);
@@ -296,7 +304,12 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
     // camera and the kart, and shows a wall beside the camera for as long
     // as any of it can be seen. They all stand on the ground of the track.
     things.push(...buildingsInView(buildings, spot, upper, SCREEN));
-    things.push(...sceneryInView(scenery, spot, upper, SCREEN));
+    for (const group of sceneries) {
+      const camera = lifted(group.depth);
+      for (const thing of sceneryInView(group.scenery, spot, camera, SCREEN)) {
+        things.push({ ...thing, painter: group.painter, camera });
+      }
+    }
 
     const standing = (kind, x, y, scale, more = {}) => {
       const seen = seenFromKart(spot, x, y);
@@ -438,9 +451,9 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
       if (thing.kind === "side" || thing.kind === "roof") {
         paintBuildingPiece(thing);
       } else if (thing.kind === "strip") {
-        sceneryPainter.paintStrip(context, thing, upper, SCREEN);
+        thing.painter.paintStrip(context, thing, thing.camera, SCREEN);
       } else if (thing.kind === "flat") {
-        sceneryPainter.paintFlat(context, thing);
+        thing.painter.paintFlat(context, thing);
       } else if (thing.kind === "kart") {
         paintKartWithJump(thing.kart, thing.viewer, thing.ground, 0);
         paintNameAbove(thing, scene.names);

@@ -26,6 +26,8 @@
 // All depths are in units below the ground of the track: 0 is the ground,
 // and a bigger number is deeper.
 
+import { cutAtSquares } from "./scenery.js";
+
 /**
  * Reads the levels of a look. Gives null when the look has none (every
  * track but the Nova lap). "unitsPerMetre" turns metres into units.
@@ -177,6 +179,72 @@ function joined(pieces) {
     walls.push(current);
   }
   return walls;
+}
+
+/**
+ * Sorts the scenery of a track (its blocks and fences, scenery.js) by the
+ * level each piece stands on, so that draw.js can draw each group at its
+ * own depth. "rules" come from the look's levels ("scenery" there), one per
+ * piece that does not stand on the ground of the track, found by its name:
+ *   { name, depth }   it stands this share of the drop down (1: at the bottom)
+ *   { name, follow }  a fence that stands on the ground along its line,
+ *                     whatever its depth there: it is cut at the squares, and
+ *                     each piece stands on the ground found "follow" squares
+ *                     to one side of it, [x, y] (a railing on the edge of a
+ *                     path follows the path, not the drop beside it)
+ * Gives [{ depth, blocks, fences }], the ground of the track (depth 0)
+ * first. A rule whose name matches no piece is refused: a typing mistake
+ * would otherwise go unnoticed.
+ */
+export function sceneryByLevel(blocks, fences, rules, levels, tileSize) {
+  const groups = new Map([[0, { depth: 0, blocks: [], fences: [] }]]);
+  const groupAt = (depth) => {
+    if (!groups.has(depth)) {
+      groups.set(depth, { depth, blocks: [], fences: [] });
+    }
+    return groups.get(depth);
+  };
+  const byName = new Map((levels === null ? [] : (rules ?? [])).map((rule) => [rule.name, rule]));
+  const used = new Set();
+  for (const block of blocks) {
+    const rule = byName.get(block.name);
+    if (rule === undefined) {
+      groupAt(0).blocks.push(block);
+      continue;
+    }
+    used.add(rule.name);
+    groupAt(ruleDepth(rule, levels)).blocks.push(block);
+  }
+  for (const fence of fences) {
+    const rule = byName.get(fence.name);
+    if (rule === undefined) {
+      groupAt(0).fences.push(fence);
+      continue;
+    }
+    used.add(rule.name);
+    if (rule.follow === undefined) {
+      groupAt(ruleDepth(rule, levels)).fences.push(fence);
+      continue;
+    }
+    cutAtSquares(fence.from, fence.to).forEach((piece, number) => {
+      const middle = [(piece.a[0] + piece.b[0]) / 2 + rule.follow[0], (piece.a[1] + piece.b[1]) / 2 + rule.follow[1]];
+      const depth = depthAt(levels, middle[0] * tileSize, middle[1] * tileSize);
+      groupAt(depth).fences.push({ ...fence, name: `${fence.name}, piece ${number + 1}`, from: piece.a, to: piece.b });
+    });
+  }
+  for (const name of byName.keys()) {
+    if (!used.has(name)) {
+      throw new Error(`Levels: there is no scenery called "${name}"`);
+    }
+  }
+  return [...groups.values()];
+}
+
+function ruleDepth(rule, levels) {
+  if (!(rule.depth >= 0 && rule.depth <= 1)) {
+    throw new Error(`Levels: "${rule.name}" needs a depth from 0 to 1, or "follow"`);
+  }
+  return rule.depth * levels.drop;
 }
 
 /** Does this face look towards a point on the map (the camera's eye)? Only those are painted. */
