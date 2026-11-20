@@ -27,7 +27,11 @@
 //   along the squares. The halls and lawns were placed to fit.
 // - Paths were widened so that karts can pass each other: the real path past
 //   the tunnel is 5 metres wide, here it is 12.
-// - The stairs and the slopes are flat here: the driving rules have no hills.
+// - The ground is drawn flat. Since 20 November 2026 two parts drive as
+//   slopes (shared/slopes.js), at the team's request: the wide stairs go
+//   down, so karts are faster there, and the path past the beach tunnel
+//   goes up a little, driven west, so karts are slower there. (Until then
+//   the whole lap drove flat.)
 //
 // The letters below were not typed by hand. The ground is drawn as shapes in
 // client/nova-lap-ground.js and the buildings as boxes in
@@ -166,6 +170,17 @@ export const NOVA_LAP = createTrack({
     { column: 11, row: 66, angle: -Math.PI / 2 }, //  the west street, driven north
     { column: 9, row: 46, angle: -Math.PI / 2 },
     { column: 12, row: 30, angle: -Math.PI / 2 },
+  ],
+  // Slopes (shared/slopes.js): "downhill" is the way down. Going that way
+  // raises the top speed and the kart is pulled along; going the other way
+  // is slower. The ground is still drawn flat.
+  slopes: [
+    // The wide stairs, from the promenade down to the lower plaza: the way
+    // down is south, the way the lap goes. As steep as a slope gets.
+    { name: "the wide stairs", column: 64, row: 63, columns: 7, rows: 6, downhill: "south", steepness: 1 },
+    // The path past the beach tunnel, beside the Sagres beach way: it rises
+    // a little to the west, the way the lap goes, so the way down is east.
+    { name: "the path past the beach tunnel", column: 48, row: 70, columns: 16, rows: 4, downhill: "east", steepness: 0.45 },
   ],
   // Walkers (shared/walkers.js): students on the terrace and the promenade,
   // each walking from one door to another and back. The doors are the ones

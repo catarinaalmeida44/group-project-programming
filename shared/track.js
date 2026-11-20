@@ -21,6 +21,7 @@
 
 import { clamp } from "./numbers.js";
 import { ROAD, GRASS } from "./surfaces.js";
+import { readSlopes } from "./slopes.js";
 
 const TILE_KINDS = { "#": "wall", ".": "road", ",": "grass" };
 
@@ -159,6 +160,10 @@ export function createTrack(description) {
       bottom: (row + 1) * tileSize,
     };
   });
+
+  // Slopes: parts of the track that go downhill one way (slopes.js). The
+  // ground is still drawn flat; only the driving changes. Most tracks have none.
+  track.slopes = readSlopes(description.slopes, tileSize, (column, row) => isTileInside(track, column, row));
 
   // Walkers: people who walk to and fro along a path, from one door to
   // another (walkers.js). A path is a list of points, in squares, and every
