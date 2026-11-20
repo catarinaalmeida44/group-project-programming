@@ -2,6 +2,23 @@
 
 Rodrigo Simeão Versos (GitHub rodrigosversos). Entries from 11 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 20 November 2026: a security policy
+
+**What was done**
+A security policy, `SECURITY.md`, so that GitHub's Security tab no longer says "Security policy: Disabled". It says how to report a security problem privately (the **Report a vulnerability** button on the Security tab, or a team member on GitHub) instead of in a public issue, what not to do while testing, and what the game already does to stay safe. Also a line for it in `README.md`. Branch `rodrigo-security-policy`, from `main` after the README for the submission (#39).
+
+**Why**
+Security is 10% of the grade ("minimal, pinned dependencies with no known vulnerabilities"). A policy shows how problems would be handled. Everything it says the game does was checked against the code: passwords scrambled with `scrypt` and never stored, five wrong passwords lock an account for ten minutes, sessions in an `HttpOnly`, `SameSite=Lax`, `Secure` cookie that ends after seven days, every browser message checked, `.env` ignored by git, three pinned libraries.
+
+**Decisions**
+- Mine: turn on everything on the Security tab.
+- Decision made by the agent, please confirm: what the policy says (reporting privately, "best effort, usually within a few days", only `main` gets fixes).
+- **For Catarina (only the owner can):** turn on **Dependabot alerts** and **Dependabot security updates** (not the routine version updates: they would open a pull request for every new library version), **code scanning** with "Default" setup, and **private vulnerability reporting**, so that the "Report a vulnerability" button in the policy exists.
+
+**What was checked**
+- `npm audit` on 20 November: 0 known vulnerabilities, also counting only the libraries the game runs on.
+- `npm test`: all pass (no code changed).
+
 ### 20 November 2026: music, button clicks, the hype sound and the sound switches
 
 **What was done**
