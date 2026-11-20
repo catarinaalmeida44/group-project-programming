@@ -16,11 +16,51 @@ import { readFileSync, existsSync } from "node:fs";
 const CLIENT_FOLDER = new URL("../client/", import.meta.url);
 const read = (name) => readFileSync(new URL(name, CLIENT_FOLDER), "utf8");
 
-const page = read("index.html").replace(/<!--[\s\S]*?-->/g, "");
-const style = read("style.css").replace(/\/\*[\s\S]*?\*\//g, "");
+/**
+ * The text without its comments, so explanations in comments are not taken
+ * for parts of the page. It walks through the text instead of using one
+ * search-and-replace: a replace can leave a new "<!--" behind where two
+ * pieces meet (GitHub's code scanning warned about that), and a comment
+ * that is never closed runs to the end, as it does in a browser.
+ */
+function withoutComments(text, open, close) {
+  // Taking one comment out can join the pieces around it into a new
+  // opening, so go again until none is left.
+  let before;
+  do {
+    before = text;
+    text = cutCommentsOnce(text, open, close);
+  } while (text !== before);
+  return text;
+}
+
+function cutCommentsOnce(text, open, close) {
+  let kept = "";
+  let at = 0;
+  for (;;) {
+    const start = text.indexOf(open, at);
+    if (start === -1) return kept + text.slice(at);
+    kept += text.slice(at, start);
+    const end = text.indexOf(close, start + open.length);
+    if (end === -1) return kept;
+    at = end + close.length;
+  }
+}
+
+const page = withoutComments(read("index.html"), "<!--", "-->");
+const style = withoutComments(read("style.css"), "/*", "*/");
 const title = page.match(/<h1 class="game-title">([\s\S]*?)<\/h1>/)?.[1] ?? "";
 const logo = title.match(/<img\b[^>]*>/)?.[0] ?? "";
 const attribute = (tag, name) => tag.match(new RegExp(`\\s${name}="([^"]*)"`))?.[1] ?? null;
+
+describe("taking the comments out before checking", () => {
+  it("leaves no comment opening behind, even where pieces meet or one is never closed", () => {
+    expect(withoutComments("a<!-- x -->b", "<!--", "-->")).toBe("ab");
+    expect(withoutComments("<!<!-- x -->-- y -->", "<!--", "-->")).not.toContain("<!--");
+    expect(withoutComments("a<!-- never closed <img>", "<!--", "-->")).toBe("a");
+    expect(withoutComments("a/* x */b", "/*", "*/")).toBe("ab");
+  });
+});
 
 describe("the NOVA SBE logo on the menu", () => {
   it("is a picture inside the game title", () => {

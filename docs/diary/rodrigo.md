@@ -17,7 +17,8 @@ Branch `rodrigo-nova-logo`, from `main` after the recorded music (#42).
 - **Question for the team:** NOVA SBE has rules for using its logo, and our project is public on GitHub. We should check with the professor that a class project may show it.
 
 **What was checked, and what was not**
-- `npm test`: 2,742 passed, 5 skipped (7 new tests).
+- `npm test`: 2,743 passed, 5 skipped (8 new tests).
+- GitHub's code scanning (CodeQL) warned about the new test file: it took the comments out of the page with one search-and-replace, which can leave a new "<!--" where two pieces meet. Nothing is shown to anyone there (the test only reads our own file), but the test now walks through the text and repeats until no comment is left, and a new test checks exactly that case. The first version of that fix still had the weakness, and the new test caught it. `tests/menu-page.test.js` (older, not mine) strips comments the same way; it is left as it is for its owner to decide.
 - Broken on purpose four ways, and a test failed every time: the alt text removed, the logo loaded from another website, the old red label put back, the file missing.
 - In a Chrome browser without a screen, at 1280 and at 420 dots wide: the logo loads, is sharp and sits above "Kart racer". The only error was the accounts service (no database on the agent's computer), as before.
 - **Not checked:** on my laptop and on the live server.

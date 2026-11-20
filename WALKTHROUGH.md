@@ -668,7 +668,7 @@ The only personal data is the user name a player chose. There is no email, no re
 
 ## What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 2,742 tests today, plus the ones that only run against the real database. They take about 40 seconds, most of it online races that run in real time.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 2,743 tests today, plus the ones that only run against the real database. They take about 40 seconds, most of it online races that run in real time.
 
 **Covered today**
 
