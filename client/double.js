@@ -57,7 +57,7 @@ import { createPageMusic } from "./music.js";
 import { raceMoment } from "./music-cues.js";
 import { createUiSound } from "./ui-sound.js";
 import { readSwitches, toggleMaster } from "./audio-switches.js";
-import { podiumLineup, podiumLoser, podiumCaption, cheersDue, finishPlace } from "./podium.js";
+import { podiumLineup, podiumLoser, podiumCaption, finishPlace } from "./podium.js";
 import { createPodiumView } from "./podium-view.js";
 import { HALF_SHOWS, NOT_SAVED_WORDS, halfMessage, plateName, tagsFor, watchedName } from "./double-view.js";
 
@@ -136,7 +136,6 @@ let started = false; //      the countdown starts at the first driving key of ei
 let lastFrameTime = null;
 let waitingSeconds = 0; //   real time that has passed but is not yet turned into game steps
 let podiumSince = null; //   when the podium came up, in milliseconds of the page's clock, or null
-let cheered = 0; //          how many times the crowd has cheered on this podium
 
 // ---- The cameras ----
 let view = readSettings(storage).startView; // the view chosen in the menu's settings, or the first one
@@ -158,14 +157,14 @@ function newRace() {
 
 // ---- The sound ----
 // Each driver hears their own kart: engine, bumps, laps (sound.js). So there
-// are two sets of sounds. Only the first one counts down and cheers, or
+// are two sets of sounds. Only the first one counts down, or
 // every beep would come twice. M switches both off and on.
 const sounds = BOTH.map(() => createRaceSound(window, storage));
 const soundText = document.getElementById("sound");
 soundText.textContent = readSwitches(storage).master ? "on" : "off";
 // One music for both drivers (music.js), and the clicks of the buttons
 // (ui-sound.js). M is the master switch: it silences everything (audio-switches.js).
-const music = createPageMusic(window, storage);
+const music = createPageMusic(window, storage, "race"); // "race": it will need the three lap tunes and the podium one
 const uiSound = createUiSound(window, storage);
 uiSound.listen(document);
 
@@ -236,7 +235,6 @@ function startAgain() {
   started = false;
   waitingSeconds = 0;
   podiumSince = null;
-  cheered = 0;
   following = BOTH.map(() => null);
   camerasOn = [...BOTH];
   cameras = BOTH.map((player) => followTarget(race.racers[player].kart, track)); // jump straight back, do not glide
@@ -316,19 +314,24 @@ function frame(now) {
     podiumSince = now;
   }
   const podiumUp = podiumSince !== null;
-  // The music: the race song from GO, faster once either driver is on the
-  // final lap, the fanfare when both have finished, then the podium song.
+  // The music (music-files.js), one for both drivers: a tune for the first
+  // lap, one for the laps between and one for the last lap, by the lap of
+  // the driver who is further ahead. It goes on when both have finished,
+  // and the podium has trumpets and clapping.
   const drivers = BOTH.map((number) => race.racers[number].progress);
-  music.follow(
-    raceMoment({
+  const lapsDoneForMusic = Math.max(...drivers.map((progress) => progress.lapsDone));
+  music.follow({
+    place: raceMoment({
       started,
       racing: countdown.racing,
       finished: drivers.every((progress) => progress.finished),
       podium: podiumUp,
-      lapsDone: Math.max(...drivers.map((progress) => progress.lapsDone)),
+      lapsDone: lapsDoneForMusic,
       laps: track.laps,
-    }),
-  );
+    }).place,
+    lapsDone: lapsDoneForMusic,
+    laps: track.laps,
+  });
   screenBox.classList.toggle("is-podium", podiumUp);
   raceOverBox.hidden = !podiumUp;
 
@@ -337,10 +340,7 @@ function frame(now) {
     const loser = podiumLoser(karts, track); // with four or more karts, the driver who came last cries beside the podium
     const shownFor = (now - podiumSince) / 1000;
     podium.paint(canvases[0].getContext("2d"), { width: canvases[0].width, height: canvases[0].height }, lineup, shownFor, podiumCaption(lineup, formatTime), loser);
-    while (cheered < cheersDue(shownFor)) {
-      sounds[0].cheer();
-      cheered++;
-    }
+    // The sound of the podium is its music: trumpets and clapping (music-files.js).
   }
 
   const computerIds = karts.slice(PLAYERS).map((kart) => kart.id);

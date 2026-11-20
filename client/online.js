@@ -33,7 +33,7 @@
 
 import { TRACKS, storeysOf } from "../shared/tracks/index.js";
 import { createPodiumView } from "./podium-view.js";
-import { podiumLineup, podiumLoser, podiumCaption, cheersDue, finishPlace, finishedWords, PODIUM_SECONDS } from "./podium.js";
+import { podiumLineup, podiumLoser, podiumCaption, finishPlace, finishedWords, PODIUM_SECONDS } from "./podium.js";
 import { formatTime } from "./format.js";
 import { chooseTrackName } from "./track-choice.js";
 import { createKeyboard } from "./keyboard.js";
@@ -121,7 +121,6 @@ const roomSettingsButton = document.getElementById("room-settings");
 const board = createResultsBoard(document, { onStart: () => askToStart(), onSettings: () => openSettings(false) });
 const podium = createPodiumView(track, draw); //           the podium, painted on the race picture when a race is over (podium-view.js)
 let podiumSince = null; //                      when the podium came up, in milliseconds of the page's clock, or null
-let cheered = 0; //                              how many times the crowd has cheered on this podium
 
 // The card over the picture while the connection is being made or is lost (link.js).
 const cardBox = document.getElementById("link-card");
@@ -450,7 +449,7 @@ const soundText = document.getElementById("sound");
 soundText.textContent = readSwitches(storage).master ? "on" : "off";
 // The music (music.js), the clicks of the buttons and the hype sound
 // (ui-sound.js). M is the master switch: it silences everything (audio-switches.js).
-const music = createPageMusic(window, storage);
+const music = createPageMusic(window, storage, "race"); // "race": it will need the three lap tunes and the podium one
 const uiSound = createUiSound(window, storage);
 uiSound.listen(document);
 let roomWasReady = false; // was everyone in the room a character at the last picture? (the hype plays once when they all are)
@@ -822,24 +821,28 @@ function frame(now) {
   // PODIUM_SECONDS the results board comes up on top of it, with everyone.
   if (race.phase === "finished" && podiumSince === null) {
     podiumSince = now;
-    cheered = 0;
   } else if (race.phase !== "finished") {
     podiumSince = null;
   }
-  // The music: the menu song in the room before a race, none in the
-  // countdown, the race song from GO (faster on your final lap), the
-  // fanfare at your finish, the podium song on the podium (music-cues.js).
-  music.follow(
-    raceMoment({
+  // The music (music-files.js): the menu tune in the room before a race,
+  // none in the countdown, then a tune for the first lap, one for the laps
+  // between and one for the last lap, which goes on after your finish. On
+  // the podium, trumpets and clapping. Someone who is watching hears the
+  // tune of the lap of the kart they watch.
+  const lapsDoneForMusic = (mine ?? shown).lapsDone ?? 0;
+  music.follow({
+    place: raceMoment({
       inLobby: race.phase === "open",
       started: race.phase === "countdown",
       racing: race.phase === "racing",
       finished: mine?.finished === true && race.phase === "racing",
       podium: podiumSince !== null,
-      lapsDone: mine?.lapsDone ?? 0,
+      lapsDone: lapsDoneForMusic,
       laps: track.laps,
-    }),
-  );
+    }).place,
+    lapsDone: lapsDoneForMusic,
+    laps: track.laps,
+  });
   // The hype, once, when everyone in the room has a character (ui-sound-cues.js).
   const roomIsReady = roomReady(race.phase, latestKarts);
   if (roomIsReady && !roomWasReady) {
@@ -853,11 +856,7 @@ function frame(now) {
     // With four or more karts, the driver who came last cries beside the podium.
     const loser = podiumLoser(latestKarts, track);
     podium.paint(trackCanvas.getContext("2d"), { width: trackCanvas.width, height: trackCanvas.height }, lineup, shownFor, podiumCaption(lineup, formatTime), loser);
-    // The crowd cheers, again and again for a while.
-    while (cheered < cheersDue(shownFor)) {
-      sound.cheer();
-      cheered++;
-    }
+    // The sound of the podium is its music: trumpets and clapping (music-files.js).
   } else {
     draw(view, dressed(shown), camera, steer, others, scene);
   }

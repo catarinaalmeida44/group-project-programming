@@ -45,7 +45,15 @@ const FILE_TYPES = {
   ".png": "image/png",
   ".jpg": "image/jpeg", // the faces of the characters (client/faces)
   ".svg": "image/svg+xml",
+  ".mp3": "audio/mpeg", //  the music (client/music), since 20 November 2026
+  ".flac": "audio/flac", // the music of the podium
 };
+
+// Music files are large (several megabytes) and never change once they are
+// online. The browser may keep them for a day instead of asking again on
+// every page, which would download them again and again.
+const KEPT_BY_THE_BROWSER = new Set(["audio/mpeg", "audio/flac"]);
+const KEEP_SECONDS = 24 * 60 * 60;
 
 /**
  * Builds the server. It does not start listening yet.
@@ -286,8 +294,9 @@ function send(response, status, type, content) {
     // Tells the browser to trust the label above and not guess the file kind.
     "X-Content-Type-Options": "nosniff",
     // Tells the browser to check for a newer version each time, so players
-    // always get the latest files after we put a new version online.
-    "Cache-Control": "no-cache",
+    // always get the latest files after we put a new version online. Music
+    // is the exception: it may be kept for a day (see KEPT_BY_THE_BROWSER).
+    "Cache-Control": KEPT_BY_THE_BROWSER.has(type) ? `public, max-age=${KEEP_SECONDS}` : "no-cache",
   });
   response.end(content);
 }
