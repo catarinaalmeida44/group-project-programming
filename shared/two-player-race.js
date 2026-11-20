@@ -14,8 +14,10 @@
 //
 // The players are racers 0 and 1. The computer karts are racers 2, 3 ... and
 // start in the places in front of them on the grid (grid.js). The two
-// players start side by side in the row behind, player 1 on the left and
-// player 2 on the right, so neither has a head start.
+// players start side by side in the row behind, so neither has a head
+// start. Player 1 is on the right and player 2 on the left: player 1 drives
+// with the arrow keys, which are on the right of the keyboard, and has the
+// right half of the screen (client/double-view.js).
 //
 // No character is in the race twice: the computer karts are the characters
 // the two players did not choose.
@@ -94,9 +96,10 @@ export function createTwoPlayerRace(track, seed = null, line = null, computers =
   const free = CAST.filter((character) => !characters.includes(character.id));
   const count = line === null || line.length < 3 ? 0 : Math.min(computers, GRID_PLACES - PLAYERS, free.length);
   // The computer karts take the front places. The players take the first
-  // whole row behind them: an even place (left) and the odd one beside it.
+  // whole row behind them: an even place (left) and the odd one beside it
+  // (right). Player 1 has the right one, player 2 the left one.
   const firstPlace = count + (count % 2);
-  const players = [createRacer(track, firstPlace), createRacer(track, firstPlace + 1)];
+  const players = [createRacer(track, firstPlace + 1), createRacer(track, firstPlace)];
   const others = [];
   const drivers = [];
   for (let number = 0; number < count; number++) {

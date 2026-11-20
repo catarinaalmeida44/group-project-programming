@@ -70,27 +70,28 @@ describe("starting a two-player race", () => {
     }
   });
 
-  it("puts the two players side by side in the row behind, player 1 on the left: nobody has a head start", () => {
+  it("puts the two players side by side in the row behind: nobody has a head start", () => {
     const race = newRace();
     const left = gridSpot(TEST_OVAL, 4);
     const right = gridSpot(TEST_OVAL, 5);
-    expect(race.racers[0].kart).toMatchObject({ x: left.x, y: left.y });
-    expect(race.racers[1].kart).toMatchObject({ x: right.x, y: right.y });
+    // Player 1 (the arrows, on the right of the keyboard) stands on the right, player 2 (W A S D) on the left.
+    expect(race.racers[0].kart).toMatchObject({ x: right.x, y: right.y });
+    expect(race.racers[1].kart).toMatchObject({ x: left.x, y: left.y });
   });
 
   it("keeps the players side by side with an odd number of computer karts too", () => {
     const race = newRace(3);
     expect(race.drivers).toHaveLength(3);
-    expect(race.racers[0].kart).toMatchObject({ x: gridSpot(TEST_OVAL, 4).x, y: gridSpot(TEST_OVAL, 4).y });
-    expect(race.racers[1].kart).toMatchObject({ x: gridSpot(TEST_OVAL, 5).x, y: gridSpot(TEST_OVAL, 5).y });
+    expect(race.racers[0].kart).toMatchObject({ x: gridSpot(TEST_OVAL, 5).x, y: gridSpot(TEST_OVAL, 5).y });
+    expect(race.racers[1].kart).toMatchObject({ x: gridSpot(TEST_OVAL, 4).x, y: gridSpot(TEST_OVAL, 4).y });
   });
 
   it("puts the players on the front row when there are no computer karts", () => {
     const race = newRace(0);
     expect(race.racers).toHaveLength(2);
     expect(race.drivers).toEqual([]);
-    expect(race.racers[0].kart).toMatchObject({ x: gridSpot(TEST_OVAL, 0).x, y: gridSpot(TEST_OVAL, 0).y });
-    expect(race.racers[1].kart).toMatchObject({ x: gridSpot(TEST_OVAL, 1).x, y: gridSpot(TEST_OVAL, 1).y });
+    expect(race.racers[0].kart).toMatchObject({ x: gridSpot(TEST_OVAL, 1).x, y: gridSpot(TEST_OVAL, 1).y });
+    expect(race.racers[1].kart).toMatchObject({ x: gridSpot(TEST_OVAL, 0).x, y: gridSpot(TEST_OVAL, 0).y });
   });
 
   it("makes the computer karts the four characters neither player chose, each once", () => {

@@ -22,6 +22,9 @@
       <div id="play-area" class="play-area">
         <div class="hud">
           <span>Camera <strong id="view"></strong></span>
+          <!-- A short notice when the race is about to end: "The race ends in 42 s".
+               It is up here, not on the pictures, where it would cover a map or a name. -->
+          <span id="notice" class="hud-notice" role="status"></span>
           <!-- Who the two race against, and the button that opens the "Game
                settings" card (game-settings-card.js). -->
           <span id="settings-box">
@@ -36,36 +39,23 @@
              is a picture of the race from behind that driver's kart, with their
              name plate under it. double.js draws and fills in everything. -->
         <div id="double-screen" class="screen double-screen">
-          <section id="half-1" class="half" aria-label="Player 1">
-            <div class="half-picture">
-              <canvas id="track-1" width="960" height="576">Your browser cannot show the game.</canvas>
-              <p id="message-1" class="message" role="status"></p>
-            </div>
-            <div id="plate-1" class="plate">
-              <span class="plate-who">
-                <span class="plate-player">Player 1</span>
-                <strong id="name-1" class="plate-name"></strong>
-              </span>
-              <span class="plate-keys" aria-label="Keys: W, A, S and D"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span>
-              <span class="plate-numbers">
-                <span>Lap <strong id="lap-1">1</strong> of <strong id="laps-1">3</strong></span>
-                <span>Time <strong id="time-1">0:00.00</strong></span>
-                <span id="place-box-1">Place <strong id="place-1"></strong></span>
-              </span>
-            </div>
-          </section>
-
+          <!-- The left half is player 2's: W, A, S and D are on the left of the keyboard. -->
           <section id="half-2" class="half" aria-label="Player 2">
             <div class="half-picture">
               <canvas id="track-2" width="960" height="576">Your browser cannot show the game.</canvas>
               <p id="message-2" class="message" role="status"></p>
+              <!-- After this driver has finished: whose kart their camera is on now. -->
+              <div id="banner-2" class="watch-banner half-banner" role="status" hidden>
+                <p id="banner-title-2" class="watch-title"></p>
+                <p id="banner-text-2" class="watch-text"></p>
+              </div>
             </div>
             <div id="plate-2" class="plate">
               <span class="plate-who">
                 <span class="plate-player">Player 2</span>
                 <strong id="name-2" class="plate-name"></strong>
               </span>
-              <span class="plate-keys" aria-label="Keys: the arrow keys"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></span>
+              <span class="plate-keys" aria-label="Keys: W, A, S and D"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span>
               <span class="plate-numbers">
                 <span>Lap <strong id="lap-2">1</strong> of <strong id="laps-2">3</strong></span>
                 <span>Time <strong id="time-2">0:00.00</strong></span>
@@ -74,8 +64,30 @@
             </div>
           </section>
 
-          <!-- A short notice at the top, between the halves, when the race is about to end. -->
-          <p id="notice" class="notice" role="status"></p>
+          <!-- The right half is player 1's: the arrow keys are on the right of the keyboard. -->
+          <section id="half-1" class="half" aria-label="Player 1">
+            <div class="half-picture">
+              <canvas id="track-1" width="960" height="576">Your browser cannot show the game.</canvas>
+              <p id="message-1" class="message" role="status"></p>
+              <div id="banner-1" class="watch-banner half-banner" role="status" hidden>
+                <p id="banner-title-1" class="watch-title"></p>
+                <p id="banner-text-1" class="watch-text"></p>
+              </div>
+            </div>
+            <div id="plate-1" class="plate">
+              <span class="plate-who">
+                <span class="plate-player">Player 1</span>
+                <strong id="name-1" class="plate-name"></strong>
+              </span>
+              <span class="plate-keys" aria-label="Keys: the arrow keys"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></span>
+              <span class="plate-numbers">
+                <span>Lap <strong id="lap-1">1</strong> of <strong id="laps-1">3</strong></span>
+                <span>Time <strong id="time-1">0:00.00</strong></span>
+                <span id="place-box-1">Place <strong id="place-1"></strong></span>
+              </span>
+            </div>
+          </section>
+
           <!-- When the race is over and the podium is up: what to do next. The R key still works. -->
           <div id="race-over" class="race-over" hidden>
             <button type="button" id="race-again" class="button button-primary">Race again</button>
@@ -89,9 +101,9 @@
       </div>
 
       <p class="help">
-        Two drivers on one keyboard. <strong>Player 1</strong>, on the left: <kbd>W</kbd> gas, <kbd>S</kbd> brake and
-        reverse, <kbd>A</kbd> <kbd>D</kbd> steer. <strong>Player 2</strong>, on the right: <kbd>↑</kbd> gas,
-        <kbd>↓</kbd> brake and reverse, <kbd>←</kbd> <kbd>→</kbd> steer. <kbd>R</kbd> starts again.
+        Two drivers on one keyboard. <strong>Player 1</strong>, on the right: <kbd>↑</kbd> gas,
+        <kbd>↓</kbd> brake and reverse, <kbd>←</kbd> <kbd>→</kbd> steer. <strong>Player 2</strong>, on the left:
+        <kbd>W</kbd> gas, <kbd>S</kbd> brake and reverse, <kbd>A</kbd> <kbd>D</kbd> steer. <kbd>R</kbd> starts again.
         <kbd>V</kbd> changes the camera of both halves. Drive clockwise.
         <kbd>M</kbd> switches the sound off and on: it is <strong id="sound">on</strong>.
         <strong>Game settings</strong> chooses whether computer karts race with you and how good they are.

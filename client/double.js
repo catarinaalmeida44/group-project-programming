@@ -1,9 +1,11 @@
 // The two-player page: two people race on one computer, each on one half
 // of the screen.
 //
-// Player 1 has the left half and drives with W, A, S and D. Player 2 has
-// the right half and drives with the arrow keys. With the game settings on
-// "computer karts", four computer karts race with them, six karts in all.
+// Player 1, who chose a character first in the menu, drives with the arrow
+// keys and has the right half. Player 2 drives with W, A, S and D and has
+// the left half: each half is on the side where its keys are on the
+// keyboard. With the game settings on "computer karts", four computer karts
+// race with them, six karts in all.
 //
 // Like a single race (main.js), this race runs in the browser: nothing is
 // sent to our server. Unlike a single race, nothing is saved either: not
@@ -17,8 +19,8 @@
 // How the screen is split: there are two pictures, each painted by its own
 // painter (draw.js) from behind one driver's kart. Each half shows the
 // middle of its picture (HALF_SHOWS in double-view.js), so that the two
-// stand side by side without becoming tiny. When the race is over, the left
-// picture grows over both halves and shows the podium.
+// stand side by side without becoming tiny. When the race is over, player
+// 1's picture grows over both halves and shows the podium.
 
 import { countdownAt } from "../shared/countdown.js";
 import { createTwoPlayerRace, stepTwoPlayerRace, twoPlayerKarts, twoPlayerEndsIn, COMPUTER_KARTS_FOR_TWO, PLAYERS } from "../shared/two-player-race.js";
@@ -43,7 +45,7 @@ import { walkersToShow, walkersDownNear } from "./street-life.js";
 import { routePoints, watchForWrongWay, WRONG_WAY_MESSAGE } from "./route.js";
 import { watchForMissedCheckpoint, missedCheckpointMessage } from "./checkpoints.js";
 import { placeLine } from "./standings.js";
-import { timeLeftNotice } from "./race-view.js";
+import { timeLeftNotice, kartToWatchAfterFinish, finishedBanner } from "./race-view.js";
 import { VIEW_NAMES } from "./hud.js";
 import { formatTime } from "./format.js";
 import { storageOf } from "./storage.js";
@@ -51,13 +53,13 @@ import { readSettings } from "./settings.js";
 import { createRaceSound } from "./sound.js";
 import { podiumLineup, podiumLoser, podiumCaption, cheersDue, finishPlace } from "./podium.js";
 import { createPodiumView } from "./podium-view.js";
-import { DRIVERS, HALF_SHOWS, NOT_SAVED_WORDS, halfMessage, plateName, tagsFor } from "./double-view.js";
+import { HALF_SHOWS, NOT_SAVED_WORDS, halfMessage, plateName, tagsFor, watchedName } from "./double-view.js";
 
 const track = chooseTrack(window.location.search);
 const character = TEST_DRIVER;
 const storage = storageOf(window); // this browser's storage, for the characters and the settings
 
-/** The two drivers, as numbers: 0 is player 1 (left half), 1 is player 2 (right half). */
+/** The two drivers, as numbers: 0 is player 1 (the arrows, right half), 1 is player 2 (W A S D, left half). */
 const BOTH = [0, 1];
 
 // ---- The parts of the page ----
@@ -71,7 +73,7 @@ const MAP_INSET = Math.round((SCREEN.width * (1 - HALF_SHOWS)) / 2);
 const canvases = BOTH.map((player) => document.getElementById(`track-${player + 1}`));
 // One painter for each half. Each remembers its own camera swing and its own smoke.
 const painters = canvases.map((canvas) => createPainter(canvas, track, { storeys: storeysOf(track) }));
-const podium = createPodiumView(track, painters[0]); // the podium, painted on the left picture, grown over both halves
+const podium = createPodiumView(track, painters[0]); // the podium, painted on player 1's picture, grown over both halves
 const parts = BOTH.map((player) => {
   const part = (name) => document.getElementById(`${name}-${player + 1}`);
   return {
@@ -83,6 +85,10 @@ const parts = BOTH.map((player) => {
     time: part("time"),
     placeBox: part("place-box"),
     place: part("place"),
+    // The banner at the top of the half, after this driver's finish (race-view.js).
+    banner: part("banner"),
+    bannerTitle: part("banner-title"),
+    bannerText: part("banner-text"),
   };
 });
 const viewText = document.getElementById("view");
@@ -126,6 +132,10 @@ let cheered = 0; //          how many times the crowd has cheered on this podium
 // ---- The cameras ----
 let view = readSettings(storage).startView; // the view chosen in the menu's settings, or the first one
 let cameras = BOTH.map((player) => followTarget(race.racers[player].kart, track));
+// Which kart each driver's camera is on: their own, or, once they have
+// finished, one that still drives (kartToWatchAfterFinish in race-view.js).
+let camerasOn = [...BOTH];
+let following = BOTH.map(() => null); // after a driver's finish: the kart their camera stays with, or null
 
 /** A number picked by chance, from which the bananas of one race grow (shared/hazards.js). */
 function newSeed() {
@@ -211,6 +221,8 @@ function startAgain() {
   waitingSeconds = 0;
   podiumSince = null;
   cheered = 0;
+  following = BOTH.map(() => null);
+  camerasOn = [...BOTH];
   cameras = BOTH.map((player) => followTarget(race.racers[player].kart, track)); // jump straight back, do not glide
 }
 
@@ -223,7 +235,7 @@ document.getElementById("race-again").addEventListener("click", (event) => {
 
 function changeView() {
   view = nextView(view);
-  cameras = BOTH.map((player) => followTarget(race.racers[player].kart, track));
+  camerasOn = BOTH.map(() => null); // the next picture puts each camera straight on the kart it shows
 }
 
 /** The colours of the kart with this number: a driver's own, or those of a computer kart's character. */
@@ -270,8 +282,8 @@ function frame(now) {
   const frameSeconds = lastFrameTime === null ? 0 : Math.min((now - lastFrameTime) / 1000, 0.25);
   lastFrameTime = now;
 
-  // Player 1 drives with the letters, player 2 with the arrows.
-  const inputs = [keyboard.letterInput(), keyboard.input()];
+  // Player 1 drives with the arrows, player 2 with the letters.
+  const inputs = [keyboard.input(), keyboard.letterInput()];
   if (started) {
     waitingSeconds += frameSeconds;
     while (waitingSeconds >= STEP_SECONDS) {
@@ -302,6 +314,8 @@ function frame(now) {
     }
   }
 
+  const computerIds = karts.slice(PLAYERS).map((kart) => kart.id);
+
   for (const player of BOTH) {
     const racer = race.racers[player];
     const { progress } = racer;
@@ -309,14 +323,24 @@ function frame(now) {
     const keysWork = started && countdown.racing && !progress.finished && !race.over;
     const spinning = racer.spinSteps > 0;
 
-    // The camera glides towards where it wants to be.
-    cameras[player] = easeTowards(cameras[player], followTarget(racer.kart, track), frameSeconds);
+    // This driver has finished and others are still driving: their camera
+    // moves to one of them. The other driver if they still drive, otherwise
+    // the computer kart in last place. It stays there until that kart finishes.
+    const watched = progress.finished && !race.over ? kartToWatchAfterFinish(karts, track, player, following[player], computerIds) : undefined;
+    following[player] = watched === undefined ? null : watched.id;
+    const shownId = watched === undefined ? player : watched.id; // the kart in the middle of this half
+    const shownRacer = race.racers[shownId];
+
+    // The camera glides towards where it wants to be, and jumps when it moves to another kart.
+    const cameraTarget = followTarget(shownRacer.kart, track);
+    cameras[player] = shownId === camerasOn[player] ? easeTowards(cameras[player], cameraTarget, frameSeconds) : cameraTarget;
+    camerasOn[player] = shownId;
 
     if (!podiumUp) {
       // The kart leans while its driver steers, but not before GO and not after the finish.
       const steer = keysWork && !spinning ? (input.right ? 1 : 0) - (input.left ? 1 : 0) : 0;
-      const others = race.racers.map((_, id) => id).filter((id) => id !== player).map(shownKart);
-      painters[player](view, shownKart(player), cameras[player], steer, others, {
+      const others = race.racers.map((_, id) => id).filter((id) => id !== shownId).map(shownKart);
+      painters[player](view, shownKart(shownId), cameras[player], steer, others, {
         ...sceneFor(race.countdownSteps, started),
         bananas: race.bananas,
         walkers: walkersShown,
@@ -341,10 +365,23 @@ function frame(now) {
       steps: progress.steps,
       warning,
       over: podiumUp,
+      watching: watched !== undefined,
     });
-    const { message, lap, laps, time, placeBox, place } = parts[player];
+    const { message, lap, laps, time, placeBox, place, banner, bannerTitle, bannerText } = parts[player];
     message.classList.toggle("countdown", words.big);
     setText(message, words.text);
+
+    // While this driver watches the others come home: a banner at the top of
+    // their half with their place and time, and whose kart the camera is on.
+    const said =
+      watched === undefined || podiumUp
+        ? null
+        : finishedBanner({ place: finishPlace(karts, player) ?? 1, steps: progress.steps, watchedName: watchedName(watched.id, watched.character) });
+    banner.hidden = said === null;
+    if (said !== null) {
+      setText(bannerTitle, said.title);
+      setText(bannerText, said.text);
+    }
     setText(lap, String(currentLap(progress, track)));
     setText(laps, String(track.laps));
     setText(time, formatTime(progress.steps * STEP_SECONDS));
@@ -352,21 +389,23 @@ function frame(now) {
     placeBox.hidden = karts.length < 2;
 
     // The facts of this picture, for this driver's sounds (sound-cues.js).
-    // Only the first set counts down, or every beep would come twice.
+    // Only the first set counts down, or every beep would come twice. After
+    // their finish a driver hears the kart they watch; the laps and the
+    // finish stay their own, so nothing is cheered twice.
     sounds[player].frame(
       {
         label: player === 0 && showingCountdown ? countdown.label : "",
-        kart: racer.kart,
+        kart: shownRacer.kart,
         gas: keysWork && input.gas,
-        onGrass: tileKindAt(track, racer.kart.x, racer.kart.y) === "grass",
-        spinning,
+        onGrass: tileKindAt(track, shownRacer.kart.x, shownRacer.kart.y) === "grass",
+        spinning: shownRacer.spinSteps > 0,
         lapsDone: progress.lapsDone,
         laps: track.laps,
         finished: progress.finished,
         warning: warning !== null,
-        others: race.racers.filter((_, id) => id !== player).map((other) => other.kart),
-        air: racer.airSteps ?? 0,
-        walkersDownNear: walkersDownNear(walkersShown, racer.kart),
+        others: race.racers.filter((_, id) => id !== shownId).map((other) => other.kart),
+        air: shownRacer.airSteps ?? 0,
+        walkersDownNear: walkersDownNear(walkersShown, shownRacer.kart),
       },
       frameSeconds,
     );
@@ -392,6 +431,8 @@ window.kartGame = {
     countdownSteps: race.countdownSteps,
     raceSteps: race.raceSteps,
     endsIn: twoPlayerEndsIn(race),
+    watching: [...following], // after each driver's finish: the kart their camera is on, or null
+    podium: podiumSince !== null,
     karts: twoPlayerKarts(race),
     players: BOTH.map((player) => ({ kart: { ...race.racers[player].kart }, spinSteps: race.racers[player].spinSteps })),
     bananas: race.bananas.map((banana) => ({ ...banana })),

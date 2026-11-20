@@ -21,14 +21,19 @@ function pretendStorage(start = {}) {
 }
 
 describe("the two drivers", () => {
-  it("are player 1 with W, A, S, D and player 2 with the arrow keys", () => {
+  it("are player 1 with the arrow keys, as in every other race, and player 2 with W, A, S, D", () => {
     expect(DRIVERS).toHaveLength(2);
-    expect(DRIVERS[0]).toMatchObject({ label: "Player 1", short: "P1", keys: ["W", "A", "S", "D"] });
-    expect(DRIVERS[1]).toMatchObject({ label: "Player 2", short: "P2", keys: ["↑", "←", "↓", "→"] });
+    expect(DRIVERS[0]).toMatchObject({ label: "Player 1", short: "P1", keys: ["↑", "←", "↓", "→"] });
+    expect(DRIVERS[1]).toMatchObject({ label: "Player 2", short: "P2", keys: ["W", "A", "S", "D"] });
   });
 
-  it("show player 1 the same letters the keyboard listens to", () => {
-    expect(DRIVERS[0].keys.map((key) => key.toLowerCase()).sort()).toEqual([...LETTER_DRIVING_KEYS].sort());
+  it("show player 2 the same letters the keyboard listens to", () => {
+    expect(DRIVERS[1].keys.map((key) => key.toLowerCase()).sort()).toEqual([...LETTER_DRIVING_KEYS].sort());
+  });
+
+  it("give each driver the half of the screen on the side where their keys are", () => {
+    expect(DRIVERS[0].side).toBe("right"); // the arrows are on the right of the keyboard
+    expect(DRIVERS[1].side).toBe("left"); //  W, A, S and D are on the left
   });
 
   it("cannot be changed by mistake", () => {

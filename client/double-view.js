@@ -12,17 +12,26 @@ import { finishedWords } from "./podium.js";
 import { formatTime } from "./format.js";
 
 /**
- * The two drivers, in the order of the halves of the screen. The driver on
- * the left of the screen uses the keys on the left of the keyboard.
+ * The two drivers: player 1 first, then player 2.
+ *
+ * Player 1 is the one who chooses a character first in the menu, and drives
+ * with the arrow keys, as in a single race and online. Player 2 chooses
+ * second and drives with W, A, S and D. (On 19 November 2026 it was the
+ * other way round. Catarina tried it and asked for this on the 20th.)
+ *
+ * Each driver's half of the screen is on the side where their keys are on
+ * the keyboard: W, A, S and D are on the left, so player 2 has the left
+ * half; the arrows are on the right, so player 1 has the right half.
  *   label  what they are called on the page
  *   short  the tag above their kart in the other driver's half
  *   keys   their driving keys, as they are printed on the keyboard: gas,
  *          left, brake, right
  *   words  the same keys in a sentence
+ *   side   which half of the screen is theirs: "left" or "right"
  */
 export const DRIVERS = Object.freeze([
-  Object.freeze({ label: "Player 1", short: "P1", keys: Object.freeze(["W", "A", "S", "D"]), words: "W, A, S and D" }),
-  Object.freeze({ label: "Player 2", short: "P2", keys: Object.freeze(["↑", "←", "↓", "→"]), words: "the arrow keys" }),
+  Object.freeze({ label: "Player 1", short: "P1", keys: Object.freeze(["↑", "←", "↓", "→"]), words: "the arrow keys", side: "right" }),
+  Object.freeze({ label: "Player 2", short: "P2", keys: Object.freeze(["W", "A", "S", "D"]), words: "W, A, S and D", side: "left" }),
 ]);
 
 /** What both halves say before the first key press. */
@@ -45,10 +54,13 @@ export function plateName(player, characterId) {
  *   steps      their race time in steps, when finished
  *   warning    "Wrong way" or a missed checkpoint, or null
  *   over       is the race over for everyone? The podium is up then, and the halves say nothing
+ *   watching   true once this driver has finished and their camera is on
+ *              someone who still drives: a banner at the top of the half
+ *              says it all then, and the middle stays free
  * "big" is true for the countdown, shown as one big number.
  */
-export function halfMessage({ started, label = "", finished = false, place = 1, steps = 0, warning = null, over = false }) {
-  if (over) {
+export function halfMessage({ started, label = "", finished = false, place = 1, steps = 0, warning = null, over = false, watching = false }) {
+  if (over || (finished && watching)) {
     return { text: "", big: false };
   }
   if (finished) {
@@ -61,6 +73,21 @@ export function halfMessage({ started, label = "", finished = false, place = 1, 
     return { text: warning, big: false };
   }
   return { text: label, big: label !== "" };
+}
+
+/**
+ * Whose kart a driver's camera is on after their own finish, as words for
+ * the banner: "Dean (Player 2)" for the other driver, "Dean (computer)" for
+ * a computer kart.
+ *   id           the number of that kart: 0 and 1 are the two drivers
+ *   characterId  the character of that kart, or null
+ */
+export function watchedName(id, characterId) {
+  if (id < PLAYERS) {
+    const name = characterById(characterId)?.name;
+    return name === undefined ? DRIVERS[id].label : `${name} (${DRIVERS[id].label})`;
+  }
+  return `${characterById(characterId)?.name ?? "A kart"} (computer)`;
 }
 
 /**

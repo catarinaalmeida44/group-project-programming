@@ -99,22 +99,22 @@ export function connectTrackChoice(page, tracks, storage, characters) {
   }
 
   /**
-   * Two players: the character step comes twice. First the driver on the
-   * left of the keyboard (W, A, S, D), then the driver on the right (the
-   * arrows), who cannot take the character the first one chose. Only the
+   * Two players: the character step comes twice. First player 1, who
+   * drives with the arrow keys as in every other race, then player 2 (W, A,
+   * S, D), who cannot take the character the first one chose. Only the
    * second step leads to the race.
    */
   function chooseTwoDrivers(card) {
     characters.open(card.address, "Next: player 2", card.name, {
       title: "Player 1: choose your character",
-      lead: "Player 1 drives with W A S D",
+      lead: "Player 1 drives with the arrow keys",
       onGo: () => {
         const first = readCharacter(storage)?.id ?? CAST[0].id;
         characters.open(card.address, TRACK_CHOICE_KINDS.double.go, card.name, {
           second: true,
           taken: first,
           title: "Player 2: choose your character",
-          lead: "Player 2 drives with the arrow keys",
+          lead: "Player 2 drives with W A S D",
         });
       },
     });
