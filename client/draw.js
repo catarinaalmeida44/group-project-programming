@@ -53,6 +53,13 @@ const CAMERA_SWING = 6.5;
 const CAMERA_SINK = 8;
 /** The colours of the upright faces of the sunken part: the stone walls round it, the fronts of the stairs, the small steps of the path. */
 const LEVEL_WALLS = { stone: "#d6cfc1", stairs: "#b4705a", path: "#b3843f" };
+/**
+ * A thing in the sunken part is hidden by the ground of the track that lies
+ * nearer than it. "Nearer" is measured from this many units in front of the
+ * thing's own spot, so that a thing standing right at the foot of a wall is
+ * not cut through its middle.
+ */
+const EDGE_SLACK = 12;
 /** A step of the sunken part lower than this (in units) has no front painted: it belongs to a ramp, not to stairs. */
 const MIN_STEP = 1.2;
 /** How the light falls on a face, by the way it looks: towards the south and west it is lit, towards the north and east in shade. */
@@ -307,7 +314,7 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
     for (const group of sceneries) {
       const camera = lifted(group.depth);
       for (const thing of sceneryInView(group.scenery, spot, camera, SCREEN)) {
-        things.push({ ...thing, painter: group.painter, camera });
+        things.push({ ...thing, painter: group.painter, camera, depth: group.depth });
       }
     }
 
@@ -340,6 +347,7 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
         ahead: seen.ahead,
         column: Math.floor(x / size),
         row: Math.floor(y / size),
+        depth: depthAt(levels, x, y),
         ...more,
       });
     };
@@ -376,6 +384,7 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
           ahead: seen.ahead,
           column: Math.floor(other.x / size),
           row: Math.floor(other.y / size),
+          depth: depthAt(levels, other.x, other.y),
         });
       }
     }
@@ -447,7 +456,30 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
         b.ahead - a.ahead,
     );
 
+    // Something down in the sunken part (levels.js) is hidden by the ground
+    // of the track in front of it, as a thing in a pit is by the pit's edge.
+    // The ground is painted before everything that stands, so instead each
+    // such thing is cut to where the sunken part can really be seen: above
+    // the line where the ground at its distance lies, or through the holes.
+    const holes = levels === null ? null : holeOutline(spot, upper, near);
     for (const thing of things) {
+      const sunk = holes !== null && thing.depth > 0;
+      if (sunk) {
+        context.save();
+        const seenThrough = new Path2D(holes);
+        const edge = chasePoint(Math.max(thing.ahead - EDGE_SLACK, near + 1), 0, upper);
+        if (edge !== null) {
+          seenThrough.rect(0, 0, SCREEN.width, edge.y);
+        }
+        context.clip(seenThrough);
+      }
+      paintThing(thing);
+      if (sunk) {
+        context.restore();
+      }
+    }
+
+    function paintThing(thing) {
       if (thing.kind === "side" || thing.kind === "roof") {
         paintBuildingPiece(thing);
       } else if (thing.kind === "strip") {
@@ -559,6 +591,44 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
       context.lineWidth = 1;
       context.stroke();
     }
+  }
+
+  /**
+   * Where the holes in the ground of the track are on the screen: every
+   * strip of the sunken part (levels.js), as it lies at the level of that
+   * ground, cut where it reaches behind the bottom of the screen. Gives a
+   * Path2D: through it the sunken part can be seen.
+   */
+  function holeOutline(spot, upper, near) {
+    const outline = new Path2D();
+    const nearest = near + 1;
+    for (const strip of levels.strips) {
+      const corners = [
+        [strip.left, strip.top],
+        [strip.right, strip.top],
+        [strip.right, strip.bottom],
+        [strip.left, strip.bottom],
+      ].map(([x, y]) => seenFromKart(spot, x, y));
+      // Keep the part of the rectangle in front of the bottom of the screen (one cut, as the walls are cut).
+      const kept = [];
+      corners.forEach((corner, i) => {
+        const next = corners[(i + 1) % corners.length];
+        if (corner.ahead >= nearest) {
+          kept.push(corner);
+        }
+        if (corner.ahead >= nearest !== next.ahead >= nearest) {
+          const share = (nearest - corner.ahead) / (next.ahead - corner.ahead);
+          kept.push({ ahead: nearest, sideways: corner.sideways + share * (next.sideways - corner.sideways) });
+        }
+      });
+      const points = kept.map((corner) => chasePoint(corner.ahead, corner.sideways, upper));
+      if (points.length < 3 || points.some((point) => point === null)) {
+        continue;
+      }
+      points.forEach((point, i) => (i === 0 ? outline.moveTo(point.x, point.y) : outline.lineTo(point.x, point.y)));
+      outline.closePath();
+    }
+    return outline;
   }
 
   /** One group of the podium (a step with its driver, or a student), and the words on it. */
