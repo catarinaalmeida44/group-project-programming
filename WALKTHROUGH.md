@@ -23,7 +23,8 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 | How good the computer karts are (Easy, Normal, Hard) | `LEVELS` and `atLevel` in `shared/computer-driver.js`, the words in `client/difficulty.js` | Yes, since 19 November: in a single race, in a two-player race and, chosen by the host, online. Proposed: the team had dropped levels on 17 November |
 | Computer karts in an online room | `server/computer-players.js`, switched on and off in `server/online.js`, their names in `client/computers-switch.js` | Yes, since 18 November |
 | The game settings: computer karts or not, their level, and online at most how many people | The rule in `shared/game-settings.js`, the words in `client/game-settings-view.js`, the card on the page in `client/game-settings-card.js`, the room's settings in `server/online.js` | Yes, since 19 November, on the three race pages. Online only the host chooses |
-| Two players on one computer, on a split screen | `client/double.html` and `client/double.js`, the words in `client/double-view.js`, the race itself in `shared/two-player-race.js`, the second set of keys in `client/keyboard.js` | Yes, since 19 November: W A S D and the arrows, with or without four computer karts. Nothing is saved |
+| Two players on one computer, on a split screen | `client/double.html` and `client/double.js`, the words in `client/double-view.js`, the race itself in `shared/two-player-race.js`, the second set of keys in `client/keyboard.js` | Yes, since 19 November: player 1 with the arrows, player 2 with W A S D, with or without four computer karts. Nothing is saved |
+| What a driver sees after their own finish, while others still drive | `kartToWatchAfterFinish` and `finishedBanner` in `client/race-view.js`, used by `client/main.js`, `client/online.js` and `client/double.js` | Yes, since 20 November: the camera moves to a kart that still drives, and a banner says whose |
 | Keeping settings and best times in the browser | `client/storage.js`, `client/settings.js`, `client/records.js` | Yes: the starting camera view, and your best race and best lap per track |
 | The keyboard controls | `client/keyboard.js` | Yes |
 | The camera: which part of the track is shown | `client/camera.js` | Yes, three views. The race view is low behind the kart, with a horizon |
@@ -338,16 +339,29 @@ What the server refuses here, each with a test (`tests/online-settings.test.js`,
 
 "Two players" in the menu (since 19 November 2026) is a race for two on one keyboard, on a split screen: `client/double.html` and `client/double.js`.
 
-- **Each driver has their own keys.** Player 1 drives with W, A, S and D, and player 2 with the arrow keys (`client/keyboard.js`). The letters only drive on this page: on the other pages they do nothing. They are kept in small type, so Caps Lock makes no difference.
-- **Each driver has half of the screen.** There are two pictures, each painted by its own painter (`createPainter` in `client/draw.js`) from behind one driver's kart. Each half shows the middle of its picture, so the two fit side by side without becoming tiny, and the small map moves in from the edge. Under each half is the driver's name plate in the colour of their kart: lap, time and place. In the other driver's half your kart carries a tag, "P1" or "P2".
+- **Each driver has their own keys.** Player 1, who chooses a character first, drives with the arrow keys, as in every other race. Player 2 drives with W, A, S and D (`client/keyboard.js`). The letters only drive on this page: on the other pages they do nothing. They are kept in small type, so Caps Lock makes no difference. (On 19 November it was the other way round. Catarina tried it and asked for this on the 20th.)
+- **Each driver has half of the screen, on the side where their keys are.** W, A, S and D are on the left of the keyboard, so player 2 has the left half; the arrows are on the right, so player 1 has the right half (`DRIVERS` in `client/double-view.js`). On the grid they stand the same way round. There are two pictures, each painted by its own painter (`createPainter` in `client/draw.js`) from behind one driver's kart. Each half shows the middle of its picture, so the two fit side by side without becoming tiny, and the small map moves in from the edge. Under each half is the driver's name plate in the colour of their kart: lap, time and place. In the other driver's half your kart carries a tag, "P1" or "P2".
 - **The race is one race** (`shared/two-player-race.js`). It is the single race's rule with two players instead of one: the same countdown, the same driving rules, bumps, bananas and walkers, in the same order. The two players are racers 0 and 1 and start side by side, behind the four computer karts, so neither has a head start. The computer karts are the four characters the two did not choose.
 - **It has an end of its own.** A single race ends when the player finishes. Here one of the two may never finish, so the race is over when every kart has finished, or when both players have finished and waited 30 seconds for the computer karts, or two minutes after the first kart finished, or ten minutes after GO. Those are the two limits of an online race (`shared/race-time.js`).
 - **Each driver chooses a character in the menu.** The character step comes twice (`chooseTwoDrivers` in `client/track-panel.js`), and the second driver cannot take the first one's character. The page itself also makes sure they differ (`twoCharacters` in `client/cast-choice.js`), so it works when its address is opened directly.
 - **Nothing is saved.** It runs in the browser, like a single race, but nothing is sent to the server: no stats, no leaderboard, no best time. Two people share one account's browser, so there is nobody to save it for.
-- **When it is over, the left picture grows over both halves and shows the podium**, with "Race again" and "Back to menu".
+- **A driver who finishes first watches the other one.** Their half moves to the other driver's kart while that driver is still racing, and after that to the computer kart in last place, with a banner that says so (see "What does a driver see after their own finish?" below).
+- **When it is over, player 1's picture grows over both halves and shows the podium**, with "Race again" and "Back to menu". It is the same podium as in a single race and online: the three pages call the same painter (`client/podium-view.js`).
 - **One limit we cannot fix in code:** many laptop keyboards cannot tell more than a few keys apart when they are held at the same moment, so now and then one driver's key may be ignored while the other holds theirs. The page says so under the pictures.
 
 What the race rule refuses, each with a test (`tests/two-player-race.test.js`): the same character for both drivers, a character that is not in the cast, a level that is not one of the three, a wrong number of computer karts, one driver's keys moving the other's kart or a computer kart, and keys from a driver who has finished.
+
+## What does a driver see after their own finish?
+
+Until 19 November 2026 a driver who had finished sat looking at their own kart standing still until everyone was home. Since 20 November, at Catarina's request, their camera moves to a kart that is still driving, the way it does for someone who arrives during a race. The rule is one function, `kartToWatchAfterFinish` in `client/race-view.js`, and the three race pages use it:
+
+- **A person rather than a computer kart.** Only when no person is still driving is it a computer kart: in a single race that is always so.
+- **The one in last place** at that moment: the one everybody is waiting for.
+- **The camera stays with that kart until it finishes**, then moves on by the same rule. When nobody else is driving any more, the podium comes.
+- **A banner across the top of the picture says it** (`finishedBanner`): "You finished 2nd, in 1:02.34!" in big letters, and under it "Waiting until every player finishes. You are watching Ana." The middle of the picture stays free. Online the banner also carries the time left, and the left and right arrows move the camera to another person, as for a watcher.
+- **It is for showing only.** The driver's time and place were fixed when they crossed the line: on the server online, by the rules in the browser otherwise. Their keys still do nothing, and the laps and the finish that the sound cheers stay their own.
+
+What the rule refuses, each with a test (`tests/after-finish.test.js`): the driver's own kart, a kart that has finished, a computer kart while a person is still driving, and jumping away from a kart that is still driving.
 
 ## How does the camera work?
 
@@ -611,9 +625,11 @@ The only personal data is the user name a player chose. There is no email, no re
 
 ## What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 2,564 tests today, plus the ones that only run against the real database. They take about 40 seconds, most of it online races that run in real time.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 2,592 tests today, plus the ones that only run against the real database. They take about 40 seconds, most of it online races that run in real time.
 
 **Covered today**
+
+- After your own finish, since 20 November 2026: `tests/after-finish.test.js` (27 tests): which kart the camera moves to (a person before a computer kart, the one in last place, never your own, never one that has finished, and it stays put while that kart drives), the words of the banner, and, for two players, that player 1 has the arrows and the right half and player 2 has W A S D and the left half.
 
 - Game settings and two players, since 19 November 2026 (night), 202 tests in seven new files:
   - `tests/game-settings.test.js` (31): what a setting may be, what a host may change, and how the server reads the settings message.

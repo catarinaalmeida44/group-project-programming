@@ -4,6 +4,58 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 20 November 2026, morning: player 1 on the arrows, a camera for after your finish, and the podium compared
+
+**What she said**
+
+- "I have tried the two player mode and it worked great." That was on her own laptop, with the version of the night before.
+- "Player 1 should be the one that plays with the arrows on the keyboard, while the second player (the second person choosing the character) should be the one playing on WASD. Currently it is switched."
+- "When you finish a race and not every player has finished the race, your camera should change to them like it would if you were watching a race you are currently not in. Preferably not a computer kart but sometimes it is the only available option. And preferably the kart that is in last place at the moment you finish. Then on screen it should appear: you finished the race, waiting until every player finishes, you are currently watching ..."
+- "Make sure that the animation for when the race ends, the podium animation, is the same in every type of game, single, double and online as well. This is only important for the Nova lap."
+- "Other than that everything checks out! And after this is addressed then we can pull request."
+
+**What was built** (on the same branch, `game-settings-and-two-players`)
+
+| What | Where |
+|---|---|
+| Two players: player 1 (who chooses first) drives with the arrows, player 2 with W A S D | `DRIVERS` in `client/double-view.js`, `client/double.js`, the menu's two steps in `client/track-panel.js` |
+| Each driver's half is on the side where their keys are: player 2 on the left, player 1 on the right. On the grid they stand the same way round | `client/double.html`, `createTwoPlayerRace` in `shared/two-player-race.js` |
+| After your own finish, while others still drive, the camera moves to one of them: a person if there is one, the one in last place, and it stays there until that kart finishes | `kartToWatchAfterFinish` in `client/race-view.js`, used by `client/main.js`, `client/online.js` and `client/double.js` |
+| A banner across the top of the picture: "You finished 2nd, in 1:02.34!", "Waiting until every player finishes. You are watching Ana." | `finishedBanner` in `client/race-view.js`, the banner in `client/race.html`, one in each half in `client/double.html` |
+| Two players: "The race ends in 42 s" moved into the line above the pictures | `client/double.html`, `.hud-notice` in `client/style.css` |
+
+**The podium in the three kinds of race**
+
+Nothing had to be changed. The three pages hand the same painter (`client/podium-view.js`) the same things, so the podium cannot differ between them. To be sure, I let robots drive a whole race on the Nova lap in each mode and compared the three pictures: the same place in front of the school's name, the same camera, the first three on the steps, the same crowd, and the driver who came last crying on the left. What does differ, on purpose and as before: online the results board with everyone's times comes up over the podium after ten seconds, while a single race and a two-player race show "Race again" and "Back to menu" in the corner.
+
+**Why it was done this way**
+
+- **One rule for the three pages.** "Which kart do I watch now" is one small function with tests, so online, single race and two players cannot drift apart.
+- **The words are a banner at the top, not in the middle.** Until now "You finished 2nd ..." stood in the middle of the picture. There it would cover the kart the camera has just moved to.
+- **The laps and the finish that the sound cheers stay your own.** You hear the engine of the kart you watch, but its laps are not cheered as if they were yours.
+
+**Decisions made by the agent: please confirm**
+
+- **Player 1 is on the right half, player 2 on the left.** She asked for the keys to be swapped, and did not say anything about the sides. The arrows are on the right of the keyboard, so the person using them sits on the right and looks at the right half. It is one word per driver to turn round (`side` in `DRIVERS`, and the order of the two halves in `client/double.html`).
+- The camera stays with the kart it moved to until that kart finishes, then moves on by the same rule.
+- Online, the left and right arrows move the camera to another person after your finish, as they do for someone who arrived late. The banner there also carries "The race ends in 1:39", because at the bottom of the picture it lay under the results list.
+- A guest without a user name is called "Guest 2" in the banner, the same as in the results list beside it.
+- In a single race the banner says "Waiting until every player finishes", her words, although the others there are computer karts.
+
+**Checked, and not checked**
+
+- `npm test`: 2,592 passed, 5 skipped (97 files). 28 are new: `tests/after-finish.test.js` (27) and one more in `tests/double-view.test.js`. Five of my own tests from the night before were turned round with the players (three about the grid, two about who has which keys). No older test was changed.
+- In the browser pane, on the pretend server, with the sound off, on the Nova lap, with robots at the keys:
+  - Two players: player 2 with W A S D on the left, player 1 with the arrows on the right. Each got the banner when they finished ("You finished 1st, in 1:14.83! ... You are watching Ró Versos (computer)"), then the podium.
+  - Single race: the same banner after the finish, the camera on the computer kart in last place, then the podium 30 seconds later.
+  - Online, with a second player standing still in the room: after the finish the camera went to that player, not to a computer kart. When the second player left, the podium came.
+- On the test oval, after two fixes: online "You are watching Guest 2. The race ends in 1:39." with the results list in the bottom right corner, and two players with one driver stopped, where the other's half followed "Professor Ricardo Pereira (Player 2)" and the notice stood in the line above the pictures.
+- **Not checked:** two real people (the swap was checked with robots at the keys, not by her); the keyboards of the teammates' laptops (checks 97 to 103 in `docs/two-laptop-checklist.md`); real laptops online (checks 88 to 96 and 104 to 107); the live site; a phone.
+
+**How to check it yourself**
+
+Run `npm run start:pretend`, open http://localhost:3000, choose Single race, the Nova lap, and in the game settings put the computer karts on Easy. Finish the race: the banner comes up and the picture follows a computer kart until the podium. For two players: the first to choose a character now has the arrows and the right half.
+
 ### 19 November 2026, late night: Game settings before every race, and a two-player mode on a split screen
 
 **What she said**
