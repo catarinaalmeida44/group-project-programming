@@ -7,6 +7,8 @@
 // click, and the engine only runs while its button says so.
 
 import { createSoundMachine } from "./sound.js";
+import { createMusicPlayer } from "./music.js";
+import { createUiSoundMachine } from "./ui-sound.js";
 import { makePart } from "./page-parts.js";
 
 // What each button says, the sound it plays, and how strong.
@@ -95,3 +97,55 @@ document.addEventListener("visibilitychange", () => {
     context.suspend();
   }
 });
+
+// ---- The music and the menu sounds ----
+// The same players as the pages use (music.js, ui-sound.js), on the same
+// sound system as the buttons above.
+let musicPlayer = null;
+let menuSounds = null;
+const fast = document.getElementById("music-fast");
+
+/** The music player and the menu sounds, made at the first click. */
+function wakeMusic() {
+  if (wake() === null) {
+    return null;
+  }
+  musicPlayer ??= createMusicPlayer(context);
+  menuSounds ??= createUiSoundMachine(context);
+  return musicPlayer;
+}
+
+const MUSIC_BUTTONS = [
+  ["The menu", "menu"],
+  ["A race", "race"],
+  ["The finish, then the podium", "finish"],
+  ["The podium", "podium"],
+  ["Stop the music", null],
+];
+for (const [words, song] of MUSIC_BUTTONS) {
+  const button = makePart(document, "button", "button", words);
+  button.type = "button";
+  button.addEventListener("click", () => {
+    const player = wakeMusic();
+    if (player === null) {
+      return;
+    }
+    player.setSpeed(fast.checked);
+    player.play(null); // from the start, even if this song was already playing
+    player.play(song);
+    status.textContent = song === null ? "The music stopped." : `Playing: ${words}.`;
+  });
+  document.getElementById("music-buttons").append(button);
+}
+fast.addEventListener("change", () => musicPlayer?.setSpeed(fast.checked));
+
+for (const [words, name] of [["A button click", "click"], ["The hype (characters chosen)", "hype"]]) {
+  const button = makePart(document, "button", "button", words);
+  button.type = "button";
+  button.addEventListener("click", () => {
+    if (wakeMusic() !== null) {
+      menuSounds[name]();
+    }
+  });
+  document.getElementById("menu-sound-buttons").append(button);
+}

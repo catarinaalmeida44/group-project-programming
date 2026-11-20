@@ -56,6 +56,10 @@ import { accountApi } from "./account-api.js";
 import { singleSavedText } from "./stats-view.js";
 import { kartToWatchAfterFinish, finishedBanner } from "./race-view.js";
 import { createRaceSound } from "./sound.js";
+import { createPageMusic } from "./music.js";
+import { raceMoment } from "./music-cues.js";
+import { createUiSound } from "./ui-sound.js";
+import { readSwitches, toggleMaster } from "./audio-switches.js";
 import { tileKindAt } from "../shared/track.js";
 import { podiumLineup, podiumLoser, podiumKartsOf, singleRaceIsOver, podiumCaption, cheersDue, finishPlace, finishedWords } from "./podium.js";
 import { createPodiumView } from "./podium-view.js";
@@ -133,7 +137,12 @@ const bannerText = document.getElementById("watch-text");
 // player's first key press, and M switches it off and on.
 const sound = createRaceSound(window, storage);
 const soundText = document.getElementById("sound");
-soundText.textContent = sound.isOn() ? "on" : "off";
+soundText.textContent = readSwitches(storage).master ? "on" : "off";
+// The music (music.js) and the clicks of the buttons (ui-sound.js). M is the
+// master switch: it silences all three (audio-switches.js).
+const music = createPageMusic(window, storage);
+const uiSound = createUiSound(window, storage);
+uiSound.listen(document);
 
 // ---- The game settings: a card over the picture (game-settings-card.js) ----
 // Computer karts on or off, and how good they are. The card comes up when
@@ -180,7 +189,11 @@ const keyboard = createKeyboard(window, {
   onRestart: startAgain,
   onView: changeView,
   onSound: () => {
-    soundText.textContent = sound.toggle() ? "on" : "off";
+    const on = toggleMaster(storage);
+    sound.setMaster(on);
+    music.setSwitches();
+    uiSound.setSwitches();
+    soundText.textContent = on ? "on" : "off";
   },
 });
 
@@ -309,6 +322,20 @@ function frame(now) {
   // moves to one of them, the one in last place, and stays with it until it
   // finishes (kartToWatchAfterFinish in race-view.js). In a single race the
   // others are all computer karts. A banner says so (see below).
+  // The music: none before the start and in the countdown, the race song
+  // from GO (faster on the final lap), the fanfare at your finish, then the
+  // podium song (music-cues.js).
+  music.follow(
+    raceMoment({
+      started,
+      racing: countdown.racing,
+      finished: youFinishedAt !== null,
+      podium: podiumSince !== null,
+      lapsDone: racer.progress.lapsDone,
+      laps: track.laps,
+    }),
+  );
+
   const kartsNow = podiumKartsOf(race, myCharacter);
   const computerIds = kartsNow.slice(1).map((kart) => kart.id);
   const watched =

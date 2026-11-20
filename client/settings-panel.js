@@ -6,7 +6,7 @@
 // in a browser.
 
 import { readSettings, saveStartView } from "./settings.js";
-import { readSoundOn, saveSoundOn } from "./sound-cues.js";
+import { readSwitches, saveSwitch } from "./audio-switches.js";
 import { VIEWS } from "./camera.js";
 import { VIEW_NAMES } from "./hud.js";
 import { makePart } from "./page-parts.js";
@@ -14,8 +14,10 @@ import { makePart } from "./page-parts.js";
 /**
  * Connects the Settings button and panel.
  *   storage  this browser's storage, or null (see storage.js)
+ *   onSoundChanged  called after a sound switch changed, so the page's own
+ *            music and clicks follow it at once
  */
-export function connectSettings(page, storage) {
+export function connectSettings(page, storage, onSoundChanged = () => {}) {
   const panel = page.getElementById("settings");
   const viewChoices = page.getElementById("view-choices");
   const status = page.getElementById("settings-status");
@@ -47,22 +49,40 @@ export function connectSettings(page, storage) {
       : "This browser does not let the game keep settings, so races will start in the first view.";
   }
 
-  // Sound on or off. The choice is kept in this browser (sound-cues.js), and
-  // the race pages read it when they open.
-  const soundBox = page.getElementById("sound-on");
+  // The sound switches: all sound (the master), music, race sounds and
+  // menu sounds (audio-switches.js). Kept in this browser; the pages read
+  // them when they open, and M during a race switches the master.
   const soundStatus = page.getElementById("sound-status");
+  const boxes = {
+    master: page.getElementById("sound-master"),
+    music: page.getElementById("sound-music"),
+    effects: page.getElementById("sound-on"), // "Race sounds": the box that was there before
+    interface: page.getElementById("sound-menu"),
+  };
+  /** Ticks the boxes from what is saved, and greys out the kinds while all sound is off. */
+  function showSwitches() {
+    const switches = readSwitches(storage);
+    for (const [name, box] of Object.entries(boxes)) {
+      box.checked = switches[name];
+      box.disabled = name !== "master" && !switches.master;
+    }
+  }
   page.getElementById("open-settings").addEventListener("click", () => {
-    soundBox.checked = readSoundOn(storage);
+    showSwitches();
     soundStatus.textContent = "";
   });
-  soundBox.addEventListener("change", () => {
-    const saved = saveSoundOn(storage, soundBox.checked);
-    soundStatus.textContent = !saved
-      ? "This browser did not let the game save your choice."
-      : soundBox.checked
-        ? "Saved. Races have sound."
-        : "Saved. Races are silent.";
-  });
+  for (const [name, box] of Object.entries(boxes)) {
+    box.addEventListener("change", () => {
+      const saved = saveSwitch(storage, name, box.checked);
+      showSwitches();
+      onSoundChanged();
+      soundStatus.textContent = !saved
+        ? "This browser did not let the game save your choice."
+        : name === "master" && !box.checked
+          ? "Saved. The game is silent."
+          : "Saved.";
+    });
+  }
 
   function chooseView(view) {
     const saved = saveStartView(storage, view);

@@ -21,6 +21,7 @@
 // or clicked. So nothing is heard before the first key press.
 
 import { watchForSounds, readSoundOn, saveSoundOn, NO_ENGINE } from "./sound-cues.js";
+import { readSwitches } from "./audio-switches.js";
 
 // ---------------------------------------------------------------------------
 // NUMBERS TO TUNE BY EAR. Loudness goes from 0 (silent) to 1. Notes are in
@@ -372,16 +373,22 @@ export const SOUND_NAMES = ["count", "go", "lap", "lastLap", "finish", "spin", "
  *                          says which it is now
  *   isOn()                 is the sound switched on?
  *   cheer()                the crowd cheers once (the podium, podium.js)
+ *   setMaster(on)          the master switch (audio-switches.js): with it
+ *                          off nothing is heard, whatever "on" says
  */
 export function createRaceSound(browserWindow, storage) {
   const watch = watchForSounds();
-  let on = readSoundOn(storage);
+  let on = readSoundOn(storage); // "Race sounds" in Settings
+  let master = readSwitches(storage).master; // "All sound" in Settings, and M
   let context = null;
   let machine = null;
 
+  /** Are the race sounds heard? Their own switch and the master must both be on. */
+  const heard = () => on && master;
+
   /** Starts the sound system. Only possible once the player has pressed a key or clicked. */
   function wake() {
-    if (!on) {
+    if (!heard()) {
       return;
     }
     if (machine === null) {
@@ -413,7 +420,7 @@ export function createRaceSound(browserWindow, storage) {
     }
     if (browserWindow.document.hidden) {
       context.suspend().catch(() => {});
-    } else if (on) {
+    } else if (heard()) {
       context.resume().catch(() => {});
     }
   });
@@ -424,7 +431,7 @@ export function createRaceSound(browserWindow, storage) {
     toggle() {
       on = !on;
       saveSoundOn(storage, on);
-      if (on) {
+      if (heard()) {
         wake();
         machine?.setVolume(1);
       } else {
@@ -433,8 +440,18 @@ export function createRaceSound(browserWindow, storage) {
       return on;
     },
 
+    setMaster(masterOn) {
+      master = masterOn === true;
+      if (heard()) {
+        wake();
+        machine?.setVolume(1);
+      } else {
+        machine?.setVolume(0);
+      }
+    },
+
     cheer() {
-      if (on && machine !== null) {
+      if (heard() && machine !== null) {
         machine.play({ name: "cheer" });
       }
     },
@@ -443,7 +460,7 @@ export function createRaceSound(browserWindow, storage) {
       // The facts are always looked at, sound or no sound, so that switching
       // the sound on in the middle of a race does not play old news.
       const { cues, engine } = watch(facts, frameSeconds);
-      if (!on || machine === null) {
+      if (!heard() || machine === null) {
         return;
       }
       machine.setEngine(engine);
