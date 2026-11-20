@@ -63,6 +63,9 @@ Everything the browser shows and does: the web page, the drawing of the track an
 | `camera.js` | The arithmetic of the camera: which part of the track is on the screen, and where things land on it. Two cameras for the view behind the kart: high above the grid, and low behind the kart with the horizon on the screen. No painting |
 | `draw.js` | Puts the picture together on the canvas, in one of the three views: the sky, the ground, everything that stands on it from the furthest to the nearest, smoke and dust, the player's own kart, and the small map in the corner |
 | `ground.js` | Paints the whole track once from straight above (road, grass, kerbs, roofs, shadows, the start line, the grid, arrows) and lays that picture flat for the race view, row by row, up to the horizon. On a track whose ground is drawn as shapes it also keeps a second, sharper picture of the ground close to the kart |
+| `time-of-day.js` | The time of day (morning, afternoon, sunset, night): which one this browser remembers, and how it changes a track's look (sky, sun, moon and stars, haze, horizon, the light over the picture, shadows). Tested |
+| `fly-over.js` | The camera gliding round a track along its arrows: before a single race starts, and in the track tour. Tested |
+| `how-to-play.js` | The "How to play" card of the race pages: its words for each page (tested), and the card itself |
 | `sky.js` | The sky of the race view and what is on the horizon in each direction: hills, the sea, a town, a fort, a lighthouse |
 | `props.js` | The things that stand beside the road or lie on it, each as a flat picture that faces the camera: trees, pines, palms, olive trees, arrow boards, name signs, cones, banana peels, and for the Nova lap the Christmas tree, the statue and the flags |
 | `track-looks.js` | How each track looks: its colours, the route for the arrows, its sky, and where its trees and signs stand. Changes nothing about how a kart moves |

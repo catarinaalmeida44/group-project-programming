@@ -30,6 +30,7 @@ import { WALL_ART } from "./wall-art.js";
 import { jumpHeight } from "../shared/ramps.js";
 import { createGround } from "./ground.js";
 import { paintSky } from "./sky.js";
+import { lookAtTime, DEFAULT_TIME } from "./time-of-day.js";
 import { paintProp, paintPropFromAbove, PROP_HEIGHT } from "./props.js";
 import { paintKart, paintScene, viewerBehind, viewerAbove } from "./kart-paint.js";
 import { lookOf, shade } from "./kart-shape.js";
@@ -103,11 +104,17 @@ const MINIMAP_MARGIN = 10;
  * A kart may carry "spinTurn": extra turning, in radians, for the picture
  * only. A kart that slipped on a banana is drawn spinning with it.
  */
-export function createPainter(canvas, track, { storeys = null } = {}) {
+export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAULT_TIME } = {}) {
   canvas.width = SCREEN.width;
   canvas.height = SCREEN.height;
   const context = canvas.getContext("2d");
-  const look = lookOfTrack(track);
+  // The track's look at the time of day the player chose (time-of-day.js).
+  // In the afternoon it is the look as it always was.
+  const look = lookAtTime(lookOfTrack(track), timeOfDay);
+  // At other times a light lies over the ground, the buildings and the karts,
+  // but not over the sky: the sky is painted apart and put behind the
+  // picture at the end (drawRaceView).
+  let skyCanvas = null;
   const grid = gridOf(track);
   // A track can have scenery of its own: buildings with real fronts, roofs
   // to drive under, railings (scenery.js). A wall that has none still gets
@@ -167,14 +174,26 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
 
     context.setTransform(1, 0, 0, 1, 0, 0);
     context.globalAlpha = 1;
-    context.fillStyle = look.beyond;
-    context.fillRect(0, 0, SCREEN.width, SCREEN.height);
+    if (view === "chase" && look.light) {
+      context.clearRect(0, 0, SCREEN.width, SCREEN.height); // the sky goes behind at the end
+    } else {
+      context.fillStyle = look.beyond;
+      context.fillRect(0, 0, SCREEN.width, SCREEN.height);
+    }
 
     if (view === "chase") {
       drawRaceView(kart, others, bananas, scene, frameSeconds, seconds, light);
     } else {
       swing = null; // when the race view comes back, it starts straight behind the kart
       drawFromAbove(view, kart, camera, others, bananas, light, seconds, scene);
+      if (look.light) {
+        // The light of the time of day over the whole view from above.
+        context.save();
+        context.globalAlpha = look.light.alpha;
+        context.fillStyle = look.light.colour;
+        context.fillRect(0, 0, SCREEN.width, SCREEN.height);
+        context.restore();
+      }
     }
 
     // The views that show only part of the track get a small map in the corner.
@@ -217,7 +236,20 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
     swing = { x: kart.x, y: kart.y, angle };
     const spot = swing;
 
-    paintSky(context, spot.angle, settings, SCREEN, look, seconds);
+    if (look.light) {
+      // Another time of day: the sky is painted apart, and put behind the
+      // picture at the end, so the light falls on everything but the sky.
+      if (skyCanvas === null) {
+        skyCanvas = canvas.ownerDocument.createElement("canvas");
+        skyCanvas.width = SCREEN.width;
+        skyCanvas.height = SCREEN.height;
+      }
+      const skyContext = skyCanvas.getContext("2d");
+      skyContext.clearRect(0, 0, SCREEN.width, SCREEN.height);
+      paintSky(skyContext, spot.angle, settings, SCREEN, look, seconds);
+    } else {
+      paintSky(context, spot.angle, settings, SCREEN, look, seconds);
+    }
     ground.paintTilted(context, spot, settings, SCREEN);
 
     // Everything that stands on the ground, with the square it stands on.
@@ -394,6 +426,24 @@ export function createPainter(canvas, track, { storeys = null } = {}) {
     if (scene.hideOwnKart !== true) {
       const own = viewerBehind({ ahead: 0, sideways: 0 }, kart.angle + (kart.spinTurn ?? 0) - spot.angle, kart.angle, settings, SCREEN);
       paintKartWithJump(kart, own, chasePoint(0, 0, settings), steerShown);
+    }
+
+    if (look.light) {
+      // The light of the time of day, only where something is painted
+      // ("source-atop"), then the sky and the far colour behind it all
+      // ("destination-over"): the buildings still hide the sun and the stars.
+      context.save();
+      context.setTransform(1, 0, 0, 1, 0, 0);
+      context.globalCompositeOperation = "source-atop";
+      context.globalAlpha = look.light.alpha;
+      context.fillStyle = look.light.colour;
+      context.fillRect(0, 0, SCREEN.width, SCREEN.height);
+      context.globalAlpha = 1;
+      context.globalCompositeOperation = "destination-over";
+      context.drawImage(skyCanvas, 0, 0);
+      context.fillStyle = look.beyond;
+      context.fillRect(0, 0, SCREEN.width, SCREEN.height);
+      context.restore();
     }
   }
 

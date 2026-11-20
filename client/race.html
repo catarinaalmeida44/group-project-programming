@@ -34,6 +34,7 @@
           <span id="settings-box">
             <span id="settings-summary"></span>
             <button type="button" id="open-game-settings" class="settings-button">Game settings</button>
+            <button type="button" id="open-how-to-play" class="settings-button">How to play</button>
           </span>
           <!-- The game on the whole screen, or back (full-screen.js). Hidden in a browser that cannot. -->
           <button id="full-screen" class="full-screen-button" type="button" hidden>Full screen</button>
@@ -63,6 +64,9 @@
           <!-- The "Game settings" card. It comes up when the page opens, and
                again with the button above the track. game-settings-card.js builds it. -->
           <div id="settings-card" class="settings-veil" hidden></div>
+          <!-- The "How to play" card: the keys and the few rules a new player needs
+               (how-to-play.js). It comes up by itself the first time, and with the button above. -->
+          <div id="how-to-play-card" class="settings-veil how-to-play-veil" hidden></div>
         </div>
       </div>
 

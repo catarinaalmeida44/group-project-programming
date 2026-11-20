@@ -3180,6 +3180,37 @@ a.button {
   background: rgba(11, 24, 32, 0.8);
 }
 
+/* The "How to play" card lies over the "Game settings" card (how-to-play.js). */
+.how-to-play-veil {
+  z-index: 4;
+}
+
+.how-to-play-keys {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.3rem 0.8rem;
+  margin: 0.8rem 0;
+}
+
+.how-to-play-keys dt {
+  font-weight: 800;
+  color: var(--yellow);
+  white-space: nowrap;
+}
+
+.how-to-play-keys dd {
+  margin: 0;
+}
+
+.how-to-play-tips {
+  margin: 0 0 1rem;
+  padding-left: 1.2rem;
+}
+
+.how-to-play-tips li + li {
+  margin-top: 0.3rem;
+}
+
 .settings-veil[hidden] {
   display: none;
 }
