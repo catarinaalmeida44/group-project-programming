@@ -81,6 +81,8 @@ import {
 import { characterById } from "../shared/cast.js";
 import { followTarget, easeTowards, nextView } from "./camera.js";
 import { storageOf } from "./storage.js";
+import { setUpHowToPlay } from "./how-to-play.js";
+import { readTimeOfDay } from "./time-of-day.js";
 import { readSettings } from "./settings.js";
 import { closeWhenLeft } from "./page-life.js";
 import { linkCard, afterClose, retryWaitMs, GIVE_UP_AFTER_MS, LOST_AFTER_QUIET_MS } from "./link.js";
@@ -96,7 +98,8 @@ const COLOUR_NAMES = ["red", "blue", "yellow", "green", "purple", "orange", "tea
 document.getElementById("track-name").textContent = track.name; // as text, never as HTML
 // The buildings of the track stand up in the race view, if the track says
 // how many storeys each one has, exactly as on the single race page.
-const draw = createPainter(document.getElementById("track"), track, { storeys: storeysOf(track) });
+// The time of day chosen in Settings: only the picture changes (time-of-day.js).
+const draw = createPainter(document.getElementById("track"), track, { storeys: storeysOf(track), timeOfDay: readTimeOfDay(storageOf(window)) });
 const showHud = createHud(document);
 const statusText = document.getElementById("status");
 const accountText = document.getElementById("account-line");
@@ -163,6 +166,8 @@ let othersShown = ""; //               the "With you: ..." line as it is on the 
 
 // ---- What the player chose in the menu ----
 const storage = storageOf(window);
+// The "How to play" card: by itself the first time, and with its button (how-to-play.js).
+const howToPlay = setUpHowToPlay(document, { mode: "online", storage });
 const myChoice = readChoice(storage); // the colours of their kart, as three numbers, or null (kart-choice.js)
 const myCharacter = readCharacter(storage)?.id ?? null; // the character they chose, or null (cast-choice.js)
 let welcomedAt = null; // when the server welcomed us
@@ -627,8 +632,8 @@ function refreshMeter() {
 
 /** Asks the server to start a race: the Enter key, and the button on the results board. Only while no race is on. */
 function askToStart() {
-  if (settingsCard.isOpen()) {
-    return; // Enter belongs to the card while it is up: it confirms the settings
+  if (settingsCard.isOpen() || howToPlay.isOpen()) {
+    return; // Enter belongs to the card while it is up: it confirms the settings, or closes "How to play"
   }
   if (race.phase === "open" || race.phase === "finished") {
     send({ type: "start" });

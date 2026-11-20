@@ -28,6 +28,7 @@
           <span>Camera <strong id="view"></strong></span>
           <span id="lap-times" class="lap-times"></span>
           <!-- The game on the whole screen, or back (full-screen.js). Hidden in a browser that cannot. -->
+          <button type="button" id="open-how-to-play" class="settings-button">How to play</button>
           <button id="full-screen" class="full-screen-button" type="button" hidden>Full screen</button>
         </div>
 
@@ -74,6 +75,9 @@
           <!-- The "Game settings" card: computer karts, their level, and at most
                how many people. Only the host gets it. game-settings-card.js builds it. -->
           <div id="settings-card" class="settings-veil" hidden></div>
+          <!-- The "How to play" card: the keys and the few rules a new player needs
+               (how-to-play.js). It comes up by itself the first time, and with the button above. -->
+          <div id="how-to-play-card" class="settings-veil how-to-play-veil" hidden></div>
           <!-- A card over the picture while the connection to the server is being
                made, is lost, or cannot be made: "The server is waking up",
                "Connection lost", "The room is full". The page tries again by
