@@ -1,4 +1,4 @@
-# Project brief: Nova SBE kart racer (working title)
+# Project brief: Nova SBE kart racer
 
 > How to use this file: this is the starting context for our coding agent (Claude Code or Codex). Read all of it before doing anything. It lives in the repository and is updated as decisions change.
 
@@ -72,7 +72,8 @@ What this means for you: prefer finished, reliable features over many half-finis
 - [DECIDED] Set at the Nova SBE Carcavelos campus and its surroundings.
 - [DECIDED] Online multiplayer: players race from different computers.
 - [DECIDED] Original characters, names, items and art. No Nintendo characters, names, music or images anywhere in the game or the repository. We borrow mechanics and stat balance only.
-- [OPEN] Game title, art style, item names and theme.
+- **[DECIDED 20 Nov 2026 by Catarina]** The title of the game is final: "Nova SBE kart racer". It is no longer a working title.
+- [OPEN] Art style, item names and theme.
 - [DECIDED 17 Nov 2026 by Pedro] The first six characters, each a real person who said yes: Dean (black and white), Professor Ricardo Pereira (orange and blue), Ró Versos (pink and yellow), Cici Boss (blue and pink), FranFon (all black), PCP (red and yellow). Their faces are shown only in the menu, when choosing, never in the race. Choosing a character replaces choosing the kart colours one by one (Catarina chose this, option A, through Pedro).
 - **[DECIDED 18 Nov 2026 by Catarina; teammates confirm by approving the pull request]** When choosing a character, only the pilots are shown, each with the person's own head: the photos beside them are gone. Her own character, Cici Boss, dances the "gangnam" instead of the wave, and her head is cut from her whole photo, with her long hair. *Decisions made by the agent, please confirm: the new design of the panel (a poster of the chosen one, the six in a line-up under it); each character's number is their place in the cast; the names of the dances ("Signature move"); the photo files stay in `client/faces/`, unused, because tests of 17 November check them, until the team says whether to delete them; "wave" stays in the list of dances, danced by nobody.*
 - **[DECIDED 18 Nov 2026 by Catarina]** A big screen in the far corner of the Hovione Atrium on the Nova lap shows a notice from the IT help desk: "We regret to inform you that, unfortunately, Moodle is down." A joke for everybody at Nova. *Decisions made by the agent, please confirm: its size (about 13 by 4 metres, under the gallery), its colours, the words "IT HELP DESK", "SERVICE NOTICE" and "Your IT Help Desk team" round her sentence, and that the six squares behind it are wall.*

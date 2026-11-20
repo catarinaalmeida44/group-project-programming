@@ -4,6 +4,48 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 20 November 2026, afternoon: the README for the submission
+
+**What she said**
+
+- The submission on Moodle asks for the link of the repository and a README "describing the project, its objectives, installation instructions, and how to run the application".
+- "We need to change the description of it and highlight features that will be good for the evaluation. The objectives, what should we write?"
+- "Installation instructions, we should start by saying the online version is in x link, and give instructions on how to run it locally and be explicit that online mode does not work in locally run."
+- "I don't think we need to add what each member did in specific, they can check the pull requests." "Adapt the credits section. Don't say anything regarding photos." About coding agents: not in the README, "if anything we add a sentence pointing to" `AGENTS.md`. "Yes drop working title, the title of the game is final."
+
+**The link to submit**
+
+`https://github.com/catarinaalmeida44/group-project-programming`, the repository itself. It is public: it opened without signing in. The staff look at `main`, so only what is merged by 23 November, 23:59, counts.
+
+**What changed** (branch `readme-for-submission`, from `main` after pull requests 37 and 38)
+
+| What | Where |
+|---|---|
+| The README is rewritten in the order the submission asks for: what the game is, the link to play, what it has, objectives, installation, how to run, tests, team, where things are, credits | `README.md` |
+| The title is final, no longer "working title" | `README.md`, `PROJECT_BRIEF.md` |
+
+**Why it was done this way**
+
+- **The features are grouped by what is graded**: the ways to play and what a race has (scope), what happens before and after a race (how clear it is to use), accounts and results, and "Built to be trusted" (the server runs the race, inputs are checked, passwords, libraries, tests).
+- **The objectives are six plain sentences** taken from what the brief says we set out to do: a complete web application built by beginners, a real online game, our own school and characters, fair and safe, properly checked, and understood by every member.
+- **Everything the course rule asks of the README is still there**: the deployed link, the names and student numbers, and the commands to run the app and its tests.
+
+**Decisions made by the agent: please confirm**
+
+- **Online on your own computer.** She asked to say that online mode does not work when the game is run locally. That is not quite so, and the README says what is true, in a small table: the Online page does work locally between two browser windows on the same computer; what does not work locally is racing against people on other computers, and accounts, the leaderboard and "My stats", which need our database.
+- **Credits.** The line about character balance taken from Mario Kart tables is gone: it was never built, every kart drives the same. In its place one honest sentence: the idea of the driving comes from kart racing games such as Mario Kart, and nothing of theirs is used. Also new: the three libraries and the three services we use. Nothing is said about photos, as she asked.
+- **Who built what** is one sentence pointing to the pull requests and the diaries, as she asked. **Coding agents** are only the existing line of the table that points to `AGENTS.md`.
+- The README says "more than 2,600 automatic tests" and gives the date of the `npm audit` check, so it does not go out of date with every new test.
+- The two earlier tracks are still named in the features. That sentence has to go when the tracks go, at the final polish.
+
+**Checked, and not checked**
+
+- `npm test` on `main` after pull requests 37 and 38: 2,652 passed, 5 skipped (99 files).
+- `npm audit`: 0 vulnerabilities, for everything and for the running game alone.
+- **The README's own steps, in a fresh copy** downloaded from GitHub into a temporary folder: `git clone`, `npm install` (0 vulnerabilities), `npm test` (2,652 passed), `npm start`: the server answered, the menu had the three ways to play, and accounts answered "unavailable" without the database, as the README says.
+- Only two commits ever went straight to `main`, both on the first day; everything else came through pull requests. That is what the README says.
+- **Not checked:** the steps on a Mac or on a computer without Node.js installed; how the README looks on GitHub's own page (it is on a branch until it is merged).
+
 ### 20 November 2026, morning: player 1 on the arrows, a camera for after your finish, and the podium compared
 
 **What she said**
