@@ -1324,16 +1324,12 @@ a.button {
   text-shadow: none;
 }
 
-/* "Nova SBE", on a slanted red label. */
-.title-place {
-  display: inline-block;
-  padding: 0.28rem 0.8rem;
-  background: var(--red-deep);
-  color: #fff;
-  font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: 0.24em;
-  transform: skewX(-12deg);
+/* The NOVA SBE logo (the school's own picture, in white so it shows on
+   the dark menu). Its height follows from the width, so it never stretches. */
+.title-logo {
+  display: block;
+  width: clamp(8.5rem, 9vw + 4rem, 14rem);
+  height: auto;
 }
 
 /* "KART RACER", as big as the window allows, with a hard red shadow. */

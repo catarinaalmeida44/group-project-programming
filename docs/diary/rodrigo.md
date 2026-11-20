@@ -2,6 +2,29 @@
 
 Rodrigo Simeão Versos (GitHub rodrigosversos). Entries from 11 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 20 November 2026: the NOVA SBE logo on the menu
+
+**What was done**
+- The menu title showed "Nova SBE" as words on a slanted red label. It now shows the school's real logo, above "Kart racer", which stays as it was.
+- The logo file is the one I gave (black on a see-through background). The agent only cut it to the logo and made it white, so it shows on the dark menu: `client/images/nova-sbe-logo.png`. The picture says "Nova SBE" to screen readers and if it cannot load.
+- Files: `client/index.html` and `client/style.css` (Catarina's), the new `client/images/` folder, the new `tests/nova-logo.test.js`, and the notes.
+
+Branch `rodrigo-nova-logo`, from `main` after the recorded music (#42).
+
+**Decisions**
+- Mine: the real logo instead of the red label.
+- Decision made by the agent, please confirm: the logo in white; its size (between 136 and 224 dots wide, growing with the window); only the menu gets it, the race pages keep "Nova SBE kart racer" as words in the top bar.
+- **Question for the team:** NOVA SBE has rules for using its logo, and our project is public on GitHub. We should check with the professor that a class project may show it.
+
+**What was checked, and what was not**
+- `npm test`: 2,742 passed, 5 skipped (7 new tests).
+- Broken on purpose four ways, and a test failed every time: the alt text removed, the logo loaded from another website, the old red label put back, the file missing.
+- In a Chrome browser without a screen, at 1280 and at 420 dots wide: the logo loads, is sharp and sits above "Kart racer". The only error was the accounts service (no database on the agent's computer), as before.
+- **Not checked:** on my laptop and on the live server.
+
+**How to check it yourself**
+Run `npm start`, open http://localhost:3000, and look at the top left of the menu. Make the window narrow: the logo gets smaller but keeps its shape.
+
 ### 20 November 2026: time of day, fly-over, How to play
 
 **What was done**
