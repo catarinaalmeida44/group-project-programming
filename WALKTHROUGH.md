@@ -30,14 +30,15 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 | The camera: which part of the track is shown | `client/camera.js` | Yes, three views. The race view is low behind the kart, with a horizon |
 | Putting the picture together | `client/draw.js` | Yes: sky, ground, buildings, trees, karts, in the right order |
 | The ground, the sky, and the things beside the road | `client/ground.js`, `client/sky.js`, `client/props.js` | Yes: our own drawings, no image files |
-| How each track looks | `client/track-looks.js` | Yes: a circuit in the woods for the oval, the campus for the campus loop |
+| How each track looks | `client/track-looks.js` | Yes: a circuit in the woods for the oval, the campus for the Nova lap (`client/nova-lap-look.js`). The campus loop's look is still there, for the tests |
 | The kart and its driver as a 3D shape, and painting it | `client/kart-shape.js`, `client/kart-paint.js` | Yes: one shape, in any colours, from any side |
 | The colours a kart can have | `client/kart-choice.js`, and the rule in `shared/kart-looks.js` | Yes: kart, helmet and suit |
 | The characters: names, colours and faces | `shared/cast.js`, the faces in `client/faces/`, `client/cast-choice.js`, the "Choose your character" step in `client/kart-panel.js`, the pilot standing beside the kart in `client/pilot-shape.js`, and online `server/cast-keeper.js` | Yes, since 17 November: six characters, chosen after the track, before each race, each shown standing with their own head cut out of their photo, doing their own dance. They only change the colours: everyone drives the same way |
 | Arrows, arrow boards and the "wrong way" warning | `client/route.js` | Yes |
 | Sound: when each one is due, and how the engine should sound | `client/sound-cues.js` | Yes, since 15 November |
 | Sound: making the sounds themselves, with no sound files | `client/sound.js` | Yes, since 15 November. Judged by ear on `sound-test.html` |
-| Music: the menu, the race, the finish and the podium | the notes in `client/music-score.js`, when each plays in `client/music-cues.js`, played by `client/music.js` | Yes, since 20 November. Judged by ear on `sound-test.html` |
+| Music: the menu, the three parts of a race and the podium | five recorded tunes in `client/music/`, which one plays when in `client/music-files.js`, played by `client/music.js` | Yes, since 20 November (afternoon). To be judged by ear |
+| The songs made of notes, which were the music for a few hours | the notes in `client/music-score.js`, when each played in `client/music-cues.js` | Only on the sound check page `sound-test.html` now |
 | The sound switches in Settings (all sound, music, race sounds, menu sounds) | `client/audio-switches.js`, the panel in `client/settings-panel.js` | Yes, since 20 November. M during a race is the "all sound" switch |
 | Button clicks and the hype sound | `client/ui-sound.js`, which clicks count in `client/ui-sound-cues.js` | Yes, since 20 November |
 | The yellow light on the next checkpoint, and the warning for a missed one | `client/checkpoints.js` | Yes, since 13 November |
@@ -59,9 +60,9 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 | All the rules put together for one racer | `shared/race.js` | Yes |
 | The 3, 2, 1, GO! before a race | `shared/countdown.js` | Yes, in the practice race and in online races |
 | The test track | `shared/tracks/test-oval.js` | Yes. It is a simple loop, not a campus track |
-| The first campus track | `shared/tracks/campus-loop.js` | Yes: the campus loop, round the outside of the campus. A first version, to be improved |
-| How tall the campus buildings are | `shared/tracks/campus-loop-storeys.js` | Yes: storeys per square, for the picture only |
-| Buildings standing up behind the kart | `client/buildings.js`, painted by `client/draw.js` | Yes, on the campus loop |
+| The first campus track, the campus loop | `shared/tracks/campus-loop.js` | No longer in the game since 20 November: the Nova lap replaced it. Its map is kept because many tests drive on it |
+| How tall the campus loop's buildings are | `shared/tracks/campus-loop-storeys.js` | Kept with it, for the tests |
+| Buildings standing up as plain blocks | `client/buildings.js`, painted by `client/draw.js` | Only the campus loop used them. The test oval gets low barriers from the same file, and the Nova lap has its own scenery |
 | The Nova lap, the track made from the video filmed on campus | `shared/tracks/nova-lap.js` | Yes, since 17 November. A first version of the base: the ground and the buildings, without benches, lamps and trees along the way |
 | Buildings with real fronts, roofs to drive under, railings | `client/scenery.js`, `client/scenery-paint.js`, `client/wall-art.js`, `client/nova-lap-buildings.js` | Yes, on the Nova lap |
 | Ground drawn as shapes, with its own pavings | `client/ground-art.js`, `client/nova-lap-ground.js` | Yes, on the Nova lap |
@@ -70,8 +71,8 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 | The time of day: morning, afternoon, sunset or night | `client/time-of-day.js`, chosen in Settings (`client/settings-panel.js`), the light laid in `client/draw.js`, the moon and stars in `client/sky.js` | Yes, since 20 November. Only the picture changes |
 | The fly-over before a single race | `client/fly-over.js`, used by `client/main.js` and the track tour | Yes, since 20 November |
 | The "How to play" card | `client/how-to-play.js`, on the three race pages | Yes, since 20 November |
-| The list of tracks | `shared/tracks/index.js` | Yes: the test oval, the campus loop and the Nova lap |
-| Reading the chosen track from a page's address | `client/track-choice.js` | Yes: `race.html?track=campus-loop`, `online.html?track=campus-loop` and `double.html?track=campus-loop` |
+| The list of tracks | `shared/tracks/index.js` | Yes: the Nova lap, which is the track of the game, and the test oval, a plain loop for a quick race and for the tests |
+| Reading the chosen track from a page's address | `client/track-choice.js` | Yes: `race.html?track=nova-lap`, `online.html?track=nova-lap` and `double.html?track=nova-lap` |
 | The drivers and their scores | `shared/characters.js` | One placeholder driver |
 | The kinds of ground | `shared/surfaces.js` | Road and grass |
 | The automatic tests | `tests/` | Yes, for the driving rules, the server and a number helper |
@@ -188,7 +189,7 @@ The server also protects itself, and each of these has a test:
 - A room takes six players, one for each character (eight until 19 November 2026, when a seventh and eighth drove a plain kart). A seventh is told the room is full.
 - A live connection is only accepted at one address (`/play`, with the short name of a track that exists), and only from a page of our own site, so another website cannot use a visitor's browser to connect to our game.
 
-**One room for each track.** `online.html?track=campus-loop` connects to the room of the campus loop, and without a choice it is the room of the test oval. The page takes the short name from its own address, but only if it is a name in our list of tracks (`client/track-choice.js`), and the server checks it again.
+**One room for each track.** `online.html?track=nova-lap` connects to the room of the Nova lap, and without a choice it is the room of the test oval. The page takes the short name from its own address, but only if it is a name in our list of tracks (`client/track-choice.js`), and the server checks it again.
 
 **Why karts move smoothly:** updates arrive 30 times a second, at slightly uneven moments, but the screen shows 60 pictures a second. `client/net.js` shows the race a little in the past and draws each kart at the right point between the two updates on either side of that moment. If updates stop arriving, the karts hold still instead of guessing.
 
@@ -436,7 +437,25 @@ By our own code, with no sound files (since 15 November 2026). It is the same de
 
 **Why nothing is heard before the first key press.** A browser only lets a page make sound after the player has pressed a key or clicked. So the sound wakes at the first key press, which is also how a race starts.
 
-**Music** (since 20 November, Rodrigo). Made the same way: no music files, and no tune from any other game (the brief says no Nintendo music). Four songs were composed for the game and written down as notes in `client/music-score.js`, eight steps (eighth notes) to a bar: the **menu** (relaxed, C major, 108 beats a minute, also in an online room before a race), the **race** (driving, A minor, 152, from GO; on the final lap it plays 15% faster), the **finish** fanfare (when you cross the line, played once) and the **podium** (happy, F major, 120), which follows the fanfare by itself. During the countdown there is no music, so the beeps are heard. Each song has four voices: the tune (a softened square wave), the bass (a triangle wave), the chords played one note at a time, and drums (a falling low note for the kick, hiss for the snare and hi-hat). `client/music.js` books the notes a moment ahead of time, as music programs do, so the beat stays steady even when a picture is late. Which song plays when is decided in `client/music-cues.js`, which has tests.
+**Music** (since 20 November, afternoon, chosen by Catarina). The game plays five recorded tunes, kept in `client/music/`:
+
+| When | Tune | Made by, licence |
+|---|---|---|
+| The menu, and an online room before a race | `menu.mp3`, round and round | MintoDog, OpenGameArt, CC0 |
+| The countdown | Silence, so the beeps are heard | |
+| The first lap | `lap-first.mp3`, round and round | MintoDog, CC0 |
+| The laps between | `lap-middle.mp3`, round and round | MintoDog, CC0 |
+| The last lap, and on until the podium | `lap-last.mp3`, round and round | MintoDog, CC0 |
+| The podium | `podium.flac`, trumpets and clapping, once | "YoFrankie! (c) 2008, Blender Foundation, www.blender.org", CC-BY 3.0 |
+
+- **Which tune plays when is a rule with tests** (`tuneFor` in `client/music-files.js`). It uses the same words for the moments of a race as before (`raceMoment` in `client/music-cues.js`), plus the lap. With two players the lap is that of the driver further ahead; someone who is watching online hears the tune of the lap of the kart they watch.
+- **How they are played** (`createFilePlayer` in `client/music.js`). A page fetches its tunes from our server as soon as it opens, and the browser turns them into sound at the first key press or click, because it allows no sound before. A tune that is not ready yet starts when it is, and the one before plays on until then, so there is no hole between two laps. A tune that goes round jumps back just inside the short silence an MP3 file has at each end (`loopPoints`), so the join is not heard.
+- **The server sends music files now** (`server/app.js`): MP3 and FLAC were added to the short list of kinds of file it is willing to send. They may be kept by the browser for a day, because they are large (10.5 MB together) and never change; every other file is still asked for afresh each time.
+- **The licences.** CC0 means the maker gave the music to everybody. CC-BY 3.0 means it may be used if the maker is named, so the line in quotes is in the credits of `README.md` and must stay there. The files are as downloaded; only their names are ours. `client/music/README.md` says which file is which.
+- **The podium no longer cheers by itself.** Until 20 November the crowd's cheering was made by `client/sound.js` and played again and again while the podium was up. The trumpets and clapping of the recorded tune replaced it, as Catarina asked.
+- **What became of the songs made of notes.** They are described in the next paragraph. The game no longer plays them; the sound check page (`sound-test.html`) still does, and their code and tests are untouched, so the team can go back.
+
+**The songs made of notes** (20 November, morning, Rodrigo; in the game until the recorded tunes replaced them that afternoon). Made the same way as the sound effects: no music files, and no tune from any other game (the brief says no Nintendo music). Four songs were composed for the game and written down as notes in `client/music-score.js`, eight steps (eighth notes) to a bar: the **menu** (relaxed, C major, 108 beats a minute, also in an online room before a race), the **race** (driving, A minor, 152, from GO; on the final lap it plays 15% faster), the **finish** fanfare (when you cross the line, played once) and the **podium** (happy, F major, 120), which follows the fanfare by itself. During the countdown there is no music, so the beeps are heard. Each song has four voices: the tune (a softened square wave), the bass (a triangle wave), the chords played one note at a time, and drums (a falling low note for the kick, hiss for the snare and hi-hat). `client/music.js` books the notes a moment ahead of time, as music programs do, so the beat stays steady even when a picture is late. Which song plays when is decided in `client/music-cues.js`, which has tests.
 
 **Menu sounds** (since 20 November). Every button, link drawn as a button, round choice and tick box clicks softly (`client/ui-sound.js`; which clicks count is in `client/ui-sound-cues.js`). When the character choice is done and Race is pressed, a hype sound plays (a rising whoosh, a run up the notes and a big chord with a cymbal), and the menu waits for it, about a second, before going to the race. Online the hype plays once when two or more people are in the room before a race and every one of them has a character.
 
@@ -455,6 +474,8 @@ A track is drawn with letters in a file, one letter for each square of ground: `
 For walls, a kart is treated as a circle. After every move, the game checks whether the circle overlaps a wall square. If it does, the kart is pushed back out and bounces: the part of its speed going into the wall is turned round and halved, and the part going along the wall is kept. A head-on hit sends the kart back at half speed. A scrape costs very little. Everything outside the drawing counts as wall, so a kart can never leave the track.
 
 ## Where do the campus tracks come from?
+
+**The campus loop is no longer in the game.** The team took it out on 20 November 2026: the Nova lap, built from our own video, replaced it. Nobody can choose it, it has no online room and no leaderboard, and its old address opens the test oval. Its map (`shared/tracks/campus-loop.js`), its storeys and its look are still in the repository for one reason: about ten test files drive on it, because it has real corners that the test oval does not have. What follows is how it was made, kept for the history, and because the Nova lap learnt from it.
 
 From the real campus. The tracks are taken from the Nova SBE campus and its building. The first one, the campus loop (`shared/tracks/campus-loop.js`), goes round the outside of the campus.
 
@@ -653,13 +674,20 @@ The only personal data is the user name a player chose. There is no email, no re
 
 ## What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 2,697 tests today, plus the ones that only run against the real database. They take about 40 seconds, most of it online races that run in real time.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 2,772 tests today, plus the ones that only run against the real database. They take about 40 seconds, most of it online races that run in real time.
 
 **Covered today**
 
 - The ground at two levels, in `tests/levels.test.js`. Twenty-nine tests. The camera: no lift changes nothing, lower ground is drawn lower with the same size and place across, the horizon stays, the eye moves exactly that much, ground above the eye is not drawn, and the Nova lap's drop is smaller than the eye's height. The levels: refused when they make no sense (nine ways), the stairs going down step by step, the plaza, the Sagres Beach Way and the tunnel at the bottom, the path rising smoothly to the west and the Beach Way dropping away below it, flat everywhere else, strips painted deepest first, walls in front of every step and round the plaza that face into it, and only drawn when they face the camera. The scenery: the tunnel at the bottom, everything else on the ground and nothing lost, the railing rising with the path, and a rule for scenery that does not exist refused. And the driving is unchanged. We broke it on purpose in three ways (the lift ignored, strips not deepest first, walls facing the wrong way), and each made tests fail. The painting itself was looked at in a browser, from twelve spots.
-
 - Karts jolting on the stairs of the Nova lap, in `tests/stairs-bump.test.js`. Eight tests: where the stairs are (and that other tracks have none), a moving kart jolts once per step and never higher than a step, and it does not jolt standing still, off the stairs or in the air; it jolts less when slow; the same spot always looks the same; and the stairs drive exactly as any road. We broke it on purpose in two ways (jolting everywhere, jolting standing still), and each made a test fail.
+- Recorded music, since 20 November 2026 (afternoon): `tests/music-files.test.js` (44 tests): the five tunes and that their files are really there; which tune a lap gets, in races of one, two, three and five laps; which tune plays at every moment of a race, and silence when the music is off; where a tune that goes round jumps back, so the short silence of an MP3 file is not heard; the player's rules on a pretend sound system that makes no sound (a tune starts when it has arrived, the one before plays on until then, the podium's plays once, a file that cannot be fetched breaks nothing); how the server sends the files (the right label, kept by the browser for a day, nothing else from that folder); and that the makers are named, as the podium tune's licence asks.
+- **The campus loop left the game on 20 November 2026, and with it older tests in six files changed**, because what they pinned is no longer true. Each has a comment that says what it said before:
+  - `tests/track-choice.test.js`, three: "has the test oval and the campus loop", "opens the campus loop with ?track=campus-loop", and the address with two tracks. They now say the same of the Nova lap. Two new tests check that the campus loop is gone from the list and that its old address opens the test oval.
+  - `tests/api.test.js`: the leaderboard tests saved and asked for results on "campus-loop". The name is now "nova-lap", in every place. Nothing else in them changed.
+  - `tests/start-pretend.test.js` and `tests/online-page.test.js`, one line each: the same change of name.
+  - `tests/track-list.test.js`: "keeps each track's times on its own card" took the campus loop from the game's list as its second track. It now takes the Nova lap.
+  - `tests/leaderboard.test.js`: its own list of two tracks took the campus loop from the game's list. It now takes it from the campus loop's own file, where it only stands for "a second track". No test in it changed.
+  - Every other test that drives on the campus loop (checkpoints, the grid, bananas, ramps, buildings, the computer karts, the levels) reads its map straight from `shared/tracks/campus-loop.js` and was not touched. That is why the map is still in the repository.
 
 - After your own finish, since 20 November 2026: `tests/after-finish.test.js` (27 tests): which kart the camera moves to (a person before a computer kart, the one in last place, never your own, never one that has finished, and it stays put while that kart drives), the words of the banner, and, for two players, that player 1 has the arrows and the right half and player 2 has W A S D and the left half.
 
@@ -852,7 +880,7 @@ The server does not wait for the database when it starts. `/database-check` answ
 - There is no profile page and no saved progress yet (trophies, unlocked characters).
 - Online, your own kart reacts a moment late: your key press travels to the server and the result travels back, and then the picture is a fifteenth to a tenth of a second behind. Over the internet that adds up to about a sixth of a second (measured and worked out on 19 November 2026; the connection meter, key L, shows it for each player). The fix is "prediction": the browser moves your own kart at once with the shared rules and corrects it when the server answers. The rules were written to make that possible, but it is not built.
 - Online has one fixed room for each track and no rooms with codes. Anyone with the link can join, signed in or not. The results board at the end of a race (since 13 November) names guests only by their player number, "Guest 3".
-- On the campus loop a kart can still drive past checkpoint 5 without touching it, at the hairpin round the CTT Student Hall. The game now shows where the checkpoint is and says when it was missed, but the player still has to drive back for it. The better fix is in the track itself (a hedge that closes the short cut, or no hairpin). That is for Rodrigo, who owns the track, once the videos from campus are here.
+- (About the campus loop, which left the game on 20 November 2026; kept for the history.) On the campus loop a kart can still drive past checkpoint 5 without touching it, at the hairpin round the CTT Student Hall. The game now shows where the checkpoint is and says when it was missed, but the player still has to drive back for it. The better fix is in the track itself (a hedge that closes the short cut, or no hairpin). That is for Rodrigo, who owns the track, once the videos from campus are here.
 - The warning for a missed checkpoint only comes when the kart reaches a later checkpoint, which on the campus loop is the finish line. A warning at the moment of driving past would be kinder.
 - The place shown during a race ("2nd of 4") is worked out by the page from the checkpoints passed and the distance to the next one. On a long stretch between two checkpoints it can be a little off. The order at the finish is the server's.
 - Bumping and bananas were tried by robots in the tests and by pretend players in the agent's browser, never by people. How hard a bump is, how long a spin lasts and how many bananas there are are first guesses, to be tuned by playing (the numbers are named at the top of `shared/bumps.js` and `shared/hazards.js`).
@@ -867,7 +895,7 @@ The server does not wait for the database when it starts. `/database-check` answ
 - Someone watching always follows the kart with the most laps. They cannot choose which kart to follow. The line under the track still tells them their own kart's colour, although that kart is not on the track.
 - The online race start was checked by hand in two tabs of one browser on one laptop, not yet with real players on different laptops. `docs/two-laptop-checklist.md` has the checks for that.
 - There is no boost for pressing the gas at the right moment of the countdown.
-- Sound: you hear your own kart only. Other karts have no engine sound, a banana that someone else hits is silent, and there is no music. Every sound is made by code, so there are no voices: the cheering at the finish is a crowd of hiss, whistles and claps. A real "yay" would have to be recorded by the team.
+- Sound: you hear your own kart only. Other karts have no engine sound, a banana that someone else hits is silent. Every sound effect is made by code, so there are no voices. The music is recorded, by others (see "How is the sound made?"); the clapping on the podium is part of that recording.
 - Sound: a bump is noticed from a sudden change of speed. A gentle touch that hardly changes the speed is silent, and online a soft bump can be missed because the picture glides between the server's updates.
 - Sound: the sound check page `sound-test.html` is reachable by anyone who types its address. It only plays sounds.
 - A very short key tap, shorter than one picture on the screen, is not sent to the server.
@@ -876,7 +904,7 @@ The server does not wait for the database when it starts. `/database-check` answ
 - Computer karts follow the racing line drawn for the arrows. If the line is changed, they change with it. A track without a line has no computer karts.
 - Full screen enlarges the picture; it does not draw more of it. On a big screen it is a little soft. Under the picture in full screen there are no help lines, and on the online page the status lines and the computer karts tick box are not shown: leave full screen to see them.
 - Hard is only a little harder than Normal (see above). The levels have not been tried by a beginner. Online has no levels.
-- The music was checked by counting the notes the pages ask for in a browser without loudspeakers, not by a person listening: how it sounds still has to be judged by ear (`sound-test.html`). It is retro and synthesised, not recorded instruments.
+- The recorded music was checked in a browser with the wire to the loudspeakers cut: the files are read, and the right tune starts at the right moment of a whole race. Nobody has listened to it in the game yet. How loud it is next to the engine (`FILE_MUSIC_VOLUME` in `client/music.js`), and whether the join of a tune that goes round can be heard, have to be judged by ear. The five files are 10.5 MB together, which a slow connection will notice the first time.
 - The numbers in the driving rules are first guesses. No person has driven the kart for long yet, so they will change with playtesting.
 - The driving rules have no drifting, sand or sea yet.
 - Buildings are blocks of 6-metre squares, so their corners are steps, like the walls, and every building is painted the same way: white with bands of glass. The real buildings differ from each other.
@@ -892,7 +920,7 @@ The server does not wait for the database when it starts. `/database-check` answ
 - If the browser tab is in the background, the practice race runs in slow motion instead of jumping ahead.
 - A kart is a circle for walls, although it is drawn as a rectangle. Its corners can look as if they poke slightly into a wall.
 - Walls are whole squares. A track cannot have a diagonal or curved wall yet, only steps.
-- The campus loop: a lap takes about 20 seconds for the robot, not the 30 to 40 we want. At this scale a kart drives at about 200 km/h. Slower karts would fix it; that is for the team to decide. It is not in the menu yet (only in the address), the Leaderboard panel does not list it, and the online page still uses the test oval.
+- (About the campus loop, which left the game on 20 November 2026; kept for the history.) The campus loop: a lap takes about 20 seconds for the robot, not the 30 to 40 we want. At this scale a kart drives at about 200 km/h. Slower karts would fix it; that is for the team to decide. It is not in the menu yet (only in the address), the Leaderboard panel does not list it, and the online page still uses the test oval.
 - A track bigger than about 64 by 64 squares would make the hidden picture of the track too big. Painting only the part of the track that is on screen would remove that limit, and would probably also make the view behind the kart faster on a big track.
 - The server reads a file from disk for every request. That is fine for a few players. With many visitors we would keep the files in memory.
 - The rest is to be filled in as we build.

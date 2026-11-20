@@ -32,7 +32,7 @@ const storage = storageOf(window); // this browser's storage, for the settings a
 // the hype sound when the characters are chosen (ui-sound.js). The sound
 // switches are in Settings (audio-switches.js), so Settings is told about
 // both, to apply a change at once.
-const music = createPageMusic(window, storage);
+const music = createPageMusic(window, storage, "menu"); // "menu": it will need the menu tune
 music.follow({ place: "menu", finalLap: false });
 const uiSound = createUiSound(window, storage);
 uiSound.listen(document);

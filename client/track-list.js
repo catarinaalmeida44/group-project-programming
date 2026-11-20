@@ -49,9 +49,9 @@ export const TWO_PLAYER_KIND = Object.freeze({
 export const TRACK_CHOICE_KINDS = Object.freeze({ ...RACE_KINDS, double: TWO_PLAYER_KIND });
 
 /**
- * The address that opens a track: "/race.html?track=campus-loop" for a
- * single race, "/online.html?track=campus-loop" for an online one,
- * "/double.html?track=campus-loop" for two players.
+ * The address that opens a track: "/race.html?track=nova-lap" for a
+ * single race, "/online.html?track=nova-lap" for an online one,
+ * "/double.html?track=nova-lap" for two players.
  * Refuses a kind of race that does not exist.
  */
 export function trackAddress(kind, shortName) {

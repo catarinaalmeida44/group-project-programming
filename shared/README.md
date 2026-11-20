@@ -20,10 +20,10 @@ These files are used by both the browser and the server, so both follow exactly 
 | `track.js` | Reads a track drawn with letters, says what the ground is at any spot, and makes karts bounce off walls. Also checks a track that says its start is behind the finish line |
 | `laps.js` | Counts checkpoints, laps and race time. Knows the two ways a kart can start: behind the finish line (the real tracks) or just after it (the small tracks in the tests) |
 | `tracks/test-oval.js` | The test track: a simple loop drawn with letters |
-| `tracks/campus-loop.js` | The first campus track: a loop round the outside of the Nova SBE campus, made from OpenStreetMap, 6 metres a square. How it was made is explained at the top of the file |
-| `tracks/campus-loop-storeys.js` | How many storeys tall each square of the campus loop is. Only the picture uses it, to stand the buildings up; the rules do not |
+| `tracks/campus-loop.js` | The first campus track: a loop round the outside of the Nova SBE campus, made from OpenStreetMap, 6 metres a square. How it was made is explained at the top of the file. **Not in the game since 20 November 2026** (the Nova lap replaced it): it is no longer in the list of tracks. The file is kept because many tests of the rules drive on it |
+| `tracks/campus-loop-storeys.js` | How many storeys tall each square of the campus loop is. Only the picture used it, to stand the buildings up; the rules do not. Kept with the campus loop, for the tests |
 | `tracks/nova-lap.js` | The Nova lap: one lap round the campus as it was filmed on 17 November, through the atrium, under the library, down the stairs, past the beach tunnel and along the coast road. 3 metres a square. Its letters are made from shapes in `client/nova-lap-ground.js` and `client/nova-lap-buildings.js`; a test checks they agree |
-| `tracks/index.js` | The list of all tracks, each with a short name for addresses (`test-oval`, `campus-loop`, `nova-lap`). A new track is added here |
+| `tracks/index.js` | The list of the tracks of the game, each with a short name for addresses: `nova-lap`, the track of the game, and `test-oval`, a plain loop for a quick race and for the tests. A new track is added here |
 | `physics.js` | The driving rules. `stepKart` takes a kart and the keys that are pressed, and gives back the kart one sixtieth of a second later. `slideKart` does the same for a kart that is spinning out, which has no keys. The numbers to tune by playtesting are together at the top of the file |
 | `characters.js` | The drivers and their scores. For now one placeholder driver with middle scores |
 | `surfaces.js` | The kinds of ground. For now road and grass |

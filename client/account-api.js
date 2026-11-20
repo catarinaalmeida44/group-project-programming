@@ -147,7 +147,7 @@ export function createAccountApi(fetchFunction, { answerWithinMs = ANSWER_WITHIN
 
     /**
      * The shared leaderboard of one track. "trackName" is the short name
-     * used in addresses, such as "campus-loop".
+     * used in addresses, such as "nova-lap".
      * Gives { ok: false, code, message }, or:
      *   { ok: true,
      *     track,                       the short name asked for

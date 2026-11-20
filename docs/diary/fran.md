@@ -34,7 +34,7 @@ After the jolting on the stairs, Francisco asked for one try at the ground itsel
 - The pictures were drawn in a browser from twelve fixed spots (top and middle of the stairs, the plaza in four directions, the path both ways and at three points going up, the tunnel from the plaza, the view from above). On the way three problems were found and fixed: the path looked like a second flight of stairs, thin stripes across it, and the plaza was three times slower to draw (now about 1.7 times).
 - Two mistakes in new tests of this branch were fixed: one expected the sunken part to end at the plaza (written before the Beach Way went down), one picked a point outside the tunnel floor.
 - Broken on purpose in three ways; each made tests fail.
-- `npm test`: see the commit; 2726 passed, 5 skipped before the merge with `main`.
+- `npm test`: 2726 passed, 5 skipped; after bringing in the newest `main` (recorded music, the campus loop out of the game), 2772 passed, 5 skipped.
 - Francisco drove the first version on his laptop and kept it. **Not checked by the agent:** how it looks in motion, other karts going down and up, and how smooth it is on a slower laptop.
 
 **How to check it yourself**

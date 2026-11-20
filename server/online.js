@@ -7,8 +7,8 @@
 // details of that connection for us.
 //
 // There is one room for each track. The address a browser connects to says
-// which one: /play is the room of the main track, /play?track=campus-loop
-// the room of the campus loop.
+// which one: /play is the room of the main track, /play?track=nova-lap
+// the room of the Nova lap.
 //
 // What goes over the connection:
 //   browser -> server   which keys are held, "restart", "start", a look, a
@@ -112,7 +112,7 @@ export const GOODBYE_WAIT_MS = 2000;
  * Adds online play to our web server.
  *   httpServer  the server made by createApp() in app.js
  *   track       the track of the room at /play
- *   tracks      every track that gets a room, by short name: { "campus-loop": ... }.
+ *   tracks      every track that gets a room, by short name: { "nova-lap": ... }.
  *               A room is reached at /play?track=<short name>. Results are
  *               saved under the short name, so a track that is not listed
  *               here can be raced on but its results are not saved

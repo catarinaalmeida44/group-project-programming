@@ -535,6 +535,9 @@ describe("deleting an account", () => {
   });
 });
 
+// The track in these tests is the Nova lap. Until 20 November 2026 it was
+// the campus loop, which the team then took out of the game: its name is no
+// longer a track the server knows. Nothing else in these tests changed.
 describe("the shared leaderboard", () => {
   let anaCookie;
 
@@ -543,16 +546,16 @@ describe("the shared leaderboard", () => {
     await signUp("Rui");
     const ana = await store.findPlayerByKey("ana");
     const rui = await store.findPlayerByKey("rui");
-    await accounts.saveResult({ playerId: ana.id, track: "campus-loop", raceSteps: 1800, bestLapSteps: 580, position: 2 });
-    await accounts.saveResult({ playerId: rui.id, track: "campus-loop", raceSteps: 1700, bestLapSteps: 600, position: 1 });
+    await accounts.saveResult({ playerId: ana.id, track: "nova-lap", raceSteps: 1800, bestLapSteps: 580, position: 2 });
+    await accounts.saveResult({ playerId: rui.id, track: "nova-lap", raceSteps: 1700, bestLapSteps: 600, position: 1 });
   });
 
   it("lists the fastest races and laps of a track, for anyone", async () => {
-    const answer = await ask("GET", "/api/leaderboard?track=campus-loop");
+    const answer = await ask("GET", "/api/leaderboard?track=nova-lap");
     expect(answer.status).toBe(200);
     expect(answer.json).toEqual({
       ok: true,
-      track: "campus-loop",
+      track: "nova-lap",
       races: [
         { rank: 1, username: "Rui", steps: 1700 },
         { rank: 2, username: "Ana", steps: 1800 },
@@ -566,7 +569,7 @@ describe("the shared leaderboard", () => {
   });
 
   it("adds the signed-in player's own best and rank", async () => {
-    const answer = await ask("GET", "/api/leaderboard?track=campus-loop", { cookie: anaCookie });
+    const answer = await ask("GET", "/api/leaderboard?track=nova-lap", { cookie: anaCookie });
     expect(answer.json.mine).toEqual({ raceRank: 2, raceSteps: 1800, lapRank: 1, lapSteps: 580 });
   });
 
@@ -576,7 +579,7 @@ describe("the shared leaderboard", () => {
   });
 
   it("shows nothing about a player but their name and times", async () => {
-    const answer = await ask("GET", "/api/leaderboard?track=campus-loop", { cookie: anaCookie });
+    const answer = await ask("GET", "/api/leaderboard?track=nova-lap", { cookie: anaCookie });
     expect(answer.body).not.toContain("scrambled");
     expect(answer.body).not.toContain("password");
     for (const row of [...answer.json.races, ...answer.json.laps]) {
@@ -591,7 +594,7 @@ describe("the shared leaderboard", () => {
       "/api/leaderboard?track=no-such-track",
       "/api/leaderboard?track=__proto__",
       "/api/leaderboard?track=constructor",
-      "/api/leaderboard?track=campus-loop'%20OR%201=1",
+      "/api/leaderboard?track=nova-lap'%20OR%201=1",
     ]) {
       const answer = await ask("GET", address);
       expect(answer.status, address).toBe(400);
@@ -600,15 +603,15 @@ describe("the shared leaderboard", () => {
   });
 
   it("has no address through which a browser could send in a result", async () => {
-    for (const address of ["/api/leaderboard", "/api/leaderboard?track=campus-loop", "/api/results", "/api/result", "/api/save"]) {
+    for (const address of ["/api/leaderboard", "/api/leaderboard?track=nova-lap", "/api/results", "/api/result", "/api/save"]) {
       const answer = await ask("POST", address, {
-        body: { track: "campus-loop", raceSteps: 1, bestLapSteps: 1, position: 1, username: "Ana" },
+        body: { track: "nova-lap", raceSteps: 1, bestLapSteps: 1, position: 1, username: "Ana" },
         cookie: anaCookie,
       });
       expect([404, 405], address).toContain(answer.status);
     }
     expect(store.countResults()).toBe(2); // still only the two from above
-    const board = await ask("GET", "/api/leaderboard?track=campus-loop");
+    const board = await ask("GET", "/api/leaderboard?track=nova-lap");
     expect(board.json.races[0]).toEqual({ rank: 1, username: "Rui", steps: 1700 });
   });
 });
@@ -817,7 +820,7 @@ describe("when the database stops answering", () => {
 
     for (const [method, address, body] of [
       ["GET", "/api/me", undefined],
-      ["GET", "/api/leaderboard?track=campus-loop", undefined],
+      ["GET", "/api/leaderboard?track=nova-lap", undefined],
       ["POST", "/api/login", { username: "Ana", password: "12345678" }],
     ]) {
       const answer = await ask(method, address, { body, cookie });
@@ -853,14 +856,14 @@ describe("the pages' own helper (client/account-api.js) against the real server"
     expect(await api.getMe()).toEqual({ available: true, signedIn: true, username: "Ana" });
 
     const ana = await store.findPlayerByKey("ana");
-    await accounts.saveResult({ playerId: ana.id, track: "campus-loop", raceSteps: 1800, bestLapSteps: 580, position: 1 });
-    const board = await api.getLeaderboard("campus-loop");
+    await accounts.saveResult({ playerId: ana.id, track: "nova-lap", raceSteps: 1800, bestLapSteps: 580, position: 1 });
+    const board = await api.getLeaderboard("nova-lap");
     expect(board.races).toEqual([{ rank: 1, username: "Ana", steps: 1800 }]);
     expect(board.mine).toEqual({ raceRank: 1, raceSteps: 1800, lapRank: 1, lapSteps: 580 });
 
     expect(await api.logOut()).toEqual({ ok: true });
     expect((await api.getMe()).signedIn).toBe(false);
-    expect((await api.getLeaderboard("campus-loop")).mine).toBe(null);
+    expect((await api.getLeaderboard("nova-lap")).mine).toBe(null);
 
     expect((await api.logIn("Ana", "wrong-password")).code).toBe("wrong_login");
     expect(await api.logIn("ana", "12345678")).toEqual({ ok: true, username: "Ana" });
@@ -869,7 +872,7 @@ describe("the pages' own helper (client/account-api.js) against the real server"
     expect(await api.deleteAccount("12345678")).toEqual({ ok: true });
     expect((await api.getMe()).signedIn).toBe(false);
     expect((await api.logIn("Ana", "12345678")).code).toBe("wrong_login"); // the account is gone
-    expect((await api.getLeaderboard("campus-loop")).races).toEqual([]);
+    expect((await api.getLeaderboard("nova-lap")).races).toEqual([]);
     expect((await api.getLeaderboard("no-such-track")).code).toBe("unknown_track");
   });
 

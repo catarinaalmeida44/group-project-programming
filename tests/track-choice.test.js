@@ -3,16 +3,29 @@
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createApp } from "../server/app.js";
-import { chooseTrack } from "../client/track-choice.js";
+import { chooseTrack, chooseTrackName } from "../client/track-choice.js";
 import { TRACKS, DEFAULT_TRACK } from "../shared/tracks/index.js";
 import { TEST_OVAL } from "../shared/tracks/test-oval.js";
 import { CAMPUS_LOOP } from "../shared/tracks/campus-loop.js";
+import { NOVA_LAP } from "../shared/tracks/nova-lap.js";
 
+// Three tests in this file changed on 20 November 2026, when the team took
+// the campus loop out of the game: the Nova lap replaced it. They said "has
+// the test oval and the campus loop", "opens the campus loop with
+// ?track=campus-loop" and, for an address with two tracks, expected the
+// campus loop. They now say the same about the Nova lap, and two new tests
+// check that the campus loop is really gone.
 describe("the list of tracks", () => {
-  it("has the test oval and the campus loop, under their short names", () => {
+  it("has the test oval and the Nova lap, under their short names", () => {
     expect(TRACKS["test-oval"]).toBe(TEST_OVAL);
-    expect(TRACKS["campus-loop"]).toBe(CAMPUS_LOOP);
+    expect(TRACKS["nova-lap"]).toBe(NOVA_LAP);
     expect(TRACKS[DEFAULT_TRACK]).toBe(TEST_OVAL);
+  });
+
+  it("has those two and no other: the campus loop is no longer a track of the game", () => {
+    expect(Object.keys(TRACKS)).toEqual(["test-oval", "nova-lap"]);
+    expect(TRACKS["campus-loop"]).toBe(undefined);
+    expect(Object.values(TRACKS)).not.toContain(CAMPUS_LOOP);
   });
 
   it("gives every track its own name, because best times are kept by track name", () => {
@@ -26,8 +39,13 @@ describe("the list of tracks", () => {
 });
 
 describe("choosing the track from the address", () => {
-  it("opens the campus loop with ?track=campus-loop", () => {
-    expect(chooseTrack("?track=campus-loop")).toBe(CAMPUS_LOOP);
+  it("opens the Nova lap with ?track=nova-lap", () => {
+    expect(chooseTrack("?track=nova-lap")).toBe(NOVA_LAP);
+  });
+
+  it("no longer opens the campus loop: its old address shows the test oval, like any track that does not exist", () => {
+    expect(chooseTrack("?track=campus-loop")).toBe(TEST_OVAL);
+    expect(chooseTrackName("?track=campus-loop")).toBe(DEFAULT_TRACK);
   });
 
   it("opens the test oval with ?track=test-oval", () => {
@@ -53,7 +71,7 @@ describe("choosing the track from the address", () => {
   });
 
   it("uses the first choice when the address names two tracks", () => {
-    expect(chooseTrack("?track=campus-loop&track=test-oval")).toBe(CAMPUS_LOOP);
+    expect(chooseTrack("?track=nova-lap&track=test-oval")).toBe(NOVA_LAP);
   });
 
   it("does not break on something that is not text", () => {

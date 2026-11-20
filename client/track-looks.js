@@ -20,6 +20,7 @@
 // of a kart: 0 points right, a quarter turn (1.57) points down the map.
 
 import { TRACKS } from "../shared/tracks/index.js";
+import { CAMPUS_LOOP } from "../shared/tracks/campus-loop.js";
 import { routePoints, bendsOf } from "./route.js";
 import { NOVA_LAP_LOOK } from "./nova-lap-look.js";
 
@@ -83,6 +84,14 @@ const TEST_OVAL_LOOK = {
  * The campus loop: the Nova SBE campus in Carcavelos. Pale paving, lawns,
  * white buildings with long bands of glass, palms and pines, and the sea
  * towards the bottom left of the map.
+ *
+ * NOT A TRACK OF THE GAME ANY MORE. The team took the campus loop out on 20
+ * November 2026: the Nova lap replaced it. Nobody can choose it, it has no
+ * online room and no leaderboard. Its map (shared/tracks/campus-loop.js) and
+ * this look are kept for one reason: many tests of the rules (checkpoints,
+ * the grid, bananas, the computer karts) are driven on it, because it has
+ * real corners that the test oval does not have. The "route" below is the
+ * line those tests drive along.
  */
 const CAMPUS_LOOP_LOOK = {
   ...CIRCUIT,
@@ -152,7 +161,7 @@ const CAMPUS_LOOP_LOOK = {
 
 const LOOKS = new Map([
   [TRACKS["test-oval"], TEST_OVAL_LOOK],
-  [TRACKS["campus-loop"], CAMPUS_LOOP_LOOK],
+  [CAMPUS_LOOP, CAMPUS_LOOP_LOOK], // not in the list of tracks any more: kept for the tests (see above)
   // The Nova lap is the base circuit with everything of its own on top (nova-lap-look.js).
   [TRACKS["nova-lap"], { ...CIRCUIT, ...NOVA_LAP_LOOK }],
 ]);

@@ -25,6 +25,7 @@ import { NO_REASON } from "../client/answers.js";
 import { NO_TIME } from "../client/track-list.js";
 import { recordFinishedRace } from "../client/records.js";
 import { TRACKS } from "../shared/tracks/index.js";
+import { CAMPUS_LOOP } from "../shared/tracks/campus-loop.js";
 
 function fakeStorage(saved = {}) {
   const texts = { ...saved };
@@ -39,7 +40,10 @@ function fakeStorage(saved = {}) {
 
 // The tests use a list of their own with two of the real tracks, so that
 // adding a track to the game does not change what these tests expect.
-const TWO_TRACKS = { "test-oval": TRACKS["test-oval"], "campus-loop": TRACKS["campus-loop"] };
+// (Until 20 November 2026 the campus loop came from the game's list. It is
+// no longer a track of the game, so it is taken from its own file: here it
+// only stands for "a second track".)
+const TWO_TRACKS = { "test-oval": TRACKS["test-oval"], "campus-loop": CAMPUS_LOOP };
 
 /** What the server says about who is signed in. */
 const SIGNED_OUT = { available: true, signedIn: false, username: null };

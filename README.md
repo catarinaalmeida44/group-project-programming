@@ -19,12 +19,12 @@ Nothing to install: it runs in the browser of a laptop, with a keyboard.
 **In a race**
 
 - Six characters of our own, each with their own kart colours and their own dance.
-- The Nova lap: a lap of the campus that we built from a video we filmed there, with the school's buildings, the atrium and the beach beyond the road. Two earlier tracks are also there: a test oval and a first campus loop.
+- The Nova lap: a lap of the campus that we built from a video we filmed there, with the school's buildings, the atrium and the beach beyond the road. A plain test oval is there too, for a quick race.
 - A starting grid with start lights and a 3, 2, 1, GO! countdown, a lap counter and a clock.
 - Karts bump into each other, banana peels make a kart spin, arrows show the way, and a warning comes up when you drive the wrong way or miss a checkpoint.
 - Three camera views, a small map, and the game on the whole screen with F.
 - Computer karts that each drive in their own way: careful, daring, steady. They press the same four keys a player has.
-- Sound effects and music, all made by our own code: there are no sound files.
+- Sound effects made by our own code, and music: a tune for the menu, one for each part of a race (the first lap, the laps between, the last lap), and trumpets on the podium.
 
 **Before and after a race**
 
@@ -54,7 +54,7 @@ Nothing to install: it runs in the browser of a laptop, with a keyboard.
 
 1. **Build a complete web application as beginners.** A page in the browser, a server, a database and automatic tests, published at a public address that anyone can open.
 2. **Make it a real online game.** People on different computers race each other at the same moment, and everyone sees the same race.
-3. **Make it ours.** Our own school as the track, our own characters, drawings, sounds and music.
+3. **Make it ours.** Our own school as the track, and our own characters, drawings and sounds.
 4. **Make it fair and safe.** The server decides what happens in a race, every input is checked, and accounts are protected.
 5. **Check it properly.** A test for every rule, including the actions that must not be allowed, and all tests passing on `main`.
 6. **Understand all of it.** Every member can explain every part. That is why the code and the documents are written in plain language.
@@ -177,8 +177,9 @@ Each of the folders `client/`, `server/`, `shared/` and `tests/` has a `README.m
 
 ## Credits
 
-- The characters, names, drawings, sounds and music in the game are our own. The track, the karts and the scenery are drawn by our code, and the sounds and the music are made by our code.
+- The characters, names, drawings and sound effects in the game are our own. The track, the karts and the scenery are drawn by our code, and the sound effects are made by our code.
+- The music is recorded, by others. The tune of the menu and the three tunes of a race are by MintoDog, from OpenGameArt, who gave them to everybody (CC0). The trumpets and clapping of the podium are "YoFrankie! (c) 2008, Blender Foundation, www.blender.org", used under the licence CC-BY 3.0 (https://creativecommons.org/licenses/by/3.0/). Which file is which is in `client/music/README.md`.
 - The idea of the driving, karts and banana peels included, comes from kart racing games such as Mario Kart. No characters, names, music or images from any other game are used.
-- The campus loop is based on map data © OpenStreetMap contributors, available under the Open Database License (https://www.openstreetmap.org/copyright).
+- The map of our first campus track (`shared/tracks/campus-loop.js`, no longer in the game, still used by the tests) is based on map data © OpenStreetMap contributors, available under the Open Database License (https://www.openstreetmap.org/copyright).
 - Libraries, all open source: [ws](https://github.com/websockets/ws) for the live connection of online play, [pg](https://node-postgres.com) to talk to the database, and [Vitest](https://vitest.dev) to run the tests.
 - Services: [Render](https://render.com) keeps the server online, [Neon](https://neon.tech) keeps the database, and GitHub keeps the code and runs the tests.

@@ -156,7 +156,8 @@ describe("a finishing position as a word", () => {
 
 describe("the short name of the chosen track, which the online page puts in the address of its connection", () => {
   it("is the name in the address when that is a real track", () => {
-    expect(chooseTrackName("?track=campus-loop")).toBe("campus-loop");
+    // Until 20 November 2026 the first line named the campus loop, which is no longer a track of the game.
+    expect(chooseTrackName("?track=nova-lap")).toBe("nova-lap");
     expect(chooseTrackName("?track=test-oval")).toBe("test-oval");
   });
 

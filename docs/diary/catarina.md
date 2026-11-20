@@ -4,6 +4,71 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 20 November 2026, late afternoon: her own music, and the campus loop leaves the game
+
+**What she said**
+
+- She sent three downloads and where each goes: `racing_game_menu_bpm165.mp3` in the main menu, round and round; from the zip only three, "Race Finish Bad (Loop)" during the first lap, "Race Finish Good (Loop)" during the second, "Race Finish Best (Loop)" during the last lap; and `end_level.flac`, trumpets and clapping, on the podium.
+- The licences, for the credits: the menu tune and the zip are by MintoDog, on OpenGameArt, CC0. `end_level.flac` is "YoFrankie! (c) 2008, Blender Foundation, www.blender.org", CC-BY 3.0.
+- "O Rodrigo já começou a pôr música", and she has the go-ahead to change it. The sound effects of the podium "podem desaparecer já ... põe só este".
+- "É para apagar o Campus Loop e para manter só a Nova lap e o Oval ... manter só o oval para testes."
+
+**What was built** (branch `music-files-and-one-campus-track`, from `main` after pull request 41)
+
+| What | Where |
+|---|---|
+| The five files, under plain names, with a note of who made each and under which licence | `client/music/` and its `README.md` |
+| Which tune plays when: the menu, the first lap, the laps between, the last lap (which goes on after your finish), the podium once, silence in the countdown | `tuneFor` and `lapTune` in `client/music-files.js` |
+| The player of the recorded tunes: one fades into the next, a tune that is not ready yet starts when it is, a tune that goes round jumps back inside the short silence at the ends of an MP3 file | `createFilePlayer` in `client/music.js`, `loopPoints` in `client/music-files.js` |
+| The four pages hand the lap to the music | `client/menu.js`, `client/main.js`, `client/online.js`, `client/double.js` |
+| The podium's cheering made by code is no longer played | the same three race pages |
+| The server may send music files, and the browser may keep them for a day | `server/app.js` |
+| The campus loop is out of the list of tracks: not in the menu, no online room, no leaderboard | `shared/tracks/index.js`, `client/track-looks.js`, `client/index.html` |
+| Credits: the makers of the music, and the map of the old track | `README.md` |
+
+**Why it was done this way**
+
+- **Rodrigo's rules for the music were kept, and the files were put on top of them.** His file already says which moment of a race it is (menu, countdown, racing, finished, podium) and has tests. The new rule only adds the lap. His switches in Settings (All sound, Music) work as before.
+- **His songs made of notes are still in the code.** The game no longer plays them, but the sound check page does, and his tests are untouched. Deleting them would have meant deleting a teammate's tests the same day he wrote them. The team can remove them later, or go back.
+- **The music is played with the browser's sound system, not as a plain "audio" tag.** That way a tune can go round without a gap, one tune can fade into the next, and the same switches and the "no sound before the first key press" rule apply as for the engine.
+- **The campus loop is out of the game, but its map stays in the repository.** About ten test files drive on it (checkpoints, the grid, bananas, ramps, buildings, the computer karts), because it has real corners. With the campus loop only out of the list of tracks, 27 of 2,738 tests failed. With its file deleted too, those ten files would have to be rewritten on another track, three days before the deadline. So: gone from the game, kept as a test track. The code says so where it is kept.
+
+**Older tests that changed, because what they said is no longer true**
+
+Each has a comment that says what it said before. `WALKTHROUGH.md` has the same list.
+
+- `tests/track-choice.test.js`: three tests said the campus loop is in the list, opens with its address, and wins when an address names two tracks. They say it of the Nova lap now. Two new tests check that the campus loop is gone.
+- `tests/api.test.js`: the leaderboard tests used the name "campus-loop". It is "nova-lap" now, in every place, and nothing else.
+- `tests/start-pretend.test.js`, `tests/online-page.test.js`: the same change of name, one line each.
+- `tests/track-list.test.js`: its second track is the Nova lap now.
+- `tests/leaderboard.test.js`: its own list of two tracks takes the campus loop from its file instead of from the game's list.
+
+**Decisions made by the agent: please confirm**
+
+- **The test oval stays in the menu.** She said to keep it "for tests". It is still a card in "Choose a track" beside the Nova lap. Taking it out of the menu, so that players only see the Nova lap, is a small change if she wants it.
+- An online room before a race plays the menu tune, and the countdown is silent, as with Rodrigo's songs.
+- After your finish the last lap's tune goes on until the podium. The podium tune plays once and is then quiet.
+- A race of one lap gets the last lap's tune; in a race of two, the first and the last.
+- With two players the lap is that of the driver further ahead. Someone who watches online hears the tune of the lap of the kart they watch.
+- How loud the music is: about a quarter of full, and the podium tune a little louder. **Nobody has heard it yet.**
+- The files are as downloaded, 10.5 MB together (the menu tune alone is 4.5 MB). I could not make them smaller on this laptop.
+- Results once saved on the campus loop stay in the database. They are shown nowhere, except in a player's own downloaded file, under the name "campus-loop".
+
+**Checked, and not checked**
+
+- `npm test`: 2,735 passed, 5 skipped (101 files). 46 are new: `tests/music-files.test.js` (44) and two in `tests/track-choice.test.js`. Rodrigo's music tests pass untouched.
+- The files themselves, without playing them: the four MP3 files carry "MintoDog" in their own labels, and are 116, 43, 41 and 42 seconds long; the FLAC file is 13.5 seconds.
+- In the browser pane, **with the wire to the loudspeakers cut in the page, so nothing was heard**: on the menu a click started the menu tune (116 seconds, going round); in a whole single race driven by a robot the first lap's tune started at GO, the next after lap 1, the fastest after lap 2, and the podium tune once at the podium. The server sent the files as music, to be kept for a day.
+- The menu shows two tracks, the test oval and the Nova lap. The old address of the campus loop's leaderboard answers "unknown track".
+- **Not checked:**
+  - **How it sounds.** Nobody has listened: not the loudness next to the engine, not whether the join of a loop can be heard, not whether the tunes fit (checks 108 to 114 in `docs/two-laptop-checklist.md`).
+  - **The licences.** They are as Catarina gave them. The files' own labels agree on who made the four MP3 files. I tried to read the pages on OpenGameArt to confirm the licences, and the site refused automatic requests, so someone should look at the three pages once in a browser.
+  - Safari, a phone, a slow connection (10.5 MB of music), the live site.
+
+**How to check it yourself**
+
+Run `npm run start:pretend`, open http://localhost:3000 with the sound on, and click anywhere: the menu tune starts. Choose Single race and the Nova lap: a tune for each of the three laps, and trumpets on the podium. "Choose a track" shows two tracks.
+
 ### 20 November 2026, afternoon: the README for the submission
 
 **What she said**
