@@ -298,11 +298,17 @@ export function createGround(track, look, grid, buildings = null, levels = null)
    * Works like paintTilted, row by row, but only on the rows where a strip
    * can be, and with no shore, haze or sharper close picture.
    */
-  function paintSunken(context, spot, settings, screen, cameraDepth) {
+  function paintSunken(context, spot, settings, screen, cameraDepth, beforeStrip = null) {
     const cos = Math.cos(spot.angle);
     const sin = Math.sin(spot.angle);
     sunken.forEach((piece, number) => {
       const strip = { ...piece, depth: levels.strips[number].depth }; // its picture's own edges, a little past the strip's
+      // The strips go deepest first. "beforeStrip" is told the depth of the
+      // next one, so that draw.js can paint the walls that stand deeper than
+      // it first: a higher strip in front of a wall then covers its foot.
+      if (beforeStrip !== null) {
+        beforeStrip(strip.depth);
+      }
       const seen = { ...settings, eyeLift: strip.depth - cameraDepth };
       const { horizonY, growthPerRow, depth } = chaseNumbers(seen);
       if (!Number.isFinite(growthPerRow)) {
@@ -367,6 +373,9 @@ export function createGround(track, look, grid, buildings = null, levels = null)
         }
       }
     });
+    if (beforeStrip !== null) {
+      beforeStrip(-Infinity); // the walls that are left
+    }
   }
 
   return { picture: whole, sharpness, paintTilted, paintSunken };

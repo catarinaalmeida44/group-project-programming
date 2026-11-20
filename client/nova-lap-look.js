@@ -147,7 +147,11 @@ export const NOVA_LAP_LOOK = {
       // as on the campus. Driving up the path, it drops away on the left.
       // (Francisco, 20 November 2026.)
       { rect: [55, 74, 64, 77], to: 1 },
-      { rect: [56.5, 77, 62.5, 79.5], to: 1 },
+      // The tunnel, all of it, walls included: they stand at the bottom, so
+      // the ground of the track has a hole over them too. (Until 20 November
+      // only the floor of its mouth was here: the lower part of its walls,
+      // standing on ground that was not sunken, was then cut away.)
+      { rect: [55, 77, 64, 80], to: 1 },
     ],
     // The scenery that does not stand on the ground of the track, by its
     // name in nova-lap-buildings.js. "depth" is a share of the drop;

@@ -141,9 +141,11 @@ describe("the two levels of the Nova lap", () => {
   // (Written on 20 November with the plaza as the southern end; the same day
   // the Sagres Beach Way and the tunnel's mouth went down too, at
   // Francisco's request, so the sunken part now ends at the tunnel's back
-  // wall. This test had not been merged yet.)
-  it("keeps the whole sunken part inside the stairs, the plaza, the path and the Sagres Beach Way", () => {
-    expect(sunkenBounds(LEVELS)).toEqual({ left: 48 * TILE, top: 63 * TILE, right: 73 * TILE, bottom: 79.5 * TILE });
+  // wall. Later that day the whole tunnel went into the sunken part, its
+  // roof level with the ground, so it ends at row 80, behind the tunnel.
+  // This test had not been merged yet.)
+  it("keeps the whole sunken part inside the stairs, the plaza, the path, the Sagres Beach Way and the tunnel", () => {
+    expect(sunkenBounds(LEVELS)).toEqual({ left: 48 * TILE, top: 63 * TILE, right: 73 * TILE, bottom: 80 * TILE });
   });
 
   // (Both changed the same afternoon, before any merge: at Francisco's request

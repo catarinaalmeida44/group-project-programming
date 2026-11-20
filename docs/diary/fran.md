@@ -47,6 +47,15 @@ After the jolting on the stairs, Francisco asked for one try at the ground itsel
 - Checked again in a browser from the spots of his three photos. `npm test`: 2773 passed, 5 skipped.
 - Francisco drove it again: the foot of the tunnel walls looked see-through, and railings vanished when he came close. The cut was too crude (one line per thing, from its middle). It now follows the real rule: what is above the level of the ground of the track is never hidden by it; what is below is seen only through the holes. Checked again from his three new photos.
 
+**Evening, five more rounds of his photos** (all in the picture only; the driving is unchanged)
+- **The railings stopped vanishing.** The holes were cut at the kart's own nearest distance, but from down below the ground of the track reaches the bottom of the screen closer than that, so a band along the bottom was outside the holes. They are now cut where that ground leaves the screen (`client/draw.js`).
+- **The tunnel is solid, with the picture painted on its front.** He saw through gaps into the hollow mouth and asked for the painting on the wall instead. The back wall, with its painting of the tunnel, now stands flush with the front under the name beam, and the space behind is filled. Its outer sides are white instead of sand. Its hidden top was left out: it showed as white marks under the beam. (`client/nova-lap-buildings.js`, Catarina's file: she should know.) The ground of the track now has a hole over the whole tunnel, walls included (`client/nova-lap-look.js`). For a few minutes the tunnel was made lower; Francisco wanted it kept at full size, so that was undone.
+- **The real cause of seeing through the tunnel's wall, and of the slit seen earlier.** The cut is made of several shapes. The canvas leaves out the overlap of two shapes traced opposite ways round, and they were traced either way. There a wall was not painted, and what stood behind it showed through. Every shape is now traced the same way (`addShape` in `client/draw.js`). Found by giving the hidden faces test colours in the browser.
+- **The stone walls are the same white as the tunnel's sides**, shaded the same way, so the two can no longer be told apart (`client/draw.js`).
+- **The path covers the wall of the Sagres Beach Way.** The walls were painted after all the sunken ground, so one showed through the path in front of it. Now each wall is painted right after the floor it stands on, deepest first (`client/ground.js` and `client/draw.js`).
+- One of this branch's own tests changed (not in `main`): the sunken part now ends at row 80, behind the tunnel.
+- Checked in a browser from the spots of each of his photos, and the stairs and the plaza again. `npm test`: 2773 passed, 5 skipped. **Not checked by the agent:** online and split screen in a browser (they use the same drawing code, `createPainter`).
+
 **What comes next**
 The team plays it before the demo. If the plaza is slow on someone's laptop, the path's 40 steps can be fewer.
 

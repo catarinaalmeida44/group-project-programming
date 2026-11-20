@@ -25,7 +25,7 @@ import { SCREEN, FOLLOW, CHASE, RACE, blendChase, chaseRow, chasePoint, eyeOf, s
 import { readLevels, depthAt, faces, sceneryByLevel } from "./levels.js";
 import { createBuildings, buildingsInView } from "./buildings.js";
 import { createScenery, sceneryInView, squaresWithScenery, rampBlocks, cutAtSquares, RAMP_FLAT_STYLES } from "./scenery.js";
-import { createSceneryPainter } from "./scenery-paint.js";
+import { createSceneryPainter, LIGHT as SCENERY_LIGHT } from "./scenery-paint.js";
 import { trafficLanes, carsAt } from "./traffic.js";
 import { WALL_ART } from "./wall-art.js";
 import { jumpHeight } from "../shared/ramps.js";
@@ -52,7 +52,11 @@ const CAMERA_SWING = 6.5;
 /** How quickly the race camera goes down with the kart into the sunken part of the ground, and up again (levels.js). */
 const CAMERA_SINK = 8;
 /** The colours of the upright faces of the sunken part: the stone walls round it, the fronts of the stairs, the small steps of the path. */
-const LEVEL_WALLS = { stone: "#d6cfc1", stairs: "#b4705a", path: "#b3843f" };
+// The stone walls are the white of the white walls of the buildings
+// (wall-art.js), so that they match the white sides of the beach tunnel
+// next to them. (A darker cream, "#d6cfc1", until 20 November 2026:
+// Francisco could tell the two walls apart.)
+const LEVEL_WALLS = { stone: "#f3f2ed", stairs: "#b4705a", path: "#b3843f" };
 /** A step of the sunken part lower than this (in units) has no front painted: it belongs to a ramp, not to stairs. */
 const MIN_STEP = 1.2;
 /** How the light falls on a face, by the way it looks: towards the south and west it is lit, towards the north and east in shade. */
@@ -291,8 +295,7 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
       levels === null
         ? null
         : () => {
-            ground.paintSunken(context, spot, settings, SCREEN, cameraDepth);
-            paintLevelWalls(spot, settings, near);
+            ground.paintSunken(context, spot, settings, SCREEN, cameraDepth, prepareLevelWalls(spot, settings, near));
           },
     );
 
@@ -458,9 +461,16 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
     // (A first version cut at one line for the whole thing, measured from
     // its middle: a railing running towards the camera lost its near end,
     // and the lower part of the tunnel's walls was cut away.)
-    const holes = levels === null ? null : holeOutline(spot, upper, near);
+    // Cut where the ground of the track itself leaves the bottom of the
+    // screen. From down in the sunken part that ground is nearer the eye, so
+    // it reaches the bottom of the screen closer to the kart than the
+    // ground under the kart does. (Cut at the kart's own "near" until 20
+    // November 2026: a band along the bottom of the screen was then outside
+    // the holes, and a railing beside the kart vanished as it came close.)
+    const upperNear = chaseRow(SCREEN.height, upper).ahead - 1;
+    const holes = levels === null ? null : holeOutline(spot, upper, upperNear);
     for (const thing of things) {
-      const region = holes !== null && thing.depth > 0 ? seenRegion(thing, holes, upper, near) : null;
+      const region = holes !== null && thing.depth > 0 ? seenRegion(thing, holes, upper, upperNear) : null;
       if (region !== null) {
         context.save();
         context.clip(region);
@@ -525,11 +535,13 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
   /**
    * The upright faces of the sunken part of the ground (levels.js) that look
    * towards the camera: the stone walls round it and the front of every
-   * step. Painted with the ground, after the sunken strips and before the
+   * step. Painted with the ground, among the sunken strips and before the
    * ground of the track, which covers them everywhere but in its holes.
    * A face that reaches behind the bottom of the screen is cut there.
+   * Gives a function to call with the depth of each strip before it is
+   * painted (see below).
    */
-  function paintLevelWalls(spot, settings, near) {
+  function prepareLevelWalls(spot, settings, near) {
     const eye = eyeOf(settings);
     const eyePoint = { x: spot.x - Math.cos(spot.angle) * eye.behind, y: spot.y - Math.sin(spot.angle) * eye.behind };
     const nearest = near + 1;
@@ -570,19 +582,36 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
       }
     }
     shown.sort((p, q) => q.ahead - p.ahead); // the furthest first
-    for (const { wall, points } of shown) {
-      const kind = wall.top === 0 ? "stone" : wall.toward.y !== 0 ? "stairs" : "path";
-      const way = wall.toward.x > 0 ? "east" : wall.toward.x < 0 ? "west" : wall.toward.y > 0 ? "south" : "north";
-      const colour = hazed(shade(LEVEL_WALLS[kind], FACE_LIGHT[way]), look.haze, 0);
-      context.beginPath();
-      points.forEach((point, i) => (i === 0 ? context.moveTo(point.x, point.y) : context.lineTo(point.x, point.y)));
-      context.closePath();
-      context.fillStyle = colour;
-      context.fill();
-      context.strokeStyle = colour; // closes the thin gaps between neighbouring faces
-      context.lineWidth = 1;
-      context.stroke();
-    }
+    // Painted in turns, as the sunken strips are painted, deepest first
+    // (ground.paintSunken): before a strip, every wall whose foot is deeper
+    // than it. A strip higher up that lies in front of a wall, such as the
+    // path in front of the wall of the Sagres Beach Way, then covers the
+    // wall's foot. (Until 20 November 2026 every wall was painted after
+    // all the strips, and showed through the path. Found by Francisco.)
+    return (depth) => {
+      for (const each of shown) {
+        if (!each.painted && each.wall.bottom > depth + 1e-6) {
+          each.painted = true;
+          paintLevelWall(each);
+        }
+      }
+    };
+  }
+
+  /** One face of the sunken part (see prepareLevelWalls). */
+  function paintLevelWall({ wall, points }) {
+    const kind = wall.top === 0 ? "stone" : wall.toward.y !== 0 ? "stairs" : "path";
+    const way = wall.toward.x > 0 ? "east" : wall.toward.x < 0 ? "west" : wall.toward.y > 0 ? "south" : "north";
+    // A stone wall is shaded as the walls of the scenery are (scenery-paint.js), so that the two match.
+    const colour = kind === "stone" ? shadedLikeScenery(LEVEL_WALLS.stone, SCENERY_LIGHT[way]) : hazed(shade(LEVEL_WALLS[kind], FACE_LIGHT[way]), look.haze, 0);
+    context.beginPath();
+    points.forEach((point, i) => (i === 0 ? context.moveTo(point.x, point.y) : context.lineTo(point.x, point.y)));
+    context.closePath();
+    context.fillStyle = colour;
+    context.fill();
+    context.strokeStyle = colour; // closes the thin gaps between neighbouring faces
+    context.lineWidth = 1;
+    context.stroke();
   }
 
   /**
@@ -611,11 +640,12 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
       const right = Math.max(pa.x, pb.x) + 1;
       const yLeft = pa.x <= pb.x ? pa.y : pb.y;
       const yRight = pa.x <= pb.x ? pb.y : pa.y;
-      region.moveTo(left, yLeft);
-      region.lineTo(right, yRight);
-      region.lineTo(right, TOP);
-      region.lineTo(left, TOP);
-      region.closePath();
+      addShape(region, [
+        { x: left, y: yLeft },
+        { x: right, y: yRight },
+        { x: right, y: TOP },
+        { x: left, y: TOP },
+      ]);
       return region;
     }
     // A kart or a thing standing on one spot: the ground's level there is
@@ -660,10 +690,42 @@ export function createPainter(canvas, track, { storeys = null, timeOfDay = DEFAU
       if (points.length < 3 || points.some((point) => point === null)) {
         continue;
       }
-      points.forEach((point, i) => (i === 0 ? outline.moveTo(point.x, point.y) : outline.lineTo(point.x, point.y)));
-      outline.closePath();
+      addShape(outline, points);
     }
     return outline;
+  }
+
+  /**
+   * A colour as scenery-paint.js shades a wall that the sun does not reach:
+   * a dark blue-grey laid over it, the more the darker the side ("light"
+   * from 0 to 1). Gives an "rgb(...)" colour.
+   */
+  function shadedLikeScenery(colour, light = 1) {
+    const over = Math.max(0, 1 - light);
+    const mix = (from, to) => Math.round(from * (1 - over) + to * over);
+    const [r, g, b] = [1, 3, 5].map((start) => parseInt(colour.slice(start, start + 2), 16));
+    return `rgb(${mix(r, 18)}, ${mix(g, 28)}, ${mix(b, 44)})`;
+  }
+
+  /**
+   * Adds a shape (its corners on the screen) to a Path2D that is used to cut
+   * to, always going round the same way. The canvas counts an area as inside
+   * when the shapes over it go round it more often one way than the other: two
+   * shapes going opposite ways cancel out where they overlap, and that area
+   * was then left out. (Until 20 November 2026 the shapes went either way, as
+   * it came: where they overlapped, a wall of the tunnel was not painted, and
+   * what stood behind it showed through. Found by Francisco.)
+   */
+  function addShape(path, points) {
+    let twiceArea = 0;
+    points.forEach((point, i) => {
+      const next = points[(i + 1) % points.length];
+      twiceArea += point.x * next.y - next.x * point.y;
+    });
+    // The same way round as Path2D.rect(), which the karts' shapes use.
+    const ordered = twiceArea >= 0 ? points : [...points].reverse();
+    ordered.forEach((point, i) => (i === 0 ? path.moveTo(point.x, point.y) : path.lineTo(point.x, point.y)));
+    path.closePath();
   }
 
   /** One group of the podium (a step with its driver, or a student), and the words on it. */

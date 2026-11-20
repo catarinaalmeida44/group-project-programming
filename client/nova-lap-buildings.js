@@ -113,11 +113,21 @@ const PLAZA_AND_TUNNEL = [
   // view (client/levels.js). It used to be 5.5 squares further west, with a
   // side wall of the ramp sloping away east of it, which then stood alone
   // in the plaza and was taken out.
-  { name: "tunnel, wall west of the mouth", rect: [55, 77, 56.5, 80], top: 3.9, roof: "lawn", faces: { north: "sand-wall", east: "tunnel-mural", west: "sand-wall" } },
-  { name: "tunnel, wall east of the mouth", rect: [62.5, 77, 64, 80], top: 3.9, roof: "lawn", faces: { north: "sand-wall", west: "tunnel-mural", east: "sand-wall" } },
-  { name: "tunnel, beam with the name", rect: [56.5, 77, 62.5, 77.6], base: 2.7, top: 3.9, soffit: "tunnel-ceiling", roof: "lawn", faces: { north: "tunnel-beam" } },
-  { name: "tunnel, ceiling", rect: [56.5, 77.6, 62.5, 79.5], base: 2.7, top: 3.9, soffit: "tunnel-ceiling", roof: "lawn" },
-  { name: "tunnel, back wall", rect: [56.5, 79.5, 62.5, 80], top: 2.7, faces: { north: "tunnel-back" } },
+  // The outer sides of its two walls are white, like the stone walls round
+  // the sunken part, so that from the plaza and the path they match those
+  // walls. (Sand-coloured until 20 November 2026; Francisco found the
+  // yellow sides looked wrong next to the white walls.)
+  { name: "tunnel, wall west of the mouth", rect: [55, 77, 56.5, 80], top: 3.9, roof: "lawn", faces: { north: WHITE, east: "tunnel-mural", west: WHITE } },
+  { name: "tunnel, wall east of the mouth", rect: [62.5, 77, 64, 80], top: 3.9, roof: "lawn", faces: { north: WHITE, west: "tunnel-mural", east: WHITE } },
+  // The mouth is not hollow: the painting of the tunnel ("tunnel-back") is
+  // on a wall flush with the front, under the beam with the name. Solid,
+  // there is nothing to see through gaps between the boxes. (Hollow until
+  // 20 November 2026, 2.5 squares deep; Francisco saw through gaps into it,
+  // and asked for the picture painted on the wall instead.)
+  { name: "tunnel, beam with the name", rect: [56.5, 77, 62.5, 77.6], base: 2.7, top: 3.9, soffit: null, roof: "lawn", faces: { north: "tunnel-beam" } },
+  { name: "tunnel, ceiling", rect: [56.5, 77.6, 62.5, 80], base: 2.7, top: 3.9, soffit: null, roof: "lawn" },
+  // No top: it is under the beam and the ceiling, and painted it showed as white marks over the foot of the beam.
+  { name: "tunnel, back wall", rect: [56.5, 77, 62.5, 80], top: 2.7, roof: null, faces: { north: "tunnel-back" } },
   { name: "tunnel, reeds on top", rect: [55, 77.1, 64, 77.4], base: 3.9, top: 4.8, soffit: null, roof: null, faces: { north: "reeds" } },
 ];
 
