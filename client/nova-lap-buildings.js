@@ -107,14 +107,28 @@ const PLAZA_AND_TUNNEL = [
   // The beach tunnel, south of the path. As on the campus, its mouth runs
   // along the path: a long concrete beam with the name on it, and under it
   // a real hollow two squares deep, with painted walls and the way to the
-  // beach at the back. East of the mouth the side wall of the ramp slopes away.
-  { name: "tunnel, wall west of the mouth", rect: [49.5, 77, 51, 80], top: 3.9, roof: "lawn", faces: { north: "sand-wall", east: "tunnel-mural", west: "sand-wall" } },
-  { name: "tunnel, wall east of the mouth", rect: [57, 77, 58.5, 80], top: 3.9, roof: "lawn", faces: { north: "sand-wall", west: "tunnel-mural", east: "sand-wall" } },
-  { name: "tunnel, beam with the name", rect: [51, 77, 57, 77.6], base: 2.7, top: 3.9, soffit: "tunnel-ceiling", roof: "lawn", faces: { north: "tunnel-beam" } },
-  { name: "tunnel, ceiling", rect: [51, 77.6, 57, 79.5], base: 2.7, top: 3.9, soffit: "tunnel-ceiling", roof: "lawn" },
-  { name: "tunnel, back wall", rect: [51, 79.5, 57, 80], top: 2.7, faces: { north: "tunnel-back" } },
-  { name: "tunnel, reeds on top", rect: [49.5, 77.1, 58.5, 77.4], base: 3.9, top: 4.8, soffit: null, roof: null, faces: { north: "reeds" } },
-  { name: "tunnel, sloping wall of the ramp", rect: [58.5, 77, 64, 77.5], top: 3.9, topEnd: 0.5, slope: "x", faces: { north: "sand-wall", south: "sand-wall" } },
+  // beach at the back. Since 20 November 2026 (Francisco, for the team) it
+  // stands right at the edge of the lower plaza, its east wall on the
+  // plaza's west edge, and it lies down at the plaza's level in the race
+  // view (client/levels.js). It used to be 5.5 squares further west, with a
+  // side wall of the ramp sloping away east of it, which then stood alone
+  // in the plaza and was taken out.
+  // The outer sides of its two walls are white, like the stone walls round
+  // the sunken part, so that from the plaza and the path they match those
+  // walls. (Sand-coloured until 20 November 2026; Francisco found the
+  // yellow sides looked wrong next to the white walls.)
+  { name: "tunnel, wall west of the mouth", rect: [55, 77, 56.5, 80], top: 3.9, roof: "lawn", faces: { north: WHITE, east: "tunnel-mural", west: WHITE } },
+  { name: "tunnel, wall east of the mouth", rect: [62.5, 77, 64, 80], top: 3.9, roof: "lawn", faces: { north: WHITE, west: "tunnel-mural", east: WHITE } },
+  // The mouth is not hollow: the painting of the tunnel ("tunnel-back") is
+  // on a wall flush with the front, under the beam with the name. Solid,
+  // there is nothing to see through gaps between the boxes. (Hollow until
+  // 20 November 2026, 2.5 squares deep; Francisco saw through gaps into it,
+  // and asked for the picture painted on the wall instead.)
+  { name: "tunnel, beam with the name", rect: [56.5, 77, 62.5, 77.6], base: 2.7, top: 3.9, soffit: null, roof: "lawn", faces: { north: "tunnel-beam" } },
+  { name: "tunnel, ceiling", rect: [56.5, 77.6, 62.5, 80], base: 2.7, top: 3.9, soffit: null, roof: "lawn" },
+  // No top: it is under the beam and the ceiling, and painted it showed as white marks over the foot of the beam.
+  { name: "tunnel, back wall", rect: [56.5, 77, 62.5, 80], top: 2.7, roof: null, faces: { north: "tunnel-back" } },
+  { name: "tunnel, reeds on top", rect: [55, 77.1, 64, 77.4], base: 3.9, top: 4.8, soffit: null, roof: null, faces: { north: "reeds" } },
 ];
 
 const HALLS = [
@@ -170,7 +184,7 @@ export const NOVA_LAP_FENCES = [
   { name: "rail on the terrace beside the stairs", from: [71, 63], to: [71, 69], base: 1.3, top: 2.4, art: "railing", lean: [1, 0] },
   { name: "rail on the terrace, south", from: [71, 69], to: [73, 69], base: 1.3, top: 2.4, art: "railing", lean: [0, -1] },
   { name: "rail along the tunnel way", from: [50.5, 74], to: [64, 74], top: 1.1, art: "railing", lean: [0, 1] },
-  { name: "rail at the foot of the tunnel way", from: [50.5, 77], to: [50.5, 74], top: 1.1, art: "railing", lean: [1, 0] },
+  { name: "rail at the foot of the tunnel way", from: [55, 77], to: [55, 74], top: 1.1, art: "railing", lean: [1, 0] }, // at column 50.5 until 20 November 2026, with the tunnel
   { name: "rail at the head of the tunnel way", from: [64, 74], to: [64, 78], top: 1.1, art: "railing", lean: [-1, 0] },
   { name: "rail south of the plaza", from: [64, 78], to: [73, 78], top: 1.1, art: "railing", lean: [0, 1] },
   { name: "rail on the retaining wall", from: [40, 70], to: [50, 70], base: 5.5, top: 6.6, art: "railing", lean: [0, -1] },

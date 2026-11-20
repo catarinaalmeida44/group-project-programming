@@ -83,8 +83,13 @@ export const NOVA_LAP_GROUND = [
   { surface: "glass-floor", rect: [66, 26, 70, 31] }, //                the frosted glass floor on the terrace
   { surface: "glass-floor", rect: [65, 49, 68, 53] }, //                and two more along the promenade
   { surface: "glass-floor", rect: [65, 56, 68, 61] },
-  { surface: "ramp-sand", rule: "wall", rect: [50.5, 74, 64, 77] }, //  the sunken way down to the beach tunnel
-  { surface: "tunnel-floor", rule: "wall", rect: [51, 77, 57, 79.5] }, // and the floor inside its mouth
+  // The Sagres Beach Way, sunken in the race view (client/levels.js), and
+  // the floor inside the tunnel's mouth. Since 20 November 2026 (Francisco,
+  // for the team) the tunnel is right at the edge of the lower plaza and
+  // the Beach Way is only in front of its mouth; it used to run west along
+  // the path from column 50.5, with the tunnel at columns 51 to 57.
+  { surface: "ramp-sand", rule: "wall", rect: [55, 74, 64, 77] },
+  { surface: "tunnel-floor", rule: "wall", rect: [56.5, 77, 62.5, 79.5] },
 ];
 
 /**

@@ -2,6 +2,101 @@
 
 Francisco Fonseca (Fran, GitHub FranFon15). Entries from 11 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 20 November 2026: the Nova lap at two levels (stairs down, the path and the Sagres Beach Way)
+
+**What was done**
+After the jolting on the stairs, Francisco asked for one try at the ground itself going down and up, as on the campus, to be dropped if it looked bad. He tried it and kept it, and asked for one more thing: the Sagres Beach Way at the bottom too, dropping away on the left when driving up the path, with a railing between them. Branch `nova-lap-two-levels`, which starts from `nova-lap-slopes` (the jolting).
+- The wide stairs go down 2.2 metres in 12 steps to the lower plaza; the path past the beach tunnel rises smoothly back up to the west; the Sagres Beach Way and the tunnel's mouth lie at the bottom; the railing between path and Beach Way stands on the path's edge and rises with it.
+- Stone walls where the level changes; the camera goes down with the kart and up again.
+- Only the picture: the driving is unchanged, online too. The views from above and the small map are flat as before.
+
+| File | What changed |
+|---|---|
+| `client/camera.js` | "eyeLift": something on lower or higher ground is drawn lower or higher. Without it, nothing changes |
+| `client/levels.js` | New. Where the ground is lower, its steps, the stone walls, and which scenery stands at the bottom |
+| `client/ground.js` | The sunken part is cut out of the ground picture and painted under it, each step at its depth |
+| `client/draw.js` | The walls; karts, props, the tunnel and the railing at their height; the camera going down and up |
+| `client/nova-lap-look.js` | The levels of the Nova lap, and the names of the scenery at the bottom |
+| `tests/levels.test.js` | New. 29 tests |
+| `WALKTHROUGH.md`, `client/README.md`, `tests/README.md` | Kept true |
+
+**Why it was done this way**
+- One small change in the camera reaches everything that is drawn: the ground, the buildings and the karts all ask the camera where to go.
+- The buildings file (Catarina's) is not changed: the look names the pieces of the tunnel that go down.
+- The steps of the path are too small to see, so it looks like a ramp; the steps of the stairs are big, so they look like stairs.
+
+**Decisions**
+- The team, through Francisco, chose two levels, after trying them, and the Sagres Beach Way at the bottom.
+- Decision made by the agent, please confirm: the drop is 2.2 metres, a guess kept smaller than the height of the camera's eye (about 3.3 metres) so it sees over the edge from below.
+- Decision made by the agent, please confirm: the railing at the west end of the Beach Way stays at ground level, on top of the stone wall.
+
+**What was checked, and what was not**
+- The pictures were drawn in a browser from twelve fixed spots (top and middle of the stairs, the plaza in four directions, the path both ways and at three points going up, the tunnel from the plaza, the view from above). On the way three problems were found and fixed: the path looked like a second flight of stairs, thin stripes across it, and the plaza was three times slower to draw (now about 1.7 times).
+- Two mistakes in new tests of this branch were fixed: one expected the sunken part to end at the plaza (written before the Beach Way went down), one picked a point outside the tunnel floor.
+- Broken on purpose in three ways; each made tests fail.
+- `npm test`: 2726 passed, 5 skipped; after bringing in the newest `main` (recorded music, the campus loop out of the game), 2772 passed, 5 skipped.
+- Francisco drove the first version on his laptop and kept it. **Not checked by the agent:** how it looks in motion, other karts going down and up, and how smooth it is on a slower laptop.
+
+**How to check it yourself**
+`npm start`, Single race, Nova lap: down the stairs, across the plaza, up the path, and look left at the Sagres Beach Way.
+
+**Later the same afternoon, after Francisco drove it**
+- He could see through the ground: the tunnel, at the bottom, was painted over the bank in front of it. Things at the bottom are now cut to where the sunken part can really be seen (`holeOutline` in `client/draw.js`).
+- The Beach Way looked like an extra corridor with an odd wall. He chose to have the tunnel right at the edge of the plaza: the tunnel moved 5.5 squares east in `client/nova-lap-buildings.js`, the side wall of its old ramp was taken out, its railing at the west end moved with it, and the sandy floor in `client/nova-lap-ground.js` is now only in front of its mouth (west of it is the grass bank). These are Catarina's files: she should know. The squares were already walls in the track's letters, so the driving and the map did not change, and her Nova lap tests pass unchanged.
+- Three of this branch's own tests (not in `main` yet) were changed to the tunnel's new place, and one added: no Beach Way is left west of the tunnel.
+- Checked again in a browser from the spots of his three photos. `npm test`: 2773 passed, 5 skipped.
+- Francisco drove it again: the foot of the tunnel walls looked see-through, and railings vanished when he came close. The cut was too crude (one line per thing, from its middle). It now follows the real rule: what is above the level of the ground of the track is never hidden by it; what is below is seen only through the holes. Checked again from his three new photos.
+
+**Evening, five more rounds of his photos** (all in the picture only; the driving is unchanged)
+- **The railings stopped vanishing.** The holes were cut at the kart's own nearest distance, but from down below the ground of the track reaches the bottom of the screen closer than that, so a band along the bottom was outside the holes. They are now cut where that ground leaves the screen (`client/draw.js`).
+- **The tunnel is solid, with the picture painted on its front.** He saw through gaps into the hollow mouth and asked for the painting on the wall instead. The back wall, with its painting of the tunnel, now stands flush with the front under the name beam, and the space behind is filled. Its outer sides are white instead of sand. Its hidden top was left out: it showed as white marks under the beam. (`client/nova-lap-buildings.js`, Catarina's file: she should know.) The ground of the track now has a hole over the whole tunnel, walls included (`client/nova-lap-look.js`). For a few minutes the tunnel was made lower; Francisco wanted it kept at full size, so that was undone.
+- **The real cause of seeing through the tunnel's wall, and of the slit seen earlier.** The cut is made of several shapes. The canvas leaves out the overlap of two shapes traced opposite ways round, and they were traced either way. There a wall was not painted, and what stood behind it showed through. Every shape is now traced the same way (`addShape` in `client/draw.js`). Found by giving the hidden faces test colours in the browser.
+- **The stone walls are the same white as the tunnel's sides**, shaded the same way, so the two can no longer be told apart (`client/draw.js`).
+- **The path covers the wall of the Sagres Beach Way.** The walls were painted after all the sunken ground, so one showed through the path in front of it. Now each wall is painted right after the floor it stands on, deepest first (`client/ground.js` and `client/draw.js`).
+- One of this branch's own tests changed (not in `main`): the sunken part now ends at row 80, behind the tunnel.
+- Checked in a browser from the spots of each of his photos, and the stairs and the plaza again. `npm test`: 2773 passed, 5 skipped. **Not checked by the agent:** online and split screen in a browser (they use the same drawing code, `createPainter`).
+
+**What comes next**
+The team plays it before the demo. If the plaza is slow on someone's laptop, the path's 40 steps can be fewer.
+
+### 20 November 2026: karts jolt on the stairs of the Nova lap (and slopes tried and taken out)
+
+**What was done**
+Francisco asked, for the team, for the wide stairs of the Nova lap to go down and the path past the beach tunnel to go up again, as on the real campus. Branch `nova-lap-slopes`.
+- First try: slopes in the driving rules (`shared/slopes.js`): faster down the stairs, slower up the path, the kart's nose drawn dipping or rising, and jolting on the steps.
+- Francisco drove it: a kart that stopped on the way up could not start again, and a ground that stays flat while the kart is only faster or slower did not feel like a hill. He chose to keep only the jolting on the stairs.
+- So both commits of the first try were undone with `git revert` (new commits that cancel them; the history is kept), and the jolting was made again, in the picture only.
+
+| File | What changed |
+|---|---|
+| `client/stairs-bump.js` | New. How high a kart jolts on stairs |
+| `client/nova-lap-look.js` | Where the stairs are: [64, 63, 71, 69] in squares |
+| `client/draw.js` | A kart on the stairs is drawn a little higher while it jolts |
+| `tests/stairs-bump.test.js` | New. 8 tests |
+| `WALKTHROUGH.md`, `client/README.md`, `tests/README.md` | Kept true |
+
+**Why it was done this way**
+- Only the picture: on the stairs a kart drives exactly as on any road, online too, so nothing that works can break three days before the deadline.
+- The jolt follows where the kart is, not the clock: standing still it does not jolt, and the same spot always looks the same.
+- The bug in the first try: the pull of the slope was added before the driving rules, so a kart standing on the way up always seemed to roll back a little, and the gas only ever braked it to a stop. The tests of the first try never started a kart from standstill uphill. Nothing of it is left in the code now.
+
+**Decisions**
+- The team (through Francisco) chose: real slopes in the rules, then, after trying them, only the jolting.
+- Decision made by the agent, please confirm: the branch keeps its name `nova-lap-slopes`, though it now only has the jolting.
+
+**What was checked, and what was not**
+- After the revert the code was the same as `main` (no differences).
+- The jolting was broken on purpose in two ways; each made a test fail.
+- `npm test`: 2660 passed, 5 skipped.
+- The Nova lap page opens with no new errors.
+- **Not checked by the agent:** how it looks while driving (the app's browser redraws too slowly). Francisco drove the first try on his laptop.
+
+**How to check it yourself**
+`npm start`, Single race, Nova lap, and drive down the wide stairs.
+
+**What comes next**
+One try, on a separate branch, of the ground at two heights (the upper ground and the lower plaza). Francisco tries it; if it looks bad, it is dropped and only the jolting stays.
+
 ### 19 November 2026: FranFon in green, a golf swing, and no Cup in the menu
 
 **What was done**

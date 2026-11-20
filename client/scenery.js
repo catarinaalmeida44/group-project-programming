@@ -495,6 +495,7 @@ export function sceneryInView(scenery, kart, settings = CHASE, screen = SCREEN) 
       colour: flat.colour,
       points,
       ahead: corners.reduce((sum, corner) => sum + corner.ahead, 0) / corners.length,
+      lowest: Math.min(...corners.map((corner) => corner.height)), // units above its own ground (draw.js needs it for the levels)
       column: flat.column,
       row: flat.row,
     });

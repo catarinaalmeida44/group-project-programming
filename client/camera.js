@@ -122,7 +122,7 @@ export function chaseNumbers(settings = CHASE) {
     if (!(depth > 0) || !(kartScale > 0)) {
       throw new RangeError("Camera: depth and kartScale must be above zero");
     }
-    return { horizonY, growthPerRow: kartScale / (kartScreenY - horizonY), depth };
+    return lifted({ horizonY, growthPerRow: kartScale / (kartScreenY - horizonY), depth }, settings.eyeLift);
   }
   if (!(farShrink > 0 && farShrink < 1)) {
     throw new RangeError("Camera: farShrink must be above 0 and below 1");
@@ -135,7 +135,31 @@ export function chaseNumbers(settings = CHASE) {
   // Links size to distance, chosen so that the top row shows the ground
   // that lies "viewAhead" units ahead of the kart.
   const depth = viewAhead / (1 / (farShrink * kartScale) - 1 / kartScale);
-  return { horizonY, growthPerRow, depth };
+  return lifted({ horizonY, growthPerRow, depth }, settings.eyeLift);
+}
+
+/**
+ * The ground is not all at one height everywhere (levels.js: the sunken
+ * plaza of the Nova lap). Something on ground lower than the kart's is
+ * further below the camera's eye; something higher is less far. "eyeLift"
+ * in the settings says by how many units the eye is higher above that
+ * ground than above the kart's (below zero: lower). Only how high things
+ * are drawn changes: the horizon, and how far ahead and to the side
+ * things are, stay the same. Left out, or 0, nothing changes at all.
+ * An eye that would be at or below that ground (it cannot see it from
+ * above) gives a growth of Infinity: callers then draw nothing of it.
+ */
+function lifted(numbers, eyeLift = 0) {
+  if (!eyeLift) {
+    return numbers;
+  }
+  const eyeHeight = 1 / numbers.growthPerRow + eyeLift;
+  return { ...numbers, growthPerRow: eyeHeight > 0 ? 1 / eyeHeight : Infinity };
+}
+
+/** Can the camera see ground with these settings from above? False when the "eyeLift" puts the eye at or below it. */
+export function seesFromAbove(settings) {
+  return Number.isFinite(chaseNumbers(settings).growthPerRow);
 }
 
 /**
