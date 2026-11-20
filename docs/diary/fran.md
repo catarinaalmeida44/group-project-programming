@@ -40,6 +40,12 @@ After the jolting on the stairs, Francisco asked for one try at the ground itsel
 **How to check it yourself**
 `npm start`, Single race, Nova lap: down the stairs, across the plaza, up the path, and look left at the Sagres Beach Way.
 
+**Later the same afternoon, after Francisco drove it**
+- He could see through the ground: the tunnel, at the bottom, was painted over the bank in front of it. Things at the bottom are now cut to where the sunken part can really be seen (`holeOutline` in `client/draw.js`).
+- The Beach Way looked like an extra corridor with an odd wall. He chose to have the tunnel right at the edge of the plaza: the tunnel moved 5.5 squares east in `client/nova-lap-buildings.js`, the side wall of its old ramp was taken out, its railing at the west end moved with it, and the sandy floor in `client/nova-lap-ground.js` is now only in front of its mouth (west of it is the grass bank). These are Catarina's files: she should know. The squares were already walls in the track's letters, so the driving and the map did not change, and her Nova lap tests pass unchanged.
+- Three of this branch's own tests (not in `main` yet) were changed to the tunnel's new place, and one added: no Beach Way is left west of the tunnel.
+- Checked again in a browser from the spots of his three photos. `npm test`: 2773 passed, 5 skipped.
+
 **What comes next**
 The team plays it before the demo. If the plaza is slow on someone's laptop, the path's 40 steps can be fewer.
 
