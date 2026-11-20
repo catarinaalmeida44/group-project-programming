@@ -21,8 +21,8 @@
 // choose their own keys (utility AI, see computer-driver.js). Your
 // best times are also kept in this browser (records.js), and the camera view
 // you start in comes from the menu's settings (settings.js). The track comes
-// from the address of the page (track-choice.js): race.html?track=campus-loop
-// opens the campus loop, and without a choice it is the test oval. (The
+// from the address of the page (track-choice.js): race.html?track=nova-lap
+// opens the Nova lap, and without a choice it is the test oval. (The
 // online page is online.js.)
 
 import { countdownAt } from "../shared/countdown.js";
@@ -64,7 +64,7 @@ import { raceMoment } from "./music-cues.js";
 import { createUiSound } from "./ui-sound.js";
 import { readSwitches, toggleMaster } from "./audio-switches.js";
 import { tileKindAt } from "../shared/track.js";
-import { podiumLineup, podiumLoser, podiumKartsOf, singleRaceIsOver, podiumCaption, cheersDue, finishPlace, finishedWords } from "./podium.js";
+import { podiumLineup, podiumLoser, podiumKartsOf, singleRaceIsOver, podiumCaption, finishPlace, finishedWords } from "./podium.js";
 import { createPodiumView } from "./podium-view.js";
 
 const track = chooseTrack(window.location.search);
@@ -123,7 +123,6 @@ let waitingSeconds = 0; // real time that has passed but is not yet turned into 
 let record = null; //      once the race is finished: did it beat your best times? (records.js)
 let youFinishedAt = null; // the step of the race when the player finished, or null
 let podiumSince = null; //   when the podium came up, in milliseconds of the page's clock, or null
-let cheered = 0; //          how many times the crowd has cheered on this podium
 let raceNumber = 0; //       counts the races on this page, so a late answer about an older race is ignored
 let savedAnswer = null; //   what the server said about saving this race for the player's stats, or null
 
@@ -150,7 +149,7 @@ const soundText = document.getElementById("sound");
 soundText.textContent = readSwitches(storage).master ? "on" : "off";
 // The music (music.js) and the clicks of the buttons (ui-sound.js). M is the
 // master switch: it silences all three (audio-switches.js).
-const music = createPageMusic(window, storage);
+const music = createPageMusic(window, storage, "race"); // "race": it will need the three lap tunes and the podium one
 const uiSound = createUiSound(window, storage);
 uiSound.listen(document);
 
@@ -221,7 +220,6 @@ function startAgain() {
   record = null;
   youFinishedAt = null;
   podiumSince = null;
-  cheered = 0;
   raceNumber += 1;
   savedAnswer = null;
   followingId = null;
@@ -332,19 +330,21 @@ function frame(now) {
   // moves to one of them, the one in last place, and stays with it until it
   // finishes (kartToWatchAfterFinish in race-view.js). In a single race the
   // others are all computer karts. A banner says so (see below).
-  // The music: none before the start and in the countdown, the race song
-  // from GO (faster on the final lap), the fanfare at your finish, then the
-  // podium song (music-cues.js).
-  music.follow(
-    raceMoment({
+  // The music (music-files.js): none before the start and in the countdown,
+  // then a tune for the first lap, one for the laps between and one for the
+  // last lap, which goes on after your finish. On the podium, trumpets and clapping.
+  music.follow({
+    place: raceMoment({
       started,
       racing: countdown.racing,
       finished: youFinishedAt !== null,
       podium: podiumSince !== null,
       lapsDone: racer.progress.lapsDone,
       laps: track.laps,
-    }),
-  );
+    }).place,
+    lapsDone: racer.progress.lapsDone,
+    laps: track.laps,
+  });
 
   const kartsNow = podiumKartsOf(race, myCharacter);
   const computerIds = kartsNow.slice(1).map((kart) => kart.id);
@@ -374,11 +374,8 @@ function frame(now) {
     const caption = podiumCaption(lineup, formatTime); // "Race again" is a button on the picture now (race.html)
     const shownFor = (now - podiumSince) / 1000;
     podium.paint(trackCanvas.getContext("2d"), { width: trackCanvas.width, height: trackCanvas.height }, lineup, shownFor, caption, loser);
-    // The crowd cheers, again and again for a while.
-    while (cheered < cheersDue(shownFor)) {
-      sound.cheer();
-      cheered++;
-    }
+    // The sound of the podium is its music: trumpets and clapping (music-files.js).
+    // Until 20 November 2026 the crowd also cheered here, made by sound.js.
   } else {
     const others = race.racers.map((_, id) => id).filter((id) => id !== shownId).map(kartAsDrawn);
     if (!started && view === "chase") {

@@ -62,11 +62,11 @@ Added on 12 November 2026. Not run yet with two laptops, and not yet on the publ
 | 26 | A: create an account with a proper user name and a password of 8 characters or more | The panel closes. The top of the menu shows your user name and "Sign out" | |
 | 27 | B: try to create an account with the same user name, written in capital letters | "Someone already has that user name" | |
 | 28 | B: create an account with another user name | B is signed in under that name | |
-| 29 | A: click "Online" and choose the Campus loop. B: do the same | Both are in the same room. Under the track each sees "Signed in as ..." with their own name, and "With you: ..." with the other's name | |
+| 29 | A: click "Online" and choose the Nova lap (the campus loop of these checks left the game on 20 November). B: do the same | Both are in the same room. Under the track each sees "Signed in as ..." with their own name, and "With you: ..." with the other's name | |
 | 30 | A (the host): press Enter. Both: drive the three laps | When each crosses the line, the line under the track says "Saved to the leaderboard", with a place (1st or 2nd) and the time. The times match the clocks above the track | |
-| 31 | Both: go back to the menu and open "Leaderboard", then "Campus loop" | Both names are there with the times from check 30, the faster one first. Your own row is marked "you" | |
+| 31 | Both: go back to the menu and open "Leaderboard", then "Nova lap" | Both names are there with the times from check 30, the faster one first. Your own row is marked "you" | |
 | 32 | A: open "Leaderboard" and choose "Test oval" | Nobody raced there: it says there are no times yet | |
-| 33 | B: click "Sign out", then "Online", choose the Campus loop, and A starts another race. Both finish | B's page says it is playing as a guest and that results are not saved. A sees "With you: 1 guest". After the race the leaderboard has no new time for B | |
+| 33 | B: click "Sign out", then "Online", choose the Nova lap, and A starts another race. Both finish | B's page says it is playing as a guest and that results are not saved. A sees "With you: 1 guest". After the race the leaderboard has no new time for B | |
 | 34 | B: click "Sign in" and type the right name with a wrong password | "Wrong user name or password." B is not signed in | |
 | 35 | A: close the browser completely, open it again and open the link | A is still signed in | |
 | 36 | A: click your user name, open "Delete my account", type the password, tick the box and press the button | A is signed out. On B, after reopening the Leaderboard, A's name and times are gone | |
@@ -94,7 +94,7 @@ Added on 12 November 2026. Not run yet by people: these were only tried by robot
 
 ## A race driven to its end, the yellow light and the results (added 13 November 2026)
 
-Use the campus loop for these: in the menu, choose Online and the Campus loop on both laptops.
+Use the Nova lap for these: in the menu, choose Online and the Nova lap on both laptops. (They were written for the campus loop, which left the game on 20 November 2026.)
 
 | # | What to do | What should happen | OK? |
 |---|---|---|---|
@@ -133,7 +133,7 @@ Turn the loudspeakers on. One laptop is enough for checks 66 to 72.
 | 69 | Drive onto the grass, then steer hard at speed | A low rumble on the grass. The tyres squeal when the kart slides | |
 | 70 | Touch a wall gently, then drive into one at full speed | A soft thud, then a boom with a crash and bits tinkling down. Not twenty times while you grind along the wall | |
 | 71 | Drive over a banana | A whistle sliding down and a whirling sound for as long as the kart spins, then "boing" | |
-| 72 | Finish a lap, start the last lap, and finish the race | A chime for the lap, a trumpet call for the last lap, and at the finish a fanfare with a crowd cheering | |
+| 72 | Finish a lap, start the last lap, and finish the race | A chime for the lap, a trumpet call for the last lap, and at the finish a fanfare. (Until 20 November 2026 a crowd made by code also cheered on the podium. The podium now has recorded trumpets and clapping: see "Music" below) | |
 | 73 | Press M, drive, press M again | "it is off" under the track and silence at once, then "on" and the sound again. Open the menu, Settings: the box "Sound in races" says the same | |
 | 74 | Switch to another tab during a race, and come back | Silence while the page is not in front, sound again when you come back | |
 | 75 | Online, with two laptops: B drives into the back of A | Both hear a knock with a clang, each on their own laptop. Write down if one of them hears nothing | |
@@ -228,6 +228,20 @@ Added on 20 November 2026. Not run yet with real laptops. Two laptops, A and B, 
 | 105 | B finishes | A's camera moves to the computer kart in last place, if one is still driving. When everyone is home: the podium, then the results board | |
 | 106 | Single race: finish before at least one computer kart (on Easy that is easy) | The same banner, "You are watching" a computer kart, and the picture follows it until the podium comes, at the latest 30 seconds later | |
 | 107 | Compare the podium of a single race, a two-player race and an online race on the Nova lap | The same scene in all three: in front of the school's name, the camera coming in, the first three on the steps, the crowd, and with four or more karts the driver who came last crying on the left | |
+
+## Music, by ear
+
+Added on 20 November 2026 (afternoon). **Nobody has listened to it in the game yet**: it was checked with the loudspeakers cut off. One laptop with the sound on is enough. Sound must be on in Settings (All sound, and Music).
+
+| # | Do this | You should hear | Result |
+|---|---|---|---|
+| 108 | Open the menu and click anywhere | The menu tune starts and goes round and round. No click or gap where it starts again (it is about two minutes long) | |
+| 109 | Single race on the Nova lap. Press an arrow key | Silence and the beeps during 3, 2, 1. At GO a calm tune | |
+| 110 | Drive into the second lap, then into the third | A faster tune on the second lap, the fastest on the third. One fades into the next: no hole, no two tunes on top of each other for long | |
+| 111 | While driving: is the music too loud or too quiet next to the engine and the beeps? | You can hear the engine and every beep clearly over the music. **Write down "too loud", "too quiet" or "right"**: it is one number to change | |
+| 112 | Finish and wait for the podium | The last lap's tune goes on while you watch the others. On the podium: trumpets and clapping, once, and no other cheering | |
+| 113 | Press M during a race, and switch Music off in Settings | M silences everything at once and brings it back. With Music off the engine is still heard | |
+| 114 | Two players, and Online with two laptops | The same tunes. Online each laptop plays the tune of its own driver's lap | |
 
 ## Things to write down
 

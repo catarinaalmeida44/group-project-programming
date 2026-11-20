@@ -1,8 +1,8 @@
 // Which track the single race page and the online page show.
 //
-// The track is chosen in the address of the page: race.html?track=campus-loop
-// opens the campus loop. Without a choice, the page shows the test oval.
-// The online page works the same way: online.html?track=campus-loop.
+// The track is chosen in the address of the page: race.html?track=nova-lap
+// opens the Nova lap. Without a choice, the page shows the test oval.
+// The online page works the same way: online.html?track=nova-lap.
 //
 // Anyone can type anything into an address, so the choice is only accepted if
 // it is exactly the short name of a track in shared/tracks/index.js. Anything
@@ -12,14 +12,14 @@ import { TRACKS, DEFAULT_TRACK } from "../shared/tracks/index.js";
 
 /**
  * The track named in the address. "search" is the part of the address from the
- * question mark on, for example "?track=campus-loop" (window.location.search).
+ * question mark on, for example "?track=nova-lap" (window.location.search).
  */
 export function chooseTrack(search) {
   return TRACKS[chooseTrackName(search)];
 }
 
 /**
- * The short name of the track named in the address ("campus-loop"), or the
+ * The short name of the track named in the address ("nova-lap"), or the
  * short name of the test oval. It is always a name from the list, so it is
  * safe to put into another address.
  */

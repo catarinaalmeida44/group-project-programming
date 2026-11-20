@@ -7,8 +7,12 @@
 // sound-test.html.
 //
 // THE PARTS
-//   createMusicPlayer  plays songs on a browser's sound system: play(name),
-//                      setSpeed(), setVolume()
+//   createMusicPlayer  plays the songs made of notes on a browser's sound
+//                      system: play(name), setSpeed(), setVolume(). Since 20
+//                      November 2026 only the sound check page uses it
+//   createFilePlayer   plays the five recorded tunes of client/music/
+//                      (music-files.js says which one when). This is the
+//                      music of the game since 20 November 2026
 //   createPageMusic    what a page uses: it wakes the sound at the first key
 //                      press or click (a browser allows no sound before),
 //                      follows what the page says is happening, and obeys the
@@ -21,7 +25,8 @@
 //   drums  a kick (a low note falling fast), a snare and a hi-hat (hiss)
 
 import { SONGS, STEPS_PER_BAR, notesBetween, stepSeconds, hertzOf, barsOf, FINAL_LAP_SPEED } from "./music-score.js";
-import { musicFor, isNewSong } from "./music-cues.js";
+import { isNewSong } from "./music-cues.js";
+import { TUNES, isTune, tuneFor, tunesAhead, loopPoints } from "./music-files.js";
 import { readSwitches, isHeard } from "./audio-switches.js";
 
 // ---------------------------------------------------------------------------
@@ -207,29 +212,200 @@ export function createMusicPlayer(context, destination = context.destination) {
   };
 }
 
+// ---------------------------------------------------------------------------
+// RECORDED MUSIC (since 20 November 2026)
+// The game now plays five recorded tunes (music-files.js says which one
+// when) instead of the songs made of notes above. The player above is still
+// here: the sound check page (sound-test.html) plays its songs.
+// ---------------------------------------------------------------------------
+
+/** How loud the recorded music is, all together. Kept under the race sounds. TO TUNE BY EAR. */
+export const FILE_MUSIC_VOLUME = 0.26;
+const TUNE_FADE = 0.6; // how long one tune takes to make way for the next, in seconds
+
+/**
+ * Plays the recorded tunes on a browser's sound system.
+ *   context      the browser's sound system (an AudioContext)
+ *   loadTune     given a tune's name, promises its sound, ready to play (an
+ *                AudioBuffer). A tune is only asked for once
+ *   destination  where the sound goes (normally the loudspeakers)
+ * A tune that is not ready yet starts as soon as it is. Until then the tune
+ * before it plays on, so there is no hole between two laps.
+ */
+export function createFilePlayer(context, loadTune, destination = context.destination) {
+  const master = context.createGain();
+  master.gain.value = FILE_MUSIC_VOLUME;
+  master.connect(destination);
+
+  const sounds = new Map(); // name -> the sound, or null while it is on its way
+  let wanted = null; //        the tune asked for
+  let playing = null; //       { name, source, out } of the tune heard now
+  let ended = null; //         a tune that plays once and is over: not started again until another was asked for
+
+  /** Lets the tune that plays fade away, then stops it. */
+  function fadeOut() {
+    if (playing === null) {
+      return;
+    }
+    const { source, out } = playing;
+    playing = null;
+    out.gain.setValueAtTime(out.gain.value, context.currentTime);
+    out.gain.linearRampToValueAtTime(0, context.currentTime + TUNE_FADE);
+    source.onended = null;
+    source.stop(context.currentTime + TUNE_FADE + 0.05);
+    setTimeout(() => out.disconnect(), (TUNE_FADE + 0.2) * 1000);
+  }
+
+  /** Starts a tune whose sound is ready, while the one before fades away. */
+  function startNow(name) {
+    const sound = sounds.get(name);
+    const tune = TUNES[name];
+    fadeOut();
+    const out = context.createGain();
+    out.gain.setValueAtTime(0, context.currentTime);
+    out.gain.linearRampToValueAtTime(tune.level, context.currentTime + 0.25);
+    out.connect(master);
+    const source = context.createBufferSource();
+    source.buffer = sound;
+    if (tune.loops) {
+      // Round and round, jumping back just inside the silence an MP3 file
+      // has at each end, so the join cannot be heard (loopPoints in music-files.js).
+      const lists = [];
+      for (let channel = 0; channel < sound.numberOfChannels; channel++) {
+        lists.push(sound.getChannelData(channel));
+      }
+      const { start, end } = loopPoints(lists, sound.sampleRate);
+      source.loop = true;
+      source.loopStart = start;
+      source.loopEnd = end;
+      source.connect(out);
+      source.start(0, start);
+    } else {
+      source.connect(out);
+      source.start();
+      source.onended = () => {
+        if (playing !== null && playing.source === source) {
+          playing = null;
+          ended = name; // played once: over, and not started again by itself
+        }
+      };
+    }
+    playing = { name, source, out };
+  }
+
+  /** Fetches a tune's sound, once. Starts it when it arrives, if it is still the one wanted. */
+  function fetchSound(name) {
+    if (sounds.has(name)) {
+      return;
+    }
+    sounds.set(name, null);
+    loadTune(name)
+      .then((sound) => {
+        sounds.set(name, sound);
+        if (wanted === name && (playing === null || playing.name !== name)) {
+          startNow(name);
+        }
+      })
+      .catch(() => {
+        sounds.delete(name); // no music is better than a broken page: it is asked for again next time
+        if (wanted === name) {
+          fadeOut(); // and the tune before it must not play on for ever
+        }
+      });
+  }
+
+  return {
+    /** Plays a tune (a name from music-files.js), or null for silence. Asking for the tune already playing changes nothing. */
+    play(name) {
+      if (name !== null && !isTune(name)) {
+        throw new Error(`There is no tune called "${name}".`);
+      }
+      if (name !== wanted) {
+        ended = null;
+      }
+      wanted = name;
+      if (name === null) {
+        fadeOut();
+        return;
+      }
+      if ((playing !== null && playing.name === name) || ended === name) {
+        return;
+      }
+      if (sounds.get(name)) {
+        startNow(name);
+      } else {
+        fetchSound(name); // the tune before plays on until this one is ready
+      }
+    },
+
+    /** Gets tunes ready before they are due. */
+    prepare(names) {
+      for (const name of names) {
+        if (isTune(name)) {
+          fetchSound(name);
+        }
+      }
+    },
+
+    /** 0 silences the music at once, 1 is as loud as it should be. */
+    setVolume(level) {
+      master.gain.setTargetAtTime(FILE_MUSIC_VOLUME * level, context.currentTime, 0.05);
+    },
+
+    /** The tune playing now, or null. */
+    playing: () => playing?.name ?? null,
+  };
+}
+
 /**
  * The music of one page.
  *   browserWindow  the browser's window
  *   storage        this browser's storage, for the switches (audio-switches.js)
+ *   page           "menu" or "race": which tunes this page will need
+ *                  (tunesAhead in music-files.js). Their files are fetched
+ *                  as soon as the page opens, so they are ready when due
  * Gives:
  *   follow(moment)   call whenever something may have changed: { place,
- *                    finalLap } as music-cues.js describes
+ *                    lapsDone, laps }. "place" is what raceMoment() in
+ *                    music-cues.js gives; the laps say which tune a lap gets
  *   setSwitches()    reads the switches again (after M, or a change in Settings)
+ *   playing()        the tune heard now, or null (for looking, from the console)
  */
-export function createPageMusic(browserWindow, storage) {
+export function createPageMusic(browserWindow, storage, page = null) {
   let switches = readSwitches(storage);
   let context = null;
   let player = null;
-  let wanted = { place: null, finalLap: false };
+  let wanted = { place: null, lapsDone: 0, laps: 1 };
+
+  // The files, as they come from our server. They can be fetched before the
+  // player has pressed anything; only playing has to wait for that.
+  const files = new Map(); // tune -> a promise of the file's bytes
+  function bytesOf(name) {
+    if (!files.has(name)) {
+      const asked = browserWindow
+        .fetch(TUNES[name].file)
+        .then((answer) => (answer.ok ? answer.arrayBuffer() : Promise.reject(new Error("no such tune"))));
+      asked.catch(() => files.delete(name)); // not there (offline, say): asked for again next time
+      files.set(name, asked);
+    }
+    return files.get(name);
+  }
+  if (isHeard(switches, "music") && typeof browserWindow.fetch === "function") {
+    for (const name of tunesAhead(page)) {
+      bytesOf(name);
+    }
+  }
+
+  /** A tune's sound, ready to play: its file, turned into sound by the browser. */
+  function loadTune(name) {
+    return bytesOf(name).then((bytes) => context.decodeAudioData(bytes.slice(0)));
+  }
 
   function apply() {
     if (player === null) {
       return;
     }
-    const heard = isHeard(switches, "music");
-    const { song, fast } = musicFor({ ...wanted, musicOn: heard, soundOn: true });
-    player.setSpeed(fast);
-    player.play(song);
+    player.play(tuneFor({ ...wanted, musicOn: isHeard(switches, "music") }));
   }
 
   /** Starts the sound system. Only possible once the player has pressed a key or clicked. */
@@ -239,12 +415,13 @@ export function createPageMusic(browserWindow, storage) {
     }
     if (player === null) {
       const SoundSystem = browserWindow.AudioContext ?? browserWindow.webkitAudioContext;
-      if (typeof SoundSystem !== "function") {
+      if (typeof SoundSystem !== "function" || typeof browserWindow.fetch !== "function") {
         return; // a browser without sound: the page simply has no music
       }
       try {
         context = new SoundSystem();
-        player = createMusicPlayer(context);
+        player = createFilePlayer(context, loadTune);
+        player.prepare(tunesAhead(page));
       } catch {
         context = null;
         player = null;
@@ -273,10 +450,12 @@ export function createPageMusic(browserWindow, storage) {
 
   return {
     follow(moment) {
-      if (moment.place === wanted.place && moment.finalLap === wanted.finalLap) {
+      const lapsDone = Number.isInteger(moment.lapsDone) ? moment.lapsDone : 0;
+      const laps = Number.isInteger(moment.laps) ? moment.laps : 1;
+      if (moment.place === wanted.place && lapsDone === wanted.lapsDone && laps === wanted.laps) {
         return;
       }
-      wanted = { place: moment.place, finalLap: moment.finalLap === true };
+      wanted = { place: moment.place, lapsDone, laps };
       apply();
     },
 
@@ -288,5 +467,7 @@ export function createPageMusic(browserWindow, storage) {
         apply(); // silence
       }
     },
+
+    playing: () => player?.playing() ?? null,
   };
 }

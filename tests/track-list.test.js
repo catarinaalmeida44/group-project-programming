@@ -109,7 +109,9 @@ describe("the cards for choosing a track", () => {
 
 describe("your own best times on a card", () => {
   const OVAL = TRACKS["test-oval"];
-  const CAMPUS = TRACKS["campus-loop"];
+  // The other track of the game. Until 20 November 2026 this was the campus
+  // loop (TRACKS["campus-loop"]), which is no longer a track of the game.
+  const CAMPUS = TRACKS["nova-lap"];
 
   it("says there is no time yet on a track you never finished", () => {
     expect(practiceBests(fakeStorage(), OVAL)).toEqual({ race: NO_TIME, lap: NO_TIME, any: false });
