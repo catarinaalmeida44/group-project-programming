@@ -11,6 +11,7 @@ import { STEP_SECONDS } from "../shared/physics.js";
 import { FINISH_WINDOW_STEPS } from "../shared/race-time.js";
 import { formatTime } from "./format.js";
 import { standings } from "./standings.js";
+import { placeText } from "./net.js";
 
 const PHASES = ["open", "countdown", "racing", "finished"];
 
@@ -95,13 +96,20 @@ export function kartToWatch(karts) {
  * driving, and when nobody is driving any more it shows the winner.
  * (Until 19 November 2026 the page used kartToWatch() above, which took
  * the first kart in the list whenever all were on the same lap.)
+ *
+ * It is a person's kart, never a computer kart: "computerIds" are the
+ * numbers of the computer karts (computers-switch.js), and they are left
+ * out. (Since 19 November 2026, at Catarina's request: a watcher wants to
+ * see how their friends are doing.) Only in a race without any person's
+ * kart does the camera fall back on a computer kart.
  *   karts        the karts of the race
  *   track        the track
  *   followingId  the number of the kart the camera is on now, or null
+ *   computerIds  the numbers of the computer karts. Left out: there are none
  * Gives the kart, or undefined when there are no karts.
  */
-export function kartToFollow(karts, track, followingId) {
-  const usable = Array.isArray(karts) ? karts.filter((kart) => kart !== null && typeof kart === "object") : [];
+export function kartToFollow(karts, track, followingId, computerIds = []) {
+  const usable = kartsOfPeople(karts, computerIds);
   const followed = usable.find((kart) => kart.id === followingId);
   if (followed !== undefined && followed.finished !== true) {
     return followed;
@@ -110,8 +118,107 @@ export function kartToFollow(karts, track, followingId) {
   return order.find((kart) => kart.finished !== true) ?? order[0];
 }
 
+/** The karts of the people in a race: every kart that is not a computer kart, or, if there is no such kart, every kart. */
+function kartsOfPeople(karts, computerIds) {
+  const usable = Array.isArray(karts) ? karts.filter((kart) => kart !== null && typeof kart === "object") : [];
+  const computers = Array.isArray(computerIds) ? computerIds : [];
+  const people = usable.filter((kart) => !computers.includes(kart.id));
+  return people.length > 0 ? people : usable;
+}
+
+/**
+ * The karts a watcher can choose between: the people who are still driving,
+ * the one in front first. One kart or none means there is nothing to choose.
+ */
+export function peopleToWatch(karts, track, computerIds = []) {
+  return standings(kartsOfPeople(karts, computerIds), track).filter((kart) => kart.finished !== true);
+}
+
+/**
+ * The kart the camera moves to when a watcher presses the right arrow
+ * (direction 1: the next one behind) or the left arrow (direction -1: the
+ * next one in front). It goes round: after the last comes the first. Gives
+ * the number of that kart, or "followingId" unchanged when there is no
+ * other person to watch.
+ */
+export function nextToWatch(karts, track, followingId, direction, computerIds = []) {
+  const choices = peopleToWatch(karts, track, computerIds);
+  if (choices.length < 2) {
+    return followingId;
+  }
+  const at = choices.findIndex((kart) => kart.id === followingId);
+  if (at < 0) {
+    return choices[0].id; // the camera was on nobody we can choose: start with the one in front
+  }
+  const step = direction < 0 ? -1 : 1;
+  return choices[(at + step + choices.length) % choices.length].id;
+}
+
+/**
+ * The kart a driver's camera moves to once they have finished the race
+ * while others are still driving. (Since 20 November 2026, at Catarina's
+ * request: until then a driver who had finished sat looking at their own
+ * kart standing still until everyone was home.) It is used by the three
+ * race pages: online, single race and two players.
+ *
+ * It is a kart that is still driving, never the driver's own:
+ *   - a person's kart if any person is still driving, and only if there is
+ *     none a computer kart
+ *   - among those, the one in last place: the one everybody is waiting for
+ *   - the camera then stays with that kart until it finishes, and moves on
+ *     by the same rule
+ *
+ *   karts        the karts of the race [{ id, finished, passed, x, y, ... }]
+ *   track        the track
+ *   myId         the driver's own kart
+ *   followingId  the kart the camera is on now, or null
+ *   computerIds  the numbers of the computer karts. Left out: there are none
+ * Gives the kart, or undefined when nobody else is driving any more: the
+ * camera then stays where it is, and the podium is about to come.
+ */
+export function kartToWatchAfterFinish(karts, track, myId, followingId, computerIds = []) {
+  const usable = Array.isArray(karts) ? karts.filter((kart) => kart !== null && typeof kart === "object") : [];
+  const driving = usable.filter((kart) => kart.id !== myId && kart.finished !== true);
+  if (driving.length === 0) {
+    return undefined;
+  }
+  const followed = driving.find((kart) => kart.id === followingId);
+  if (followed !== undefined) {
+    return followed;
+  }
+  const order = standings(kartsOfPeople(driving, computerIds), track);
+  return order[order.length - 1];
+}
+
+/** What a driver who has finished is told while they wait for the others. */
+export const WAITING_TEXT = "Waiting until every player finishes.";
+
+/**
+ * The banner across the top of the picture for a driver who has finished
+ * while others are still driving, and whose camera is on one of them:
+ *   place        the place they finished in: 1, 2, 3 ...
+ *   steps        their race time, in steps
+ *   watchedName  whose kart the camera is on, or null when it has no name
+ *   canSwitch    true when the left and right arrows move the camera to
+ *                another player (online, with more than one person driving)
+ * Gives { title, text }: "You finished 2nd, in 1:02.34!" in big letters,
+ * and under it "Waiting until every player finishes. You are watching Ana."
+ */
+export function finishedBanner({ place, steps, watchedName = null, canSwitch = false }) {
+  const named = typeof watchedName === "string" && watchedName !== "";
+  const watching = named ? ` You are watching ${watchedName}.` : "";
+  const keys = canSwitch === true ? ` ${SWITCH_TEXT}` : "";
+  return {
+    title: `You finished ${placeText(place)}, in ${formatTime(steps * STEP_SECONDS)}!`,
+    text: `${WAITING_TEXT}${watching}${keys}`,
+  };
+}
+
 /** What the banner says for a moment when a watcher presses a driving key. */
 export const KEYS_LATER_TEXT = "Your keys do nothing yet: you drive in the next race.";
+
+/** What the banner adds when there is more than one player to watch. */
+export const SWITCH_TEXT = "Press ← or → to watch another player.";
 
 /**
  * The banner across the top of the picture for someone who arrived during a
@@ -121,19 +228,23 @@ export const KEYS_LATER_TEXT = "Your keys do nothing yet: you drive in the next 
  *   watchedName  whose kart the camera is on: a player's user name or a
  *                character's name, or null when it has no name
  *   pressedKey   true for a moment after the watcher pressed a driving key
+ *                that does nothing
+ *   canSwitch    true when there is more than one player to watch: the
+ *                banner then says which keys move the camera
  * Gives null when this player is not watching a race that is on, or
  * { title, text }: the title goes in big letters.
  */
-export function watchBanner({ race, myId, watchedName = null, pressedKey = false }) {
+export function watchBanner({ race, myId, watchedName = null, pressedKey = false, canSwitch = false }) {
   const raceIsOn = race.phase === "countdown" || race.phase === "racing";
   if (!raceIsOn || !isWatching(race, myId)) {
     return null;
   }
   const named = typeof watchedName === "string" && watchedName !== "";
   const camera = named ? `The camera is on ${watchedName}. ` : "";
+  const after = canSwitch === true ? `${SWITCH_TEXT} You join the next race.` : "A new race starts when this one is over, and you join it.";
   return {
     title: "A race is on: you are watching",
-    text: pressedKey === true ? KEYS_LATER_TEXT : `${camera}A new race starts when this one is over, and you join it.`,
+    text: pressedKey === true ? KEYS_LATER_TEXT : `${camera}${after}`,
   };
 }
 

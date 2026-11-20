@@ -178,5 +178,9 @@ export function singleSavedText(answer) {
   if (answer.code === "offline") {
     return " Not saved to your stats: the server could not be reached.";
   }
+  if (answer.code === "alone") {
+    // The page did not send it at all: a race without computer karts (main.js).
+    return " Not counted in your stats: you raced without computer karts.";
+  }
   return " Not saved to your stats.";
 }

@@ -188,6 +188,47 @@ Added on 19 November 2026. Not run yet with real laptops. Do it on the public li
 
 Write the numbers of each laptop here (one line each): server and back, updates a second, longest wait, pictures a second, key to screen, and the sentence.
 
+## Game settings online
+
+Added on 19 November 2026 (night). Not run yet with real laptops. Three laptops, A, B and C, on the public link. Everyone leaves the online page first, so the room is empty.
+
+| # | Do this | You should see | Result |
+|---|---|---|---|
+| 88 | A: open "Online" on the Nova lap | A card over the picture: "You are the host", "Start online game", Players 6, Computer karts On, Their level Normal | |
+| 89 | A: choose Players 2, level Hard, press "Confirm game settings" | The card goes. In the corner of the picture: "You are the host", "Up to 2 players · Computer karts: Hard" and a button "Game settings" | |
+| 90 | B: open "Online" on the Nova lap | B gets no card. In the corner: "Host:" and A's user name (or "a guest"), with the same settings, and no button | |
+| 91 | C: open "Online" on the Nova lap | C is told "The room is full" | |
+| 92 | A: press "Game settings", try Players 2 again, then choose 3 and confirm. C: press the button on the card to try again | On A's card nothing below 2 can be pressed while two people are there. After the change C gets in | |
+| 93 | A: press Enter. Everyone drives | Six karts: three people and three computer karts, and the computer karts are clearly faster than on Normal | |
+| 94 | C: reload the page during the race | C watches a person's kart, never a computer kart. The banner says "Press ← or → to watch another player", and the arrows move the camera between A and B | |
+| 95 | When the race is over: A presses "Game settings" on the results board, switches computer karts Off, confirms, and starts the next race | Only A, B and C race | |
+| 96 | Everyone leaves the page. A opens "Online" again | The card shows the defaults again: 6, On, Normal | |
+
+## Two players on one laptop
+
+Added on 19 November 2026 (night), changed on the 20th: player 1 has the arrows. One laptop, two people side by side: player 2 (W A S D) sits on the left, player 1 (the arrows) on the right. Catarina tried it on her laptop on 20 November and it worked; the other laptops have not been tried. Try it on every kind of laptop the team has: keyboards differ.
+
+| # | Do this | You should see | Result |
+|---|---|---|---|
+| 97 | Menu: "Two players", the Nova lap. Player 1 chooses a character, "Next: player 2", player 2 chooses another one, "Race" | Player 1's character is grey for player 2 and cannot be chosen. Then the "Game settings" card on a split screen | |
+| 98 | Confirm the settings. Both hold their gas key (↑ for player 1, W for player 2) | 3, 2, 1, GO! in both halves. Player 1's half is on the right and player 2's on the left, each behind its own kart, with the driver's name under it | |
+| 99 | Both steer hard at the same time, in every combination: W+A with ↑+→, W+D with ↑+←, and so on. Say out loud if your kart ignores a key | Both karts answer. **Write down any combination that fails, and on which laptop**: a keyboard that cannot tell the keys apart is something code cannot fix | |
+| 100 | Drive the three laps. Watch how smooth the two pictures are | Smooth on both halves. Write down a laptop where it stutters | |
+| 101 | Finish, one after the other | The first to finish gets a banner at the top of their half: their place and time, "Waiting until every player finishes", and "You are watching" the other driver, whose kart their half now follows. When both are home it follows the computer kart in last place. When every kart is home (or two minutes after the first), one big picture with the podium, and "Race again" and "Back to menu" | |
+| 102 | Press F during a race | The two halves fill the screen, side by side. F or Esc brings the page back | |
+| 103 | Open "Your account" in the menu afterwards, signed in | The two-player race is not in the stats | |
+
+## After your own finish
+
+Added on 20 November 2026. Not run yet with real laptops. Two laptops, A and B, on the public link, on the Nova lap, with computer karts on.
+
+| # | Do this | You should see | Result |
+|---|---|---|---|
+| 104 | Online: A (the host) starts a race. A drives it to the end. B drives slowly and stays behind | When A finishes: a banner across the top of A's picture with A's place and time, "Waiting until every player finishes. You are watching" and B's name. A's picture follows B's kart, not a computer kart. The results list is in the bottom right corner | |
+| 105 | B finishes | A's camera moves to the computer kart in last place, if one is still driving. When everyone is home: the podium, then the results board | |
+| 106 | Single race: finish before at least one computer kart (on Easy that is easy) | The same banner, "You are watching" a computer kart, and the picture follows it until the podium comes, at the latest 30 seconds later | |
+| 107 | Compare the podium of a single race, a two-player race and an online race on the Nova lap | The same scene in all three: in front of the school's name, the camera coming in, the first three on the steps, the crowd, and with four or more karts the driver who came last crying on the left | |
+
 ## Things to write down
 
 - How long after pressing a key does your own kart react? "Barely noticeable", "noticeable" or "annoying". Is it better than before 19 November?

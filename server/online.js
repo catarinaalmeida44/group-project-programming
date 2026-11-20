@@ -12,7 +12,8 @@
 //
 // What goes over the connection:
 //   browser -> server   which keys are held, "restart", "start", a look, a
-//                       character, or computer karts on or off (see messages.js)
+//                       character, computer karts on or off, or the game
+//                       settings of the room (see messages.js)
 //   server -> browser   "welcome" with your player number, then the state
 //                       of all karts, of the race and of the bananas on the
 //                       road 30 times a second.
@@ -39,6 +40,15 @@
 // start, and at once when no person is racing any more or one of them would
 // be the host.
 //
+// GAME SETTINGS
+// The host chooses three things for the room, while no race is on
+// (shared/game-settings.js): computer karts or not, how good they are (easy,
+// normal, hard), and at most how many people may be in the room (2 to 6).
+// The limit can never go below the number of people who are already there:
+// nobody is thrown out. Someone who arrives at a room that has reached its
+// limit is told it is full. Every update carries the settings, so every page
+// shows the same. When the last person leaves, they go back to the defaults.
+//
 // SAVING RESULTS
 // When a signed-in player finishes a race that began with the countdown,
 // the server writes their time to the database. The browser is never asked
@@ -49,7 +59,7 @@
 // What this file refuses:
 //   - connections to any address other than /play, or to a track that does not exist
 //   - connections started by a page on someone else's website
-//   - a player when the room is full
+//   - a player when the room is full, or has as many people as its host allows
 //   - the older of two connections of the same signed-in player in one room
 //   - any message that is not exactly what messages.js allows
 //   - more messages in a second than a real player could send
@@ -63,6 +73,7 @@ import { lookOfTrack } from "../client/track-looks.js";
 import { routePoints } from "../client/route.js";
 import { readClientMessage, MAX_MESSAGE_LENGTH } from "./messages.js";
 import { ticketOf } from "./api.js";
+import { DEFAULT_GAME_SETTINGS, settingsAfter } from "../shared/game-settings.js";
 
 /** The address the online page connects to. */
 export const ONLINE_ADDRESS = "/play";
@@ -231,8 +242,23 @@ export function attachOnlinePlay(
     // The racing line the arrows on the road follow: the computer karts follow it too.
     const line = routePoints(tableTrack, lookOfTrack(tableTrack).route);
     const computers = createComputerPlayers(tableTrack, line, character);
-    let computersOn = computerKarts === true; // fill the next race with computer karts?
+    // The game settings of this room (shared/game-settings.js): computer
+    // karts or not, their level, and at most how many people. The host can
+    // change them while no race is on.
+    const settingsWhenEmpty = Object.freeze({ ...DEFAULT_GAME_SETTINGS, computers: computerKarts === true });
+    let settings = settingsWhenEmpty;
     const wishes = new Map(); // player number -> the character that player asked for
+
+    /** How many people are in the room: everyone except the computer karts. */
+    function peopleHere() {
+      return room.playerCount() - computers.ids().length;
+    }
+
+    /** Tells a browser that the room is full, and sends it away. */
+    function turnAway(connection) {
+      connection.send(JSON.stringify({ type: "full" }));
+      sendAway(connection, TRY_AGAIN_LATER, "The room is full");
+    }
 
     /** No race is on: the room is open, or the last race is over. */
     function noRaceOn() {
@@ -299,8 +325,41 @@ export function attachOnlinePlay(
       }
     }
 
+    /**
+     * The room has as many people as its host allows. A signed-in player
+     * who is in the room already is still let in: their page lost the
+     * connection for a moment and joined again, or they opened the game in
+     * another tab. Their older kart leaves first (one kart for each player),
+     * so there is room for them. Anyone else is told the room is full. A
+     * guest has no name to be recognised by, so a guest is always told so.
+     */
+    function letBackInOrTurnAway(connection, request) {
+      whoIsBehind(request).then((found) => {
+        if (connection.readyState !== connection.OPEN) {
+          return; // they gave up while we looked them up
+        }
+        const older = found === null ? [] : [...seats.values()].filter((seat) => seat.accountId === found.id);
+        if (older.length === 0) {
+          turnAway(connection);
+          return;
+        }
+        for (const seat of older) {
+          tell(seat.connection, { type: "elsewhere" });
+          seat.leave();
+          sendAway(seat.connection, CLOSED_ON_PURPOSE, "Joined from somewhere else");
+        }
+        welcome(connection, request); // there is room now
+      });
+    }
+
     /** Runs once for every browser that connects to this table. */
     function welcome(connection, request) {
+      // The host's limit: with that many people here already, nobody else
+      // gets in, except someone who is in the room and is coming back.
+      if (peopleHere() >= settings.most) {
+        letBackInOrTurnAway(connection, request);
+        return;
+      }
       let player = room.addPlayer();
       // A person comes before a computer kart. If the room is full, while no
       // race is on the computer karts leave (new ones fill the next race);
@@ -314,8 +373,7 @@ export function attachOnlinePlay(
         player = room.addPlayer();
       }
       if (player === null) {
-        connection.send(JSON.stringify({ type: "full" }));
-        sendAway(connection, TRY_AGAIN_LATER, "The room is full");
+        turnAway(connection);
         return;
       }
 
@@ -337,6 +395,9 @@ export function attachOnlinePlay(
         cast.forget(player.id); // their character is free again
         room.removePlayer(player.id);
         tidyComputers(); // computer karts do not stay without people
+        if (peopleHere() === 0) {
+          settings = settingsWhenEmpty; // the next person to come is a new host, and starts from the defaults
+        }
         stopTheClockIfEmpty();
         tellNames();
       }
@@ -419,15 +480,23 @@ export function attachOnlinePlay(
         } else if (message.type === "computers") {
           // Only the host, and only while no race is on. It counts from the next start.
           if (player.id === room.hostId() && noRaceOn()) {
-            computersOn = message.on;
+            settings = { ...settings, computers: message.on };
+          }
+        } else if (message.type === "settings") {
+          // The game settings, all three at once. Only the host, and only
+          // while no race is on. A limit below the number of people who are
+          // here is not taken: nobody is thrown out (game-settings.js).
+          if (player.id === room.hostId() && noRaceOn()) {
+            settings = settingsAfter(settings, message.settings, peopleHere());
           }
         } else {
           if (player.id === room.hostId() && noRaceOn()) {
             // The computer karts of the last race leave, and, if they are
             // switched on, new ones fill the race that starts now.
             sendComputersAway();
-            // Each computer kart gets a mood for this race from a fresh random number.
-            if (computersOn && computers.fill(room, cast, KARTS_IN_A_FULL_RACE, pickSeed()) > 0) {
+            // Each computer kart gets a mood for this race from a fresh random
+            // number, and drives at the level the host chose.
+            if (settings.computers && computers.fill(room, cast, KARTS_IN_A_FULL_RACE, pickSeed(), settings.level) > 0) {
               tellNames();
             }
           }
@@ -519,8 +588,8 @@ export function attachOnlinePlay(
           saveFinish(finish);
         }
         if (room.stepCount() % STEPS_PER_UPDATE === 0) {
-          // With each player's character, and the computer karts.
-          const update = { ...cast.dress(room.snapshot()), computers: { on: computersOn, karts: computers.ids() } };
+          // With each player's character, the computer karts, and the game settings of the room.
+          const update = { ...cast.dress(room.snapshot()), computers: { on: settings.computers, karts: computers.ids() }, settings };
           tellEveryone(JSON.stringify(update));
         }
       }

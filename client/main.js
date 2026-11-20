@@ -34,7 +34,8 @@ import { chooseTrack, chooseTrackName } from "./track-choice.js";
 import { storeysOf } from "../shared/tracks/index.js";
 import { createKeyboard } from "./keyboard.js";
 import { setUpFullScreen } from "./full-screen.js";
-import { readLevel, saveLevel, levelButtons } from "./difficulty.js";
+import { readGameChoice, saveGameChoice, settingsSummary } from "./game-settings-view.js";
+import { createSettingsCard } from "./game-settings-card.js";
 import { createPainter } from "./draw.js";
 import { introShare, startLights, spinTurnOf } from "./scene.js";
 import { lookFromChoice, readChoice } from "./kart-choice.js";
@@ -53,6 +54,7 @@ import { readSettings } from "./settings.js";
 import { recordFinishedRace, finishedRaceTimes } from "./records.js";
 import { accountApi } from "./account-api.js";
 import { singleSavedText } from "./stats-view.js";
+import { kartToWatchAfterFinish, finishedBanner } from "./race-view.js";
 import { createRaceSound } from "./sound.js";
 import { tileKindAt } from "../shared/track.js";
 import { podiumLineup, podiumLoser, podiumKartsOf, singleRaceIsOver, podiumCaption, cheersDue, finishPlace, finishedWords } from "./podium.js";
@@ -97,7 +99,9 @@ const missedCheckpoint = watchForMissedCheckpoint(track);
 // ---- The state of the race ----
 const storage = storageOf(window); // this browser's storage, for the settings and the best times
 const myCharacter = readCharacter(storage)?.id ?? null; // the character chosen in the menu, or null (cast-choice.js)
-let level = readLevel(storage); // how good the computer karts are: easy, normal or hard (difficulty.js)
+// The game settings this browser remembers (game-settings-view.js): do
+// computer karts race with the player, and how good are they (easy, normal or hard)?
+let choice = readGameChoice(storage);
 let race = newRace(); // the racers (the player is racers[0]), the computer drivers, the countdown and the bananas
 let started = false; //    the countdown starts at the first key press
 let lastFrameTime = null;
@@ -116,6 +120,14 @@ let savedAnswer = null; //   what the server said about saving this race for the
 const myLook = lookOfCharacter(myCharacter) ?? lookFromChoice(readChoice(storage));
 let view = readSettings(storage).startView; // the view chosen in the menu's settings, or the first one
 let camera = followTarget(race.racers[0].kart, track); // the spot in the middle of the screen, in the follow view
+let cameraOn = 0; //         the kart the camera is on: the player's (0), or after the finish one that still drives
+let followingId = null; //   after the finish: the kart the camera stays with, or null
+
+// The banner across the top of the picture once the player has finished and
+// watches the others come home (race-view.js).
+const bannerBox = document.getElementById("watch-banner");
+const bannerTitle = document.getElementById("watch-title");
+const bannerText = document.getElementById("watch-text");
 
 // The sound of the race: engine, bumps, beeps (sound.js). It starts at the
 // player's first key press, and M switches it off and on.
@@ -123,27 +135,41 @@ const sound = createRaceSound(window, storage);
 const soundText = document.getElementById("sound");
 soundText.textContent = sound.isOn() ? "on" : "off";
 
-// ---- The level of the computer karts: three buttons above the track (difficulty.js) ----
-const levelBox = document.getElementById("level-box");
+// ---- The game settings: a card over the picture (game-settings-card.js) ----
+// Computer karts on or off, and how good they are. The card comes up when
+// the page opens, and again with the button above the track. Confirming
+// remembers the choice in this browser and starts the race again with it.
+// (Until 19 November 2026 the level was three buttons above the track.)
+const settingsBox = document.getElementById("settings-box");
+const settingsSummaryText = document.getElementById("settings-summary");
+const settingsButton = document.getElementById("open-game-settings");
+// A track without a racing line has no computer karts (practice-race.js): nothing to choose there.
+const canHaveComputers = line.length >= 3;
 
-/** Shows which level is in use: that button is pressed. */
-function showLevel() {
-  for (const { level: each, pressed } of levelButtons(level)) {
-    levelBox.querySelector(`[data-level="${each}"]`).setAttribute("aria-pressed", String(pressed));
-  }
+const settingsCard = createSettingsCard(document, {
+  mode: "single",
+  onConfirm: (wanted) => {
+    choice = { computers: wanted.computers, level: wanted.level };
+    saveGameChoice(storage, choice); // remembered for next time
+    showChoice();
+    startAgain(); // a new race with these settings, as with R
+  },
+});
+
+/** Says above the track who the player races against: "Computer karts: Hard", or "No computer karts". */
+function showChoice() {
+  settingsSummaryText.textContent = settingsSummary({ ...choice, most: 0 });
 }
 
-for (const button of levelBox.querySelectorAll("button")) {
-  button.addEventListener("click", () => {
-    level = button.dataset.level;
-    saveLevel(storage, level); // remembered for next time
-    showLevel();
-    startAgain(); // a new race at this level, as with R
-    button.blur(); // so the arrow keys and Space go back to driving
-  });
+/** Opens the card. A race that is on is put back on the grid first: it cannot go on behind the card. */
+function openSettings(firstTime) {
+  startAgain();
+  settingsCard.open({ settings: choice, firstTime });
 }
-showLevel();
-levelBox.hidden = race.drivers.length === 0; // no computer karts on this track: nothing to choose
+
+settingsButton.addEventListener("click", () => openSettings(false));
+showChoice();
+settingsBox.hidden = !canHaveComputers;
 
 // The game on the whole screen: the button above the track, or F (full-screen.js).
 const fullScreen = setUpFullScreen(document, document.getElementById("play-area"), document.getElementById("full-screen"));
@@ -159,6 +185,9 @@ const keyboard = createKeyboard(window, {
 });
 
 function start() {
+  if (settingsCard.isOpen()) {
+    return; // the race waits behind the card until the settings are confirmed
+  }
   started = true;
 }
 
@@ -172,6 +201,8 @@ function startAgain() {
   cheered = 0;
   raceNumber += 1;
   savedAnswer = null;
+  followingId = null;
+  cameraOn = 0;
   camera = followTarget(race.racers[0].kart, track); // jump straight back, do not glide
 }
 
@@ -201,6 +232,12 @@ function reportFinish(progress) {
   if (accountApi === null || times === null || signedIn === false) {
     return;
   }
+  // A race without computer karts is not sent: with nobody to beat it would
+  // count as a win every time. A signed-in player is told so (stats-view.js).
+  if (race.drivers.length === 0) {
+    savedAnswer = signedIn === true ? { ok: false, code: "alone" } : null;
+    return;
+  }
   const thisRace = raceNumber;
   accountApi
     .saveSingleResult({
@@ -220,7 +257,7 @@ function reportFinish(progress) {
 
 function changeView() {
   view = nextView(view);
-  camera = followTarget(race.racers[0].kart, track);
+  cameraOn = null; // the next picture puts the camera straight on the kart it shows, without gliding
 }
 
 /**
@@ -268,8 +305,22 @@ function frame(now) {
     podiumSince = now;
   }
 
-  // The camera glides towards where it wants to be.
-  camera = easeTowards(camera, followTarget(racer.kart, track), frameSeconds);
+  // The player has finished and the others are still driving: the camera
+  // moves to one of them, the one in last place, and stays with it until it
+  // finishes (kartToWatchAfterFinish in race-view.js). In a single race the
+  // others are all computer karts. A banner says so (see below).
+  const kartsNow = podiumKartsOf(race, myCharacter);
+  const computerIds = kartsNow.slice(1).map((kart) => kart.id);
+  const watched =
+    racer.progress.finished && podiumSince === null ? kartToWatchAfterFinish(kartsNow, track, 0, followingId, computerIds) : undefined;
+  followingId = watched === undefined ? null : watched.id;
+  const shownId = watched === undefined ? 0 : watched.id; // the kart in the middle of the picture
+  const shownRacer = race.racers[shownId];
+
+  // The camera glides towards where it wants to be, and jumps when it moves to another kart.
+  const cameraTarget = followTarget(shownRacer.kart, track);
+  camera = shownId === cameraOn ? easeTowards(camera, cameraTarget, frameSeconds) : cameraTarget;
+  cameraOn = shownId;
 
   // The kart leans in the chase view while the player steers, but not
   // before GO and not after the finish, when the keys do nothing.
@@ -277,18 +328,7 @@ function frame(now) {
   const keysWork = started && countdown.racing && !progress.finished;
   const spinning = racer.spinSteps > 0;
   const steer = keysWork && !spinning ? (input.right ? 1 : 0) - (input.left ? 1 : 0) : 0;
-  // The kart as it is drawn: in the colours the player chose, and turning
-  // round and round while it spins after a banana. (The rules do not turn
-  // it: after the spin it points where it pointed before.)
-  // "air" and "boost": it is drawn in the air after a ramp, and with sparks while it has extra speed (shared/ramps.js).
   const walkersShown = walkersToShow(track, race.walkers);
-  const shownKart = {
-    ...racer.kart,
-    look: myLook,
-    spinTurn: spinTurnOf(racer.spinSteps, SPIN_STEPS),
-    air: racer.airSteps ?? 0,
-    boost: racer.boostSteps ?? 0,
-  };
   if (podiumSince !== null) {
     // The podium instead of the track: the first three, the winner with the trophy.
     const kartsOfTheRace = podiumKartsOf(race, myCharacter);
@@ -303,7 +343,8 @@ function frame(now) {
       cheered++;
     }
   } else {
-    draw(view, shownKart, camera, steer, computerKarts(), {
+    const others = race.racers.map((_, id) => id).filter((id) => id !== shownId).map(kartAsDrawn);
+    draw(view, kartAsDrawn(shownId), camera, steer, others, {
       ...sceneFor(race.countdownSteps, started),
       bananas: race.bananas,
       walkers: walkersShown, // the people who walk across the track (shared/walkers.js)
@@ -335,31 +376,55 @@ function frame(now) {
   placeText.textContent = placeLine(placesInput(race), track, 0);
   placeBox.hidden = race.racers.length < 2;
 
+  // While the player watches the others come home: a banner across the top
+  // of the picture with their place and time, that they are waiting, and
+  // whose kart the camera is on. The middle of the picture stays free.
+  const banner =
+    watched === undefined
+      ? null
+      : finishedBanner({
+          place: finishPlace(placesInput(race), 0) ?? 1,
+          steps: progress.steps,
+          watchedName: `${race.drivers[watched.id - 1].character.name} (computer)`,
+        });
+  bannerBox.hidden = banner === null;
+  if (banner !== null) {
+    const words = `${banner.text}${newBestText()}${singleSavedText(savedAnswer)}`;
+    if (bannerTitle.textContent !== banner.title) {
+      bannerTitle.textContent = banner.title; // as text, never as HTML
+    }
+    if (bannerText.textContent !== words) {
+      bannerText.textContent = words;
+    }
+  }
+
   showHud({
     lap: currentLap(progress, track),
     laps: track.laps,
     steps: progress.steps,
     lapSteps: progress.lapSteps,
     view,
-    message: podiumSince !== null ? "" : (warning ?? messageFor(progress, countdown)),
+    message: podiumSince !== null || banner !== null ? "" : (warning ?? messageFor(progress, countdown)),
   });
 
   // The facts of this picture, for the sound: sound-cues.js decides from
-  // them which beep, bump or jingle is due and how the engine sounds.
+  // them which beep, bump or jingle is due and how the engine sounds. After
+  // the finish the player hears the kart they watch; the laps and the finish
+  // stay their own, so nothing is cheered twice.
   sound.frame(
     {
       label: showingCountdown ? countdown.label : "",
-      kart: racer.kart,
+      kart: shownRacer.kart,
       gas: keysWork && input.gas,
-      onGrass: tileKindAt(track, racer.kart.x, racer.kart.y) === "grass",
-      spinning,
+      onGrass: tileKindAt(track, shownRacer.kart.x, shownRacer.kart.y) === "grass",
+      spinning: shownRacer.spinSteps > 0,
       lapsDone: progress.lapsDone,
       laps: track.laps,
       finished: progress.finished,
       warning: warning !== null,
-      others: race.racers.slice(1).map((other) => other.kart),
-      air: racer.airSteps ?? 0,
-      walkersDownNear: walkersDownNear(walkersShown, racer.kart),
+      others: race.racers.filter((_, id) => id !== shownId).map((other) => other.kart),
+      air: shownRacer.airSteps ?? 0,
+      walkersDownNear: walkersDownNear(walkersShown, shownRacer.kart),
     },
     frameSeconds,
   );
@@ -380,18 +445,25 @@ function sceneFor(countdownSteps, hasStarted) {
 
 /** A new race, before the countdown. The computer karts are the characters the player did not choose. */
 function newRace() {
-  return createPracticeRace(track, newSeed(), line, COMPUTER_KARTS, myCharacter, level);
+  return createPracticeRace(track, newSeed(), line, choice.computers ? COMPUTER_KARTS : 0, myCharacter, choice.level);
 }
 
-/** The computer karts as they are drawn: in their character's colours, turning while they spin. */
-function computerKarts() {
-  return race.racers.slice(1).map((other, index) => ({
-    ...other.kart,
-    look: lookOfCharacter(race.drivers[index].character.id),
-    spinTurn: spinTurnOf(other.spinSteps, SPIN_STEPS),
-    air: other.airSteps ?? 0,
-    boost: other.boostSteps ?? 0,
-  }));
+/**
+ * A kart as it is drawn: the player's (kart 0) in the colours they chose, a
+ * computer kart in its character's colours. It turns round and round while
+ * it spins after a banana (the rules do not turn it: after the spin it
+ * points where it pointed before). "air" and "boost": it is drawn in the air
+ * after a ramp, and with sparks while it has extra speed (shared/ramps.js).
+ */
+function kartAsDrawn(id) {
+  const racer = race.racers[id];
+  return {
+    ...racer.kart,
+    look: id === 0 ? myLook : lookOfCharacter(race.drivers[id - 1].character.id),
+    spinTurn: spinTurnOf(racer.spinSteps, SPIN_STEPS),
+    air: racer.airSteps ?? 0,
+    boost: racer.boostSteps ?? 0,
+  };
 }
 
 /** The text shown in the middle of the track. */
@@ -427,6 +499,10 @@ function newBestText() {
 window.kartGame = {
   state: () => ({
     started,
+    choice: { ...choice }, // the game settings in use
+    settingsCard: settingsCard.isOpen(),
+    watching: followingId, // after the finish: the kart the camera is on, or null
+    podium: podiumSince !== null,
     countdownSteps: race.countdownSteps,
     view,
     kart: { ...race.racers[0].kart },
@@ -442,5 +518,10 @@ window.kartGame = {
     })),
   }),
 };
+
+// The first thing on the page: the game settings, as they were left last time.
+if (canHaveComputers) {
+  settingsCard.open({ settings: choice, firstTime: true });
+}
 
 requestAnimationFrame(frame);

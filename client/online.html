@@ -62,6 +62,18 @@
             <dl id="meter-rows" class="meter-rows"></dl>
             <p id="meter-verdict" class="meter-verdict"></p>
           </div>
+          <!-- While the room waits for its first race: who the host is and how
+               the races are run, in the corner of the picture. The host also
+               gets a button here to change the game settings. online.js fills
+               it in, as text; the words are in game-settings-view.js. -->
+          <div id="room-label" class="room-label" hidden>
+            <p id="room-host" class="room-host"></p>
+            <p id="room-summary" class="room-summary"></p>
+            <button type="button" id="room-settings" class="button button-small" hidden>Game settings</button>
+          </div>
+          <!-- The "Game settings" card: computer karts, their level, and at most
+               how many people. Only the host gets it. game-settings-card.js builds it. -->
+          <div id="settings-card" class="settings-veil" hidden></div>
           <!-- A card over the picture while the connection to the server is being
                made, is lost, or cannot be made: "The server is waking up",
                "Connection lost", "The room is full". The page tries again by
@@ -85,15 +97,6 @@
       </div>
 
       <p id="status" class="status" role="status"></p>
-      <!-- Whether computer karts fill the empty places of the next race. Only
-           the host can change it, and only while no race is on. online.js keeps it up to date. -->
-      <p id="computers-line" class="status" hidden>
-        <label>
-          <input type="checkbox" id="computers" disabled>
-          Computer karts fill the empty places (up to 6 karts).
-        </label>
-        <span id="computers-who"></span>
-      </p>
       <!-- Who you are signed in as, and whether your last result was saved. online.js fills it in. -->
       <p id="account-line" class="status" role="status"></p>
       <!-- The names of the signed-in players in the room with you. online.js fills it in. -->
@@ -121,6 +124,9 @@
         on the leaderboard in the menu.
         When the host starts a race, the characters nobody has taken become computer karts,
         up to 6 karts in all, unless the host has switched them off. Their times are not saved.
+        The host chooses this in <strong>Game settings</strong>, with how good the computer karts are
+        (Easy, Normal or Hard) and at most how many people the room takes (2 to 6). If you arrive
+        during a race, <kbd>←</kbd> and <kbd>→</kbd> move the camera to another player.
       </p>
     </main>
 

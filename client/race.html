@@ -26,12 +26,14 @@
           <span id="place-box" hidden>Place <strong id="place"></strong></span>
           <span>Camera <strong id="view"></strong></span>
           <span id="lap-times" class="lap-times"></span>
-          <!-- How good the computer karts are (difficulty.js). Pressing one starts the race again. -->
-          <span id="level-box" class="level-switch" role="group" aria-label="Computer karts">
-            Computer karts
-            <button type="button" data-level="easy">Easy</button>
-            <button type="button" data-level="normal">Normal</button>
-            <button type="button" data-level="hard">Hard</button>
+          <!-- Who you race against, in a few words, and the button that opens the
+               "Game settings" card: computer karts on or off, and how good they
+               are (game-settings-card.js). Confirming a change starts the race again.
+               (Until 19 November 2026 three buttons Easy, Normal and Hard stood
+               here. They are on the card now, with the same words.) -->
+          <span id="settings-box">
+            <span id="settings-summary"></span>
+            <button type="button" id="open-game-settings" class="settings-button">Game settings</button>
           </span>
           <!-- The game on the whole screen, or back (full-screen.js). Hidden in a browser that cannot. -->
           <button id="full-screen" class="full-screen-button" type="button" hidden>Full screen</button>
@@ -41,6 +43,14 @@
         <div class="screen">
           <canvas id="track" width="960" height="576">Your browser cannot show the game.</canvas>
           <p id="message" class="message" role="status"></p>
+          <!-- Once you have finished and the others are still driving: a banner
+               across the top of the picture with your place and time, and whose
+               kart the camera is on now. main.js fills it in, as text; the
+               words are in race-view.js. -->
+          <div id="watch-banner" class="watch-banner" role="status" hidden>
+            <p id="watch-title" class="watch-title"></p>
+            <p id="watch-text" class="watch-text"></p>
+          </div>
           <!-- When the race is over and the podium is up: what to do next, as
                buttons on the picture. main.js shows it. The R key still works.
                It is inside the picture's box, so it comes along on the whole screen. -->
@@ -50,6 +60,9 @@
             <!-- Whether this race was saved for a signed-in player's stats. main.js fills it in. -->
             <p id="race-over-note" class="race-over-note" role="status"></p>
           </div>
+          <!-- The "Game settings" card. It comes up when the page opens, and
+               again with the button above the track. game-settings-card.js builds it. -->
+          <div id="settings-card" class="settings-veil" hidden></div>
         </div>
       </div>
 
@@ -57,14 +70,15 @@
         Arrow keys: <kbd>↑</kbd> gas, <kbd>↓</kbd> brake and reverse, <kbd>←</kbd> <kbd>→</kbd> steer.
         <kbd>R</kbd> starts again. <kbd>V</kbd> changes the camera. Drive clockwise.
         <kbd>M</kbd> switches the sound off and on: it is <strong id="sound">on</strong>.
-        The buttons <strong>Easy</strong>, <strong>Normal</strong> and <strong>Hard</strong> above the track
-        choose how good the computer karts are, and start the race again.
+        <strong>Game settings</strong> above the track chooses whether computer karts race with you and how
+        good they are (Easy, Normal or Hard), and starts the race again.
         <kbd>F</kbd> puts the game on the whole screen, and back (<kbd>Esc</kbd> also leaves it).
       </p>
       <p class="note">
         A race on <span id="track-name">the test track</span>. It runs in your browser. Your best
         times are kept in this browser. If you are signed in, a finished race also counts in
-        your own stats (your name in the menu), but never for the shared leaderboard.
+        your own stats (your name in the menu), but never for the shared leaderboard. A race
+        without computer karts does not count there either: there is nobody to beat.
       </p>
     </main>
 

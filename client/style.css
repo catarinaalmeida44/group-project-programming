@@ -3162,6 +3162,450 @@ a.button {
   }
 }
 
+/* ---------------------------------------------------------------------------
+   Game settings (game-settings-card.js): the card that comes up over the
+   picture before a race, on the three race pages, and the small label in the
+   corner of an online room that says who the host is.
+   --------------------------------------------------------------------------- */
+
+/* The dark veil over the picture, with the card in the middle of it. */
+.settings-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 0.6rem;
+  border-radius: 10px;
+  background: rgba(11, 24, 32, 0.8);
+}
+
+.settings-veil[hidden] {
+  display: none;
+}
+
+.settings-card {
+  position: relative;
+  width: min(31rem, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 1rem 1.3rem 1.2rem;
+  border: 2px solid var(--line-strong);
+  border-top: 6px solid var(--yellow);
+  border-radius: 14px;
+  background: var(--navy);
+  box-shadow: 0 10px 0 rgba(11, 24, 32, 0.6);
+  animation: settings-in 260ms ease-out both;
+}
+
+@keyframes settings-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+}
+
+/* The small label above the title: "You are the host". A yellow flag. */
+.settings-badge,
+.room-host {
+  display: inline-block;
+  margin: 0;
+  padding: 0.12rem 0.7rem;
+  border-radius: 999px;
+  background: var(--yellow);
+  color: var(--navy);
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.settings-title {
+  margin: 0.35rem 0 0;
+  color: var(--yellow);
+  font-size: 1.75rem;
+  font-style: italic;
+  font-weight: 900;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.settings-lead {
+  margin: 0.3rem 0 0.2rem;
+  color: var(--text-quiet);
+  font-size: 0.95rem;
+}
+
+/* The cross in the corner: away without changing anything. */
+.settings-close {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.55rem;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-quiet);
+  font: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.settings-close:hover {
+  background: var(--navy-hover);
+  color: var(--text);
+}
+
+/* One row: the name on the left, the buttons on the right, a sentence under them. */
+.settings-row {
+  display: grid;
+  grid-template-columns: 8.2rem 1fr;
+  align-items: center;
+  gap: 0.15rem 0.8rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.settings-name {
+  font-weight: 800;
+}
+
+.settings-choices {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.settings-hint {
+  grid-column: 2;
+  margin: 0;
+  color: var(--text-quiet);
+  font-size: 0.85rem;
+}
+
+/* A button of a row: chunky, like a key. The one in use is yellow. */
+.settings-choice {
+  flex: 1;
+  min-height: 2.5rem;
+  padding: 0.2rem 0.4rem;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--navy-raised);
+  box-shadow: 0 3px 0 var(--navy-deep);
+  color: var(--text);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.settings-choice:hover:not(:disabled) {
+  border-color: var(--sky);
+  background: var(--navy-hover);
+}
+
+.settings-choice[aria-pressed="true"] {
+  border-color: var(--yellow-light);
+  background: var(--yellow);
+  box-shadow: 0 3px 0 var(--yellow-edge);
+  color: var(--navy);
+}
+
+.settings-choice:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.settings-choice:focus-visible,
+.settings-close:focus-visible {
+  outline: 3px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* The level, while computer karts are off: there is nobody to set it for. */
+.settings-row.is-off .settings-name {
+  color: var(--text-quiet);
+}
+
+.settings-confirm {
+  margin-top: 0.5rem;
+  min-height: 2.9rem;
+  font-size: 1.08rem;
+}
+
+/* The label in the corner of an online room that waits for its first race. */
+.room-label {
+  position: absolute;
+  left: 0.6rem;
+  top: 0.6rem;
+  z-index: 2;
+  display: grid;
+  justify-items: start;
+  gap: 0.3rem;
+  max-width: 62%;
+  padding: 0.5rem 0.7rem 0.55rem;
+  border-left: 6px solid var(--yellow);
+  border-radius: 10px;
+  background: rgba(11, 24, 32, 0.88);
+}
+
+.room-label[hidden],
+.room-label [hidden] {
+  display: none;
+}
+
+.room-summary {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+/* Someone else is the host: the flag is quiet, not yellow. */
+.room-label:not(.is-mine) .room-host {
+  background: var(--navy-raised);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+/* The button "Game settings" in the numbers above the track (single race, two players). */
+.settings-button {
+  padding: 0.15rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--navy-raised);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.settings-button:hover {
+  background: var(--navy-hover);
+}
+
+.settings-button:focus-visible {
+  outline: 2px solid var(--yellow);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   The two-player page (double.js): two pictures side by side, one for each
+   driver, each with a name plate under it.
+   --------------------------------------------------------------------------- */
+
+/* Two pictures need more room than one: this page may be wider. */
+.double-page main {
+  max-width: 1500px;
+}
+
+/* The split screen. "--shows" is how much of each picture's width a half
+   shows (double.js sets it: the middle 72%), so a half is 960 x 0.72 wide for
+   every 576 high. The whole thing never gets taller than the window. */
+.double-screen {
+  --shows: 0.72;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  max-width: calc((100vh - 13.5rem) * 2 * 960 * var(--shows) / 576);
+  margin: 0 auto;
+}
+
+.half {
+  display: grid;
+  grid-template-rows: auto auto;
+  min-width: 0;
+}
+
+/* The window of one half: the picture is wider than it, and the same strip
+   is cut off on the left and on the right. */
+.half-picture {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: calc(960 * var(--shows)) / 576;
+  border-radius: 10px 10px 0 0;
+  background: #1c2530;
+  box-shadow: 0 0 0 2px var(--line);
+}
+
+.half-picture canvas {
+  width: calc(100% / var(--shows));
+  max-width: none;
+  max-height: none;
+  margin: 0 0 0 calc((100% - 100% / var(--shows)) / 2);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* The words in a half are smaller than on a whole picture. */
+.half .message {
+  max-width: 92%;
+  padding: 0.45rem 0.8rem;
+  font-size: 1.02rem;
+}
+
+.half .message.countdown {
+  padding: 0;
+  font-size: 4.6rem;
+}
+
+/* The name plate under a half, in the colour of that driver's kart
+   ("--tint", set by double.js). */
+.plate {
+  --tint: #6f8597;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.9rem;
+  padding: 0.4rem 0.75rem 0.45rem;
+  border-top: 5px solid var(--tint);
+  border-radius: 0 0 10px 10px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--tint) 34%, var(--navy-raised)), var(--navy-raised) 72%);
+  box-shadow: 0 0 0 2px var(--line);
+  color: var(--text-quiet);
+  font-variant-numeric: tabular-nums;
+}
+
+.plate strong {
+  color: var(--text);
+}
+
+.plate-who {
+  display: grid;
+  line-height: 1.1;
+}
+
+.plate-player {
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  opacity: 0.85;
+  text-transform: uppercase;
+}
+
+.plate-name {
+  font-size: 1.3rem;
+  font-style: italic;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.plate-keys {
+  display: inline-flex;
+  gap: 0.15rem;
+}
+
+.plate-numbers {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.1rem 0.9rem;
+  margin-left: auto;
+}
+
+.plate-numbers [hidden] {
+  display: none;
+}
+
+/* The race is over: the left picture grows over both halves, whole, and
+   shows the podium. The right half and the plates step aside. */
+.double-screen.is-podium {
+  grid-template-columns: 1fr;
+  max-width: calc((100vh - 9.5rem) * 960 / 576);
+}
+
+.double-screen.is-podium #half-2,
+.double-screen.is-podium .plate {
+  display: none;
+}
+
+.double-screen.is-podium .half-picture {
+  aspect-ratio: 960 / 576;
+  border-radius: 10px;
+}
+
+.double-screen.is-podium .half-picture canvas {
+  width: 100%;
+  margin: 0;
+}
+
+/* On the whole screen (F): the two halves as large as they fit, in the middle. */
+.play-area:fullscreen .double-screen {
+  align-content: center;
+  width: 100%;
+  max-width: calc((100vh - 9rem) * 2 * 960 * var(--shows) / 576);
+}
+
+.play-area:fullscreen .half-picture canvas {
+  width: calc(100% / var(--shows));
+  height: auto;
+  background: #1c2530;
+  object-fit: fill;
+}
+
+.play-area:fullscreen .double-screen.is-podium {
+  max-width: calc((100vh - 5rem) * 960 / 576);
+}
+
+.play-area:fullscreen .double-screen.is-podium .half-picture canvas {
+  width: 100%;
+}
+
+/* The menu's character step, second driver of a two-player race: the
+   character the first driver has cannot be chosen. */
+.face.is-taken {
+  cursor: not-allowed;
+  filter: grayscale(0.85);
+  opacity: 0.45;
+}
+
+/* "The race ends in 42 s" on the two-player page: in the line above the
+   pictures, in the yellow of the same notice on the online page. */
+.hud-notice {
+  color: var(--yellow);
+  font-weight: 800;
+}
+
+.hud-notice:empty {
+  display: none;
+}
+
+/* The banner of a driver who has finished and watches the others come home
+   ("You finished 2nd ... You are watching Dean"). In a half of the split
+   screen it is smaller, and stops short of that half's small map. */
+.half .half-banner {
+  left: 0.4rem;
+  top: 0.4rem;
+  right: auto;
+  max-width: 62%;
+  padding: 0.35rem 0.6rem 0.4rem;
+  border-left-width: 6px;
+}
+
+.half .half-banner .watch-title {
+  font-size: clamp(0.85rem, 1.5vw, 1.15rem);
+}
+
+.half .half-banner .watch-text {
+  margin-top: 0.15rem;
+  font-size: 0.82rem;
+}
+
+/* Online, a driver who has finished also has the small list of results in
+   the top left corner. While the banner is up, the list moves to the bottom
+   right, out of its way. */
+.screen:has(.watch-banner:not([hidden])) .results {
+  left: auto;
+  top: auto;
+  right: 0.6rem;
+  bottom: 0.6rem;
+}
+
+/* "Two players" in the menu: a sea green of its own, between the yellow single race and the blue online. */
+.tile-double .tile-icon {
+  background: #1f9e8f;
+  color: #fff;
+}
+
 /* Some players ask their computer for less motion, because moving pictures
    make them unwell. For them nothing moves: the karts stand on the road,
    the sea is still, and panels and buttons change at once. */

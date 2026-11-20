@@ -41,7 +41,10 @@ import { setUpFullScreen } from "./full-screen.js";
 import { createPainter } from "./draw.js";
 import { createHud } from "./hud.js";
 import { createPlayback, readServerMessage, bananasOf, walkersOf, statusLine, accountLine, othersLine, QUIET_AFTER_MS } from "./net.js";
-import { computersSwitch, namesWithComputers } from "./computers-switch.js";
+import { computersSwitch, namesWithComputers, computerIdsOf } from "./computers-switch.js";
+import { readGameSettings } from "../shared/game-settings.js";
+import { createSettingsCard } from "./game-settings-card.js";
+import { roomLabel } from "./game-settings-view.js";
 import { introShare, startLights, spinTurnOf } from "./scene.js";
 import { COLOURS, lookFromChoice, readChoice } from "./kart-choice.js";
 import { readCharacter, characterNote } from "./cast-choice.js";
@@ -57,7 +60,19 @@ import { lookOf } from "./kart-shape.js";
 import { createRaceSound } from "./sound.js";
 import { tileKindAt } from "../shared/track.js";
 import { SPIN_STEPS } from "../shared/hazards.js";
-import { readRace, readEndsIn, timeLeftNotice, raceView, kartToFollow, watchBanner, keysWork } from "./race-view.js";
+import {
+  readRace,
+  readEndsIn,
+  timeLeftNotice,
+  raceView,
+  kartToFollow,
+  kartToWatchAfterFinish,
+  nextToWatch,
+  peopleToWatch,
+  watchBanner,
+  finishedBanner,
+  keysWork,
+} from "./race-view.js";
 import { characterById } from "../shared/cast.js";
 import { followTarget, easeTowards, nextView } from "./camera.js";
 import { storageOf } from "./storage.js";
@@ -87,12 +102,15 @@ const placeBox = document.getElementById("place-box");
 const placeText = document.getElementById("place");
 const resultsBox = document.getElementById("results");
 const resultsList = document.getElementById("results-list");
-const computersLine = document.getElementById("computers-line");
-const computersBox = document.getElementById("computers");
-const computersWho = document.getElementById("computers-who");
+// The label in the corner while the room waits for its first race: who the
+// host is and how the races are run (game-settings-view.js).
+const roomBox = document.getElementById("room-label");
+const roomHost = document.getElementById("room-host");
+const roomSummary = document.getElementById("room-summary");
+const roomSettingsButton = document.getElementById("room-settings");
 // The big results board when a race is over (results-board.js). Its button
-// "Start next race" does what Enter does.
-const board = createResultsBoard(document, { onStart: () => askToStart() });
+// "Start next race" does what Enter does, and "Game settings" opens the card.
+const board = createResultsBoard(document, { onStart: () => askToStart(), onSettings: () => openSettings(false) });
 const podium = createPodiumView(track, draw); //           the podium, painted on the race picture when a race is over (podium-view.js)
 let podiumSince = null; //                      when the podium came up, in milliseconds of the page's clock, or null
 let cheered = 0; //                              how many times the crowd has cheered on this podium
@@ -112,6 +130,7 @@ const bannerTitle = document.getElementById("watch-title");
 const bannerText = document.getElementById("watch-text");
 let followingId = null; // while watching: the number of the kart the camera is on
 let pressedKeyAt = null; // while watching: when a driving key was last pressed
+let afterFinish = false; // we have finished, others still drive, and the camera is on one of them
 
 // ---- What we know from the server ----
 let playback = createPlayback(); //   the latest updates, for smooth drawing
@@ -130,9 +149,11 @@ let names = new Map(); //              the user names of the signed-in players i
 let bananas = []; //                   the banana peels on the track, as of the latest update
 let walkers = []; //                   the people who walk across the track, as of the latest update (shared/walkers.js)
 let walkersAt = 0; //                  when that update arrived
-let latestUpdate = null; //            the newest update, for the computer karts tick box
+let latestUpdate = null; //            the newest update, for the computer karts and the game settings
 let shownNames = new Map(); //         the names shown: user names, and the computer karts' (computers-switch.js)
 let computersHere = 0; //              how many computer karts are in the room now
+let peopleHere = 1; //                 how many people are in the room now, us included
+let settingsOffered = false; //        the game settings card has come up by itself once on this visit
 let othersShown = ""; //               the "With you: ..." line as it is on the page now
 
 // ---- What the player chose in the menu ----
@@ -439,34 +460,88 @@ const keyboard = createKeyboard(window, {
     view = nextView(view);
     camera = null; // jump to the kart in the new view
   },
-  // A driving key went down. For someone who is watching it does nothing,
-  // so the banner says so for a moment (see the picture loop below).
-  onDrive: () => {
-    pressedKeyAt = performance.now();
+  // A driving key went down. For someone who is watching, the left and right
+  // arrows move the camera to another player (never to a computer kart).
+  // Any other driving key does nothing, so the banner says so for a moment
+  // (see the picture loop below). A key that is held down counts once.
+  // The same arrows work for a driver who has finished and is watching the
+  // others come home. Their other keys do nothing, and nothing is said about it.
+  onDrive: (key, repeat) => {
+    const arrivedLate = myId !== null && race.watching.includes(myId) && (race.phase === "countdown" || race.phase === "racing");
+    const sideways = key === "ArrowLeft" ? -1 : key === "ArrowRight" ? 1 : 0;
+    if ((arrivedLate || afterFinish) && sideways !== 0) {
+      const computerIds = computerIdsOf(latestUpdate);
+      if (peopleToWatch(latestKarts, track, computerIds).length > 1) {
+        if (repeat !== true) {
+          followingId = nextToWatch(latestKarts, track, followingId, sideways, computerIds);
+          camera = null; // jump to that kart, do not glide across the track
+        }
+        return;
+      }
+    }
+    if (!afterFinish) {
+      pressedKeyAt = performance.now();
+    }
   },
 });
 
-// ---- The computer karts tick box (computers-switch.js) ----
-// Only the host can use it, and the server checks that again: anyone else's
-// message is ignored. The box then shows what the server says, not what was clicked.
-computersBox.addEventListener("change", () => {
-  send({ type: "computers", on: computersBox.checked });
-  computersBox.blur(); // so the keys go back to driving
+/**
+ * Takes from the newest update who the computer karts are: how many, and
+ * their names for the page (computers-switch.js). Whether they fill the next
+ * race is one of the game settings now, shown in the corner of the picture.
+ */
+function readComputerKarts() {
+  computersHere = computersSwitch(latestUpdate, race, myId).count;
+  shownNames = namesWithComputers(names, latestUpdate);
+}
+
+// ---- The game settings (game-settings-card.js) ----
+// Only the host gets the card. What it sends is a wish: the server obeys
+// only the host, only while no race is on, and never lowers the limit below
+// the people who are here. The page then shows what the server says, not
+// what was clicked.
+const settingsCard = createSettingsCard(document, {
+  mode: "online",
+  onConfirm: (wanted) => send({ type: "settings", ...wanted }),
 });
 
-/** Puts what the server said about computer karts on the page. */
-function showComputersSwitch() {
-  const now = computersSwitch(latestUpdate, race, myId);
-  computersHere = now.count;
-  shownNames = namesWithComputers(names, latestUpdate);
-  computersLine.hidden = !now.shown;
-  computersBox.disabled = !now.canUse;
-  if (document.activeElement !== computersBox) {
-    computersBox.checked = now.on;
+/** Opens the card with the settings of the room as the server has them now. */
+function openSettings(firstTime) {
+  settingsCard.open({ settings: readGameSettings(latestUpdate?.settings), peopleHere, firstTime });
+}
+
+roomSettingsButton.addEventListener("click", () => openSettings(false));
+
+/**
+ * Keeps the card and the label in the corner right, for every picture.
+ *   allIsWell  we are in the room and the server is talking to us
+ */
+function showGameSettings(allIsWell) {
+  const settings = readGameSettings(latestUpdate?.settings);
+  const noRaceOn = race.phase === "open" || race.phase === "finished";
+  const mayChange = allIsWell && race.host === myId && noRaceOn;
+
+  // The host who was first in the room gets the card by itself, once: that
+  // is how an online game starts. Later it is opened with the button.
+  if (mayChange && race.phase === "open" && !settingsOffered) {
+    settingsOffered = true;
+    openSettings(true);
   }
-  if (computersWho.textContent !== now.text) {
-    computersWho.textContent = now.text; // as text, never as HTML
+  // No longer the host, or a race has started: the card goes away unanswered.
+  if (settingsCard.isOpen() && !mayChange) {
+    settingsCard.close();
   }
+  settingsCard.setPeople(peopleHere);
+
+  const label = allIsWell ? roomLabel({ race, myId, names, settings }) : null;
+  roomBox.hidden = label === null || settingsCard.isOpen();
+  if (label !== null) {
+    roomBox.classList.toggle("is-mine", label.mine);
+    setText(roomHost, label.who);
+    setText(roomSummary, label.summary);
+    roomSettingsButton.hidden = !label.mine;
+  }
+  board.offerSettings(mayChange); // on the results board, between two races
 }
 
 // ---- The connection meter (meter.js) ----
@@ -537,6 +612,9 @@ function refreshMeter() {
 
 /** Asks the server to start a race: the Enter key, and the button on the results board. Only while no race is on. */
 function askToStart() {
+  if (settingsCard.isOpen()) {
+    return; // Enter belongs to the card while it is up: it confirms the settings
+  }
   if (race.phase === "open" || race.phase === "finished") {
     send({ type: "start" });
   }
@@ -578,7 +656,7 @@ function frame(now) {
 
   const input = keyboard.input();
   sendKeysIfChanged(input);
-  showComputersSwitch();
+  readComputerKarts();
 
   // The karts as they were a moment ago (4 to 6 steps), glided between the
   // server's updates (see net.js).
@@ -617,12 +695,10 @@ function frame(now) {
   showCard(card);
 
   const allIsWell = connected && myId !== null && karts !== null && sinceLastUpdateMs <= QUIET_AFTER_MS;
-  const line = statusLine({
-    status,
-    connected,
-    playerCount: karts === null ? 0 : karts.length + race.watching.length - computersHere, // people only
-    sinceLastUpdateMs,
-  });
+  peopleHere = karts === null ? 0 : karts.length + race.watching.length - computersHere; // people only
+  const line = statusLine({ status, connected, playerCount: peopleHere, sinceLastUpdateMs });
+  // The game settings: the card for the host, and the label in the corner.
+  showGameSettings(allIsWell && card === null);
   // While the card is up it does the talking, and the line under the picture is empty.
   setText(statusText, card !== null ? "" : allIsWell && about.line !== "" ? `${line} ${about.line}` : line);
 
@@ -637,15 +713,49 @@ function frame(now) {
 
   // The kart in the middle of the picture: our own, or, when we joined
   // during a race and are watching, the kart that was in first place when
-  // we arrived (kartToFollow in race-view.js). A banner across the picture
-  // then says that we are watching, and whose kart that is.
-  const shown = mine ?? (karts === null ? undefined : kartToFollow(karts, track, followingId));
-  followingId = mine === undefined && shown !== undefined ? shown.id : null;
-  const pressedKey = pressedKeyAt !== null && performance.now() - pressedKeyAt < PRESSED_KEY_MS;
-  const banner =
-    mine !== undefined || shown === undefined
-      ? null
-      : watchBanner({ race, myId, watchedName: names.get(shown.id) ?? characterById(shown.character)?.name ?? null, pressedKey });
+  // we arrived (kartToFollow in race-view.js). It is always a person's
+  // kart, never a computer kart, and the left and right arrows move the
+  // camera to another person. A banner across the picture then says that we
+  // are watching, and whose kart that is.
+  const computerIds = computerIdsOf(latestUpdate);
+  // We have finished and others are still driving: the camera moves to one
+  // of them, a person if there is one, the one in last place
+  // (kartToWatchAfterFinish in race-view.js). The banner then says our
+  // place and time, that we are waiting, and whose kart that is.
+  const after = mine?.finished === true && race.phase === "racing" ? kartToWatchAfterFinish(karts, track, myId, followingId, computerIds) : undefined;
+  afterFinish = after !== undefined;
+  const shown = after ?? mine ?? (karts === null ? undefined : kartToFollow(karts, track, followingId, computerIds));
+  const nowFollowing = (mine === undefined || afterFinish) && shown !== undefined ? shown.id : null;
+  if (nowFollowing !== null && nowFollowing !== followingId) {
+    camera = null; // the camera is on another kart now: jump there, do not glide across the track
+  }
+  followingId = nowFollowing;
+  const pressedKey = !afterFinish && pressedKeyAt !== null && performance.now() - pressedKeyAt < PRESSED_KEY_MS;
+  const canSwitch = karts !== null && peopleToWatch(karts, track, computerIds).length > 1;
+  // "The race ends in 1:42", once the first kart has finished.
+  const timeLeft = timeLeftNotice(race, endsIn);
+  let banner = null;
+  if (afterFinish) {
+    banner = finishedBanner({
+      place: finishPlace(latestKarts, myId) ?? 1,
+      steps: mine.steps,
+      // The same name as in the results list beside it: a user name, a computer kart's name, or "Guest 2".
+      watchedName: shownNames.get(after.id) ?? `Guest ${after.id}`,
+      canSwitch: canSwitch && !computerIds.includes(after.id),
+    });
+    // The time left goes into the banner too: at the bottom of the picture it would lie under the results list.
+    if (timeLeft !== "") {
+      banner = { ...banner, text: `${banner.text} ${timeLeft}.` };
+    }
+  } else if (mine === undefined && shown !== undefined) {
+    banner = watchBanner({
+      race,
+      myId,
+      watchedName: names.get(shown.id) ?? characterById(shown.character)?.name ?? null,
+      pressedKey,
+      canSwitch,
+    });
+  }
   bannerBox.hidden = banner === null;
   bannerBox.classList.toggle("nudged", banner !== null && pressedKey);
   if (banner !== null) {
@@ -745,7 +855,8 @@ function frame(now) {
     steps: shown.steps,
     lapSteps: shown.lapSteps,
     view,
-    message: board.isShown() || podiumAlone ? "" : (warning ?? waitingWords ?? about.message),
+    // While we watch the others after our own finish, the banner at the top says it all, and the middle stays free.
+    message: board.isShown() || podiumAlone || afterFinish ? "" : (warning ?? waitingWords ?? about.message),
   });
 
   // The facts of this picture, for the sound: sound-cues.js decides from
@@ -758,9 +869,10 @@ function frame(now) {
       gas: keysDoSomething && input.gas,
       onGrass: tileKindAt(track, shown.x, shown.y) === "grass",
       spinning: shown.spin > 0,
-      lapsDone: shown.lapsDone,
+      // After our own finish we hear the kart we watch, but its laps and its finish are not ours to cheer again.
+      lapsDone: afterFinish ? mine.lapsDone : shown.lapsDone,
       laps: track.laps,
-      finished: shown.finished === true,
+      finished: afterFinish ? true : shown.finished === true,
       warning: warning !== null,
       others,
       air: shown.air,
@@ -775,7 +887,7 @@ function frame(now) {
   const place = inRace && mine !== undefined ? placeLine(karts, track, myId) : "";
   placeBox.hidden = place === "";
   placeText.textContent = place;
-  noticeText.textContent = timeLeftNotice(race, endsIn);
+  noticeText.textContent = afterFinish ? "" : timeLeft; // after our own finish the banner says it
 
   // The small list in the corner: for a racer who has finished while the
   // others are still driving. Once the race is over, the big board replaces it.
@@ -825,6 +937,11 @@ window.kartGame = {
     saved,
     race: { ...race },
     karts: kartsShown,
+    // The game settings of the room as the server has them, and whether the card is up.
+    settings: readGameSettings(latestUpdate?.settings),
+    settingsCard: settingsCard.isOpen(),
+    following: followingId,
+    afterFinish, // true while we have finished and the camera is on someone who still drives
     // How far in the past the race is shown right now, in steps (net.js), and what the meter counts.
     delaySteps: playback.delaySteps(),
     meter: { on: meterOn, ...meter.read(performance.now(), playback.delaySteps()) },
