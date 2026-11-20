@@ -2,6 +2,44 @@
 
 Francisco Fonseca (Fran, GitHub FranFon15). Entries from 11 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 20 November 2026: karts jolt on the stairs of the Nova lap (and slopes tried and taken out)
+
+**What was done**
+Francisco asked, for the team, for the wide stairs of the Nova lap to go down and the path past the beach tunnel to go up again, as on the real campus. Branch `nova-lap-slopes`.
+- First try: slopes in the driving rules (`shared/slopes.js`): faster down the stairs, slower up the path, the kart's nose drawn dipping or rising, and jolting on the steps.
+- Francisco drove it: a kart that stopped on the way up could not start again, and a ground that stays flat while the kart is only faster or slower did not feel like a hill. He chose to keep only the jolting on the stairs.
+- So both commits of the first try were undone with `git revert` (new commits that cancel them; the history is kept), and the jolting was made again, in the picture only.
+
+| File | What changed |
+|---|---|
+| `client/stairs-bump.js` | New. How high a kart jolts on stairs |
+| `client/nova-lap-look.js` | Where the stairs are: [64, 63, 71, 69] in squares |
+| `client/draw.js` | A kart on the stairs is drawn a little higher while it jolts |
+| `tests/stairs-bump.test.js` | New. 8 tests |
+| `WALKTHROUGH.md`, `client/README.md`, `tests/README.md` | Kept true |
+
+**Why it was done this way**
+- Only the picture: on the stairs a kart drives exactly as on any road, online too, so nothing that works can break three days before the deadline.
+- The jolt follows where the kart is, not the clock: standing still it does not jolt, and the same spot always looks the same.
+- The bug in the first try: the pull of the slope was added before the driving rules, so a kart standing on the way up always seemed to roll back a little, and the gas only ever braked it to a stop. The tests of the first try never started a kart from standstill uphill. Nothing of it is left in the code now.
+
+**Decisions**
+- The team (through Francisco) chose: real slopes in the rules, then, after trying them, only the jolting.
+- Decision made by the agent, please confirm: the branch keeps its name `nova-lap-slopes`, though it now only has the jolting.
+
+**What was checked, and what was not**
+- After the revert the code was the same as `main` (no differences).
+- The jolting was broken on purpose in two ways; each made a test fail.
+- `npm test`: 2660 passed, 5 skipped.
+- The Nova lap page opens with no new errors.
+- **Not checked by the agent:** how it looks while driving (the app's browser redraws too slowly). Francisco drove the first try on his laptop.
+
+**How to check it yourself**
+`npm start`, Single race, Nova lap, and drive down the wide stairs.
+
+**What comes next**
+One try, on a separate branch, of the ground at two heights (the upper ground and the lower plaza). Francisco tries it; if it looks bad, it is dropped and only the jolting stays.
+
 ### 19 November 2026: FranFon in green, a golf swing, and no Cup in the menu
 
 **What was done**

@@ -520,7 +520,9 @@ The campus loop was made from a map and from what can be read online, and nobody
 
 **What the picture adds** (`client/street-life.js`, `client/props.js`, `client/draw.js`). A ramp is a yellow wedge with arrows on the road before it. A kart in the air is drawn higher, with its shadow left on the road, and trails sparks while it has extra speed. A walker is a small drawn student whose legs swing; toppled, it sits with stars going round its head and its coffee cup beside it. A jump and a topple each have a sound (`client/sound-cues.js`).
 
-**What is missing.** The stairs and slopes are flat. Nobody has tuned the numbers of ramps and walkers by playing: they are first guesses. Heights are estimates from the film. The halls and lawns west of the main building were placed to fit, not measured. Nobody has yet raced it on a real screen and said how it feels.
+**Karts jolt on the wide stairs** (`client/stairs-bump.js`, the stairs listed in `client/nova-lap-look.js`, since 20 November). In the race view a moving kart bounces up and down once for every step it goes over, more when it is fast, not at all when it stands still or is in the air. Only the picture: on the stairs a kart drives as on any road. The same day the team asked for real slopes, and a version was tried where the stairs made karts faster and the path past the beach tunnel slower. It was taken back out (with `git revert`, so it stays in the history): the ground is still drawn flat, so a kart that was only faster or slower did not feel like going up or down, and a kart that stopped on the way up could not start again. Making the ground itself go down and up needs the ground to be drawn at more than one height, which it is not.
+
+**What is missing.** The stairs and slopes are flat (apart from the jolting on the stairs). Nobody has tuned the numbers of ramps and walkers by playing: they are first guesses. Heights are estimates from the film. The halls and lawns west of the main building were placed to fit, not measured. Nobody has yet raced it on a real screen and said how it feels.
 
 ## What happens when karts touch, and what do the banana peels do?
 
@@ -634,9 +636,11 @@ The only personal data is the user name a player chose. There is no email, no re
 
 ## What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 2,652 tests today, plus the ones that only run against the real database. They take about 40 seconds, most of it online races that run in real time.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 2,660 tests today, plus the ones that only run against the real database. They take about 40 seconds, most of it online races that run in real time.
 
 **Covered today**
+
+- Karts jolting on the stairs of the Nova lap, in `tests/stairs-bump.test.js`. Eight tests: where the stairs are (and that other tracks have none), a moving kart jolts once per step and never higher than a step, and it does not jolt standing still, off the stairs or in the air; it jolts less when slow; the same spot always looks the same; and the stairs drive exactly as any road. We broke it on purpose in two ways (jolting everywhere, jolting standing still), and each made a test fail.
 
 - After your own finish, since 20 November 2026: `tests/after-finish.test.js` (27 tests): which kart the camera moves to (a person before a computer kart, the one in last place, never your own, never one that has finished, and it stays put while that kart drives), the words of the banner, and, for two players, that player 1 has the arrows and the right half and player 2 has W A S D and the left half.
 
