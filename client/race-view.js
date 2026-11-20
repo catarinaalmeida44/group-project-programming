@@ -11,6 +11,7 @@ import { STEP_SECONDS } from "../shared/physics.js";
 import { FINISH_WINDOW_STEPS } from "../shared/race-time.js";
 import { formatTime } from "./format.js";
 import { standings } from "./standings.js";
+import { placeText } from "./net.js";
 
 const PHASES = ["open", "countdown", "racing", "finished"];
 
@@ -151,6 +152,66 @@ export function nextToWatch(karts, track, followingId, direction, computerIds = 
   }
   const step = direction < 0 ? -1 : 1;
   return choices[(at + step + choices.length) % choices.length].id;
+}
+
+/**
+ * The kart a driver's camera moves to once they have finished the race
+ * while others are still driving. (Since 20 November 2026, at Catarina's
+ * request: until then a driver who had finished sat looking at their own
+ * kart standing still until everyone was home.) It is used by the three
+ * race pages: online, single race and two players.
+ *
+ * It is a kart that is still driving, never the driver's own:
+ *   - a person's kart if any person is still driving, and only if there is
+ *     none a computer kart
+ *   - among those, the one in last place: the one everybody is waiting for
+ *   - the camera then stays with that kart until it finishes, and moves on
+ *     by the same rule
+ *
+ *   karts        the karts of the race [{ id, finished, passed, x, y, ... }]
+ *   track        the track
+ *   myId         the driver's own kart
+ *   followingId  the kart the camera is on now, or null
+ *   computerIds  the numbers of the computer karts. Left out: there are none
+ * Gives the kart, or undefined when nobody else is driving any more: the
+ * camera then stays where it is, and the podium is about to come.
+ */
+export function kartToWatchAfterFinish(karts, track, myId, followingId, computerIds = []) {
+  const usable = Array.isArray(karts) ? karts.filter((kart) => kart !== null && typeof kart === "object") : [];
+  const driving = usable.filter((kart) => kart.id !== myId && kart.finished !== true);
+  if (driving.length === 0) {
+    return undefined;
+  }
+  const followed = driving.find((kart) => kart.id === followingId);
+  if (followed !== undefined) {
+    return followed;
+  }
+  const order = standings(kartsOfPeople(driving, computerIds), track);
+  return order[order.length - 1];
+}
+
+/** What a driver who has finished is told while they wait for the others. */
+export const WAITING_TEXT = "Waiting until every player finishes.";
+
+/**
+ * The banner across the top of the picture for a driver who has finished
+ * while others are still driving, and whose camera is on one of them:
+ *   place        the place they finished in: 1, 2, 3 ...
+ *   steps        their race time, in steps
+ *   watchedName  whose kart the camera is on, or null when it has no name
+ *   canSwitch    true when the left and right arrows move the camera to
+ *                another player (online, with more than one person driving)
+ * Gives { title, text }: "You finished 2nd, in 1:02.34!" in big letters,
+ * and under it "Waiting until every player finishes. You are watching Ana."
+ */
+export function finishedBanner({ place, steps, watchedName = null, canSwitch = false }) {
+  const named = typeof watchedName === "string" && watchedName !== "";
+  const watching = named ? ` You are watching ${watchedName}.` : "";
+  const keys = canSwitch === true ? ` ${SWITCH_TEXT}` : "";
+  return {
+    title: `You finished ${placeText(place)}, in ${formatTime(steps * STEP_SECONDS)}!`,
+    text: `${WAITING_TEXT}${watching}${keys}`,
+  };
 }
 
 /** What the banner says for a moment when a watcher presses a driving key. */

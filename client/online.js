@@ -60,7 +60,19 @@ import { lookOf } from "./kart-shape.js";
 import { createRaceSound } from "./sound.js";
 import { tileKindAt } from "../shared/track.js";
 import { SPIN_STEPS } from "../shared/hazards.js";
-import { readRace, readEndsIn, timeLeftNotice, raceView, kartToFollow, nextToWatch, peopleToWatch, watchBanner, keysWork } from "./race-view.js";
+import {
+  readRace,
+  readEndsIn,
+  timeLeftNotice,
+  raceView,
+  kartToFollow,
+  kartToWatchAfterFinish,
+  nextToWatch,
+  peopleToWatch,
+  watchBanner,
+  finishedBanner,
+  keysWork,
+} from "./race-view.js";
 import { characterById } from "../shared/cast.js";
 import { followTarget, easeTowards, nextView } from "./camera.js";
 import { storageOf } from "./storage.js";
@@ -118,6 +130,7 @@ const bannerTitle = document.getElementById("watch-title");
 const bannerText = document.getElementById("watch-text");
 let followingId = null; // while watching: the number of the kart the camera is on
 let pressedKeyAt = null; // while watching: when a driving key was last pressed
+let afterFinish = false; // we have finished, others still drive, and the camera is on one of them
 
 // ---- What we know from the server ----
 let playback = createPlayback(); //   the latest updates, for smooth drawing
@@ -451,10 +464,12 @@ const keyboard = createKeyboard(window, {
   // arrows move the camera to another player (never to a computer kart).
   // Any other driving key does nothing, so the banner says so for a moment
   // (see the picture loop below). A key that is held down counts once.
+  // The same arrows work for a driver who has finished and is watching the
+  // others come home. Their other keys do nothing, and nothing is said about it.
   onDrive: (key, repeat) => {
-    const watching = myId !== null && race.watching.includes(myId) && (race.phase === "countdown" || race.phase === "racing");
+    const arrivedLate = myId !== null && race.watching.includes(myId) && (race.phase === "countdown" || race.phase === "racing");
     const sideways = key === "ArrowLeft" ? -1 : key === "ArrowRight" ? 1 : 0;
-    if (watching && sideways !== 0) {
+    if ((arrivedLate || afterFinish) && sideways !== 0) {
       const computerIds = computerIdsOf(latestUpdate);
       if (peopleToWatch(latestKarts, track, computerIds).length > 1) {
         if (repeat !== true) {
@@ -464,7 +479,9 @@ const keyboard = createKeyboard(window, {
         return;
       }
     }
-    pressedKeyAt = performance.now();
+    if (!afterFinish) {
+      pressedKeyAt = performance.now();
+    }
   },
 });
 
@@ -701,19 +718,44 @@ function frame(now) {
   // camera to another person. A banner across the picture then says that we
   // are watching, and whose kart that is.
   const computerIds = computerIdsOf(latestUpdate);
-  const shown = mine ?? (karts === null ? undefined : kartToFollow(karts, track, followingId, computerIds));
-  followingId = mine === undefined && shown !== undefined ? shown.id : null;
-  const pressedKey = pressedKeyAt !== null && performance.now() - pressedKeyAt < PRESSED_KEY_MS;
-  const banner =
-    mine !== undefined || shown === undefined
-      ? null
-      : watchBanner({
-          race,
-          myId,
-          watchedName: names.get(shown.id) ?? characterById(shown.character)?.name ?? null,
-          pressedKey,
-          canSwitch: peopleToWatch(karts, track, computerIds).length > 1,
-        });
+  // We have finished and others are still driving: the camera moves to one
+  // of them, a person if there is one, the one in last place
+  // (kartToWatchAfterFinish in race-view.js). The banner then says our
+  // place and time, that we are waiting, and whose kart that is.
+  const after = mine?.finished === true && race.phase === "racing" ? kartToWatchAfterFinish(karts, track, myId, followingId, computerIds) : undefined;
+  afterFinish = after !== undefined;
+  const shown = after ?? mine ?? (karts === null ? undefined : kartToFollow(karts, track, followingId, computerIds));
+  const nowFollowing = (mine === undefined || afterFinish) && shown !== undefined ? shown.id : null;
+  if (nowFollowing !== null && nowFollowing !== followingId) {
+    camera = null; // the camera is on another kart now: jump there, do not glide across the track
+  }
+  followingId = nowFollowing;
+  const pressedKey = !afterFinish && pressedKeyAt !== null && performance.now() - pressedKeyAt < PRESSED_KEY_MS;
+  const canSwitch = karts !== null && peopleToWatch(karts, track, computerIds).length > 1;
+  // "The race ends in 1:42", once the first kart has finished.
+  const timeLeft = timeLeftNotice(race, endsIn);
+  let banner = null;
+  if (afterFinish) {
+    banner = finishedBanner({
+      place: finishPlace(latestKarts, myId) ?? 1,
+      steps: mine.steps,
+      // The same name as in the results list beside it: a user name, a computer kart's name, or "Guest 2".
+      watchedName: shownNames.get(after.id) ?? `Guest ${after.id}`,
+      canSwitch: canSwitch && !computerIds.includes(after.id),
+    });
+    // The time left goes into the banner too: at the bottom of the picture it would lie under the results list.
+    if (timeLeft !== "") {
+      banner = { ...banner, text: `${banner.text} ${timeLeft}.` };
+    }
+  } else if (mine === undefined && shown !== undefined) {
+    banner = watchBanner({
+      race,
+      myId,
+      watchedName: names.get(shown.id) ?? characterById(shown.character)?.name ?? null,
+      pressedKey,
+      canSwitch,
+    });
+  }
   bannerBox.hidden = banner === null;
   bannerBox.classList.toggle("nudged", banner !== null && pressedKey);
   if (banner !== null) {
@@ -813,7 +855,8 @@ function frame(now) {
     steps: shown.steps,
     lapSteps: shown.lapSteps,
     view,
-    message: board.isShown() || podiumAlone ? "" : (warning ?? waitingWords ?? about.message),
+    // While we watch the others after our own finish, the banner at the top says it all, and the middle stays free.
+    message: board.isShown() || podiumAlone || afterFinish ? "" : (warning ?? waitingWords ?? about.message),
   });
 
   // The facts of this picture, for the sound: sound-cues.js decides from
@@ -826,9 +869,10 @@ function frame(now) {
       gas: keysDoSomething && input.gas,
       onGrass: tileKindAt(track, shown.x, shown.y) === "grass",
       spinning: shown.spin > 0,
-      lapsDone: shown.lapsDone,
+      // After our own finish we hear the kart we watch, but its laps and its finish are not ours to cheer again.
+      lapsDone: afterFinish ? mine.lapsDone : shown.lapsDone,
       laps: track.laps,
-      finished: shown.finished === true,
+      finished: afterFinish ? true : shown.finished === true,
       warning: warning !== null,
       others,
       air: shown.air,
@@ -843,7 +887,7 @@ function frame(now) {
   const place = inRace && mine !== undefined ? placeLine(karts, track, myId) : "";
   placeBox.hidden = place === "";
   placeText.textContent = place;
-  noticeText.textContent = timeLeftNotice(race, endsIn);
+  noticeText.textContent = afterFinish ? "" : timeLeft; // after our own finish the banner says it
 
   // The small list in the corner: for a racer who has finished while the
   // others are still driving. Once the race is over, the big board replaces it.
@@ -897,6 +941,7 @@ window.kartGame = {
     settings: readGameSettings(latestUpdate?.settings),
     settingsCard: settingsCard.isOpen(),
     following: followingId,
+    afterFinish, // true while we have finished and the camera is on someone who still drives
     // How far in the past the race is shown right now, in steps (net.js), and what the meter counts.
     delaySteps: playback.delaySteps(),
     meter: { on: meterOn, ...meter.read(performance.now(), playback.delaySteps()) },

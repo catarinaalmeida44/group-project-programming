@@ -43,6 +43,14 @@
         <div class="screen">
           <canvas id="track" width="960" height="576">Your browser cannot show the game.</canvas>
           <p id="message" class="message" role="status"></p>
+          <!-- Once you have finished and the others are still driving: a banner
+               across the top of the picture with your place and time, and whose
+               kart the camera is on now. main.js fills it in, as text; the
+               words are in race-view.js. -->
+          <div id="watch-banner" class="watch-banner" role="status" hidden>
+            <p id="watch-title" class="watch-title"></p>
+            <p id="watch-text" class="watch-text"></p>
+          </div>
           <!-- When the race is over and the podium is up: what to do next, as
                buttons on the picture. main.js shows it. The R key still works.
                It is inside the picture's box, so it comes along on the whole screen. -->

@@ -3558,6 +3558,48 @@ a.button {
   opacity: 0.45;
 }
 
+/* "The race ends in 42 s" on the two-player page: in the line above the
+   pictures, in the yellow of the same notice on the online page. */
+.hud-notice {
+  color: var(--yellow);
+  font-weight: 800;
+}
+
+.hud-notice:empty {
+  display: none;
+}
+
+/* The banner of a driver who has finished and watches the others come home
+   ("You finished 2nd ... You are watching Dean"). In a half of the split
+   screen it is smaller, and stops short of that half's small map. */
+.half .half-banner {
+  left: 0.4rem;
+  top: 0.4rem;
+  right: auto;
+  max-width: 62%;
+  padding: 0.35rem 0.6rem 0.4rem;
+  border-left-width: 6px;
+}
+
+.half .half-banner .watch-title {
+  font-size: clamp(0.85rem, 1.5vw, 1.15rem);
+}
+
+.half .half-banner .watch-text {
+  margin-top: 0.15rem;
+  font-size: 0.82rem;
+}
+
+/* Online, a driver who has finished also has the small list of results in
+   the top left corner. While the banner is up, the list moves to the bottom
+   right, out of its way. */
+.screen:has(.watch-banner:not([hidden])) .results {
+  left: auto;
+  top: auto;
+  right: 0.6rem;
+  bottom: 0.6rem;
+}
+
 /* "Two players" in the menu: a sea green of its own, between the yellow single race and the blue online. */
 .tile-double .tile-icon {
   background: #1f9e8f;
