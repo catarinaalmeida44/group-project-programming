@@ -1022,8 +1022,9 @@ export const WALL_ART = {
 
   // ---- The way to the beach: the tunnel under the coast road ----
   //
-  // The mouth is built from several boxes (nova-lap-buildings.js), so that
-  // it is really hollow. These are the pictures on them.
+  // The mouth is built from several boxes (nova-lap-buildings.js). Since 20
+  // November 2026 it is solid: the picture of the tunnel ("tunnel-back") is
+  // on its front, under the beam. These are the pictures on them.
 
   // The long concrete beam over the mouth, with the name of the way on it.
   "tunnel-beam": {

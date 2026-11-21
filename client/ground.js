@@ -44,9 +44,12 @@ const LINE_DARK = "#14181d";
  *   buildings  the buildings and banks of the track, from buildings.js, or
  *              null. Their roofs are painted into the picture, and the
  *              shadows they throw on the ground
- * Gives { picture, sharpness, paintTilted }.
+ *   levels     the sunken part of the ground (levels.js), or null. Its
+ *              strips are cut out of the picture, kept as small pictures of
+ *              their own, and painted lower down by paintSunken
+ * Gives { picture, sharpness, paintTilted, paintSunken }.
  */
-export function createGround(track, look, grid, buildings = null) {
+export function createGround(track, look, grid, buildings = null, levels = null) {
   const shore = look.shore ? shoreBands(look.shore) : null; // beach and sea past the south edge, or none
   const sharpness = Math.min(BEST_SHARPNESS, LARGEST_PICTURE / track.width, LARGEST_PICTURE / track.height);
   const picture = document.createElement("canvas");
@@ -69,6 +72,24 @@ export function createGround(track, look, grid, buildings = null) {
   paintRamps(context, track);
   paintStartLine(context, track);
   paintGrid(context, grid);
+
+  // THE SUNKEN PART (levels.js): each strip is copied out into a small
+  // picture of its own, then cut out of the big picture, which is left
+  // see-through there. The race view paints the strips first, each at its
+  // depth, and the big picture over them: through its holes the strips show.
+  // The views from above, and the small map, keep the whole picture: a copy
+  // is made before the holes are cut.
+  const sunken = levels === null ? [] : levels.strips.map((strip) => cutOutStrip(picture, track, strip));
+  let whole = picture;
+  if (levels !== null) {
+    whole = document.createElement("canvas");
+    whole.width = picture.width;
+    whole.height = picture.height;
+    whole.getContext("2d").drawImage(picture, 0, 0);
+  }
+  for (const strip of levels?.strips ?? []) {
+    context.clearRect(strip.left, strip.top, strip.right - strip.left, strip.bottom - strip.top);
+  }
 
   // Smaller copies of the picture. Far away, a big piece of ground lands on
   // very few pixels of the screen. Taking it from a small copy, in which
@@ -124,6 +145,9 @@ export function createGround(track, look, grid, buildings = null) {
     paintRamps(closeContext, track);
     paintStartLine(closeContext, track);
     paintGrid(closeContext, grid);
+    for (const strip of levels?.strips ?? []) {
+      closeContext.clearRect(strip.left, strip.top, strip.right - strip.left, strip.bottom - strip.top); // the holes, as in the big picture
+    }
     closePattern = context.createPattern(close, "no-repeat");
   }
 
@@ -142,7 +166,7 @@ export function createGround(track, look, grid, buildings = null) {
    * Rows near the horizon show ground far away, drawn small. Rows near the
    * bottom show ground close by, drawn large. Together that is the tilt.
    */
-  function paintTilted(context, spot, settings, screen) {
+  function paintTilted(context, spot, settings, screen, under = null) {
     const { horizonY, growthPerRow, depth } = chaseNumbers(settings);
     if (patternsFor !== context) {
       patterns = copies.map((copy) => context.createPattern(copy, "no-repeat"));
@@ -182,6 +206,19 @@ export function createGround(track, look, grid, buildings = null) {
     }
     if (shore !== null) {
       paintShore(shore, screen.height);
+    }
+
+    // What lies under the ground of the track, seen through its holes: the
+    // sunken part (paintSunken), and its walls. Painted now, so the ground
+    // below covers it everywhere but in the holes.
+    if (under !== null) {
+      under();
+    }
+
+    // The camera is below the ground of the track (deep in the sunken part,
+    // with an eye lower than the drop): that ground cannot be seen from above.
+    if (!Number.isFinite(growthPerRow)) {
+      return;
     }
 
     for (let y = firstRow; y < screen.height; y++) {
@@ -253,8 +290,137 @@ export function createGround(track, look, grid, buildings = null) {
     }
   }
 
-  return { picture, sharpness, paintTilted };
+  /**
+   * Paints the sunken part of the ground (levels.js), each strip at its
+   * depth, the deepest first, for the race view. "cameraDepth" is how deep
+   * the ground under the camera's kart is: a strip that deep is drawn as
+   * the ground always is, a deeper one lower, a shallower one higher.
+   * Works like paintTilted, row by row, but only on the rows where a strip
+   * can be, and with no shore, haze or sharper close picture.
+   */
+  function paintSunken(context, spot, settings, screen, cameraDepth, beforeStrip = null) {
+    const cos = Math.cos(spot.angle);
+    const sin = Math.sin(spot.angle);
+    sunken.forEach((piece, number) => {
+      const strip = { ...piece, depth: levels.strips[number].depth }; // its picture's own edges, a little past the strip's
+      // The strips go deepest first. "beforeStrip" is told the depth of the
+      // next one, so that draw.js can paint the walls that stand deeper than
+      // it first: a higher strip in front of a wall then covers its foot.
+      if (beforeStrip !== null) {
+        beforeStrip(strip.depth);
+      }
+      const seen = { ...settings, eyeLift: strip.depth - cameraDepth };
+      const { horizonY, growthPerRow, depth } = chaseNumbers(seen);
+      if (!Number.isFinite(growthPerRow)) {
+        return;
+      }
+      if (piece.patternsFor !== context) {
+        piece.patterns = piece.copies.map((copy) => context.createPattern(copy, "no-repeat"));
+        piece.patternsFor = context;
+      }
+      // How far ahead of the camera's spot the strip reaches: only those rows need painting.
+      const corners = [
+        [strip.left, strip.top],
+        [strip.right, strip.top],
+        [strip.left, strip.bottom],
+        [strip.right, strip.bottom],
+      ].map(([x, y]) => (x - spot.x) * cos + (y - spot.y) * sin);
+      const nearest = Math.min(...corners) - 2;
+      const furthest = Math.max(...corners) + 2;
+      // And how far to the side: only that part of each row needs painting.
+      // (Painting every strip across the whole screen made the picture three
+      // times slower in the lower plaza.) A strip that reaches behind the
+      // camera is painted across the whole row.
+      const sideways = [
+        [strip.left, strip.top],
+        [strip.right, strip.top],
+        [strip.left, strip.bottom],
+        [strip.right, strip.bottom],
+      ].map(([x, y]) => -(x - spot.x) * sin + (y - spot.y) * cos);
+      const leftmost = Math.min(...sideways);
+      const rightmost = Math.max(...sideways);
+      // The spot, seen from the strip's own corner, which is where its picture starts.
+      const alongKart = (spot.x - strip.left) * cos + (spot.y - strip.top) * sin;
+      const acrossKart = (spot.x - strip.left) * sin - (spot.y - strip.top) * cos;
+      const firstRow = Math.max(0, Math.floor(horizonY) + 1);
+      for (let y = firstRow; y < screen.height; y++) {
+        const scale = (y + 0.5 - horizonY) * growthPerRow;
+        const ahead = depth * (1 / scale - 1 / settings.kartScale);
+        if (ahead < nearest || ahead > furthest || ahead > look.seeGroundTo) {
+          continue;
+        }
+        const squeezed = (scale * scale) / (growthPerRow * depth);
+        const needed = Math.sqrt(scale * squeezed);
+        let copy = 0;
+        while (copy < piece.copies.length - 1 && piece.perUnit[copy + 1].x >= needed) {
+          copy++;
+        }
+        const across = piece.perUnit[copy].x;
+        const down = piece.perUnit[copy].y;
+        matrix.a = (-scale * sin) / across;
+        matrix.c = (scale * cos) / down;
+        matrix.e = screen.width / 2 + scale * acrossKart;
+        matrix.b = (-squeezed * cos) / across;
+        matrix.d = (-squeezed * sin) / down;
+        matrix.f = y + 0.5 + squeezed * (alongKart + ahead);
+        piece.patterns[copy].setTransform(matrix);
+        context.fillStyle = piece.patterns[copy];
+        // On this row one unit sideways is "scale" pixels, from the middle of the screen.
+        const from = Math.max(0, Math.floor(screen.width / 2 + leftmost * scale) - 2);
+        const to = Math.min(screen.width, Math.ceil(screen.width / 2 + rightmost * scale) + 2);
+        if (to > from) {
+          context.fillRect(from, y, to - from, 1);
+        }
+      }
+    });
+    if (beforeStrip !== null) {
+      beforeStrip(-Infinity); // the walls that are left
+    }
+  }
+
+  return { picture: whole, sharpness, paintTilted, paintSunken };
 }
+
+/**
+ * Copies one strip of the sunken part out of the big picture of the ground,
+ * with smaller copies of it as the big picture has. Gives { copies, perUnit }.
+ */
+function cutOutStrip(picture, track, strip) {
+  const perUnitX = picture.width / track.width;
+  const perUnitY = picture.height / track.height;
+  // Each strip is cut a little larger than it is, so that neighbouring
+  // strips overlap. Cut exactly, their soft edges showed as thin lines
+  // across the path.
+  const bounds = {
+    left: Math.max(0, strip.left - STRIP_OVERLAP),
+    top: Math.max(0, strip.top - STRIP_OVERLAP),
+    right: Math.min(track.width, strip.right + STRIP_OVERLAP),
+    bottom: Math.min(track.height, strip.bottom + STRIP_OVERLAP),
+  };
+  const first = document.createElement("canvas");
+  first.width = Math.max(1, Math.round((bounds.right - bounds.left) * perUnitX));
+  first.height = Math.max(1, Math.round((bounds.bottom - bounds.top) * perUnitY));
+  first
+    .getContext("2d")
+    .drawImage(picture, bounds.left * perUnitX, bounds.top * perUnitY, first.width, first.height, 0, 0, first.width, first.height);
+  const copies = [first];
+  for (let i = 1; i <= SMALLER_COPIES && copies[i - 1].width > 1 && copies[i - 1].height > 1; i++) {
+    const before = copies[i - 1];
+    const smaller = document.createElement("canvas");
+    smaller.width = Math.max(1, Math.round(before.width / 2));
+    smaller.height = Math.max(1, Math.round(before.height / 2));
+    const smallerContext = smaller.getContext("2d");
+    smallerContext.imageSmoothingQuality = "high";
+    smallerContext.drawImage(before, 0, 0, smaller.width, smaller.height);
+    copies.push(smaller);
+  }
+  const width = bounds.right - bounds.left;
+  const height = bounds.bottom - bounds.top;
+  return { ...bounds, copies, perUnit: copies.map((copy) => ({ x: copy.width / width, y: copy.height / height })), patterns: null, patternsFor: null };
+}
+
+/** How far, in units, each strip of the sunken part reaches over its neighbours (see cutOutStrip). */
+const STRIP_OVERLAP = 1.5;
 
 // ---------------------------------------------------------------------------
 // Painting the picture from above

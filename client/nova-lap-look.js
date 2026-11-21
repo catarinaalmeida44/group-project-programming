@@ -119,6 +119,58 @@ export const NOVA_LAP_LOOK = {
   // ---- What only this track has ----
 
   ground: NOVA_LAP_GROUND,
+  // Stairs, as [left, top, right, bottom] in squares of the map: a kart that
+  // drives over them jolts on the steps in the race view (stairs-bump.js).
+  // Only the picture: the driving is the same as on any road. (20 November
+  // 2026, at the team's request. Real hills were tried the same day and left
+  // out: the ground is drawn flat, and a slower kart alone did not feel like
+  // going up or down.)
+  stairs: [[64, 63, 71, 69]], // the wide stairs, from the promenade to the lower plaza
+  // The ground at two levels, in the race view only (levels.js): the wide
+  // stairs go down to the lower plaza in front of the Grand Auditorium, and
+  // the path past the beach tunnel rises back up to the west, to the
+  // slanting path. Karts drive on it as on any road. (20 November 2026, a
+  // first try at the team's request. The drop is a guess, kept a little
+  // smaller than the height of the race camera's eye, about 3.3 metres, so
+  // that from the lower plaza the camera still sees over the edge.)
+  levels: {
+    drop: 2.2,
+    areas: [
+      { rect: [64, 63, 71, 69], from: 0, to: 1, along: "y", steps: 12 }, // the stairs, down to the south
+      { rect: [64, 69, 73, 78], to: 1 }, //                                  the lower plaza
+      // The path: at ground level in the west, as deep as the plaza in the
+      // east. In 40 steps, too small to see one by one, so it looks like a
+      // ramp. (16 for a few minutes: it looked like a second flight of stairs.)
+      { rect: [48, 70, 64, 74], from: 0, to: 1, along: "x", steps: 40 },
+      // The Sagres Beach Way, the sandy way down to the beach tunnel, south of
+      // the path, and the floor of the tunnel's mouth: as low as the plaza,
+      // as on the campus. Driving up the path, it drops away on the left.
+      // (Francisco, 20 November 2026.)
+      { rect: [55, 74, 64, 77], to: 1 },
+      // The tunnel, all of it, walls included: they stand at the bottom, so
+      // the ground of the track has a hole over them too. (Until 20 November
+      // only the floor of its mouth was here: the lower part of its walls,
+      // standing on ground that was not sunken, was then cut away.)
+      { rect: [55, 77, 64, 80], to: 1 },
+    ],
+    // The scenery that does not stand on the ground of the track, by its
+    // name in nova-lap-buildings.js. "depth" is a share of the drop;
+    // "follow" means a railing that stands on the ground along its line,
+    // looked for that many squares to one side of it.
+    scenery: [
+      { name: "tunnel, wall west of the mouth", depth: 1 },
+      { name: "tunnel, wall east of the mouth", depth: 1 },
+      { name: "tunnel, beam with the name", depth: 1 },
+      { name: "tunnel, ceiling", depth: 1 },
+      { name: "tunnel, back wall", depth: 1 },
+      { name: "tunnel, reeds on top", depth: 1 },
+      // Between the plaza and the Sagres Beach Way: both are at the bottom.
+      { name: "rail at the head of the tunnel way", depth: 1 },
+      // Between the path and the Sagres Beach Way: it stands on the edge of
+      // the path, so it rises with it, and the Beach Way drops away below it.
+      { name: "rail along the tunnel way", follow: [0, -0.3] },
+    ],
+  },
   // Lines painted on the ground. Each is in squares of the map.
   groundMarks: [
     // The west street and the coast road: a broken line down the middle, a line along each edge.
