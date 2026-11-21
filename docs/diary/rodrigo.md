@@ -23,6 +23,8 @@ Branch `rodrigo-nova-logo`, from `main` after the recorded music (#42).
 - In a Chrome browser without a screen, at 1280 and at 420 dots wide: the logo loads, is sharp and sits above "Kart racer". The only error was the accounts service (no database on the agent's computer), as before.
 - **Not checked:** on my laptop and on the live server.
 
+- 21 November: `main` had moved on (the Nova lap at two levels, #43), and the pull request showed a conflict. It was only the test count in WALKTHROUGH.md. `main` was merged into this branch (no rebase, no force-push) and the count set to the real total: 2,781 passed, 5 skipped, with everything together.
+
 **How to check it yourself**
 Run `npm start`, open http://localhost:3000, and look at the top left of the menu. Make the window narrow: the logo gets smaller but keeps its shape.
 
