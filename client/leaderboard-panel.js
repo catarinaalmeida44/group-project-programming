@@ -7,6 +7,7 @@
 // Every name and time is put on the page as plain text (see page-parts.js).
 
 import { createLeaderboard } from "./leaderboard.js";
+import { tracksInBoardOrder } from "./leaderboard-view.js";
 import { makePart } from "./page-parts.js";
 
 /** How many grey bars stand in for the rows of a board while it loads. */
@@ -103,12 +104,16 @@ export function showLeaderboard(page, view) {
  *   api      the functions of account-api.js, to ask the server for the boards
  *   storage  this browser's storage, or null (see storage.js)
  *   tracks   the list from shared/tracks/index.js: short name -> track
+ *            (the panel shows them with the Nova lap first)
  * Gives back the leaderboard (leaderboard.js), so the menu can tell it who
  * is signed in.
  */
-export function connectLeaderboard(page, { api, storage, tracks }) {
+export function connectLeaderboard(page, { api, storage, tracks: listedTracks }) {
   const panel = page.getElementById("leaderboard");
   const switcher = page.getElementById("leaderboard-tracks");
+  // The Nova lap goes first: the panel opens on its boards, and its button
+  // is the first of the row (tracksInBoardOrder in leaderboard-view.js).
+  const tracks = tracksInBoardOrder(listedTracks);
   const leaderboard = createLeaderboard({ api, storage, tracks, show: (view) => showLeaderboard(page, view) });
 
   // One button for each track.
