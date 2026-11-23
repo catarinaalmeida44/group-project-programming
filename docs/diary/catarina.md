@@ -4,6 +4,56 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 23 November 2026, morning: the leaderboard opens on the Nova lap, and a last look at the grading criteria
+
+**What she said**
+
+- "When you click on leaderboard, the leader board should first show results for the nova lap, instead of showing first the oval and then the nova lap."
+- All three ways to play have been tried (single, two players, online). Online is the one that counts for the leaderboard.
+- She asked what is left to finish the game, against the course's grading criteria.
+
+**What was built** (branch `leaderboard-nova-lap-first`, from `main` after pull request 43)
+
+| What | Where |
+|---|---|
+| The order of the tracks in the Leaderboard panel: the Nova lap first, the others after it as they were | `tracksInBoardOrder` and `FIRST_TRACK` in `client/leaderboard-view.js` |
+| The panel uses that order for its row of buttons and opens on the first one | `connectLeaderboard` in `client/leaderboard-panel.js` |
+| Seven new tests | `tests/leaderboard.test.js`, the last group |
+| One line each in the notes | `client/README.md`, `tests/README.md`, `WALKTHROUGH.md` |
+
+**Why it was done this way**
+
+- **Only the Leaderboard panel changed, not the list of tracks.** The simplest change would have been to swap the two lines in `shared/tracks/index.js`. But an older test (`tests/track-choice.test.js`) says the list is "test oval, then Nova lap", and our rule is never to edit a test to make it pass. So the list stays, and the panel puts the Nova lap first by itself.
+- **On the live site the test oval's boards are empty** (nobody raced online there) and the Nova lap has five results. So until now the panel opened on "No times yet", and the real results were one click away.
+- A name that is not a track of the list is never put first. The check uses `Object.hasOwn`, so names every JavaScript object has, such as `constructor`, are refused too.
+
+**Decisions made by the agent: please confirm**
+
+- "Choose a track" (Single race, Two players, Online) still shows the test oval's card before the Nova lap's. She only spoke of the leaderboard. Swapping the cards too means changing that older test, which is for the team to say.
+
+**Checked, and not checked**
+
+- `npm test`, run again after the notes were written: 2,780 passed, 5 skipped (103 files). Seven are new. The 5 skipped are the ones that need the database address.
+- In the browser pane, with pretend accounts and the sound off: "Leaderboard" opens with "Nova lap" pressed and first in the row; a click on "Test oval" shows its boards, a click on "Nova lap" comes back. No error in the console.
+- The live site, without signing in, at about 10:20: the menu opens, `/database-check` says ok, the leaderboard answers (Nova lap five results, test oval none), a track that does not exist is refused with a clear sentence, a page that does not exist gives "not found".
+- GitHub: the Tests job on `main` (after pull request 43) passed. `npm audit`: no known vulnerabilities. No file in the repository holds a real database address.
+- **Not checked:** this change on the live site (it is not in `main` until a teammate merges it), and the panel with real results in it on this laptop (the pretend accounts start empty).
+
+**Found while looking, not changed**
+
+- **The live server does sleep.** The keep-awake job is asked to run every five minutes, but GitHub's own list shows it ran only every five to eight hours (for example 22 November at 16:51 and 22:15, 23 November at 02:54). The server had started again at 10:09 today. Before the demo, someone must open the link a few minutes early.
+- **Pull request 44** (Rodrigo, the Nova logo) is still open. Its tests pass and it fits on today's `main`. It only counts if a teammate merges it before 23:59 today.
+- `README.md` dates its `npm audit` check 20 November. It is still true today.
+
+**What was done in git**
+
+- `git fetch`, then a new branch `leaderboard-nova-lap-first` from `origin/main`. The earlier branch `music-files-and-one-campus-track` was already merged (pull request 42).
+- One commit for the change and its tests, one for the notes and this entry. The branch was pushed. Nothing was merged into `main`.
+
+**How to check it yourself**
+
+Run `npm run start:pretend`, open http://localhost:3000 and click "Leaderboard": the yellow button is "Nova lap". On the live site, after the merge, the five results show at once.
+
 ### 20 November 2026, late afternoon: her own music, and the campus loop leaves the game
 
 **What she said**

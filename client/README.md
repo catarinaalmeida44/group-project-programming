@@ -14,7 +14,7 @@ Everything the browser shows and does: the web page, the drawing of the track an
 | `track-panel.js` | The "Choose a track" panel on the page: builds the cards, and makes Single race and Online open it |
 | `account-api.js` | How a page asks the server about accounts and the shared leaderboard: one function per question, and an answer that never breaks the page, also when the server cannot be reached or has no database. The page never holds the password or the sign-in ticket: the browser keeps the ticket in a cookie the page's code cannot read |
 | `answers.js` | Reads an answer from the server carefully: did it say yes, and which sentence to show when it said no or sent something broken |
-| `leaderboard-view.js` | What the Leaderboard panel shows for an answer from the server: which rows, the podium, your own row, and the sentence for loading, empty and "not available". No browser needed, so it has tests |
+| `leaderboard-view.js` | What the Leaderboard panel shows for an answer from the server: which rows, the podium, your own row, and the sentence for loading, empty and "not available". Also the order of the track buttons: the Nova lap first, and the panel opens on it. No browser needed, so it has tests |
 | `leaderboard.js` | Remembers the chosen track and who is signed in, asks the server for the boards, and drops an answer that comes too late |
 | `leaderboard-panel.js` | Puts the leaderboard on the page and listens to its buttons |
 | `account-view.js` | The words for the account corner, and what is wrong with a form before it is sent, by the rules in `shared/account-rules.js`. No browser needed, so it has tests |

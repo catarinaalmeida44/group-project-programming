@@ -10,7 +10,7 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 |---|---|---|
 | The main menu, the first page | `client/index.html` and `client/menu.js` | Yes: Single race, Two players, Online, Leaderboard, Settings and the account corner. (The Cup, shown greyed out until then, left the menu on 19 November: the team dropped it) |
 | Choosing a track in the menu | `client/track-panel.js`, `client/track-list.js`, `client/mini-map.js` | Yes: a card with a small map for each track |
-| The leaderboard in the menu | `client/leaderboard.js`, `client/leaderboard-view.js`, `client/leaderboard-panel.js` | Yes: the shared boards of each track, and your own practice bests |
+| The leaderboard in the menu | `client/leaderboard.js`, `client/leaderboard-view.js`, `client/leaderboard-panel.js` | Yes: the shared boards of each track, and your own practice bests. It opens on the Nova lap (`tracksInBoardOrder` in `leaderboard-view.js`) |
 | Accounts in the menu | `client/account.js`, `client/account-view.js`, `client/account-panel.js` | Yes: create an account, sign in, sign out, change your password, delete your account |
 | How a page asks the server about accounts | `client/account-api.js`, read carefully by `client/answers.js` | Yes |
 | Accounts on the server | `server/api.js` (the addresses), `server/accounts.js` (the rules), `server/passwords.js` (scrambling), `server/store.js` (the database questions) | Yes: a user name and a password. No email yet |
