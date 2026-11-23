@@ -207,7 +207,10 @@ const keyboard = createKeyboard(
   window,
   {
     onFullScreen: () => fullScreen.toggle(),
-    onDrive: start,
+    // Enter starts the countdown for both drivers, whoever presses it, as
+    // the host's Enter does online. (Until 23 November 2026 the first
+    // driving key of either driver did. A driving key now only drives.)
+    onStart: start,
     onRestart: startAgain,
     onView: changeView,
     onSound: () => {
@@ -287,11 +290,8 @@ function sceneFor(countdownSteps, hasStarted) {
  * As in main.js, real time is turned into whole steps of the rules.
  */
 function frame(now) {
-  // Normally the countdown starts in start(), at the first key press. This
-  // covers one more case: R was pressed while a driving key was still held.
-  if (!started && keyboard.isDriving()) {
-    start();
-  }
+  // The countdown starts in start(), when Enter is pressed, and nowhere else.
+  // A driving key that is held before that does nothing: the karts wait.
 
   const frameSeconds = lastFrameTime === null ? 0 : Math.min((now - lastFrameTime) / 1000, 0.25);
   lastFrameTime = now;

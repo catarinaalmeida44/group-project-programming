@@ -57,7 +57,7 @@ import { readSettings } from "./settings.js";
 import { recordFinishedRace, finishedRaceTimes } from "./records.js";
 import { accountApi } from "./account-api.js";
 import { singleSavedText } from "./stats-view.js";
-import { kartToWatchAfterFinish, finishedBanner } from "./race-view.js";
+import { kartToWatchAfterFinish, finishedBanner, SINGLE_START_WORDS } from "./race-view.js";
 import { createRaceSound } from "./sound.js";
 import { createPageMusic } from "./music.js";
 import { raceMoment } from "./music-cues.js";
@@ -113,7 +113,7 @@ const myCharacter = readCharacter(storage)?.id ?? null; // the character chosen 
 // computer karts race with the player, and how good are they (easy, normal or hard)?
 let choice = readGameChoice(storage);
 let race = newRace(); // the racers (the player is racers[0]), the computer drivers, the countdown and the bananas
-let started = false; //    the countdown starts at the first key press
+let started = false; //    the countdown starts when Enter is pressed
 // Until then the camera flies round the track (fly-over.js).
 const flyOver = createFlyOver(line, track.start);
 let flyDistance = 0; //    how far round the track the fly-over camera is, in units
@@ -194,7 +194,9 @@ const fullScreen = setUpFullScreen(document, document.getElementById("play-area"
 
 const keyboard = createKeyboard(window, {
   onFullScreen: () => fullScreen.toggle(),
-  onDrive: start,
+  // Enter starts the countdown, as the host's Enter does online. (Until 23
+  // November 2026 any arrow key did. A driving key now only drives.)
+  onStart: start,
   onRestart: startAgain,
   onView: changeView,
   onSound: () => {
@@ -290,11 +292,8 @@ function changeView() {
  * as many whole steps as fit in it. What is left over waits for next time.
  */
 function frame(now) {
-  // Normally the countdown starts in start(), at the first key press. This covers
-  // one more case: the player pressed R while still holding an arrow key.
-  if (!started && keyboard.isDriving()) {
-    start();
-  }
+  // The countdown starts in start(), when Enter is pressed, and nowhere else.
+  // An arrow key that is held before that does nothing: the karts wait.
 
   // Real time since the last picture. Never more than a quarter of a second,
   // for example after the player switched to another tab and came back.
@@ -379,8 +378,8 @@ function frame(now) {
   } else {
     const others = race.racers.map((_, id) => id).filter((id) => id !== shownId).map(kartAsDrawn);
     if (!started && view === "chase") {
-      // Before the first key press: the camera flies round the track, over
-      // every kart waiting on the grid (fly-over.js). An arrow key starts the
+      // Before the race is started: the camera flies round the track, over
+      // every kart waiting on the grid (fly-over.js). Enter starts the
       // countdown, and the camera comes down behind your kart as before.
       flyDistance += FLY_SPEED * (lastFlyTime === null ? 0 : Math.min((now - lastFlyTime) / 1000, 0.1));
       lastFlyTime = now;
@@ -524,7 +523,7 @@ function messageFor(progress, countdown) {
     return `${finishedWords(place, progress.steps, formatTime)}${newBestText()}${singleSavedText(savedAnswer)}`;
   }
   if (!started) {
-    return "Press an arrow key to start the countdown";
+    return SINGLE_START_WORDS; // "Press Enter to start the countdown"
   }
   return countdown.label; // "3", "2", "1", "GO!", and then nothing
 }

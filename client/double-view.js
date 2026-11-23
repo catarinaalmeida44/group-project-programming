@@ -10,6 +10,7 @@ import { PLAYERS } from "../shared/two-player-race.js";
 import { characterById } from "../shared/cast.js";
 import { finishedWords } from "./podium.js";
 import { formatTime } from "./format.js";
+import { START_KEY } from "./race-view.js";
 
 /**
  * The two drivers: player 1 first, then player 2.
@@ -34,8 +35,11 @@ export const DRIVERS = Object.freeze([
   Object.freeze({ label: "Player 2", short: "P2", keys: Object.freeze(["W", "A", "S", "D"]), words: "W, A, S and D", side: "left" }),
 ]);
 
-/** What both halves say before the first key press. */
-export const START_WORDS = "Press a driving key to start";
+/**
+ * What both halves say until the race is started. Either driver may press
+ * Enter. (Until 23 November 2026 it was "Press a driving key to start".)
+ */
+export const START_WORDS = `Press ${START_KEY} to start`;
 
 /** What the buttons on the podium add: nothing of a two-player race is kept. */
 export const NOT_SAVED_WORDS = "Two-player races are not saved: no stats, no leaderboard.";
@@ -47,7 +51,7 @@ export function plateName(player, characterId) {
 
 /**
  * The words in the middle of one half of the screen: { text, big }.
- *   started    has the countdown started? (at the first key press of either driver)
+ *   started    has the countdown started? (when Enter is pressed, by either driver)
  *   label      the countdown: "3", "2", "1", "GO!" or ""
  *   finished   has this driver finished?
  *   place      the place this driver finished in (1, 2, ...), when finished
