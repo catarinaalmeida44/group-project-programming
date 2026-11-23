@@ -161,7 +161,8 @@ After the two starting commits of the first day, all the work came into `main` t
 | `server/` | Our game server: sends the pages to the browser, runs the online races, and keeps the accounts and the leaderboard |
 | `shared/` | The rules of the game (driving, laps, which user names and passwords are allowed), used by both the browser and the server |
 | `tests/` | The automatic tests |
-| `WALKTHROUGH.md` | How and why each part is built, what the tests cover and miss, and the known limits |
+| `WALKTHROUGH.md` | Short answers to the questions the staff are likely to ask, then how and why each part is built, what the tests cover and miss, and the known limits |
+| `docs/game-details.md` | The long answers about the game itself: the rules of a race, the camera, the sound, the Nova lap, the characters |
 | `PROJECT_BRIEF.md` | What we set out to build and every decision the team took, with its date |
 | `docs/team-guide.md` | Where the project stands, what you need, and how the team works |
 | `docs/diary/` | One diary per team member: what was built, why, and what was and was not checked |

@@ -24,7 +24,7 @@ The game is online at https://novasbe-kart.onrender.com
 | The shared leaderboard | Works since 12 November. The server saves the time when a signed-in player finishes an online race |
 | Online races are driven to the end: no restart in the middle, a time limit, your place and a results list | Works since 13 November |
 | Sound: engine, bumps, the countdown, lap and finish | Works since 15 November. The sound effects are made by our own code, with no sound files. The music is five recorded files in `client/music/` (since 20 November). M switches all of it off and on. Catarina tuned it by ear on the page `/sound-test.html` |
-| A yellow light on the next checkpoint, and a warning when one was missed | Works since 13 November. This is why a lap sometimes did not count on the campus loop: see `WALKTHROUGH.md`, "How does a player know which way to go?" |
+| A yellow light on the next checkpoint, and a warning when one was missed | Works since 13 November. This is why a lap sometimes did not count on the campus loop: see `docs/game-details.md`, "How does a player know which way to go?" |
 | Automatic tests | More than 2,800. GitHub runs them on every pull request |
 | The server on the internet | Works. It updates itself a few minutes after every merge into `main` |
 | The database | Works. It holds the accounts, the sign-ins and the race results. See section 8 for a catch on the university Wi-Fi |
