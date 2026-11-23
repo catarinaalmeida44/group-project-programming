@@ -2,6 +2,44 @@
 
 > How to use this file: this is the starting context for our coding agent (Claude Code or Codex). Read all of it before doing anything. It lives in the repository and is updated as decisions change.
 
+## Read this first: what was built in the end (23 November 2026)
+
+This file is the plan we started from on 10 November 2026 and the record of the decisions we took on the way. The sections below were **not** rewritten at the end. An item marked [PROPOSED] or [OPEN] says what was planned, or still undecided, on the day it was written. It does not say what the game does today. What the finished game does is in `README.md` and, in detail, in `WALKTHROUGH.md`. This list compares the plan with the result, checked against the code on 23 November.
+
+**Built as planned**
+
+- Our own server runs every online race. A browser only says which keys are held, and the rules move in fixed steps of one sixtieth of a second.
+- Three laps, checkpoints that must be passed in order, a "wrong way" warning, karts that bump, banana peels.
+- Accounts with a user name and a password: scrambled with `scrypt`, a sign-in ticket for seven days, a lock after five wrong passwords.
+- A shared leaderboard: the ten fastest races and laps of each track, from online races only.
+- Node.js on Render, Postgres on Neon, the libraries `ws`, `pg` and `vitest`, drawing on the browser's own canvas, tests on every pull request.
+
+**Built differently from the plan**
+
+- **Tracks.** The plan had five campus tracks. The game has the Nova lap, made from a video we filmed on campus, and a plain test oval. The campus loop, our first track, was built and taken out again on 20 November.
+- **Characters.** The plan had eight, with different driving and some to unlock. The game has six, real people who said yes, who all drive the same. None is locked.
+- **Rooms.** The plan had rooms with a four-letter code for up to four people. The game has one room for each track for up to six people, and the host can lower that limit.
+- **Guests.** The plan kept guests out of online races. They can race online; only signed-in players' results are saved.
+- **Difficulty levels** were dropped on 17 November and built on 19 November, in all three kinds of race.
+- **Boost pads** became ramps: a jump and a moment of extra speed.
+- **One result does come from a browser:** a signed-in player's finished single race, for that player's own stats. It never counts for the shared leaderboard.
+- **A lost connection** removes the kart. The plan had a computer driver take over.
+- The server sends 30 updates a second, not 20.
+
+**Never built**
+
+- Items to pick up, and the cup.
+- Email. So there is no verified account, no "forgot my password" and no email service: the only secret the app reads is the database address.
+- Unlocking, trophies and saved progress.
+- Drifting, sand and sea as ground, catch-up for the computer karts, races of one lap.
+- Rooms with a code, moving your own kart at once online ("prediction"), racing a ghost.
+
+**Built, and not in the first plan** (each has its decision further down)
+
+- Two players on one keyboard, on a split screen.
+- "My stats" and a file of your own results to download.
+- The "Game settings" card, the game on the whole screen, a connection meter, recorded music.
+
 ## 1. What we want from you
 
 We are a team of students (names in section 12) building our team project for Introduction to Programming (course 2477) at Nova SBE. We are programming beginners: most of us have never written code before. You will write most of the code, but **every member must understand the whole project well enough to answer staff questions about any part of it**. One person's gap lowers everyone's grade, because all members get the same grade.

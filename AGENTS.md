@@ -30,7 +30,7 @@ Test files live in `tests/` and end in `.test.js`. GitHub runs `npm test` on eve
 1. **Explain before you build.** Say in plain language what you will do, which files you will create or change, and why. Wait for an OK on anything big.
 2. **Explain after you build.** Say what changed, where it lives, why it was done this way, what it does not handle yet, and how we can check it ourselves.
 3. **Use plain language.** Explain a technical term the first time you use it.
-4. **Never decide silently.** If something is marked [OPEN] in the brief, or is not covered, give the options, your recommendation and a short example. If nobody is available, choose the simplest option that is easy to undo and write "Decision made by the agent: ... please confirm" in the pull request and in the build diary.
+4. **Never decide silently.** If something is marked [OPEN] in the brief, or is not covered, give the options, your recommendation and a short example. If nobody is available, choose the simplest option that is easy to undo and write "Decision made by the agent: ... please confirm" in the pull request and in your member's diary.
 5. **Small commits, bigger pull requests.** Save each step as its own commit with a clear message. Collect the steps that belong to one piece of work on one branch, push it to GitHub often as a backup, and open the pull request when the piece is complete. This way the work does not stop while a pull request waits for a teammate's approval. (Changed on 10 November 2026 at Catarina's request, from "one task per branch, small pull requests". Teammates confirm by approving the pull request that contains this change.)
 6. **Stay inside the task.** Do not change files that the task does not need.
 7. **Be honest about checks.** Say which tests and checks you actually ran and which you could not run. Never say something works without having run it.
@@ -60,7 +60,7 @@ Test files live in `tests/` and end in `.test.js`. GitHub runs `npm test` on eve
 - Start every piece of work on a new branch made from an up-to-date `main`. Never commit directly to `main`.
 - Never merge a pull request into `main`. A teammate reviews it and merges it. Nobody merges their own pull request without a review.
 - Never force-push and never rewrite history.
-- Run git commands (create a branch, commit, push) only when the member you are working with has asked you to. Explain each step and record it in `docs/build-diary.md`. Members who prefer GitHub Desktop do these steps themselves.
+- Run git commands (create a branch, commit, push) only when the member you are working with has asked you to. Explain each step and record it in your member's diary (`docs/diary/<first name>.md`). Members who prefer GitHub Desktop do these steps themselves.
 - One agent per folder at a time. Commit before another agent takes over.
 
 ## Notes to keep up to date
@@ -93,5 +93,5 @@ One owner per shared structure. Ask the owner before changing it.
 
 ## Never
 
-- Use Nintendo characters, names, music or images. Everything in the game is original.
-- Add accounts, items, computer karts or other features before the base (section 8 of the brief) is done.
+- Use Nintendo characters, names, music or images. Nothing in the game comes from another game. (The music is by other people, under the licences in `client/music/README.md`, and the logo on the menu is the school's.)
+- Add a feature the team has not agreed on. (Until 23 November 2026 this rule read: no accounts, items, computer karts or other features before the base, section 8 of the brief, is done. The base is done, and the game has accounts and computer karts.)

@@ -55,7 +55,7 @@ Single races count here too. A single race runs in the player's own browser, whi
 
 ## Who decides what, online
 
-The browser sends only four kinds of message: "these are the keys I am holding", "restart", "start a race" and "paint my kart in these colours". The last one is three small whole numbers, each the number of a colour in a short list (`shared/kart-looks.js`). The server checks them and passes them on, so everyone sees the kart in those colours. It changes how a kart is drawn and nothing else. The room obeys "start a race" only from the host, the player who has been in the room longest, and it works out who that is itself. The browser never says where its kart is, how fast it is going, which lap it is on, who it is or what time it finished in. The server works all of that out: the driving with the same rules file the practice race uses, and the player from the cookie. So a player cannot go faster, skip a lap or claim a result by changing the page in their browser.
+The browser sends only seven kinds of message: "these are the keys I am holding", "restart", "start a race", "paint my kart in these colours", "I want to be this character", "computer karts on or off" and "these are the game settings" (`server/messages.js`). The colours are three small whole numbers, each the number of a colour in a short list (`shared/kart-looks.js`); since the characters came, a player who is a character keeps that character's colours. A character or a colour changes how a kart is drawn and nothing else. The game settings are obeyed only from the host, while no race is on. The room obeys "start a race" only from the host, the player who has been in the room longest, and it works out who that is itself. The browser never says where its kart is, how fast it is going, which lap it is on, who it is or what time it finished in. The server works all of that out: the driving with the same rules file the practice race uses, and the player from the cookie. So a player cannot go faster, skip a lap or claim a result by changing the page in their browser.
 
 The same goes for what happens between karts and on the road. The server decides who bumped into whom, where each banana appears, who drove over one and how long they spin. The bananas of a race grow from a number, the "seed", that the room picks by chance when the race starts. No message can place or remove a banana, spin a kart or choose the seed.
 
@@ -99,7 +99,7 @@ For online play:
 - a live connection to any address other than `/play`, or to a track that does not exist
 - a live connection started by a page on someone else's website
 - a player when the room is full (six players, one for each character; eight until 19 November 2026)
-- any message that is not exactly one of the four allowed kinds: the browser is sent away
+- any message that is not exactly one of the seven allowed kinds: the browser is sent away
 - kart colours that are not three whole numbers from the allowed ranges, such as a colour written out or a name: the browser is sent away
 - painting another player's kart: a choice of colours only ever changes the kart of the connection that sent it
 - a race start from anyone but the host, or while a countdown is running or a race is being driven: it is ignored. A race that has begun is driven to its end (since 13 November 2026). The host is the player who has been in the room longest and has pressed a key in the last minute: one who is away passes the room on (since 19 November 2026, `tests/host-away.test.js`)

@@ -14,7 +14,7 @@ pull request or a chat. Tell us privately instead:
 1. On this repository's **Security** tab, press **Report a vulnerability**.
    Only the team can read what you write there.
 2. If that button is not there, write to one of the team members on GitHub
-   (their GitHub usernames are in the **Team** section of `README.md`) and
+   (their GitHub usernames are in the table at the top of `README.md`) and
    ask how to send the details privately.
 
 Please tell us what you found, how to see it happen step by step, and what
