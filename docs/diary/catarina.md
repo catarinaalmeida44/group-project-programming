@@ -45,10 +45,18 @@ Everything built on 10 November is in `docs/build-diary.md`.
 - **Pull request 44** (Rodrigo, the Nova logo) is still open. Its tests pass and it fits on today's `main`. It only counts if a teammate merges it before 23:59 today.
 - `README.md` dates its `npm audit` check 20 November. It is still true today.
 
+**Later the same morning**
+
+- She opened the live link and saw Render's own "waking up" page, and asked whether Render can keep the server awake. It cannot on the free plan: Render's page says the only way to remove that limit is a paid plan for the service. The free way round is a visitor from outside every few minutes (a free "uptime monitor"), which needs an account only she can make. Nothing was set up.
+- `WALKTHROUGH.md` said the server "normally stays awake". That was not true, so the sentence now says what was seen (the job ran every five to eight hours) and what to do before a demo.
+- Pull request 44 (Rodrigo's Nova logo) was merged into `main` meanwhile. `main` was merged into this branch, without any clash, and `npm test` was run again on the result: 2,788 passed, 5 skipped (104 files; the new ones are his logo tests).
+- She asked for the technical themes the staff are likely to ask about, explained simply. That was answered in the chat, from the course's guides and from `WALKTHROUGH.md`. No file was written for it.
+
 **What was done in git**
 
 - `git fetch`, then a new branch `leaderboard-nova-lap-first` from `origin/main`. The earlier branch `music-files-and-one-campus-track` was already merged (pull request 42).
 - One commit for the change and its tests, one for the notes and this entry. The branch was pushed. Nothing was merged into `main`.
+- Later: `git merge origin/main` into this branch (after pull request 44), one more commit for the corrected sentence and these lines, and a push.
 
 **How to check it yourself**
 

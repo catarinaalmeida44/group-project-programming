@@ -832,7 +832,7 @@ The server runs on Render's free plan. Render takes the code from the `main` bra
 
 These are the limits we expect from the free hosting plans:
 
-- Render's free server sleeps after 15 minutes without visitors and takes about a minute to wake up. Since 19 November 2026 a job on GitHub opens `/health` every five minutes (`.github/workflows/keep-awake.yml`), which counts as a visitor, so the server normally stays awake. GitHub's timer is not exact, so it can still nap now and then; our own pages then say "The server is waking up". GitHub only runs timed jobs from `main`.
+- Render's free server sleeps after 15 minutes without visitors and takes about a minute to wake up. Since 19 November 2026 a job on GitHub is asked to open `/health` every five minutes (`.github/workflows/keep-awake.yml`), which counts as a visitor. In practice that is not enough: GitHub runs the timed jobs of a free repository when it has room, and from 19 to 23 November 2026 it ran ours only once every five to eight hours. So the server still sleeps most of the time, and the first visitor waits about a minute; our own pages then say "The server is waking up". Render has no switch for this on the free plan. What would keep it awake is a paid Render plan, or a visitor from outside that really comes every few minutes. Before a demo, someone opens the link a few minutes early. GitHub only runs timed jobs from `main`.
 - Render can restart a free server at any time. An online session in progress is lost, as described above, but anything saved in the database will be safe.
 - Render's free plan gives 750 running hours a month, which is enough for one server that is always on.
 - Neon's free database pauses after 5 minutes without use and wakes on the next request.
