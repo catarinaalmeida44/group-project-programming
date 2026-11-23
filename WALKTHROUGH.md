@@ -8,7 +8,7 @@ Plain-language answers to the questions the teaching staff may ask when they ope
 
 | Part | Where | Built yet? |
 |---|---|---|
-| The main menu, the first page | `client/index.html` and `client/menu.js` | Yes: Single race, Two players, Online, Leaderboard, Settings and the account corner. (The Cup, shown greyed out until then, left the menu on 19 November: the team dropped it) |
+| The main menu, the first page | `client/index.html` and `client/menu.js` | Yes, with the NOVA SBE logo above "Kart racer" (since 20 November, instead of "Nova SBE" on a red label): Single race, Two players, Online, Leaderboard, Settings and the account corner. (The Cup, shown greyed out until then, left the menu on 19 November: the team dropped it) |
 | Choosing a track in the menu | `client/track-panel.js`, `client/track-list.js`, `client/mini-map.js` | Yes: a card with a small map for each track |
 | The leaderboard in the menu | `client/leaderboard.js`, `client/leaderboard-view.js`, `client/leaderboard-panel.js` | Yes: the shared boards of each track, and your own practice bests. It opens on the Nova lap (`tracksInBoardOrder` in `leaderboard-view.js`) |
 | Accounts in the menu | `client/account.js`, `client/account-view.js`, `client/account-panel.js` | Yes: create an account, sign in, sign out, change your password, delete your account |
@@ -674,7 +674,7 @@ The only personal data is the user name a player chose. There is no email, no re
 
 ## What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 2,772 tests today, plus the ones that only run against the real database. They take about 40 seconds, most of it online races that run in real time.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. There are 2,781 tests today, plus the ones that only run against the real database. They take about 40 seconds, most of it online races that run in real time.
 
 **Covered today**
 
@@ -753,6 +753,7 @@ We run them with `npm test`. GitHub also runs them by itself on every pull reque
 
 - The campus loop, in `tests/campus-loop.test.js`. Eight tests: the game accepts it and it is small enough to paint, the start is on the road just after the finish line, every checkpoint reaches a wall at both ends, a robot driver drives all 3 laps without ever being inside a wall, and three things that must not count a lap: skipping the detour round the Grand Auditorium, skipping the hairpin round the CTT Student Hall, and driving the wrong way round. We broke the track on purpose in eight ways (a checkpoint too short, a wall across the road, the start in the wrong place or pointing the wrong way, a detour's checkpoint removed, and others). Each made a test fail.
 - Choosing the track of a single race, in `tests/track-choice.test.js`. Twelve tests: the address chooses the campus loop or the test oval, no choice gives the test oval, and a name that is not a track is refused, including names that every JavaScript object has, such as `constructor` and `__proto__`, which a careless check would accept. Two of the tests ask a real copy of the server for the race page and the new files.
+- The NOVA SBE logo on the menu, in `tests/nova-logo.test.js`: it is in the title, comes from our own site and the file is there, says "Nova SBE" to screen readers, has its size written down, and the old red label is gone.
 - The main menu, in `tests/menu.test.js`. Seven tests with a real copy of the server: the main address opens the menu and not the race, Single race and Online lead to the right pages, there is no Cup any more (until 19 November: the Cup is shown but cannot be clicked), the Leaderboard and Settings buttons are there, the race page still has the track and runs the race, and both pages lead back to the menu.
 - Settings kept in the browser, in `client/storage.js` and `client/settings.js`. Twelve tests with a pretend storage: a choice is remembered, a camera view that does not exist is refused when saving and ignored when read back (for example edited by hand), broken saved text is ignored, and a browser that refuses storage does not break anything.
 - Best times kept in the browser, in `client/records.js`. Fifteen tests: the first finished race is kept, only a faster time replaces it (an equal one does not), the best lap is kept on its own, each track has its own times, and an unfinished race or impossible times (a lap ending before the one before, negative, not whole, not numbers) are never recorded. Saved times that are not sensible are ignored. We broke this code on purpose in three ways. Two made tests fail. The third, removing one of two checks on the track name, changed nothing, because the second check still refuses what the first would have let through.

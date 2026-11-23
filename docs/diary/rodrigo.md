@@ -2,6 +2,32 @@
 
 Rodrigo Simeão Versos (GitHub rodrigosversos). Entries from 11 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 20 November 2026: the NOVA SBE logo on the menu
+
+**What was done**
+- The menu title showed "Nova SBE" as words on a slanted red label. It now shows the school's real logo, above "Kart racer", which stays as it was.
+- The logo file is the one I gave (black on a see-through background). The agent only cut it to the logo and made it white, so it shows on the dark menu: `client/images/nova-sbe-logo.png`. The picture says "Nova SBE" to screen readers and if it cannot load.
+- Files: `client/index.html` and `client/style.css` (Catarina's), the new `client/images/` folder, the new `tests/nova-logo.test.js`, and the notes.
+
+Branch `rodrigo-nova-logo`, from `main` after the recorded music (#42).
+
+**Decisions**
+- Mine: the real logo instead of the red label.
+- Decision made by the agent, please confirm: the logo in white; its size (between 136 and 224 dots wide, growing with the window); only the menu gets it, the race pages keep "Nova SBE kart racer" as words in the top bar.
+- **Question for the team:** NOVA SBE has rules for using its logo, and our project is public on GitHub. We should check with the professor that a class project may show it.
+
+**What was checked, and what was not**
+- `npm test`: 2,743 passed, 5 skipped (8 new tests).
+- GitHub's code scanning (CodeQL) warned about the new test file: it took the comments out of the page with one search-and-replace, which can leave a new "<!--" where two pieces meet. Nothing is shown to anyone there (the test only reads our own file), but the test now walks through the text and repeats until no comment is left, and a new test checks exactly that case. The first version of that fix still had the weakness, and the new test caught it. `tests/menu-page.test.js` (older, not mine) strips comments the same way; it is left as it is for its owner to decide.
+- Broken on purpose four ways, and a test failed every time: the alt text removed, the logo loaded from another website, the old red label put back, the file missing.
+- In a Chrome browser without a screen, at 1280 and at 420 dots wide: the logo loads, is sharp and sits above "Kart racer". The only error was the accounts service (no database on the agent's computer), as before.
+- **Not checked:** on my laptop and on the live server.
+
+- 21 November: `main` had moved on (the Nova lap at two levels, #43), and the pull request showed a conflict. It was only the test count in WALKTHROUGH.md. `main` was merged into this branch (no rebase, no force-push) and the count set to the real total: 2,781 passed, 5 skipped, with everything together.
+
+**How to check it yourself**
+Run `npm start`, open http://localhost:3000, and look at the top left of the menu. Make the window narrow: the logo gets smaller but keeps its shape.
+
 ### 20 November 2026: time of day, fly-over, How to play
 
 **What was done**
