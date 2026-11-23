@@ -3,8 +3,8 @@
 // While a single race waits for Enter, the camera flies once
 // round the track and on, as television does before a race, over the karts
 // waiting on the grid (main.js). The track tour (track-tour.js) flies the
-// same way. Pressing an arrow key starts the countdown, and the camera comes
-// down behind your kart as before.
+// same way. Enter starts the countdown, and the camera comes down behind
+// your kart as before.
 //
 // Where the camera is after a distance round the lap is only sums, so it is
 // tested (tests/fly-over.test.js).

@@ -1,9 +1,10 @@
-// The level of the computer karts in a single race: Easy, Normal or Hard.
+// The level of the computer karts: Easy, Normal or Hard.
 //
-// The player chooses it with three buttons above the track (race.html), and
-// this browser remembers the choice for next time (storage.js), like the
-// character. What a level does to the computer karts is in
-// shared/computer-driver.js. Online every race is Normal.
+// The player chooses it on the "Game settings" card (game-settings-card.js).
+// For a single race and a two-player race this browser remembers the choice
+// for next time (storage.js), like the character. Online the host chooses
+// for the room, and the server keeps it. What a level does to the computer
+// karts is in shared/computer-driver.js.
 //
 // Words and checks only, so it is tested without a browser
 // (tests/difficulty.test.js).

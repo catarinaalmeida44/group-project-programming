@@ -132,7 +132,7 @@ const missedCheckpoints = BOTH.map(() => watchForMissedCheckpoint(track));
 // The game settings this browser remembers (game-settings-view.js): the same ones as the single race.
 let choice = readGameChoice(storage);
 let race = newRace();
-let started = false; //      the countdown starts at the first driving key of either driver
+let started = false; //      the countdown starts when Enter is pressed, by either driver
 let lastFrameTime = null;
 let waitingSeconds = 0; //   real time that has passed but is not yet turned into game steps
 let podiumSince = null; //   when the podium came up, in milliseconds of the page's clock, or null

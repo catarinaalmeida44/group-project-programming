@@ -165,13 +165,13 @@ function randomNumbers(seed, name) {
 
 // ---- Levels: Easy, Normal, Hard ----
 //
-// In a single race the player chooses how good the computer karts are. A
+// The player (online, the host of the room) chooses how good the computer
+// karts are. A
 // level moves every personality's numbers the same way, after the mood of
 // the day: on Easy they drive slower on straights, take bends more slowly
 // and overtake less; on Hard the other way round. A level never changes the
 // kart: top speed and the rules stay the same for everyone, so a computer
 // kart never cheats. PCP is still the Daredevil on Easy, only a slower one.
-// Online every race is Normal.
 
 /** The levels, from easiest to hardest. */
 export const LEVELS = Object.freeze(["easy", "normal", "hard"]);

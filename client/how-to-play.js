@@ -6,7 +6,7 @@
 // is up, the race does not start. "Let's race" closes it.
 //
 // What it says is worked out by howToPlayWords, for each kind of race page,
-// and tested (tests/how-to-play.test.js). The card itself is built with the
+// and tested (in tests/time-of-day.test.js and tests/race-start.test.js). The card itself is built with the
 // same look as the "Game settings" card (game-settings-card.js), so it is
 // checked by eye in a browser.
 

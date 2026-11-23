@@ -9,7 +9,7 @@
 //
 // In an online room only the host chooses, and the server keeps the settings
 // (server/online.js). In a single race and a two-player race the player
-// chooses, and the browser remembers (client/game-choice.js).
+// chooses, and the browser remembers (client/game-settings-view.js).
 //
 // Both the server and the browser read this file, so they can never disagree
 // about what a setting may be. It is plain checking, so it is tested without
