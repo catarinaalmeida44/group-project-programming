@@ -13,6 +13,17 @@ import { formatTime } from "./format.js";
 import { standings } from "./standings.js";
 import { placeText } from "./net.js";
 
+/**
+ * The key that starts the countdown in every kind of race, as it is written
+ * on a keyboard. Online only the host's counts (the server decides); in a
+ * single race and with two players on one keyboard it is whoever presses it.
+ * (Until 23 November 2026 those two started at the first driving key.)
+ */
+export const START_KEY = "Enter";
+
+/** What a single race says in the middle of the picture until that key is pressed. */
+export const SINGLE_START_WORDS = `Press ${START_KEY} to start the countdown`;
+
 const PHASES = ["open", "countdown", "racing", "finished"];
 
 /** What the page assumes when an update says nothing usable about the race. */

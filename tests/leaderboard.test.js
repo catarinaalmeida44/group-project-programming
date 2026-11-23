@@ -13,6 +13,8 @@ import {
   sharedBoards,
   leaderboardView,
   signedInName,
+  tracksInBoardOrder,
+  FIRST_TRACK,
   BOARD_SIZE,
   LOADING_TEXT,
   EMPTY_TEXT,
@@ -434,5 +436,82 @@ describe("asking the server for the leaderboard", () => {
     const leaderboard = createLeaderboard({ api: null, storage: null, tracks: TWO_TRACKS, show: (view) => views.push(view) });
     await leaderboard.load();
     expect(views[views.length - 1].shared).toEqual({ kind: "notice", text: NO_REASON });
+  });
+});
+
+describe("the Nova lap comes first in the Leaderboard panel", () => {
+  it("names the Nova lap as the track to open on, and it is a track of the game", () => {
+    expect(FIRST_TRACK).toBe("nova-lap");
+    expect(Object.hasOwn(TRACKS, FIRST_TRACK)).toBe(true);
+  });
+
+  it("puts the Nova lap at the front of the game's tracks and keeps every other track", () => {
+    const ordered = tracksInBoardOrder(TRACKS);
+    expect(Object.keys(ordered)[0]).toBe("nova-lap");
+    expect(Object.keys(ordered).sort()).toEqual(Object.keys(TRACKS).sort());
+    for (const shortName of Object.keys(TRACKS)) {
+      expect(ordered[shortName], shortName).toBe(TRACKS[shortName]);
+    }
+  });
+
+  it("keeps the other tracks in the order they had", () => {
+    const three = { a: TRACKS["test-oval"], b: CAMPUS_LOOP, c: TRACKS["nova-lap"], d: CAMPUS_LOOP };
+    expect(Object.keys(tracksInBoardOrder(three, "c"))).toEqual(["c", "a", "b", "d"]);
+    expect(Object.keys(tracksInBoardOrder(three, "a"))).toEqual(["a", "b", "c", "d"]); // already first: nothing moves
+  });
+
+  it("does not change the list it was given", () => {
+    const before = Object.keys(TRACKS);
+    tracksInBoardOrder(TRACKS);
+    expect(Object.keys(TRACKS)).toEqual(before);
+
+    const own = { ...TWO_TRACKS };
+    const ordered = tracksInBoardOrder(own, "campus-loop");
+    expect(Object.keys(own)).toEqual(["test-oval", "campus-loop"]);
+    expect(ordered).not.toBe(own);
+  });
+
+  it("leaves the order alone when the track to put first is not in the list", () => {
+    // TWO_TRACKS has no Nova lap; the other names are ones every JavaScript
+    // object has, or are not a short name at all. None of them may be added.
+    for (const first of [undefined, "nova-lap", "moon", "", "Test-Oval", "constructor", "__proto__", "toString", null, 42, {}]) {
+      const ordered = tracksInBoardOrder(TWO_TRACKS, first);
+      expect(Object.keys(ordered), String(first)).toEqual(["test-oval", "campus-loop"]);
+    }
+  });
+
+  it("opens on the Nova lap: the first question to the server is about it", async () => {
+    const views = [];
+    const asked = [];
+    const api = {
+      async getLeaderboard(shortName) {
+        asked.push(shortName);
+        return answer({ track: shortName });
+      },
+    };
+    const leaderboard = createLeaderboard({ api, storage: null, tracks: tracksInBoardOrder(TRACKS), show: (view) => views.push(view) });
+    await leaderboard.load();
+
+    expect(asked).toEqual(["nova-lap"]);
+    const last = views[views.length - 1];
+    expect(last.trackName).toBe(TRACKS["nova-lap"].name);
+    expect(last.tracks[0]).toEqual({ shortName: "nova-lap", name: TRACKS["nova-lap"].name, chosen: true });
+    expect(last.tracks.filter((track) => track.chosen)).toHaveLength(1);
+  });
+
+  it("still shows the test oval's boards when the player chooses it", async () => {
+    const asked = [];
+    const views = [];
+    const api = {
+      async getLeaderboard(shortName) {
+        asked.push(shortName);
+        return answer({ track: shortName });
+      },
+    };
+    const leaderboard = createLeaderboard({ api, storage: null, tracks: tracksInBoardOrder(TRACKS), show: (view) => views.push(view) });
+    await leaderboard.load();
+    await leaderboard.chooseTrack("test-oval");
+    expect(asked).toEqual(["nova-lap", "test-oval"]);
+    expect(views[views.length - 1].tracks.find((track) => track.chosen).shortName).toBe("test-oval");
   });
 });

@@ -30,6 +30,37 @@ export const EMPTY_SIGN_IN_TEXT = "No times yet. Sign in and finish an online ra
 export const SIGN_IN_TEXT = "Sign in to see where you rank.";
 export const NO_RESULT_TEXT = "You have no time on this track yet. Finish an online race here to get one.";
 
+/**
+ * The track the panel opens on, by its short name: the Nova lap, the track
+ * of the game. Its button also comes first in the row of track buttons.
+ */
+export const FIRST_TRACK = "nova-lap";
+
+/**
+ * The tracks in the order the panel shows them: the track called "first" at
+ * the front, the others after it in the order they had. The panel opens on
+ * the first one (leaderboard.js), so this decides which boards a player sees
+ * first.
+ *   tracks  the list from shared/tracks/index.js: short name -> track
+ *   first   the short name that goes to the front
+ * Gives a new list; the list handed in is not changed. A "first" that is not
+ * a track of the list changes nothing: the order stays as it was.
+ */
+export function tracksInBoardOrder(tracks, first = FIRST_TRACK) {
+  // Object.hasOwn asks "is this name really in OUR list?". A plain look-up
+  // would also say yes to names every JavaScript object has, like "constructor".
+  if (typeof first !== "string" || !Object.hasOwn(tracks, first)) {
+    return { ...tracks };
+  }
+  const ordered = { [first]: tracks[first] };
+  for (const [shortName, track] of Object.entries(tracks)) {
+    if (shortName !== first) {
+      ordered[shortName] = track;
+    }
+  }
+  return ordered;
+}
+
 /** A rank or a time we are willing to show: a whole number above zero. */
 function isCount(value) {
   return Number.isSafeInteger(value) && value > 0;

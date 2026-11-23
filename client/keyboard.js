@@ -5,7 +5,7 @@
 // keys into those four answers. It also listens for six other keys:
 // R (start again), V (change the camera view), M (sound off or on), F (full
 // screen on or off), L (online: the connection meter on or off) and Enter
-// (online: start a race).
+// (start the countdown; online it asks the server, which obeys only the host).
 
 //
 // In a two-player race (double.js) two people share one keyboard. One drives
@@ -50,12 +50,15 @@ const doNothing = () => {};
  *     onFullScreen  F was pressed: the game on the whole screen, or back
  *     onMeter    L was pressed. The online page uses it to show or hide
  *                its connection meter ("L" as in lag)
- *     onStart    Enter was pressed. The online page uses it to ask the
- *                server for a race start
- *     onDrive    a driving key went down. The game uses it to start the
- *                countdown at the very first key press, however short it is.
- *                It is told which key ("ArrowLeft" ...), and whether this is
- *                the key being held down (true) or a fresh press (false)
+ *     onStart    Enter was pressed. Every race page uses it to start the
+ *                countdown: a single race and a two-player race start it
+ *                themselves, the online page asks the server for a race start
+ *     onDrive    a driving key went down, however short the press is. It is
+ *                told which key ("ArrowLeft" ...), and whether this is the
+ *                key being held down (true) or a fresh press (false). The
+ *                online page uses it to move a watcher's camera. (Until 23
+ *                November 2026 a single race and a two-player race started
+ *                their countdown with it.)
  *   options  { twoPlayers: true } on the two-player page: W, A, S and D are
  *            driving keys too, for the second driver. Left out, they are not
  * Gives back questions the game can ask at any moment:

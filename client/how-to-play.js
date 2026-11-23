@@ -38,10 +38,15 @@ export function howToPlayWords(mode) {
           { key: "↓", does: "Brake, and reverse when stopped" },
           { key: "← →", does: "Steer" },
         ];
+  // Enter starts the countdown on every page. Online only the host's counts,
+  // and nobody can start the race again alone, so there is no R there.
   const start =
     mode === "online"
-      ? { key: "Enter", does: "Start the race, if you are the host (the first in the room)" }
-      : { key: "R", does: "Start the race again" };
+      ? [{ key: "Enter", does: "Start the race, if you are the host (the first in the room)" }]
+      : [
+          { key: "Enter", does: "Start the countdown" },
+          { key: "R", does: "Start the race again" },
+        ];
   return {
     title: "How to play",
     goal:
@@ -52,7 +57,7 @@ export function howToPlayWords(mode) {
           : "Three laps round the campus against five computer karts. The first across the line wins.",
     keys: [
       ...drive,
-      start,
+      ...start,
       { key: "V", does: "Change the camera" },
       { key: "M", does: "All sound off and on" },
       { key: "F", does: "Full screen" },

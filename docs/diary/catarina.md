@@ -4,6 +4,122 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 23 November 2026, midday: Enter starts the countdown in every kind of race
+
+**What she said**
+
+- "Now to start a race countdown in single and double you press a key, and online the host presses enter. Could we make it so that in every game mode, the race countdown starts when you press enter?" She asked what it risks.
+
+**What was built** (same branch, `leaderboard-nova-lap-first`, which is pull request 45)
+
+| What | Where |
+|---|---|
+| A single race and a two-player race give their "start" to Enter, not to the driving keys | `onStart: start` in `client/main.js` and `client/double.js` |
+| A driving key that is held no longer starts the race either (that was a second way in, for "R with an arrow still held") | the picture loop `frame` in the same two files |
+| The words before the countdown: "Press Enter to start the countdown" (single), "Press Enter to start" (two players) | `SINGLE_START_WORDS` and `START_KEY` in `client/race-view.js`, `START_WORDS` in `client/double-view.js` |
+| Enter in the "How to play" card of the single and the two-player page, and in the lines under the picture | `client/how-to-play.js`, `client/race.html`, `client/double.html` |
+| New tests (16) | `tests/race-start.test.js` |
+| The notes: the keys table, the walkthrough, three checks of the hand checklist | `README.md`, `WALKTHROUGH.md`, `client/README.md`, `tests/README.md`, `docs/two-laptop-checklist.md` |
+
+Online nothing changed: the host's Enter already started the race there, and the server decides.
+
+**Why it was done this way**
+
+- The pages already had one action called "start", and the keyboard already told pages about Enter (the online page uses it). So the change is to connect the two, and to take away the two places where a driving key started the race.
+- The pages already kept the race waiting while a card ("Game settings", "How to play") is up, and the cards and buttons already give the keyboard back when they close. That is what makes Enter safe here: the online page has worked this way since 13 November.
+
+**An older test changed: the team should know**
+
+- `tests/double-view.test.js`, one test. It was called "ask for a driving key before the race has started" and expected the words to match "driving key". The words now ask for Enter, so the test says that, and that they no longer ask for a driving key. A comment in the test says what it said before. Its first line is unchanged.
+- `tests/keyboard.test.js` has a test whose name ends "so the countdown starts for either driver". What it checks is still true (the keyboard tells the page about W, A, S and D), only the reason in its name is out of date. It was left alone.
+
+**What it risks** (told to her)
+
+- **Habit.** Anyone who knows the game presses an arrow and nothing happens. The picture says "Press Enter to start", and so does the card.
+- **Enter also presses whatever button has the keyboard.** The cards and "Full screen", "Race again" and "How to play" hand the keyboard back, and that was tried. Someone who walks to "← Menu" with the Tab key and presses Enter goes to the menu: that is what Enter does on a link in any page, and was already so online.
+- **The "How to play" card is Rodrigo's.** Its list of keys has one more line.
+- **Nobody has played it with their hands yet**, and it goes into `main` on the day of the deadline.
+
+**Checked, and not checked**
+
+- `npm test`: 2,804 passed, 5 skipped (105 files). Sixteen are new.
+- In the browser pane, with pretend accounts and the sound off, on the test oval. Single race: with both cards up Enter starts nothing; with the cards closed, arrow keys held for three seconds start nothing and the kart stands still; Enter starts the countdown; R with an arrow held goes back to waiting (it used to start again); Enter with "Game settings" open starts nothing. Two players: W, ↑, D and ← held start nothing, both halves say "Press Enter to start", Enter starts the countdown in both halves.
+- With real key presses in that pane: Enter on the "Game settings" card confirms it and does not start the race; an arrow starts nothing; the next Enter starts the countdown. No error in the console.
+- **Not checked:** a whole race driven by a person; the online page (its code did not change, only comments in `client/keyboard.js`); full screen; the live site.
+
+**Also, at her request: a note in the README about the sleeping server**
+
+- She asked: "should we add a quick note on the read me saying that we use render, which is a free tier service, and so ... a black text page from render may appear ... and that if you wait a few seconds then the game should appear".
+- It is now right under the "Play it now" link, where someone who marks the project clicks first. The Installation section already said it, further down.
+- She said "a few seconds". The note says "usually within a minute", because Render's own page says waking takes about a minute.
+
+**What was done in git**
+
+- `git fetch` first: pull request 45 was still open and `main` had not moved.
+- One commit for the Enter change with its tests, one for the notes, the README note and this entry. Pushed to the same branch, so pull request 45 now holds these too. Nothing was merged into `main`.
+
+**How to check it yourself**
+
+Run `npm run start:pretend`, open http://localhost:3000, choose Single race, close the cards, press ↑ (nothing), press Enter (3, 2, 1, GO!). The same with Two players.
+
+### 23 November 2026, morning: the leaderboard opens on the Nova lap, and a last look at the grading criteria
+
+**What she said**
+
+- "When you click on leaderboard, the leader board should first show results for the nova lap, instead of showing first the oval and then the nova lap."
+- All three ways to play have been tried (single, two players, online). Online is the one that counts for the leaderboard.
+- She asked what is left to finish the game, against the course's grading criteria.
+
+**What was built** (branch `leaderboard-nova-lap-first`, from `main` after pull request 43)
+
+| What | Where |
+|---|---|
+| The order of the tracks in the Leaderboard panel: the Nova lap first, the others after it as they were | `tracksInBoardOrder` and `FIRST_TRACK` in `client/leaderboard-view.js` |
+| The panel uses that order for its row of buttons and opens on the first one | `connectLeaderboard` in `client/leaderboard-panel.js` |
+| Seven new tests | `tests/leaderboard.test.js`, the last group |
+| One line each in the notes | `client/README.md`, `tests/README.md`, `WALKTHROUGH.md` |
+
+**Why it was done this way**
+
+- **Only the Leaderboard panel changed, not the list of tracks.** The simplest change would have been to swap the two lines in `shared/tracks/index.js`. But an older test (`tests/track-choice.test.js`) says the list is "test oval, then Nova lap", and our rule is never to edit a test to make it pass. So the list stays, and the panel puts the Nova lap first by itself.
+- **On the live site the test oval's boards are empty** (nobody raced online there) and the Nova lap has five results. So until now the panel opened on "No times yet", and the real results were one click away.
+- A name that is not a track of the list is never put first. The check uses `Object.hasOwn`, so names every JavaScript object has, such as `constructor`, are refused too.
+
+**Decisions made by the agent: please confirm**
+
+- "Choose a track" (Single race, Two players, Online) still shows the test oval's card before the Nova lap's. She only spoke of the leaderboard. Swapping the cards too means changing that older test, which is for the team to say.
+
+**Checked, and not checked**
+
+- `npm test`, run again after the notes were written: 2,780 passed, 5 skipped (103 files). Seven are new. The 5 skipped are the ones that need the database address.
+- In the browser pane, with pretend accounts and the sound off: "Leaderboard" opens with "Nova lap" pressed and first in the row; a click on "Test oval" shows its boards, a click on "Nova lap" comes back. No error in the console.
+- The live site, without signing in, at about 10:20: the menu opens, `/database-check` says ok, the leaderboard answers (Nova lap five results, test oval none), a track that does not exist is refused with a clear sentence, a page that does not exist gives "not found".
+- GitHub: the Tests job on `main` (after pull request 43) passed. `npm audit`: no known vulnerabilities. No file in the repository holds a real database address.
+- **Not checked:** this change on the live site (it is not in `main` until a teammate merges it), and the panel with real results in it on this laptop (the pretend accounts start empty).
+
+**Found while looking, not changed**
+
+- **The live server does sleep.** The keep-awake job is asked to run every five minutes, but GitHub's own list shows it ran only every five to eight hours (for example 22 November at 16:51 and 22:15, 23 November at 02:54). The server had started again at 10:09 today. Before the demo, someone must open the link a few minutes early.
+- **Pull request 44** (Rodrigo, the Nova logo) is still open. Its tests pass and it fits on today's `main`. It only counts if a teammate merges it before 23:59 today.
+- `README.md` dates its `npm audit` check 20 November. It is still true today.
+
+**Later the same morning**
+
+- She opened the live link and saw Render's own "waking up" page, and asked whether Render can keep the server awake. It cannot on the free plan: Render's page says the only way to remove that limit is a paid plan for the service. The free way round is a visitor from outside every few minutes (a free "uptime monitor"), which needs an account only she can make. Nothing was set up.
+- `WALKTHROUGH.md` said the server "normally stays awake". That was not true, so the sentence now says what was seen (the job ran every five to eight hours) and what to do before a demo.
+- Pull request 44 (Rodrigo's Nova logo) was merged into `main` meanwhile. `main` was merged into this branch, without any clash, and `npm test` was run again on the result: 2,788 passed, 5 skipped (104 files; the new ones are his logo tests).
+- She asked for the technical themes the staff are likely to ask about, explained simply. That was answered in the chat, from the course's guides and from `WALKTHROUGH.md`. No file was written for it.
+
+**What was done in git**
+
+- `git fetch`, then a new branch `leaderboard-nova-lap-first` from `origin/main`. The earlier branch `music-files-and-one-campus-track` was already merged (pull request 42).
+- One commit for the change and its tests, one for the notes and this entry. The branch was pushed. Nothing was merged into `main`.
+- Later: `git merge origin/main` into this branch (after pull request 44), one more commit for the corrected sentence and these lines, and a push.
+
+**How to check it yourself**
+
+Run `npm run start:pretend`, open http://localhost:3000 and click "Leaderboard": the yellow button is "Nova lap". On the live site, after the merge, the five results show at once.
+
 ### 20 November 2026, late afternoon: her own music, and the campus loop leaves the game
 
 **What she said**

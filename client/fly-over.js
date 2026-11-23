@@ -1,6 +1,6 @@
 // The fly-over: a camera that glides round a track along its arrows.
 //
-// While a single race waits for the first key press, the camera flies once
+// While a single race waits for Enter, the camera flies once
 // round the track and on, as television does before a race, over the karts
 // waiting on the grid (main.js). The track tour (track-tour.js) flies the
 // same way. Pressing an arrow key starts the countdown, and the camera comes

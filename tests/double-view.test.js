@@ -55,9 +55,15 @@ describe("the name on a driver's plate", () => {
 });
 
 describe("the words in the middle of one half", () => {
-  it("ask for a driving key before the race has started", () => {
+  // Changed on 23 November 2026. Until then this test was called "ask for a
+  // driving key before the race has started" and expected the words to match
+  // /driving key/. Since that day Enter starts the countdown in every kind of
+  // race (Catarina's request), so the words ask for Enter, and must no longer
+  // ask for a driving key. The first line of the test is as it was.
+  it("ask for Enter before the race has started, and no longer for a driving key", () => {
     expect(halfMessage({ started: false })).toEqual({ text: START_WORDS, big: false });
-    expect(START_WORDS).toMatch(/driving key/);
+    expect(START_WORDS).toMatch(/Enter/);
+    expect(START_WORDS).not.toMatch(/driving key|arrow/i);
   });
 
   it("are the countdown, in big, once it runs", () => {
