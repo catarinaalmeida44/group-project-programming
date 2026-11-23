@@ -4,6 +4,32 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 23 November 2026, about noon: our names and numbers at the top of the README
+
+**What she said**
+
+- With a picture of the README on GitHub: "The read me should say our names and numbers right away in the beginning."
+
+**What was done** (branch `readme-names-at-the-top`, from `main` after pull request 45)
+
+- The table with the four names, student numbers and GitHub user names moved from the "Team" section, far down the page, to the very top, right under the sentence that says which course this is for and above the "Play it now" link.
+- The "Team" section stays, with one line that points to the top and the sentence about pull requests and diaries. The table is in the README once, not twice, so there is one place to correct.
+- Nothing else changed: no code, no test.
+
+**Before this: pull request 45 was merged**
+
+- At 11:35 a teammate merged pull request 45 with everything of this morning in it: the leaderboard opening on the Nova lap, Enter starting every race, and the note about Render's waking-up page. She thought a second pull request was needed for the last two; it was not, they were already in it.
+- Checked afterwards: GitHub's Tests job on the new `main` passed, no pull request was open, and the live site (restarted at 11:36) served the new version: "Leaderboard" opened on the Nova lap with five results, and both race pages start on Enter. Not checked there: a race played by hand.
+
+**Checked, and not checked**
+
+- `npm test` on this branch: 2,804 passed, 5 skipped (105 files).
+- Not checked: how the page looks on GitHub. She sees that when the pull request is open (GitHub shows the README of the branch).
+
+**What was done in git**
+
+- `git fetch`, a new branch from `origin/main`, one commit, a push. A pull request link for her to press "Create pull request". It has to be merged before 23:59 today to count.
+
 ### 23 November 2026, midday: Enter starts the countdown in every kind of race
 
 **What she said**

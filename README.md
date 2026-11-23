@@ -2,7 +2,14 @@
 
 An online kart racing game set at the Nova SBE campus in Carcavelos. You race round the school against your friends, against computer karts, or both.
 
-Team project for Introduction to Programming (course 2477) at Nova SBE.
+Team project for Introduction to Programming (course 2477) at Nova SBE, by:
+
+| Name | Student number | GitHub username |
+|---|---|---|
+| Catarina Almeida | 70573 | catarinaalmeida44 |
+| Francisco Fonseca | 72576 | FranFon15 |
+| Pedro Collares Pereira | 71022 | pedrocollarespereira |
+| Rodrigo Simeão Versos | 72677 | rodrigosversos |
 
 **Play it now: https://novasbe-kart.onrender.com**
 
@@ -142,12 +149,7 @@ The team also has tests that talk to the real database, in tables of their own t
 
 ## Team
 
-| Name | Student number | GitHub username |
-|---|---|---|
-| Catarina Almeida | 70573 | catarinaalmeida44 |
-| Francisco Fonseca | 72576 | FranFon15 |
-| Pedro Collares Pereira | 71022 | pedrocollarespereira |
-| Rodrigo Simeão Versos | 72677 | rodrigosversos |
+Our names and student numbers are at the top of this page.
 
 After the two starting commits of the first day, all the work came into `main` through pull requests. The pull requests on GitHub and the diaries in `docs/diary/` show who built what, and when.
 
