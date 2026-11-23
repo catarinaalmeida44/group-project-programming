@@ -15,23 +15,28 @@ The game is online at https://novasbe-kart.onrender.com
 | Online page: up to six browsers in a room (one for each character) see each other's karts, and the host starts a race for everyone | Works. One room for each track. Tried with three players on three laptops on 10 November, before the race start and the rooms per track existed |
 | The main menu, with the choice of track | Works (first version by Francisco on 11 November, new design on 12 November) |
 | The first campus track, the campus loop | Taken out of the game on 20 November: the Nova lap, built from the video filmed on campus, replaced it. Its map is kept in `shared/tracks/` because many tests drive on it. (By Rodrigo; its look was brought closer to the real campus on 12 November) |
-| The Nova lap: a second campus track, made from a video the team filmed on campus | Works since 17 November, by Catarina. The lap goes through the atrium, under the library, down the stairs, past the beach tunnel and along the coast road. The base only: ground and buildings, each building with its own front. Look at it without racing on `/track-tour.html?track=nova-lap`. Nobody has raced it on a real screen yet |
+| The Nova lap: a second campus track, made from a video the team filmed on campus | Works since 17 November, by Catarina. The lap goes through the atrium, under the library, down the stairs, past the beach tunnel and along the coast road, with the school's buildings, trees, benches, lamps and flags, and the ground at two levels. Look at it without racing on `/track-tour.html?track=nova-lap` |
 | Ramps and walkers on the Nova lap | Works since 17 November, by Catarina. A ramp makes a kart jump and gives it extra speed for a moment. Students walk between the doors of the promenade and sit down, seeing stars, when a kart bumps them. Both are rules in `shared/` that the server runs. Their numbers are first guesses: nobody has tuned them by playing |
-| The race view: sky, buildings with windows, trees, karts as 3D models, a start grid with lights | Works since 12 November. Looked at as single pictures only: nobody has judged it in motion yet |
-| Karts bumping into each other, banana peels that make a kart spin, arrows and a "wrong way" warning | Works since 12 November. Tried by robots, not yet by people |
-| Choosing the colours of your kart | Works since 12 November. Other players see them online |
-| Accounts: sign up, sign in, sign out, change your password, delete your account | Works since 12 November (changing the password since 13 November). A user name and a password, no email yet, so a forgotten password cannot be reset |
+| The race view: sky, buildings with windows, trees, karts as 3D models, a start grid with lights | Works since 12 November |
+| Karts bumping into each other, banana peels that make a kart spin, arrows and a "wrong way" warning | Works since 12 November |
+| Choosing the colours of your kart | Replaced on 17 November by the six characters: each has its own kart colours |
+| Accounts: sign up, sign in, sign out, change your password, delete your account | Works since 12 November (changing the password since 13 November). A user name and a password, no email, so a forgotten password cannot be reset |
 | The shared leaderboard | Works since 12 November. The server saves the time when a signed-in player finishes an online race |
-| Online races are driven to the end: no restart in the middle, a time limit, your place and a results list | Works since 13 November. Tried in the tests and in one browser, not yet by people |
-| Sound: engine, bumps, the countdown, lap and finish | Works since 15 November, made by our own code with no sound files. M switches it off and on. Catarina tuned it by ear on the page `/sound-test.html` |
-| A yellow light on the next checkpoint, and a warning when one was missed | Works since 13 November. This is why a lap sometimes did not count on the campus loop: see `WALKTHROUGH.md`, "How does a player know which way to go?" |
-| Automatic tests | More than 1,200. GitHub runs them on every pull request |
+| Online races are driven to the end: no restart in the middle, a time limit, your place and a results list | Works since 13 November |
+| Sound: engine, bumps, the countdown, lap and finish | Works since 15 November. The sound effects are made by our own code, with no sound files. The music is five recorded files in `client/music/` (since 20 November). M switches all of it off and on. Catarina tuned it by ear on the page `/sound-test.html` |
+| A yellow light on the next checkpoint, and a warning when one was missed | Works since 13 November. This is why a lap sometimes did not count on the campus loop: see `docs/game-details.md`, "How does a player know which way to go?" |
+| Automatic tests | More than 2,800. GitHub runs them on every pull request |
 | The server on the internet | Works. It updates itself a few minutes after every merge into `main` |
 | The database | Works. It holds the accounts, the sign-ins and the race results. See section 8 for a catch on the university Wi-Fi |
 | Six characters, chosen after the track, before each race, each shown standing beside their kart, helmet in hand, with their own head | Built on 17 November by Pedro. On 18 November Catarina redesigned the panel (a poster of the chosen one, a line-up under it, no photos beside the pilots), gave Cici Boss the gangnam as her dance and cut her head again from her whole photo. They change only the kart's colours: everyone still drives the same way. Online, one player per character in a room. Faces only when choosing and on the podium, never in the race. The podium is Pedro's pull request 28 |
-| Items, computer karts, more campus tracks, email for accounts, different driving for each character | Not started. This is the work ahead |
+| Computer karts in every kind of race, on Easy, Normal or Hard | Works since 19 November: five in a single race, four with two players, and online they fill the empty places. Chosen on the "Game settings" card; online only the host chooses |
+| Two players on one keyboard, on a split screen | Works since 19 November: player 1 with the arrows, player 2 with W A S D. Nothing is saved |
+| "My stats" and "Download my results" in "Your account" | Works since 19 November |
+| The game on the whole screen (F), a connection meter online (L), the time of day in Settings, a "How to play" card | Works since 19 and 20 November |
+| How a race starts | Since 23 November Enter starts the countdown in every kind of race. Online only the host's Enter counts |
+| Items to pick up, email for accounts, different driving for each character, a cup | Not built |
 
-The full story of how each part was built, and why, is in `docs/build-diary.md`. The answers to likely staff questions are in `WALKTHROUGH.md`.
+The full story of how each part was built, and why, is in `docs/build-diary.md` (the first day) and in the diaries in `docs/diary/`. The answers to likely staff questions are in `WALKTHROUGH.md`.
 
 ## 2. What you need
 
@@ -52,8 +57,8 @@ You do not need any password, key or secret to work on the game.
 1. Install Node.js 26 and restart your laptop, or at least the apps you had open.
 2. In GitHub Desktop: File, Clone repository, and pick `catarinaalmeida44/group-project-programming`.
 3. Open a terminal in the project folder and run `npm install`. It downloads the libraries the project uses.
-4. Run `npm test`. The last lines should say that about 300 tests passed and 5 were skipped.
-5. Run `npm start` and open http://localhost:3000 in a browser. The main menu opens: click Single race and drive with the arrow keys. Press Ctrl+C in the terminal to stop.
+4. Run `npm test`. The last lines should say that about 2,800 tests passed and 5 were skipped.
+5. Run `npm start` and open http://localhost:3000 in a browser. The main menu opens: click Single race, choose a track and a character, press Enter to start the countdown, and drive with the arrow keys. Press Ctrl+C in the terminal to stop.
 
 **Your first pull request:** put your full name and student number in your row of the table in `README.md`. The course requires both, and it requires that every member has code in the repository from their own account. It is also a safe way to try the whole route once: branch, change, commit, push, pull request, a teammate approves, merge.
 
@@ -63,7 +68,7 @@ Our rules for agents are in `AGENTS.md`. Claude Code reads them by itself, throu
 
 For your first session, paste this, with your own name:
 
-> I am Fran, one of four students building this kart racing game. I am a programming beginner. Before doing anything, read AGENTS.md, PROJECT_BRIEF.md, docs/team-guide.md and WALKTHROUGH.md completely, and the three newest entries in docs/build-diary.md. Then tell me in plain language where the project stands and what you understand my part to be. Do not write any code yet.
+> I am Fran, one of four students building this kart racing game. I am a programming beginner. Before doing anything, read AGENTS.md, PROJECT_BRIEF.md, docs/team-guide.md and WALKTHROUGH.md completely, and the three newest entries in my diary in docs/diary/. Then tell me in plain language where the project stands and what you understand my part to be. Do not write any code yet.
 
 Good to know about working with an agent, from the first day:
 
@@ -123,8 +128,8 @@ Ask the owner before changing a file they look after. That is the main way we av
 - **The university Wi-Fi blocks the database.** On `students.novasbe.pt`, a laptop cannot reach our database: the connection opens and then nothing comes back. This was measured on 10 November: the same laptop, file and code failed on that Wi-Fi and worked on a phone hotspot. The game still runs, and it says "The database could not be reached". For database work, use a phone hotspot or your home Wi-Fi. The tests that use a pretend database run anywhere. The live server is not on that Wi-Fi and is not affected.
 - **Only Catarina has the database address.** It is a secret and is not in the repository. If your part needs the real database on your laptop, ask her in person. Do not send it through a chat.
 - **On your laptop, `npm start` has no accounts.** Accounts live in the database, and without its address the menu says that accounts are not available. That is correct, not a mistake. To try signing up, signing in and the leaderboard on your laptop, run `npm run start:pretend` instead: it is the same game with pretend accounts kept in memory, and it forgets everything when you stop it.
-- **Results are only saved for signed-in players, in online races that began with the countdown.** A single race in the browser never reaches the shared leaderboard, and neither does driving around online before the host presses Enter.
-- **The free server sleeps.** After 15 minutes without visitors it takes about a minute to wake up (17 seconds when we measured it on 19 November). A job on GitHub now visits it every five minutes to keep it awake (`.github/workflows/keep-awake.yml`; it only runs once it is on `main`, and GitHub's timer is not exact). Still open the link a few minutes before you show it to anyone. A page of ours that was already open says "The server is waking up" while it waits, and the online page joins the room by itself when the server is back (`client/waking.js`, `client/link.js`).
+- **Only online races count for the shared leaderboard**, for signed-in players, in races that began with the countdown. A single race against computer karts is saved too, but only for your own stats. Before the host presses Enter nobody can move.
+- **The free server sleeps.** After 15 minutes without visitors it takes about a minute to wake up (17 seconds when we measured it on 19 November). A job on GitHub is asked to visit it every five minutes (`.github/workflows/keep-awake.yml`), but GitHub ran it only every five to eight hours when we looked on 23 November, so the server still sleeps. Open the link a few minutes before you show it to anyone. A page of ours that was already open says "The server is waking up" while it waits, and the online page joins the room by itself when the server is back (`client/waking.js`, `client/link.js`).
 - **Right after installing Node.js, `npm` may be "not found".** Close and reopen the app or terminal you are using.
 - **The game is silent until your first key press.** A browser only lets a page make sound after you pressed a key or clicked. That is correct, not a mistake. To change how a sound sounds, change the numbers at the top of `client/sound.js` and listen on http://localhost:3000/sound-test.html, which has every sound on a button. A coding agent cannot hear: it can check that a sound is not silent and does not crackle, and nothing more.
 - **An agent's own browser can be slow.** The built-in browser of the Claude app redraws about once a second when it is not on screen, so the game looks jerky there. Judge how the game feels in a normal browser.

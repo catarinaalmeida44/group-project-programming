@@ -161,7 +161,8 @@ After the two starting commits of the first day, all the work came into `main` t
 | `server/` | Our game server: sends the pages to the browser, runs the online races, and keeps the accounts and the leaderboard |
 | `shared/` | The rules of the game (driving, laps, which user names and passwords are allowed), used by both the browser and the server |
 | `tests/` | The automatic tests |
-| `WALKTHROUGH.md` | How and why each part is built, what the tests cover and miss, and the known limits |
+| `WALKTHROUGH.md` | Short answers to the questions the staff are likely to ask, then how and why each part is built, what the tests cover and miss, and the known limits |
+| `docs/game-details.md` | The long answers about the game itself: the rules of a race, the camera, the sound, the Nova lap, the characters |
 | `PROJECT_BRIEF.md` | What we set out to build and every decision the team took, with its date |
 | `docs/team-guide.md` | Where the project stands, what you need, and how the team works |
 | `docs/diary/` | One diary per team member: what was built, why, and what was and was not checked |
@@ -169,11 +170,11 @@ After the two starting commits of the first day, all the work came into `main` t
 | `docs/two-laptop-checklist.md` | The checks we do by hand, with real laptops, for online play |
 | `SECURITY.md` | How to tell us about a security problem privately, and what we already do to keep the game safe |
 | `AGENTS.md` | How the team works with coding agents, and the rules they must follow (`CLAUDE.md` points to it) |
-| `.env.example` | A list of the secret settings the app needs, with fake values |
+| `.env.example` | The one secret setting the app needs, the database address, with a fake value |
 | `package.json` | The project's identity card: its name, its commands (such as `npm test`) and the libraries it uses |
 | `package-lock.json` | Written automatically. The exact version of every library, so all computers and the server use the same ones |
 | `.github/workflows/tests.yml` | Tells GitHub to run the tests on every pull request |
-| `.github/workflows/keep-awake.yml` | Tells GitHub to visit the live server every five minutes, so that it does not fall asleep |
+| `.github/workflows/keep-awake.yml` | Asks GitHub to visit the live server every five minutes. In practice GitHub runs it only every few hours, so the server still falls asleep (see the note at the top) |
 | `render.yaml` | Tells Render, the company that keeps our server online, how to set the server up |
 | `.node-version` | The exact Node.js version used by Render and by the tests on GitHub |
 
@@ -182,6 +183,7 @@ Each of the folders `client/`, `server/`, `shared/` and `tests/` has a `README.m
 ## Credits
 
 - The characters, names, drawings and sound effects in the game are our own. The track, the karts and the scenery are drawn by our code, and the sound effects are made by our code.
+- The Nova SBE logo on the menu is the school's.
 - The music is recorded, by others. The tune of the menu and the three tunes of a race are by MintoDog, from OpenGameArt, who gave them to everybody (CC0). The trumpets and clapping of the podium are "YoFrankie! (c) 2008, Blender Foundation, www.blender.org", used under the licence CC-BY 3.0 (https://creativecommons.org/licenses/by/3.0/). Which file is which is in `client/music/README.md`.
 - The idea of the driving, karts and banana peels included, comes from kart racing games such as Mario Kart. No characters, names, music or images from any other game are used.
 - The map of our first campus track (`shared/tracks/campus-loop.js`, no longer in the game, still used by the tests) is based on map data © OpenStreetMap contributors, available under the Open Database License (https://www.openstreetmap.org/copyright).

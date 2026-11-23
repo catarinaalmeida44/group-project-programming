@@ -23,7 +23,7 @@ export const RACE_KINDS = Object.freeze({
   single: {
     page: "/race.html",
     title: "Choose a track",
-    lead: "A single race is you against the clock. It runs in your browser, and your best times are kept in this browser only.",
+    lead: "A single race is you against five computer karts, or alone against the clock. It runs in your browser, and your best times are kept in this browser.",
     go: "Race",
   },
   online: {

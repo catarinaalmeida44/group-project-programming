@@ -4,8 +4,8 @@
 // which one (track-choice.js): online.html?track=nova-lap is the Nova lap,
 // and without a choice it is the test oval.
 //
-// Before a race, everyone drives around freely. The host (whoever has been
-// here longest) presses Enter to start a race: every kart goes to the grid,
+// Before a race, every kart waits on the starting grid and no key moves it.
+// The host (whoever has been here longest) presses Enter to start a race:
 // 3, 2, 1, GO! is counted for everyone together, and all karts are let go at
 // the same moment. Someone who opens the page during a race watches it and
 // joins at the next start.

@@ -4,6 +4,64 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 23 November 2026, afternoon: the walkthrough put in order, and every document checked against the code
+
+**What she said**
+
+- She asked how accounts work and was told that two guests can look the same online. She caught the mistake ("how can they have the same kart colors, if they cant choose the same character?"): that line came from `WALKTHROUGH.md`, which was out of date.
+- "Can we delete the walkthrough file all together?" It is not mandatory. Then: "Ok then lets update it fully, so that it is organized and has all the info updated." And: "Is there anything else we may need to update? If so now its the time as well."
+
+**How it was done**
+
+- Seven helper agents each took one piece (five pieces of `WALKTHROUGH.md`, the smaller documents, and `PROJECT_BRIEF.md`) and compared every statement with the code. They only read; they changed nothing. Each reported the outdated sentences with the file and line in the code that shows it.
+- The corrections were then made from their reports.
+
+**What changed** (branch `walkthrough-refresh`, from `main` after pull request 46)
+
+| What | Where |
+|---|---|
+| A new opening: the state on 23 November, how the document is organised, and twelve short answers to the likely questions | `WALKTHROUGH.md`, the top |
+| Its 33 answers grouped into ten parts (the map, the big picture, online play, accounts and data, when something goes wrong, the tests, the rules of a race, what a player sees and hears, limits, history). Done by a small script that moves whole answers without retyping them, and checks that every line is still there | `WALKTHROUGH.md` |
+| About ninety outdated sentences corrected. Examples: a browser may send seven kinds of message, not three; Enter starts every race; the level is chosen on the "Game settings" card, also online; a room takes six, one for each character; no email; the podium comes before the results board; 80 students cheer, not 28 | `WALKTHROUGH.md` |
+| The list of known limits written again from the code: limits that are gone were taken out (two players with the same colours, "one level", "no profile"), and real ones were added (a restart ends a race, every character drives the same, the rules have no hills) | `WALKTHROUGH.md`, Part 9 |
+| The answer about the tests written again as a summary. It had grown into a list of 147 lines with the story of every change; that story is in the diaries | `WALKTHROUGH.md`, Part 6 |
+| A missing heading, "How does the menu work?", and twelve rows in the table of parts for things it never named (the podium, "My stats", ramps, walkers, the connection meter and others) | `WALKTHROUGH.md` |
+| A list at the top of what was built as planned, built differently, and never built. The plan below it was left as it was written | `PROJECT_BRIEF.md` |
+| The team guide's table of what works, and its first steps | `docs/team-guide.md` |
+| The folder notes | `client/README.md`, `server/README.md`, `shared/README.md`, `tests/README.md` |
+| The keep-awake row, the row for the example secrets file, and a credit for the school's logo | `README.md` |
+| Outdated comments in the code, and three texts a player reads in the menu: the note under "Single race", the sentence in "Choose a track", and the Enter line in the list of controls | seven files in `client/` and `shared/` |
+
+**Decisions made by the agent: please confirm**
+
+- **`AGENTS.md` changed in three lines.** "Everything in the game is original" was not true any more (the music is by others, the logo is the school's). "Never add accounts, items, computer karts before the base is done" now says "Never add a feature the team has not agreed on", with a note of what it said. And the two places that sent agents to `docs/build-diary.md` now point to the member's own diary.
+- **`.env.example` lost two lines:** a session secret and a key for an email service. No code ever read them.
+- **The three menu texts** said a single race is "against the clock". It is against five computer karts unless they are switched off.
+- **The credit for the logo** in `README.md`. Nothing was written about the photos.
+- **Part 10 of the walkthrough, about the campus loop, was not rewritten.** It has a note on top that says it is history.
+
+**Not done, on purpose or for lack of time**
+
+- `docs/two-laptop-checklist.md` was not checked against the code.
+- `PROJECT_BRIEF.md` below its new list: not rewritten. About fifty items there are still marked [PROPOSED] or [OPEN].
+- Small things the helpers found and that were left: the "How to play" card says a kart is slower "on grass or sand" (the sand of the Nova lap is a wall); the help lines of the three race pages leave out one or two ways a race can end; `package.json` calls the game "2D"; the "room is full" card says "a player for each character" also when the host chose a lower limit; and a few more outdated comments in the code.
+- One thing that may be a small bug, not fixed: a host who only uses the mouse on the "Game settings" card for a minute, without pressing a key, can lose the room to another player. It is in the list of limits.
+
+**Checked, and not checked**
+
+- `npm test` on the final state: 2,804 passed, 5 skipped (105 files). No test had to change.
+- The script that regrouped the walkthrough counted 584 lines of text before and 584 after, each one present as often as before.
+- The helpers' findings were used as they reported them; where a sentence could not be found exactly as quoted, it was looked up first.
+
+**Later the same afternoon: made shorter, and read from top to bottom**
+
+- She wrote: "Can you plese just finalize everything? Nobody has read the new walkthrough from top to bottom yet, me included. I need everything to be ready for submission, we dont need to have that many things there."
+- **The walkthrough went from 1,004 lines to 641.** It keeps what the staff ask about: the twelve short answers, the map of the project, how it is built and why, online play, accounts and data, what happens when something goes wrong, the tests, and the limits. The long answers about the game itself (how a kart moves, the computer karts, the camera, the sound, the Nova lap, the characters, the podium) and the history of the campus loop moved, whole, to a new file, `docs/game-details.md`. Nothing was deleted: a script moved the answers and counted 660 lines of text before and 660 after.
+- **Then one more helper read all 641 lines in order**, with the code open beside them. It checked every number it could (steps and updates a second, the limits, the seconds on the connection cards, the sizes) and found them right, and the tables and headings sound. It found 36 things to change, and all 36 were changed: one real mistake in a short answer (it said a browser can never send a time; it does send a finished single race, for the player's own stats), a few places that disagreed with each other ("about a minute" and "up to a minute", nine and ten columns), old words ("the practice race", "an open question"), two paragraphs about the database that sat in the wrong place, and a dozen words a beginner would not know (cookie, Node.js, repository, token), which now have a few words of explanation.
+- Could not be checked by reading code: that `npm audit` reports nothing (run by hand this morning: nothing), the 36.5 seconds on the Nova lap, that the tests take about 40 seconds (they do, on this laptop), GitHub's rule that a pull request needs an approval, what Render and Neon promise, and how often GitHub ran the keep-awake job (read from GitHub's own list this morning).
+- `npm test` after all of it: 2,804 passed, 5 skipped.
+- Not checked: how the two files look on GitHub. `docs/game-details.md` was checked by the first round of helpers and corrected, but not read again from top to bottom after the move.
+
 ### 23 November 2026, about noon: our names and numbers at the top of the README
 
 **What she said**
