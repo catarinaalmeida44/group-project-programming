@@ -8,6 +8,8 @@ Team project for Introduction to Programming (course 2477) at Nova SBE.
 
 Nothing to install: it runs in the browser of a laptop, with a keyboard.
 
+> **If a dark page from Render comes up first, instead of the game:** that is normal. Our server is on the free plan of Render, the company that keeps it online, and a free server goes to sleep when nobody has visited for 15 minutes. That page means it is waking up. Leave it open: the game appears by itself, usually within a minute. If it does not, reload the page.
+
 ## What the game has
 
 **Three ways to play**
@@ -115,7 +117,7 @@ For the team: with the database address in a file called `.env` (copy `.env.exam
 |---|---|
 | ↑ ↓ ← → | Gas, brake and reverse, steer |
 | W S A D | The same for player 2, in a two-player race |
-| Enter | Online: the host starts the race |
+| Enter | Starts the countdown. Online, only the host's Enter counts |
 | R | Single race and two players: start again |
 | V | Change the camera |
 | F | The game on the whole screen, and back |

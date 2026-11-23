@@ -4,6 +4,64 @@ Entries from 11 November 2026 on, newest at the top. How to write one is in `REA
 
 Everything built on 10 November is in `docs/build-diary.md`.
 
+### 23 November 2026, midday: Enter starts the countdown in every kind of race
+
+**What she said**
+
+- "Now to start a race countdown in single and double you press a key, and online the host presses enter. Could we make it so that in every game mode, the race countdown starts when you press enter?" She asked what it risks.
+
+**What was built** (same branch, `leaderboard-nova-lap-first`, which is pull request 45)
+
+| What | Where |
+|---|---|
+| A single race and a two-player race give their "start" to Enter, not to the driving keys | `onStart: start` in `client/main.js` and `client/double.js` |
+| A driving key that is held no longer starts the race either (that was a second way in, for "R with an arrow still held") | the picture loop `frame` in the same two files |
+| The words before the countdown: "Press Enter to start the countdown" (single), "Press Enter to start" (two players) | `SINGLE_START_WORDS` and `START_KEY` in `client/race-view.js`, `START_WORDS` in `client/double-view.js` |
+| Enter in the "How to play" card of the single and the two-player page, and in the lines under the picture | `client/how-to-play.js`, `client/race.html`, `client/double.html` |
+| New tests (16) | `tests/race-start.test.js` |
+| The notes: the keys table, the walkthrough, three checks of the hand checklist | `README.md`, `WALKTHROUGH.md`, `client/README.md`, `tests/README.md`, `docs/two-laptop-checklist.md` |
+
+Online nothing changed: the host's Enter already started the race there, and the server decides.
+
+**Why it was done this way**
+
+- The pages already had one action called "start", and the keyboard already told pages about Enter (the online page uses it). So the change is to connect the two, and to take away the two places where a driving key started the race.
+- The pages already kept the race waiting while a card ("Game settings", "How to play") is up, and the cards and buttons already give the keyboard back when they close. That is what makes Enter safe here: the online page has worked this way since 13 November.
+
+**An older test changed: the team should know**
+
+- `tests/double-view.test.js`, one test. It was called "ask for a driving key before the race has started" and expected the words to match "driving key". The words now ask for Enter, so the test says that, and that they no longer ask for a driving key. A comment in the test says what it said before. Its first line is unchanged.
+- `tests/keyboard.test.js` has a test whose name ends "so the countdown starts for either driver". What it checks is still true (the keyboard tells the page about W, A, S and D), only the reason in its name is out of date. It was left alone.
+
+**What it risks** (told to her)
+
+- **Habit.** Anyone who knows the game presses an arrow and nothing happens. The picture says "Press Enter to start", and so does the card.
+- **Enter also presses whatever button has the keyboard.** The cards and "Full screen", "Race again" and "How to play" hand the keyboard back, and that was tried. Someone who walks to "← Menu" with the Tab key and presses Enter goes to the menu: that is what Enter does on a link in any page, and was already so online.
+- **The "How to play" card is Rodrigo's.** Its list of keys has one more line.
+- **Nobody has played it with their hands yet**, and it goes into `main` on the day of the deadline.
+
+**Checked, and not checked**
+
+- `npm test`: 2,804 passed, 5 skipped (105 files). Sixteen are new.
+- In the browser pane, with pretend accounts and the sound off, on the test oval. Single race: with both cards up Enter starts nothing; with the cards closed, arrow keys held for three seconds start nothing and the kart stands still; Enter starts the countdown; R with an arrow held goes back to waiting (it used to start again); Enter with "Game settings" open starts nothing. Two players: W, ↑, D and ← held start nothing, both halves say "Press Enter to start", Enter starts the countdown in both halves.
+- With real key presses in that pane: Enter on the "Game settings" card confirms it and does not start the race; an arrow starts nothing; the next Enter starts the countdown. No error in the console.
+- **Not checked:** a whole race driven by a person; the online page (its code did not change, only comments in `client/keyboard.js`); full screen; the live site.
+
+**Also, at her request: a note in the README about the sleeping server**
+
+- She asked: "should we add a quick note on the read me saying that we use render, which is a free tier service, and so ... a black text page from render may appear ... and that if you wait a few seconds then the game should appear".
+- It is now right under the "Play it now" link, where someone who marks the project clicks first. The Installation section already said it, further down.
+- She said "a few seconds". The note says "usually within a minute", because Render's own page says waking takes about a minute.
+
+**What was done in git**
+
+- `git fetch` first: pull request 45 was still open and `main` had not moved.
+- One commit for the Enter change with its tests, one for the notes, the README note and this entry. Pushed to the same branch, so pull request 45 now holds these too. Nothing was merged into `main`.
+
+**How to check it yourself**
+
+Run `npm run start:pretend`, open http://localhost:3000, choose Single race, close the cards, press ↑ (nothing), press Enter (3, 2, 1, GO!). The same with Two players.
+
 ### 23 November 2026, morning: the leaderboard opens on the Nova lap, and a last look at the grading criteria
 
 **What she said**

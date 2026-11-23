@@ -128,7 +128,7 @@ Turn the loudspeakers on. One laptop is enough for checks 66 to 72.
 | # | What to do | What should happen | OK? |
 |---|---|---|---|
 | 66 | Open a Single race and wait without touching a key | Silence. (A browser only lets a page make sound after a key press) | |
-| 67 | Press an arrow key | A beep with a thump for 3, 2 and 1, and a big chord at GO. The engine hums | |
+| 67 | Press an arrow key, then Enter (since 23 November 2026 Enter starts the countdown) | The arrow key starts nothing. After Enter: a beep with a thump for 3, 2 and 1, and a big chord at GO. The engine hums | |
 | 68 | Drive off and reach top speed, then let go of the gas | The engine sings higher as you speed up and stays in the background. It is a little fuller while the gas is held | |
 | 69 | Drive onto the grass, then steer hard at speed | A low rumble on the grass. The tyres squeal when the kart slides | |
 | 70 | Touch a wall gently, then drive into one at full speed | A soft thud, then a boom with a crash and bits tinkling down. Not twenty times while you grind along the wall | |
@@ -211,7 +211,7 @@ Added on 19 November 2026 (night), changed on the 20th: player 1 has the arrows.
 | # | Do this | You should see | Result |
 |---|---|---|---|
 | 97 | Menu: "Two players", the Nova lap. Player 1 chooses a character, "Next: player 2", player 2 chooses another one, "Race" | Player 1's character is grey for player 2 and cannot be chosen. Then the "Game settings" card on a split screen | |
-| 98 | Confirm the settings. Both hold their gas key (↑ for player 1, W for player 2) | 3, 2, 1, GO! in both halves. Player 1's half is on the right and player 2's on the left, each behind its own kart, with the driver's name under it | |
+| 98 | Confirm the settings. Both hold their gas key (↑ for player 1, W for player 2): nothing starts, both halves say "Press Enter to start". Then one of you presses Enter (since 23 November 2026) | 3, 2, 1, GO! in both halves. Player 1's half is on the right and player 2's on the left, each behind its own kart, with the driver's name under it | |
 | 99 | Both steer hard at the same time, in every combination: W+A with ↑+→, W+D with ↑+←, and so on. Say out loud if your kart ignores a key | Both karts answer. **Write down any combination that fails, and on which laptop**: a keyboard that cannot tell the keys apart is something code cannot fix | |
 | 100 | Drive the three laps. Watch how smooth the two pictures are | Smooth on both halves. Write down a laptop where it stutters | |
 | 101 | Finish, one after the other | The first to finish gets a banner at the top of their half: their place and time, "Waiting until every player finishes", and "You are watching" the other driver, whose kart their half now follows. When both are home it follows the computer kart in last place. When every kart is home (or two minutes after the first), one big picture with the podium, and "Race again" and "Back to menu" | |
@@ -236,7 +236,7 @@ Added on 20 November 2026 (afternoon). **Nobody has listened to it in the game y
 | # | Do this | You should hear | Result |
 |---|---|---|---|
 | 108 | Open the menu and click anywhere | The menu tune starts and goes round and round. No click or gap where it starts again (it is about two minutes long) | |
-| 109 | Single race on the Nova lap. Press an arrow key | Silence and the beeps during 3, 2, 1. At GO a calm tune | |
+| 109 | Single race on the Nova lap. Press Enter | Silence and the beeps during 3, 2, 1. At GO a calm tune | |
 | 110 | Drive into the second lap, then into the third | A faster tune on the second lap, the fastest on the third. One fades into the next: no hole, no two tunes on top of each other for long | |
 | 111 | While driving: is the music too loud or too quiet next to the engine and the beeps? | You can hear the engine and every beep clearly over the music. **Write down "too loud", "too quiet" or "right"**: it is one number to change | |
 | 112 | Finish and wait for the podium | The last lap's tune goes on while you watch the others. On the podium: trumpets and clapping, once, and no other cheering | |
