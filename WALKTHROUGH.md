@@ -513,7 +513,7 @@ These are the limits of the free hosting plans:
 
 ### What do the tests cover, and what do they miss?
 
-We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. On 23 November 2026 there are 2,804 tests in 105 files, and 5 more that are skipped without the database's secret address. They take about 40 seconds, most of it online races that run in real time.
+We run them with `npm test`. GitHub also runs them by itself on every pull request and on every change to `main`. On 24 November 2026 there are 2,817 tests in 106 files, and 5 more that are skipped without the database's secret address. They take about 40 seconds, most of it online races that run in real time.
 
 `tests/README.md` lists every test file with what it checks. This is the summary. (Until 23 November 2026 this answer was a long list that grew with every pull request, with the story of each change. That story is in the diaries in `docs/diary/`.)
 

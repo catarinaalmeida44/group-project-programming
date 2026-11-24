@@ -29,7 +29,7 @@ import { createRacer, stepRacer } from "./race.js";
 import { bumpKarts } from "./bumps.js";
 import { createBananaMaker, stepBananas } from "./hazards.js";
 import { createWalkers, stepWalkers, walkerSpots } from "./walkers.js";
-import { createComputerDriver, decide, personalityOf, moodFor, atLevel, isLevel, DEFAULT_LEVEL } from "./computer-driver.js";
+import { createComputerDriver, decide, personalityInRace, moodFor, atLevel, isLevel, DEFAULT_LEVEL } from "./computer-driver.js";
 import { CAST, isCharacterId } from "./cast.js";
 import { GRID_PLACES } from "./grid.js";
 
@@ -77,8 +77,8 @@ export function createPracticeRace(track, seed = null, line = null, count = COMP
   const drivers = [];
   for (let number = 0; number < computers; number++) {
     others.push(createRacer(track, number));
-    // Its personality, in a mood picked from this race's seed (computer-driver.js).
-    const personality = personalityOf(free[number].id);
+    // Its personality, dealt out for this race, in a mood picked from this race's seed (computer-driver.js).
+    const personality = personalityInRace(free[number].id, seed);
     const mood = atLevel(moodFor(personality, seed, free[number].id), level);
     drivers.push({ ...createComputerDriver(personality, mood), character: free[number] });
   }

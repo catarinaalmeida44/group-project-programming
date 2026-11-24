@@ -2,6 +2,32 @@
 
 Rodrigo Simeão Versos (GitHub rodrigosversos). Entries from 11 November 2026 on, newest at the top. How to write one is in `README.md` in this folder.
 
+### 24 November 2026: personalities dealt out again every race
+
+**What was done**
+- The computer karts' six personalities (Daredevil, Steady, Careful, Hunter, Smooth, Calm) used to be fixed: PCP was always the Daredevil, and so on. Now, at the start of every race, they are shuffled and dealt out, one to each character, like a deck of six cards. Every race still has exactly one of each.
+- The shuffle comes from the race's seed, like the mood of the day, so the same seed deals the same way and a race can still be played again exactly. The mood of the day and Easy/Normal/Hard still work on top.
+- It applies to single races, two-player races and online rooms (the same new function, `personalityInRace`, in all three).
+- Files: `shared/computer-driver.js`, `shared/practice-race.js`, `shared/two-player-race.js`, `server/computer-players.js`, the new `tests/random-personalities.test.js`, two changed tests (below), and the notes.
+
+Branch `rodrigo-npc-personalities`, from `main` after the walkthrough refresh (#47).
+
+**Decisions**
+- Mine: personalities assigned at random, always (not as a setting). I chose this knowing it changes a rule two tests checked.
+- Decision made by the agent, please confirm: a shuffle of the six, rather than new random numbers each race, so a race is never six reckless or six timid drivers.
+
+**Two existing tests were changed, on purpose.** `tests/practice-race.test.js` ("lets each character drive with its own personality") and `tests/two-player-race.test.js` ("lets each computer kart drive with the personality of its character") checked the old rule. With the new code they failed, and only those two. They were not changed to hide a bug: the rule they check was changed by choice. They now check that each kart drives with the personality dealt to it for that race. Each has a comment saying what it checked before and why. A teammate should approve this knowingly.
+
+**What was checked, and what was not**
+- `npm test`: 2,817 passed, 5 skipped (13 new tests).
+- Broken on purpose four ways, and tests failed every time: no shuffle at all, always the same swap, real chance instead of the seed, a single race ignoring the deal.
+- In a Chrome browser without a screen: a single race starts and the computer karts drive, with no errors.
+- **Not checked by a test:** online rooms. The room does not show a kart's personality, so if only the online path were broken, no test would notice. It calls the same function as the single race (checked by reading), and all online race tests pass.
+- **Not checked:** on my laptop and on the live server.
+
+**How to check it yourself**
+Run `npm start`, play a single race a few times, and watch how each character drives: PCP should sometimes be bold and sometimes careful.
+
 ### 20 November 2026: the NOVA SBE logo on the menu
 
 **What was done**

@@ -13,7 +13,7 @@ import { lookOfTrack } from "../client/track-looks.js";
 import { routePoints } from "../client/route.js";
 import { placeLine } from "../client/standings.js";
 import { CAST } from "../shared/cast.js";
-import { personalityOf } from "../shared/computer-driver.js";
+import { personalityInRace } from "../shared/computer-driver.js";
 
 const NO_KEYS = { gas: false, brake: false, left: false, right: false };
 const lineOf = (track) => routePoints(track, lookOfTrack(track).route);
@@ -59,10 +59,14 @@ describe("starting a single race", () => {
     }
   });
 
-  it("lets each character drive with its own personality", () => {
+  // Changed on 24 November 2026, because the rule changed (the team chose it):
+  // a character no longer always drives with the same personality; the
+  // personalities are dealt out again for each race (personalityInRace).
+  // Until then this test checked personalityOf(character) here.
+  it("lets each character drive with the personality dealt to it for this race", () => {
     const race = createPracticeRace(TEST_OVAL, 1, lineOf(TEST_OVAL), 5, "pcp");
     for (const driver of race.drivers) {
-      expect(driver.personality, driver.character.id).toBe(personalityOf(driver.character.id));
+      expect(driver.personality, driver.character.id).toBe(personalityInRace(driver.character.id, 1));
     }
   });
 

@@ -17,7 +17,7 @@ import { FINISH_WINDOW_STEPS, RACE_LIMIT_STEPS } from "../shared/race-time.js";
 import { gridSpot } from "../shared/grid.js";
 import { speedOf } from "../shared/physics.js";
 import { CAST } from "../shared/cast.js";
-import { createComputerDriver, decide, personalityOf } from "../shared/computer-driver.js";
+import { createComputerDriver, decide, personalityOf, personalityInRace } from "../shared/computer-driver.js";
 import { TEST_DRIVER } from "../shared/characters.js";
 import { TEST_OVAL } from "../shared/tracks/test-oval.js";
 import { lookOfTrack } from "../client/track-looks.js";
@@ -106,9 +106,13 @@ describe("starting a two-player race", () => {
     }
   });
 
-  it("lets each computer kart drive with the personality of its character", () => {
+  // Changed on 24 November 2026, because the rule changed (the team chose it):
+  // the personalities are dealt out again for each race (personalityInRace),
+  // so a character no longer always has the same one. Until then this test
+  // checked personalityOf(character) here.
+  it("lets each computer kart drive with the personality dealt to its character for this race", () => {
     for (const driver of newRace().drivers) {
-      expect(driver.personality).toBe(personalityOf(driver.character.id));
+      expect(driver.personality).toBe(personalityInRace(driver.character.id, 7));
     }
   });
 

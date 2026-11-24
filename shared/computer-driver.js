@@ -22,7 +22,9 @@
 //
 // Every computer kart has a personality: a few numbers that weigh its
 // scores. A daring driver overtakes eagerly and brakes late. A careful one
-// keeps its distance and brakes early. "pace" is how close to its top speed
+// keeps its distance and brakes early. Each race the six personalities are
+// dealt out again among the characters (personalityInRace), so PCP may be
+// the daring one in one race and the careful one in the next. "pace" is how close to its top speed
 // it dares to drive, so the karts do not all go equally fast.
 //
 // The racing line is a list of points along the middle of the road, in the
@@ -88,8 +90,11 @@ export const PERSONALITIES = Object.freeze(
 );
 
 /**
- * How each character of the cast (shared/cast.js) drives when the computer
- * drives it. The same character always drives the same way.
+ * How each character of the cast (shared/cast.js) drives when there is no
+ * race to deal personalities for (no seed): in tests, and as the order the
+ * dealing starts from. In a race, personalityInRace deals them out again.
+ * (Until 24 November 2026 this table was used in every race, so the same
+ * character always drove the same way.)
  */
 export const PERSONALITY_OF_CHARACTER = Object.freeze({
   pcp: "Daredevil",
@@ -100,19 +105,51 @@ export const PERSONALITY_OF_CHARACTER = Object.freeze({
   ro: "Calm",
 });
 
-/** The personality a character drives with, or null for an id that has none. */
+/** The personality a character drives with when there is no seed (the table above), or null for an id that has none. */
 export function personalityOf(characterId) {
   const name = Object.hasOwn(PERSONALITY_OF_CHARACTER, characterId) ? PERSONALITY_OF_CHARACTER[characterId] : null;
   return PERSONALITIES.find((personality) => personality.name === name) ?? null;
 }
 
+// ---- Who gets which personality in a race ----
+//
+// Decided by the team on 24 November 2026: personalities are no longer tied
+// to a character. At the start of every race the six personalities are
+// shuffled and dealt out, one to each character, like cards. So every race
+// still has exactly one Daredevil, one Careful driver and so on (the field
+// stays balanced), but nobody knows beforehand who will be which.
+//
+// The shuffle comes from the race's seed, like the mood of the day, so the
+// same seed always deals the same way and a race can be played again
+// exactly. With no seed (null) nothing is shuffled: the table above is used.
+
+/** The personality each character drives with in the race with this seed: { characterId: personality }. */
+export function personalitiesInRace(seed) {
+  const characters = Object.keys(PERSONALITY_OF_CHARACTER);
+  const deck = characters.map((id) => personalityOf(id));
+  if (seed !== null && seed !== undefined) {
+    // Shuffle the deck (the Fisher-Yates way: every order is equally likely).
+    const random = randomNumbers(seed, "personalities");
+    for (let last = deck.length - 1; last > 0; last--) {
+      const other = Math.floor(random() * (last + 1));
+      [deck[last], deck[other]] = [deck[other], deck[last]];
+    }
+  }
+  return Object.freeze(Object.fromEntries(characters.map((id, index) => [id, deck[index]])));
+}
+
+/** The personality one character drives with in the race with this seed, or null for an id that has none. */
+export function personalityInRace(characterId, seed) {
+  const dealt = personalitiesInRace(seed);
+  return Object.hasOwn(dealt, characterId) ? dealt[characterId] : null;
+}
+
 // ---- The mood of the day ----
 //
-// Without chance, a computer kart drives the same race every time from the
-// same place on the grid. So for each race each one gets a "mood": its
-// personality with every number moved a little, up or down. The character
-// is still recognisable (the Daredevil stays daring), but no two races are
-// driven quite alike. The mood comes from the race's random number (its
+// On top of the personality it was dealt, each computer kart gets a "mood"
+// for the race: its personality with every number moved a little, up or
+// down. The personality is still recognisable (the Daredevil stays daring),
+// but no two Daredevils drive quite alike. The mood comes from the race's random number (its
 // seed), so the same seed always gives the same moods: a race can still be
 // played again exactly, which the tests need.
 

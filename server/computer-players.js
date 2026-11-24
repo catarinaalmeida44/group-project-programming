@@ -3,8 +3,8 @@
 // When the host starts a race, the characters nobody in the room is become
 // computer karts for that race, until the race has KARTS_IN_A_FULL_RACE
 // karts. They drive exactly like the computer karts of a single race: the
-// same brain (shared/computer-driver.js, utility AI) and the same
-// personality for each character.
+// same brain (shared/computer-driver.js, utility AI), and the personalities
+// dealt out again for each race from the race's seed.
 //
 // To the room (room.js), a computer kart is simply a player: it has a place
 // on the grid, keys and a kart that the room moves with the shared rules,
@@ -19,7 +19,7 @@
 // without any network.
 
 import { CAST } from "../shared/cast.js";
-import { createComputerDriver, decide, personalityOf, moodFor, atLevel, isLevel, DEFAULT_LEVEL } from "../shared/computer-driver.js";
+import { createComputerDriver, decide, personalityInRace, moodFor, atLevel, isLevel, DEFAULT_LEVEL } from "../shared/computer-driver.js";
 import { walkerSpots } from "../shared/walkers.js";
 
 /** How many karts a race has once computer karts fill it: one for each character. */
@@ -82,7 +82,7 @@ export function createComputerPlayers(track, line, character) {
           break;
         }
         room.setLook(player.id, given.look);
-        const personality = personalityOf(given.id);
+        const personality = personalityInRace(given.id, seed); // dealt out for this race, as in a single race
         // Its mood of the day, moved up or down by the level, exactly as in a single race (shared/practice-race.js).
         const mood = atLevel(moodFor(personality, seed, given.id), level);
         drivers.set(player.id, { ...createComputerDriver(personality, mood), character: given });
